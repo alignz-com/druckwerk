@@ -21,6 +21,12 @@
   font-display: swap;
 }
 
+/* Tailwind v4: Design-Tokens im CSS definieren */
+@theme {
+  --font-frutiger: "Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system,
+                   "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
