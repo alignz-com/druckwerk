@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   //    Font-Datei unter public/fonts/Inter-Regular.ttf bereitstellen
   let font: any = undefined;
   try {
-    const fontBytes = await readFile(path.join(process.cwd(), "public", "fonts", "Inter-Regular.ttf"));
+    const fontBytes = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
     font = await outDoc.embedFont(fontBytes);
   } catch { /* fallback: Standardfont */ }
 
