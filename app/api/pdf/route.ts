@@ -48,10 +48,13 @@ export async function POST(req: Request) {
   }
 
   const bytes = await outDoc.save();
-  return new NextResponse(bytes, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="card.pdf"',
-    },
-  });
-}
+
+// ⬇️ Neu: als Blob zurückgeben (funktioniert in Node-Runtime auf Vercel)
+const blob = new Blob([bytes], { type: "application/pdf" });
+
+return new NextResponse(blob, {
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": 'attachment; filename="card.pdf"',
+  },
+});
