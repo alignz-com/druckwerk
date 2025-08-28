@@ -12,6 +12,45 @@ export const runtime = "nodejs";
 // ---------- Helpers ----------
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
 
+// vCard-Helfer
+function vEscape(s: string) {
+  // RFC 2426: \ , ; und Zeilenumbrüche escapen
+  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+
+function buildVCard3(opts: {
+  fullName: string;
+  org?: string;
+  title?: string;
+  email?: string;
+  tel?: string;
+  url?: string;
+  addrLabel?: string; // freie Adresse (mehrzeilig)
+}) {
+  const { fullName, org, title, email, tel, url, addrLabel } = opts;
+
+  const lines: string[] = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${vEscape(fullName)}`,
+  ];
+
+  if (org)   lines.push(`ORG:${vEscape(org)}`);
+  if (title) lines.push(`TITLE:${vEscape(title)}`);
+  if (tel)   lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
+  if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+  if (url)   lines.push(`URL:${vEscape(url)}`);
+
+  // Unstrukturierte Firmenadresse als Label (kompatibel & simpel)
+  if (addrLabel) {
+    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+  }
+
+  lines.push("END:VCARD");
+  // Wichtig: CRLF für breite Scanner-Kompatibilität
+  return lines.join("\r\n");
+}
+
 type Payload = {
   name: string;
   role?: string;
@@ -230,22 +269,36 @@ export async function POST(req: Request) {
     });
   }
 
-  // 5) Rückseite – QR (32 mm, ohne Quiet Zone; kommt vom Design/Weißfeld)
-  const target = url || (email ? `mailto:${email}` : "");
-  if (target) {
-    const dataUrl = await QRCode.toDataURL(target, {
-      width: 1024,
-      margin: 0,
-      errorCorrectionLevel: "M",
-    });
-    const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
-    const img = await tplDoc.embedPng(pngBytes);
+  // --- 5) Rückseite – QR: vCard statt URL ----------------------------
+const orgName = (company || "").split(/\r?\n/)[0] || ""; // 1. Zeile als ORG
+const addrLabel = company || "";                         // gesamte Adresse als Label
 
-    const qrSize = mm2pt(32);      // 32 mm
-    const qx = mm2pt(52.8);        // an Weißfeld anpassen
-    const qy = mm2pt(18.85);
+const vcard = buildVCard3({
+  fullName: name,
+  org: orgName,
+  title: role || undefined,
+  email: email || undefined,
+  tel: phone || undefined,
+  url: url || undefined,
+  addrLabel,
+});
 
-    back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+const dataUrl = await QRCode.toDataURL(vcard, {
+  width: 1024,
+  margin: 0,
+  errorCorrectionLevel: "M",
+});
+
+const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
+const img = await tplDoc.embedPng(pngBytes);
+
+const qrSize = mm2pt(32);      // 32 mm
+const qx = mm2pt(52.8);
+const qy = mm2pt(18.85);
+
+back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+
+// Optional anklickbarer Link weglassen (ist ja jetzt ein vCard-QR)
 
     // Optional anklickbar im On-Screen-PDF:
     // back.annotate({ type: "link", rect: [qx, qy, qx + qrSize, qy + qrSize], url: target });
