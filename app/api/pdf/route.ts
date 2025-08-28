@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     // hohe Auflösung & kein Außenrand für druckscharfen QR
     const dataUrl = await QRCode.toDataURL(target, {
       width: 1024,               // ~1024 px => sehr sauber bei 37 mm
-      margin: 5,                 // kein weißer Rand
+      margin: 1,                 // kein weißer Rand
       errorCorrectionLevel: "M", // stabil; "Q" oder "H" wenn du später ein Logo überlegst
     });
   
