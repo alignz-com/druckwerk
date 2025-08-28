@@ -113,7 +113,7 @@ export async function POST(req: Request) {
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await outDoc.embedPng(pngBytes);
 
-    const qrSize = mm2pt(27);   // QR 27 mm Kantenlänge (fix)
+    const qrSize = mm2pt(32);   // QR 32 mm Kantenlänge (fix)
     // Diese Koordinaten bitte an dein Weißfeld anpassen:
     const qx = mm2pt(52.8);
     const qy = mm2pt(18.85);
