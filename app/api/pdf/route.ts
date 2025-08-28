@@ -199,7 +199,7 @@ export async function POST(req: Request) {
 
   // Abstand zu Kontakten
   y -= mm2pt(3.5);
-  const lineGap = 3.5; // mm
+  const lineGaps = 3.5; // mm
   
   // KONTAKTE (weicher Umbruch falls sehr lang)
   const contactLines: string[] = [];
@@ -210,7 +210,7 @@ export async function POST(req: Request) {
   for (const line of contactLines) {
     const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
     y = drawBlock(front, lines, y, {
-      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGap, font: Frutiger.Light, align: "left",
+      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGaps, font: Frutiger.Light, align: "left",
     });
   }
 
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
       else wrapped.push(l);
     }
     y = drawBlock(front, wrapped, y, {
-      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGap, font: Frutiger.Light, align: "left",
+      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGaps, font: Frutiger.Light, align: "left",
     });
   }
 
