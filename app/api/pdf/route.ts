@@ -48,10 +48,11 @@ export async function POST(req: Request) {
   }
 const bytes = await outDoc.save();
 
-// Uint8Array -> ArrayBuffer (exakt zuschneiden)
-const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+// ✅ Erzeuge einen *reinen* ArrayBuffer (ohne SharedArrayBuffer-Union)
+const abuf = new ArrayBuffer(bytes.byteLength);
+new Uint8Array(abuf).set(bytes);
 
-return new NextResponse(ab, {
+return new Response(abuf, {
   headers: {
     "Content-Type": "application/pdf",
     "Content-Disposition": 'attachment; filename="card.pdf"',
