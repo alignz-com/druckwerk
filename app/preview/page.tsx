@@ -92,18 +92,15 @@ export default function PreviewPage() {
           </CardHeader>
           <CardContent>
             {/* einfache Karten-Vorschau (HTML) */}
-            <div className="mx-auto w-[340px] rounded-2xl border p-4 shadow-sm">
-              <div className="text-xl font-semibold">{name}</div>
-              <div className="text-sm text-muted-foreground">{role}</div>
-              <div className="mt-3 space-y-1 text-sm">
+            <div className="mx-auto w-[340px] rounded-2xl border p-4 shadow-sm font-frutiger">
+              <div className="text-xl font-bold">{name}</div>
+              <div className="text-sm text-muted-foreground font-light">{role}</div>
+              <div className="mt-3 space-y-1 text-sm font-light">
                 <div>{email}</div>
                 <div>{phone}</div>
-                <div className="whitespace-pre-wrap text-muted-foreground">{company}</div>
+                <div className="whitespace-pre-wrap text-muted-foreground font-light">{company}</div>
               </div>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              * PDF nutzt <code>public/templates/omicron.pdf</code> (2 Seiten). Front = Text & Adresse, Back = QR.
-            </p>
           </CardContent>
         </Card>
       </div>
