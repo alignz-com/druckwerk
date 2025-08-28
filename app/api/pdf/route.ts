@@ -76,8 +76,8 @@ export async function POST(req: Request) {
 
   // --- 2) Front beschriften ---
   // Positionen bitte bei Bedarf mm-genau anpassen:
-  const left = mm2pt(0);       //von links
-  let y = fh - mm2pt(0);     //von oben
+  const left = mm2pt(24.4);       //von links
+  let y = fh - mm2pt(4);     //von oben
 
   const draw = (txt: string, size = 9, font: any = Frutiger.Light) => {
     if (!txt) return;
