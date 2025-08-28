@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
-import QRCode from "qrcode";
+import * as QRCode from "qrcode";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
