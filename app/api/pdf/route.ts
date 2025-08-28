@@ -183,7 +183,7 @@ export async function POST(req: Request) {
   const nameSize = 10;
   const roleSize = 8;
   const bodySize = 8;
-  const lineGap = 4; // mm
+  const lineGap = 3.5; // mm
 
   // NAME (Bold)
   y = drawBlock(front, [name], y, {
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
   }
 
   // Abstand zu Kontakten
-  y -= mm2pt(5);
+  y -= mm2pt(3.5);
 
   // KONTAKTE (weicher Umbruch falls sehr lang)
   const contactLines: string[] = [];
