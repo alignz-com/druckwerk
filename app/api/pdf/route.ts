@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       x: left,
       y,
       size,
-      font: font ?? undefined, // wenn Font fehlt → pdf-lib Default
+      font: font ?? undefined,
       color: rgb(0, 0, 0),
     });
     y -= mm2pt(5);
@@ -148,6 +148,10 @@ export async function POST(req: Request) {
   // --- 6) Speichern – Template bleibt mit allen Profilen/Boxen erhalten ---
   const bytes = await tplDoc.save();
 
+  // Uint8Array → ArrayBuffer (für NextResponse kompatibel)
+  const abuf = new ArrayBuffer(bytes.length);
+  new Uint8Array(abuf).set(bytes);
+
   // Optional: Debug-Header aktivieren mit ?debug=1
   const isDebug = new URL(req.url).searchParams.has("debug");
   const headers: Record<string, string> = {
@@ -156,5 +160,5 @@ export async function POST(req: Request) {
   };
   if (isDebug) headers["X-Font-Debug"] = (report.join(" | ")).slice(0, 1800);
 
-  return new NextResponse(bytes, { headers });
+  return new NextResponse(abuf, { headers });
 }
