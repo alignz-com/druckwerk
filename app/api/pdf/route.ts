@@ -198,7 +198,7 @@ export async function POST(req: Request) {
   }
 
   // Abstand zu Kontakten
-  y -= mm2pt(3.5);
+  y -= mm2pt(3.25);
   const lineGaps = 3.5; // mm
   
   // KONTAKTE (weicher Umbruch falls sehr lang)
@@ -215,7 +215,7 @@ export async function POST(req: Request) {
   }
 
   // Abstand zu Firma/Adresse
-  y -= mm2pt(3);
+  y -= mm2pt(4.15);
 
   // FIRMA/ADRESSE (Textarea → Zeilen, dann bei Bedarf umbrechen)
   if (company) {
