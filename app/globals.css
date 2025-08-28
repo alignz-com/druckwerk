@@ -21,6 +21,15 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Frutiger LT Pro";
+  src: url("/fonts/frutigerltpro-lightitalic-webfont.woff2") format("woff2"),
+       url("/fonts/frutigerltpro-lightitalic-webfont.woff") format("woff");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Tailwind v4: Design-Tokens im CSS definieren */
 @theme {
   --font-frutiger: "Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system,
