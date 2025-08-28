@@ -52,10 +52,10 @@ export async function POST(req: Request) {
   // Frutiger OTFs laden (achte auf exakte Dateinamen im Repo)
   let Frutiger: { Regular?: any; Bold?: any } = {};
   try {
-    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Roman.otf")); // ggf. -Regular.otf
+    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-LIght.otf")); // ggf. -Regular.otf
     const fBold = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
     Frutiger = {
-      Regular: await outDoc.embedFont(fReg, { subset: true }),
+      Light: await outDoc.embedFont(fReg, { subset: true }),
       Bold:    await outDoc.embedFont(fBold, { subset: true }),
     };
   } catch {
@@ -85,11 +85,11 @@ export async function POST(req: Request) {
     y -= mm2pt(5);
   };
 
-  // Name fett, Rest Regular
-  draw(name, 10.5, Frutiger.Bold ?? undefined);
-  draw(role, 9, Frutiger.Regular ?? undefined);
-  draw(email, 9, Frutiger.Regular ?? undefined);
-  draw(phone, 9, Frutiger.Regular ?? undefined);
+  // Name fett, Rest Light
+  draw(name, 10, Frutiger.Bold ?? undefined);
+  draw(role, 8, Frutiger.Light ?? undefined);
+  draw(email, 8, Frutiger.Light ?? undefined);
+  draw(phone, 8, Frutiger.Light ?? undefined);
 
   // Firmenadresse (Textarea → echte Zeilenumbrüche)
   if (company) {
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     const lines = splitLinesMultiline(company);
     for (const line of lines) {
       if (!line) { y -= mm2pt(4); continue; } // Leerzeile = zusätzlicher Abstand
-      draw(line, 8.5, Frutiger.Regular ?? undefined);
+      draw(line, 8, Frutiger.Light ?? undefined);
     }
   }
 
