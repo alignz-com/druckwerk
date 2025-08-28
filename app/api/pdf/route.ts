@@ -31,9 +31,9 @@ async function loadFrutiger(doc: PDFDocument) {
   const base = path.join(process.cwd(), "public", "fonts");
 
   const files = {
-    Light: path.join(base, "FrutigerLTPro-Light.otf"),
-    LightItalic: path.join(base, "FrutigerLTPro-LightItalic.otf"),
-    Bold: path.join(base, "FrutigerLTPro-Bold.otf"),
+    Light: path.join(base, "FrutigerLTPro-Light.ttf"),
+    LightItalic: path.join(base, "FrutigerLTPro-LightItalic.ttf"),
+    Bold: path.join(base, "FrutigerLTPro-Bold.ttf"),
   } as const;
 
   const fonts: Partial<Record<keyof typeof files, PDFFont>> = {};
