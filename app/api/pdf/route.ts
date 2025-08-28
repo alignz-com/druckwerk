@@ -50,12 +50,12 @@ export async function POST(req: Request) {
   outDoc.registerFontkit(fontkit); // wichtig: OTF/Unicode
 
   // Frutiger OTFs laden (achte auf exakte Dateinamen im Repo)
-  let Frutiger: { Regular?: any; Bold?: any } = {};
+  let Frutiger: { Light?: any; Bold?: any } = {};
   try {
-    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-LIght.otf")); // ggf. -Regular.otf
+    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Light.otf")); // ggf. -Regular.otf
     const fBold = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
     Frutiger = {
-      Light: await outDoc.embedFont(fReg, { subset: true }),
+      Light: await outDoc.embedFont(fLight, { subset: true }),
       Bold:    await outDoc.embedFont(fBold, { subset: true }),
     };
   } catch {
