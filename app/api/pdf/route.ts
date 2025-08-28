@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   // Frutiger OTFs laden (achte auf exakte Dateinamen im Repo)
   let Frutiger: { Light?: any; Bold?: any } = {};
   try {
-    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Light.otf")); // ggf. -Regular.otf
+    const fLight = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Light.otf")); // ggf. -Regular.otf
     const fBold = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
     Frutiger = {
       Light: await outDoc.embedFont(fLight, { subset: true }),
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   const left = mm2pt(24);        // 24 mm vom linken Rand
   let y = fh - mm2pt(22);        // 22 mm von oben
 
-  const draw = (txt: string, size = 9, font: any = Frutiger.Regular) => {
+  const draw = (txt: string, size = 9, font: any = Frutiger.Light) => {
     if (!txt) return;
     front.drawText(txt, { x: left, y, size, font, color: rgb(0, 0, 0) });
     y -= mm2pt(5);
