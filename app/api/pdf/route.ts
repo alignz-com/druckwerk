@@ -46,13 +46,12 @@ export async function POST(req: Request) {
     const size = mm2pt(18);
     page.drawImage(img, { x: width - mm2pt(12) - size, y: mm2pt(8), width: size, height: size });
   }
+const bytes = await outDoc.save();
 
-  const bytes = await outDoc.save();
+// Uint8Array -> ArrayBuffer (exakt zuschneiden)
+const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 
-// ⬇️ Neu: als Blob zurückgeben (funktioniert in Node-Runtime auf Vercel)
-const blob = new Blob([bytes], { type: "application/pdf" });
-
-return new NextResponse(blob, {
+return new NextResponse(ab, {
   headers: {
     "Content-Type": "application/pdf",
     "Content-Disposition": 'attachment; filename="card.pdf"',
