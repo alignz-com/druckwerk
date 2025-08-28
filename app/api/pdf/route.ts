@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
     // Beispiel: QR 20 mm Kante, rechts unten mit 10 mm Rand
     const qrSize = mm2pt(37);
-    const qx = bw - mm2pt(10) - qrSize;
+    const qx = mm2pt(10);
     const qy = mm2pt(10);
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
   }
