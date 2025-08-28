@@ -9,7 +9,7 @@ import { existsSync } from "node:fs";
 
 export const runtime = "nodejs";
 
-// mm → pt
+// ---------- Helpers ----------
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
 
 type Payload = {
@@ -18,47 +18,122 @@ type Payload = {
   email?: string;
   phone?: string;
   company?: string;   // mehrzeilig (Textarea)
-  url?: string;       // optional expliziter QR-Link; sonst mailto:email
+  url?: string;       // expliziter QR-Link; sonst mailto:email
   template?: string;  // z. B. "omicron"
 };
 
-// Textarea-Zeilenumbrüche erhalten
 const splitLinesMultiline = (s: string) =>
   s.replace(/\r\n/g, "\n").split("\n").map((l) => l.trimEnd());
 
-// ---- Frutiger laden (Light, LightItalic, Bold) direkt ins Template-Dokument ----
+type Align = "left" | "center" | "right";
+
+// einfacher Zeilenumbruch nach Worten (mit Notfall-Hardbreak bei zu langen Wörtern)
+function wrapText(text: string, maxWidthPt: number, font: PDFFont, sizePt: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let buf = "";
+
+  for (const w of words) {
+    const next = buf ? buf + " " + w : w;
+    const width = font.widthOfTextAtSize(next, sizePt);
+    if (width <= maxWidthPt) {
+      buf = next;
+    } else {
+      if (buf) lines.push(buf);
+      // Wort ist alleine länger als maxWidth -> hart stückeln
+      if (font.widthOfTextAtSize(w, sizePt) > maxWidthPt) {
+        let cut = "";
+        for (const ch of w) {
+          const t = cut + ch;
+          if (font.widthOfTextAtSize(t, sizePt) > maxWidthPt) {
+            lines.push(cut);
+            cut = ch;
+          } else {
+            cut = t;
+          }
+        }
+        buf = cut;
+      } else {
+        buf = w;
+      }
+    }
+  }
+  if (buf) lines.push(buf);
+  return lines;
+}
+
+function drawLine(
+  page: any,
+  text: string,
+  yPt: number,
+  opts: { xLeftPt: number; widthPt: number; size: number; font?: PDFFont; align?: Align; color?: { r: number; g: number; b: number } }
+) {
+  const { xLeftPt, widthPt, size, font, align = "left", color = rgb(0, 0, 0) } = opts;
+  const f = font ?? undefined;
+  const w = f ? f.widthOfTextAtSize(text, size) : 0;
+  let x = xLeftPt;
+  if (align === "center") x = xLeftPt + (widthPt - w) / 2;
+  if (align === "right") x = xLeftPt + widthPt - w;
+
+  page.drawText(text, { x, y: yPt, size, font: f, color });
+}
+
+function drawBlock(
+  page: any,
+  lines: string[],
+  startY: number,
+  opts: { xLeftPt: number; widthPt: number; size: number; lhMm: number; font?: PDFFont; align?: Align }
+) {
+  const { xLeftPt, widthPt, size, lhMm, font, align } = opts;
+  let y = startY;
+  for (const line of lines) {
+    drawLine(page, line, y, { xLeftPt, widthPt, size, font, align });
+    y -= mm2pt(lhMm);
+  }
+  return y;
+}
+
+// ---------- Fonts: TTF bevorzugt, OTF Fallback ----------
 async function loadFrutiger(doc: PDFDocument) {
   const base = path.join(process.cwd(), "public", "fonts");
+  // Reihenfolge: TTF -> OTF
+  const candidates = (name: string) => [
+    path.join(base, `${name}.ttf`),
+    path.join(base, `${name}.otf`),
+  ];
 
   const files = {
-    Light: path.join(base, "FrutigerLTPro-Light.ttf"),
-    LightItalic: path.join(base, "FrutigerLTPro-LightItalic.ttf"),
-    Bold: path.join(base, "FrutigerLTPro-Bold.ttf"),
+    Light: candidates("FrutigerLTPro-Light"),
+    LightItalic: candidates("FrutigerLTPro-LightItalic"),
+    Bold: candidates("FrutigerLTPro-Bold"),
   } as const;
 
   const fonts: Partial<Record<keyof typeof files, PDFFont>> = {};
   const report: string[] = [];
 
-  for (const [key, p] of Object.entries(files) as Array<[keyof typeof files, string]>) {
-    if (!existsSync(p)) {
-      report.push(`MISSING ${key}: ${p}`);
+  for (const [key, list] of Object.entries(files) as Array<[keyof typeof files, string[]]>) {
+    let picked: string | null = null;
+    for (const p of list) {
+      if (existsSync(p)) { picked = p; break; }
+    }
+    if (!picked) {
+      report.push(`MISSING ${String(key)}: ${list.join(" | ")}`);
       continue;
     }
     try {
-      const bytes = await readFile(p);
+      const bytes = await readFile(picked);
       const f = await doc.embedFont(bytes, { subset: true });
-      // kleiner Glyph-Test (Umlaute)
-      void f.widthOfTextAtSize("ÄÖÜ äöü ß", 10);
+      void f.widthOfTextAtSize("ÄÖÜ äöü ß", 10); // Smoke-Test
       fonts[key] = f;
-      report.push(`EMBEDDED ${key}: ${Math.round(bytes.byteLength / 1024)} kB`);
+      report.push(`EMBEDDED ${String(key)} (${path.basename(picked)}): ${Math.round(bytes.byteLength / 1024)} kB`);
     } catch (e: any) {
-      report.push(`EMBED ERROR ${key}: ${e?.message || String(e)}`);
+      report.push(`EMBED ERROR ${String(key)}: ${e?.message || String(e)}`);
     }
   }
-
   return { fonts, report };
 }
 
+// ---------- Route ----------
 export async function POST(req: Request) {
   const body = (await req.json()) as Payload;
 
@@ -72,7 +147,7 @@ export async function POST(req: Request) {
     template = "omicron",
   } = body;
 
-  // --- 1) Template laden (wir bearbeiten es "in place") ---
+  // 1) Template laden (in place bearbeiten)
   const tplPath = path.join(process.cwd(), "public", "templates", `${template}.pdf`);
   if (!existsSync(tplPath)) {
     return NextResponse.json({ error: `Template not found: ${template}.pdf` }, { status: 400 });
@@ -80,51 +155,81 @@ export async function POST(req: Request) {
   const tplBytes = await readFile(tplPath);
   const tplDoc = await PDFDocument.load(tplBytes);
 
-  // Wichtig: fontkit im Template-Dokument registrieren
+  // fontkit im Template registrieren
   tplDoc.registerFontkit(fontkit);
 
-  // --- 2) Frutiger-Schnitte einbetten (Light, LightItalic, Bold) ---
+  // 2) Frutiger laden
   const { fonts: Frutiger, report } = await loadFrutiger(tplDoc);
 
-  // --- 3) Seiten referenzieren ---
+  // 3) Seiten referenzieren
   if (tplDoc.getPageCount() < 2) {
     return NextResponse.json({ error: "Template must have 2 pages (front/back)" }, { status: 400 });
   }
-  const front = tplDoc.getPage(0); // Vorderseite: Text
-  const back  = tplDoc.getPage(1); // Rückseite: QR
-  const { height: fh } = front.getSize();
+  const front = tplDoc.getPage(0);
+  const back = tplDoc.getPage(1);
+  const { height: fh, width: fw } = front.getSize(); // fw nur falls du mittig setzen willst
 
-  // --- 4) Vorderseite beschriften (mm-Positionen anpassen) ---
-  const left = mm2pt(24.4); // von links
-  let y = fh - mm2pt(4);    // von oben
+  // 4) Vorderseite – Spaltenlayout (wie Referenz)
+  // Geometrie (mm)
+  const L = 24.4;   // linker Rand
+  const W = 85;     // Spaltenbreite
+  const TOP = 32;   // Abstand von oben zur ersten Grundlinie
 
-  const draw = (txt: string, size = 9, font?: PDFFont) => {
-    if (!txt) return;
-    front.drawText(txt, {
-      x: left,
-      y,
-      size,
-      font: font ?? undefined,
-      color: rgb(0, 0, 0),
+  const xLeft = mm2pt(L);
+  const colWidth = mm2pt(W);
+  let y = fh - mm2pt(TOP);
+
+  // Typo
+  const nameSize = 17;
+  const roleSize = 12;
+  const bodySize = 12;
+  const lineGap = 6; // mm
+
+  // NAME (Bold)
+  y = drawBlock(front, [name], y, {
+    xLeftPt: xLeft, widthPt: colWidth, size: nameSize, lhMm: lineGap, font: Frutiger.Bold, align: "left",
+  });
+
+  // ROLLE (LightItalic)
+  if (role) {
+    y = drawBlock(front, [role], y, {
+      xLeftPt: xLeft, widthPt: colWidth, size: roleSize, lhMm: lineGap, font: (Frutiger.LightItalic ?? Frutiger.Light), align: "left",
     });
-    y -= mm2pt(5);
-  };
-
-  // Name bold, Rolle italic, Rest light
-  draw(name, 10, Frutiger.Bold);
-  draw(role, 8, Frutiger.LightItalic ?? Frutiger.Light);
-  draw(email, 8, Frutiger.Light);
-  draw(phone, 8, Frutiger.Light);
-
-  if (company) {
-    y -= mm2pt(2);
-    for (const line of splitLinesMultiline(company)) {
-      if (!line) { y -= mm2pt(4); continue; }
-      draw(line, 8, Frutiger.Light);
-    }
   }
 
-  // --- 5) Rückseite: QR in 32 mm, ohne Quiet Zone (kommt vom Design) ---
+  // Abstand zu Kontakten
+  y -= mm2pt(10);
+
+  // KONTAKTE (weicher Umbruch falls sehr lang)
+  const contactLines: string[] = [];
+  if (phone) contactLines.push(`T ${phone}`);
+  if (email) contactLines.push(email);
+  if (url)   contactLines.push(url);
+
+  for (const line of contactLines) {
+    const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
+    y = drawBlock(front, lines, y, {
+      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGap, font: Frutiger.Light, align: "left",
+    });
+  }
+
+  // Abstand zu Firma/Adresse
+  y -= mm2pt(10);
+
+  // FIRMA/ADRESSE (Textarea → Zeilen, dann bei Bedarf umbrechen)
+  if (company) {
+    const raw = splitLinesMultiline(company).filter(Boolean);
+    const wrapped: string[] = [];
+    for (const l of raw) {
+      if (Frutiger.Light) wrapped.push(...wrapText(l, colWidth, Frutiger.Light, bodySize));
+      else wrapped.push(l);
+    }
+    y = drawBlock(front, wrapped, y, {
+      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGap, font: Frutiger.Light, align: "left",
+    });
+  }
+
+  // 5) Rückseite – QR (32 mm, ohne Quiet Zone; kommt vom Design/Weißfeld)
   const target = url || (email ? `mailto:${email}` : "");
   if (target) {
     const dataUrl = await QRCode.toDataURL(target, {
@@ -135,24 +240,24 @@ export async function POST(req: Request) {
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await tplDoc.embedPng(pngBytes);
 
-    const qrSize = mm2pt(32); // 32 mm Kantenlänge
-    const qx = mm2pt(52.8);
+    const qrSize = mm2pt(32);      // 32 mm
+    const qx = mm2pt(52.8);        // an Weißfeld anpassen
     const qy = mm2pt(18.85);
 
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
 
-    // Optional: klickbare Fläche fürs On-Screen-PDF
+    // Optional anklickbar im On-Screen-PDF:
     // back.annotate({ type: "link", rect: [qx, qy, qx + qrSize, qy + qrSize], url: target });
   }
 
-  // --- 6) Speichern – Template bleibt mit allen Profilen/Boxen erhalten ---
+  // 6) Speichern (Template bleibt mit ICC/TrimBox etc. erhalten)
   const bytes = await tplDoc.save();
 
-  // Uint8Array → ArrayBuffer (für NextResponse kompatibel)
+  // Uint8Array → ArrayBuffer (NextResponse erwartet BodyInit)
   const abuf = new ArrayBuffer(bytes.length);
   new Uint8Array(abuf).set(bytes);
 
-  // Optional: Debug-Header aktivieren mit ?debug=1
+  // Debug-Header bei Bedarf
   const isDebug = new URL(req.url).searchParams.has("debug");
   const headers: Record<string, string> = {
     "Content-Type": "application/pdf",
