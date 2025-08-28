@@ -94,7 +94,7 @@ export default function PreviewPage() {
             {/* einfache Karten-Vorschau (HTML) */}
             <div className="mx-auto w-[340px] rounded-2xl border p-4 shadow-sm font-frutiger">
               <div className="text-xl font-bold">{name}</div>
-              <div className="text-sm text-muted-foreground font-light">{role}</div>
+              <div className="text-sm text-muted-foreground font-light italic">{role}</div>
               <div className="mt-3 space-y-1 text-sm font-light">
                 <div>{email}</div>
                 <div>{phone}</div>
