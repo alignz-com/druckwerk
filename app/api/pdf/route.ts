@@ -97,9 +97,9 @@ export async function POST(req: Request) {
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await outDoc.embedPng(pngBytes);
     
-    const qrSize = mm2pt(27);    // QR 27 mm Kantenlänge
-    const qx = mm2pt(55.3);      // anpassen auf dein weißes Feld
-    const qy = mm2pt(21.35);     // dito
+    const qrSize = mm2pt(32);    // QR 27 mm Kantenlänge
+    const qx = mm2pt(52.8);      // anpassen auf dein weißes Feld
+    const qy = mm2pt(18.85);     // dito
     
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
   }
