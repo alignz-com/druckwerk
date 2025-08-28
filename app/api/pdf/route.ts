@@ -183,7 +183,7 @@ export async function POST(req: Request) {
   const nameSize = 10;
   const roleSize = 8;
   const bodySize = 8;
-  const lineGap = 1; // mm
+  const lineGap = 4; // mm
 
   // NAME (Bold)
   y = drawBlock(front, [name], y, {
