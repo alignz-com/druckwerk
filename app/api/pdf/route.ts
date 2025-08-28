@@ -1,11 +1,14 @@
+// app/api/pdf/route.ts
 import { NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import * as QRCode from "qrcode";
+import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 export const runtime = "nodejs";
+
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
 
 type Payload = {
@@ -13,10 +16,15 @@ type Payload = {
   role?: string;
   email?: string;
   phone?: string;
-  company?: string;   // <- neu: Firmenadresse
-  url?: string;       // optional: falls du QR explizit per URL setzen willst
-  template?: string;  // "omicron"
+  company?: string;   // mehrzeilig aus <Textarea>
+  url?: string;       // optional: expliziter QR-Link; sonst mailto:email
+  template?: string;  // default "omicron"
 };
+
+// Zeilenumbrüche aus Textarea konservieren
+function splitLinesMultiline(input: string) {
+  return input.replace(/\r\n/g, "\n").split("\n").map(s => s.trimEnd());
+}
 
 export async function POST(req: Request) {
   const body = (await req.json()) as Payload;
@@ -30,7 +38,7 @@ export async function POST(req: Request) {
     template = "omicron",
   } = body;
 
-  // 1) Vorlage laden (2-seitig)
+  // --- 1) Vorlage laden (erwartet 2 Seiten: Front/Back) ---
   const tplPath = path.join(process.cwd(), "public", "templates", `${template}.pdf`);
   if (!existsSync(tplPath)) {
     return NextResponse.json({ error: `Template not found: ${template}.pdf` }, { status: 400 });
@@ -39,72 +47,84 @@ export async function POST(req: Request) {
   const tplDoc = await PDFDocument.load(tplBytes);
 
   const outDoc = await PDFDocument.create();
-  const pages = await outDoc.copyPages(tplDoc, tplDoc.getPageIndices());
-  pages.forEach((p) => outDoc.addPage(p)); // behält X-4/Trimbox etc.
+  outDoc.registerFontkit(fontkit); // wichtig: OTF/Unicode
 
-  // Safety: Wir erwarten 2 Seiten
+  // Frutiger OTFs laden (achte auf exakte Dateinamen im Repo)
+  let Frutiger: { Regular?: any; Bold?: any } = {};
+  try {
+    const fReg = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Roman.otf")); // ggf. -Regular.otf
+    const fBold = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
+    Frutiger = {
+      Regular: await outDoc.embedFont(fReg, { subset: true }),
+      Bold:    await outDoc.embedFont(fBold, { subset: true }),
+    };
+  } catch {
+    // Falls Fonts fehlen: pdf-lib-Standardfont verwenden (okay für erste Tests)
+  }
+
+  const pages = await outDoc.copyPages(tplDoc, tplDoc.getPageIndices());
+  pages.forEach(p => outDoc.addPage(p)); // Template bleibt unverändert (TrimBox/ICC/Spot erhalten)
+
   if (outDoc.getPageCount() < 2) {
     return NextResponse.json({ error: "Template must have 2 pages (front/back)" }, { status: 400 });
   }
 
   const front = outDoc.getPage(0); // Vorderseite: Text + Adresse
   const back  = outDoc.getPage(1); // Rückseite: QR
-  const { width: fw, height: fh } = front.getSize();
+  const { height: fh } = front.getSize();
   const { width: bw, height: bh } = back.getSize();
 
-  // 2) Optional: Corporate Font einbetten (wenn du willst)
-  //    Font-Datei unter public/fonts/Inter-Regular.ttf bereitstellen
-  let font: any = undefined;
-  try {
-    const fontBytes = await readFile(path.join(process.cwd(), "public", "fonts", "FrutigerLTPro-Bold.otf"));
-    font = await outDoc.embedFont(fontBytes);
-  } catch { /* fallback: Standardfont */ }
+  // --- 2) Front beschriften ---
+  // Positionen bitte bei Bedarf mm-genau anpassen:
+  const left = mm2pt(24);        // 24 mm vom linken Rand
+  let y = fh - mm2pt(22);        // 22 mm von oben
 
-  // ---- Koordinaten (BEISPIEL, bitte mm-genau anpassen) ----
-  // Front: linke Spalte
-  const left = mm2pt(24);     // 12 mm vom linken Rand
-  let y = fh - mm2pt(22);     // 20 mm von oben
-
-  const draw = (txt: string, size = 9) => {
+  const draw = (txt: string, size = 9, font: any = Frutiger.Regular) => {
     if (!txt) return;
-    front.drawText(txt, { x: left, y, size, font, color: rgb(0,0,0) });
+    front.drawText(txt, { x: left, y, size, font, color: rgb(0, 0, 0) });
     y -= mm2pt(5);
   };
 
-  // 3) FRONT: Texte & Firmenadresse
-  draw(name, 10.5);
-  draw(role, 9);
-  draw(email, 9);
-  draw(phone, 9);
+  // Name fett, Rest Regular
+  draw(name, 10.5, Frutiger.Bold ?? undefined);
+  draw(role, 9, Frutiger.Regular ?? undefined);
+  draw(email, 9, Frutiger.Regular ?? undefined);
+  draw(phone, 9, Frutiger.Regular ?? undefined);
 
+  // Firmenadresse (Textarea → echte Zeilenumbrüche)
   if (company) {
-    y -= mm2pt(2); // kleiner Abstand
-    // Tipp: Adresse kann länger sein – evtl. in 2 Zeilen splitten:
-    const parts = company.split(" · "); // z. B. "Alignz AG · Seestrasse 12 · 8000 Zürich"
-    for (const p of parts) draw(p, 8.5);
+    y -= mm2pt(2);
+    const lines = splitLinesMultiline(company);
+    for (const line of lines) {
+      if (!line) { y -= mm2pt(4); continue; } // Leerzeile = zusätzlicher Abstand
+      draw(line, 8.5, Frutiger.Regular ?? undefined);
+    }
   }
 
-  // 4) BACK: QR-Code ONLY (mittig oder rechts unten) – HIGH-RES PNG
+  // --- 3) Back: QR (hochauflösend, margin:0; Größe fix 27 mm) ---
   const target = url || (email ? `mailto:${email}` : "");
   if (target) {
-    // hohe Auflösung & kein Außenrand für druckscharfen QR
     const dataUrl = await QRCode.toDataURL(target, {
-      width: 1024,
-      margin: 0, // nur QR, keine Quiet Zone
+      width: 1024,           // sehr scharf bei 27 mm Endmaß
+      margin: 0,             // keine Quiet Zone im PNG – kommt aus deinem Design/Weißfeld
       errorCorrectionLevel: "M",
     });
-  
+
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await outDoc.embedPng(pngBytes);
-    
-    const qrSize = mm2pt(32);    // QR 27 mm Kantenlänge
-    const qx = mm2pt(52.8);      // anpassen auf dein weißes Feld
-    const qy = mm2pt(18.85);     // dito
-    
+
+    const qrSize = mm2pt(27);   // QR 27 mm Kantenlänge (fix)
+    // Diese Koordinaten bitte an dein Weißfeld anpassen:
+    const qx = mm2pt(52.8);
+    const qy = mm2pt(18.85);
+
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+
+    // Optional: macht den QR im Screen-PDF klickbar
+    // back.annotate({ type: "link", rect: [qx, qy, qx + qrSize, qy + qrSize], url: target });
   }
 
-  // 5) Sauberer ArrayBuffer-Body (TS/Edge-safe)
+  // --- 4) Response: sauberer ArrayBuffer (TS/Vercel-safe) ---
   const bytes = await outDoc.save();
   const abuf = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(abuf).set(bytes);
