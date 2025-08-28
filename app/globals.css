@@ -3,6 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Frutiger LT Pro";
+  src: url("/fonts/frutigerltpro-light-webfont.woff2") format("woff2"),
+       url("/fonts/frutigerltpro-light-webfont.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Frutiger LT Pro";
+  src: url("/fonts/frutigerltpro-bold-webfont.woff2") format("woff2"),
+       url("/fonts/frutigerltpro-bold-webfont.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
