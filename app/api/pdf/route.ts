@@ -180,10 +180,10 @@ export async function POST(req: Request) {
   let y = fh - mm2pt(TOP);
 
   // Typo
-  const nameSize = 17;
-  const roleSize = 12;
-  const bodySize = 12;
-  const lineGap = 6; // mm
+  const nameSize = 10;
+  const roleSize = 8;
+  const bodySize = 8;
+  const lineGap = 1; // mm
 
   // NAME (Bold)
   y = drawBlock(front, [name], y, {
