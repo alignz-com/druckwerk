@@ -62,8 +62,8 @@ export async function POST(req: Request) {
 
   // ---- Koordinaten (BEISPIEL, bitte mm-genau anpassen) ----
   // Front: linke Spalte
-  const left = mm2pt(12);     // 12 mm vom linken Rand
-  let y = fh - mm2pt(20);     // 20 mm von oben
+  const left = mm2pt(24);     // 12 mm vom linken Rand
+  let y = fh - mm2pt(22);     // 20 mm von oben
 
   const draw = (txt: string, size = 9) => {
     if (!txt) return;
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     const img = await outDoc.embedPng(pngBytes);
 
     // Beispiel: QR 20 mm Kante, rechts unten mit 10 mm Rand
-    const qrSize = mm2pt(20);
+    const qrSize = mm2pt(37);
     const qx = bw - mm2pt(10) - qrSize;
     const qy = mm2pt(10);
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
