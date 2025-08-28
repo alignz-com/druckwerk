@@ -84,17 +84,24 @@ export async function POST(req: Request) {
     for (const p of parts) draw(p, 8.5);
   }
 
-  // 4) BACK: QR-Code ONLY (mittig oder rechts unten)
+  // 4) BACK: QR-Code ONLY (mittig oder rechts unten) – HIGH-RES PNG
   const target = url || (email ? `mailto:${email}` : "");
   if (target) {
-    const dataUrl = await QRCode.toDataURL(target);
+    // hohe Auflösung & kein Außenrand für druckscharfen QR
+    const dataUrl = await QRCode.toDataURL(target, {
+      width: 1024,               // ~1024 px => sehr sauber bei 37 mm
+      margin: 0,                 // kein weißer Rand
+      errorCorrectionLevel: "M", // stabil; "Q" oder "H" wenn du später ein Logo überlegst
+    });
+  
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await outDoc.embedPng(pngBytes);
-
-    // Beispiel: QR 20 mm Kante, rechts unten mit 10 mm Rand
+  
+    // deine mm-Positionen/Größe
     const qrSize = mm2pt(37);
     const qx = mm2pt(50.3);
     const qy = mm2pt(16.35);
+  
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
   }
 
