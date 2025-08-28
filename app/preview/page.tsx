@@ -7,13 +7,14 @@ export default function PreviewPage() {
   const [email, setEmail]     = useState("pascal@alignz.com");
   const [phone, setPhone]     = useState("+41 79 530 74 60");
   const [company, setCompany] = useState("Alignz AG · Seestrasse 12 · 8000 Zürich");
-  const template = "omicron"; // <- neu: dein 2-seitiges Template
+  const [url, setUrl]         = useState("https://alignz.com/pascal");
+  const template = "omicron"; // dein 2-seitiges Template
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, role, email, phone, company, template }),
+      body: JSON.stringify({ name, role, email, phone, company, url, template }),
     });
     const blob = await res.blob();
     const href = URL.createObjectURL(blob);
@@ -31,6 +32,7 @@ export default function PreviewPage() {
         <input className="border rounded p-2" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" />
         <input className="border rounded p-2" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Phone" />
         <input className="border rounded p-2 md:col-span-2" value={company} onChange={e=>setCompany(e.target.value)} placeholder="Firmenadresse" />
+        <input className="border rounded p-2 md:col-span-2" value={url} onChange={e=>setUrl(e.target.value)} placeholder="URL (für QR)" />
       </div>
       <button className="rounded bg-black text-white px-4 py-2" onClick={generate}>Generate PDF</button>
     </main>
