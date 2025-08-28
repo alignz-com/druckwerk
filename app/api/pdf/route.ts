@@ -89,18 +89,18 @@ export async function POST(req: Request) {
   if (target) {
     // hohe Auflösung & kein Außenrand für druckscharfen QR
     const dataUrl = await QRCode.toDataURL(target, {
-      width: 1024,               // ~1024 px => sehr sauber bei 37 mm
-      margin: 2,                 // kein weißer Rand
-      errorCorrectionLevel: "M", // stabil; "Q" oder "H" wenn du später ein Logo überlegst
+      width: 1024,
+      margin: 0, // nur QR, keine Quiet Zone
+      errorCorrectionLevel: "M",
     });
   
     const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
     const img = await outDoc.embedPng(pngBytes);
-  
-    // deine mm-Positionen/Größe
-    const qrSize = mm2pt(37);
-    const qx = mm2pt(50.3);
-    const qy = mm2pt(16.35);
+    
+    const qrSize = mm2pt(27);    // QR 27 mm Kantenlänge
+    const qx = mm2pt(55.3);      // anpassen auf dein weißes Feld
+    const qy = mm2pt(21.35);     // dito
+    
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
   }
 
