@@ -215,7 +215,7 @@ export async function POST(req: Request) {
   }
 
   // Abstand zu Firma/Adresse
-  y -= mm2pt(4.15);
+  y -= mm2pt(1.9);
 
   // FIRMA/ADRESSE (Textarea → Zeilen, dann bei Bedarf umbrechen)
   if (company) {
