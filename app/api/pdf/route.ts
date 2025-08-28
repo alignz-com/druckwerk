@@ -173,7 +173,7 @@ export async function POST(req: Request) {
   // Geometrie (mm)
   const L = 24.4;   // linker Rand
   const W = 85;     // Spaltenbreite
-  const TOP = 21.275;   // Abstand von oben zur ersten Grundlinie
+  const TOP = 24;   // Abstand von oben zur ersten Grundlinie
 
   const xLeft = mm2pt(L);
   const colWidth = mm2pt(W);
