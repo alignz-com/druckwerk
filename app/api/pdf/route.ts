@@ -1,6 +1,6 @@
 // app/api/pdf/route.ts
 import { NextResponse } from "next/server";
-import { PDFDocument, rgb, type PDFFont } from "pdf-lib";
+import { PDFDocument, grayscale, type PDFFont, type Color } from "pdf-lib";
 import * as QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
@@ -96,15 +96,22 @@ function drawLine(
   page: any,
   text: string,
   yPt: number,
-  opts: { xLeftPt: number; widthPt: number; size: number; font?: PDFFont; align?: Align; color?: { r: number; g: number; b: number } }
-) {
-  const { xLeftPt, widthPt, size, font, align = "left", color = rgb(0, 0, 0) } = opts;
+  opts: {
+    xLeftPt: number;
+    widthPt: number;
+    size: number;
+    font?: PDFFont;
+    align?: Align;
+    color?: Color; // <— pdf-lib Color statt {r,g,b}
+    }
+  ) {
+  const { xLeftPt, widthPt, size, font, align = "left", color = grayscale(0) } = opts;
   const f = font ?? undefined;
   const w = f ? f.widthOfTextAtSize(text, size) : 0;
   let x = xLeftPt;
   if (align === "center") x = xLeftPt + (widthPt - w) / 2;
   if (align === "right") x = xLeftPt + widthPt - w;
-  page.drawText(text, { x, y: yPt, size, font: f, color });
+  page.drawText(text, { x, y: yPt, size, font: f, color }); // Color ist jetzt Gray
 }
 
 function drawBlock(
