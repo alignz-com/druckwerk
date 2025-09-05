@@ -62,7 +62,7 @@ type BackProps = {
 };
 
 // Responsive Scale-Hook: skaliert die 85×55-mm-Karte in die Breite des Wrappers
-function useFitScale(wrapperRef: React.RefObject<HTMLDivElement>, baseWidthPx: number) {
+function useFitScale(wrapperRef: React.RefObject<HTMLDivElement | null>, baseWidthPx: number) {
   const [scale, setScale] = useState(1);
   useEffect(() => {
     function update() {
