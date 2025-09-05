@@ -20,13 +20,13 @@ export type Props = {
 const CARD_W = 85;
 const CARD_H = 55;
 
-const LEFT = 24.4;
-const TOP = 20;
+const LEFT = 20;
+const TOP = 18;
 
 const GAP_NAME = 3;
-const GAP_CONTACT = 2.5;
-const CONTACT_SPACER = 2.2;
-const COMPANY_SPACER = 1.3;
+const GAP_CONTACT = 2;
+const CONTACT_SPACER = 2;
+const COMPANY_SPACER = 2;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
