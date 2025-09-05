@@ -62,6 +62,15 @@ function vEscape(s: string) {
     .replace(/,/g, "\\,")
     .replace(/;/g, "\\;");
 }
+function splitName(full: string) {
+  const s = (full || "").trim().replace(/\s+/g, " ");
+  if (!s) return { given: "", family: "" };
+  const parts = s.split(" ");
+  if (parts.length === 1) return { given: parts[0], family: "" };
+  const family = parts.pop() as string;  // Nachname = letztes Wort
+  const given = parts.join(" ");         // Vorname(n)
+  return { given, family };
+}
 function buildVCard3(o: {
   fullName: string;
   org?: string;
@@ -73,7 +82,15 @@ function buildVCard3(o: {
   addrLabel?: string;
 }) {
   const { fullName, org, title, email, phone, mobile, url, addrLabel } = o;
-  const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
+
+  // N + FN zuerst!
+  const { given, family } = splitName(fullName);
+  const lines = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `N:${vEscape(family)};${vEscape(given)};;;`,
+    `FN:${vEscape(fullName)}`,
+  ];
 
   if (org)    lines.push(`ORG:${vEscape(org)}`);
   if (title)  lines.push(`TITLE:${vEscape(title)}`);
@@ -82,7 +99,6 @@ function buildVCard3(o: {
   if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
   if (url)    lines.push(`URL:${vEscape(url)}`);
   if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
-
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
