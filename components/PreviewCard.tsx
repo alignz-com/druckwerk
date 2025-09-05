@@ -122,7 +122,12 @@ export function BusinessCardFront(props: Props) {
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: 560, height: "auto", display: "block" }}
+        style={{
+          maxWidth: 560,
+          height: "auto",
+          display: "block",
+          aspectRatio: `${CARD_W} / ${CARD_H}`,
+        }}
         aria-label="Business card front"
       >
         {/* Hintergrund */}
@@ -132,7 +137,7 @@ export function BusinessCardFront(props: Props) {
           y={0}
           width={CARD_W}
           height={CARD_H}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         />
         {/* Text – ACHTUNG: fontSize ohne Einheit (User-Units == mm) */}
         <g
@@ -217,7 +222,12 @@ export function BusinessCardBack(props: Props) {
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: 560, height: "auto", display: "block" }}
+        style={{
+          maxWidth: 560,
+          height: "auto",
+          display: "block",
+          aspectRatio: `${CARD_W} / ${CARD_H}`,
+        }}
         aria-label="Business card back"
       >
         <image
@@ -226,7 +236,7 @@ export function BusinessCardBack(props: Props) {
           y={0}
           width={CARD_W}
           height={CARD_H}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         />
         {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
       </svg>
