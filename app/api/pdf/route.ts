@@ -6,6 +6,7 @@ import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { formatPhones } from "@/lib/formatPhones";
 
 export const runtime = "nodejs";
 
@@ -229,6 +230,7 @@ export async function POST(req: Request) {
 
   // Kontakte
   const contactLines: string[] = [];
+  const phoneLine = formatPhones(phone, mobile);
   if (phone) contactLines.push(`T ${phone}`);
   if (email) contactLines.push(email);
   if (url)   contactLines.push(url);
