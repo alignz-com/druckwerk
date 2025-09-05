@@ -52,6 +52,7 @@ type Payload = {
   role?: string;
   email?: string;
   phone?: string;
+  mobile?: string; 
   company?: string;   // mehrzeilig (Textarea)
   url?: string;       // optional zusätzlich in vCard
   template?: string;  // z. B. "omicron"
@@ -173,6 +174,7 @@ export async function POST(req: Request) {
     role = "",
     email = "",
     phone = "",
+    mobile = "",
     company = "",
     url = "",
     template = "omicron",
@@ -230,15 +232,20 @@ export async function POST(req: Request) {
 
   // Kontakte
   const contactLines: string[] = [];
-  const phoneLine = formatPhones(phone, mobile);
-  if (phone) contactLines.push(`T ${phone}`);
-  if (email) contactLines.push(email);
-  if (url)   contactLines.push(url);
-
+  const phoneLine = formatPhones(phone, mobile); // T … | M …
+  if (phoneLine) contactLines.push(phoneLine);
+  if (email)     contactLines.push(email);
+  if (url)       contactLines.push(url);
+  
   for (const line of contactLines) {
     const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
     y = drawBlock(front, lines, y, {
-      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGapBody, font: Frutiger.Light, align: "left",
+      xLeftPt: xLeft,
+      widthPt: colWidth,
+      size: bodySize,
+      lhMm: lineGapBody,
+      font: Frutiger.Light,
+      align: "left",
     });
   }
 
@@ -266,7 +273,7 @@ export async function POST(req: Request) {
     org: orgName,
     title: role || undefined,
     email: email || undefined,
-    tel: phone || undefined,
+    tel: (mobile || phone) || undefined, // ⬅️ mobile bevorzugt
     url: url || undefined,
     addrLabel,
   });
