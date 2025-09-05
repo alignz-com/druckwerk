@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 
 export default function PreviewPage() {
-  const [name, setName] = useState("Pascal Rossi");
-  const [role, setRole] = useState("CEO & Founder");
-  const [email, setEmail] = useState("pascal@alignz.com");
-  const [phone, setPhone] = useState("+41 79 530 74 60");
-  const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
-  const [url, setUrl] = useState("https://alignz.com/pascal");
+  const [name, setName]       = React.useState("Pascal Rossi");
+  const [role, setRole]       = React.useState("CEO & Founder");
+  const [email, setEmail]     = React.useState("pascal@alignz.com");
+  const [phone, setPhone]     = React.useState("+41 79 530 74 60");
+  const [company, setCompany] = React.useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
+  const [url, setUrl]         = React.useState("https://alignz.com/pascal");
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {
@@ -32,10 +32,10 @@ export default function PreviewPage() {
   };
 
   return (
-    <main className="mx-auto max-w-screen-xl p-4 md:p-8">
+    <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-4 text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Form */}
         <Card>
           <CardHeader>
@@ -52,7 +52,7 @@ export default function PreviewPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">E-Mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Telefon</Label>
@@ -73,25 +73,18 @@ export default function PreviewPage() {
         </Card>
 
         {/* Live Preview */}
-        <Card className="overflow-hidden">
+        <Card>
           <CardHeader>
             <CardTitle>Live Preview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <section>
-              <div className="mb-2 text-sm text-muted-foreground">Card Front</div>
-              {/* Der Wrapper ist full width; Card skaliert sich automatisch hinein */}
-              <div className="rounded-lg border bg-white p-3">
-                <BusinessCardFront name={name} role={role} email={email} phone={phone} company={company} />
-              </div>
-            </section>
-
-            <section>
-              <div className="mb-2 text-sm text-muted-foreground">Card Back</div>
-              <div className="rounded-lg border bg-white p-3">
-                <BusinessCardBack name={name} role={role} email={email} phone={phone} company={company} url={url} />
-              </div>
-            </section>
+            {/* Keine Ränder/Schatten um Karten */}
+            <div>
+              <BusinessCardFront name={name} role={role} email={email} phone={phone} company={company} url={url} />
+            </div>
+            <div>
+              <BusinessCardBack name={name} role={role} email={email} phone={phone} company={company} url={url} />
+            </div>
           </CardContent>
         </Card>
       </div>
