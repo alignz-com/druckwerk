@@ -6,7 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+
+// + add:
+const QUANTITIES = [50, 100, 250, 500, 1000];
+const TEMPLATES = [{ value: "omicron", label: "Omicron" }];
 
 export default function PreviewPage() {
   // Demo-Defaults
@@ -17,6 +28,8 @@ export default function PreviewPage() {
   const [mobile, setMobile] = useState("");
   const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
   const [url, setUrl] = useState("www.omicronenergy.com");
+  const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
+  const [template, setTemplate] = useState<string>("omicron");
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {
@@ -39,6 +52,49 @@ export default function PreviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-[480px_minmax(0,1fr)]">
         {/* Left: form */}
+        {/* Order information (sits above “Details” on the left) */}
+        <Card className="h-fit">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base md:text-lg">Order information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              {/* Quantity */}
+              <div className="grid gap-2">
+                <Label htmlFor="qty">Quantity</Label>
+                <Select value={quantity} onValueChange={setQuantity}>
+                  <SelectTrigger id="qty">
+                    <SelectValue placeholder="Select quantity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUANTITIES.map((q) => (
+                      <SelectItem key={q} value={String(q)}>
+                        {q.toLocaleString("en-US")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+        
+              {/* Template */}
+              <div className="grid gap-2">
+                <Label htmlFor="template">Template</Label>
+                <Select value={template} onValueChange={setTemplate}>
+                  <SelectTrigger id="template">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEMPLATES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="h-fit">
           <CardHeader>
             <CardTitle className="text-base md:text-lg">Details</CardTitle>
