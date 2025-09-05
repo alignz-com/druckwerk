@@ -99,7 +99,7 @@ export default function PreviewPage() {
             {/* nur 1 Rahmen – innen KEINE zusätzliche Shadow/Borders */}
             <CardContent className="pt-2">
               <div className="rounded-lg overflow-hidden">
-                <BusinessCardFront name={name} role={role} email={email} phone={phone} company={company} url={url} />
+                <BusinessCardFront name={name} role={role} email={email} phone={phone} mobile={mobile} company={company} url={url} />
               </div>
             </CardContent>
           </Card>
@@ -115,6 +115,7 @@ export default function PreviewPage() {
                   role={role}
                   email={email}
                   phone={phone}
+                  mobile={mobile}
                   company={company}
                   url={url}
                   /* bei Bedarf live feintunen: */
