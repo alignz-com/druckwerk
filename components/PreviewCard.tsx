@@ -1,91 +1,72 @@
-// components/PreviewCard.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as QRCode from "qrcode";
 
-// --------- Geometrie (mm) – exakt wie im PDF ----------
-const CARD_W_MM = 85;
-const CARD_H_MM = 55;
+// ---------- Konstanten (mm-basierte Geometrie, wie in der PDF-Route) ----------
+const CARD_W_MM = 85;      // Kartenbreite
+const CARD_H_MM = 55;      // Kartenhöhe
+const L_MM       = 24.4;   // linke Spalte: Abstand links
+const W_MM       = 85;     // Spaltenbreite (wie in PDF)
+const TOP_MM     = 24;     // erste Grundlinie von oben
 
-// Text-Spalte wie in route.ts
-const LEFT_MM = 24.4;         // linker Rand
-const TOP_MM = 24;            // Abstand von oben zur ersten Grundlinie
-const GAP_NAME_ROLE_MM = 4;   // Gap zwischen Name/Rolle
-const GAP_BODY_MM = 3.5;      // Zeilenabstand Body
-const SPACER_TO_CONTACT_MM = 3.25;
-const SPACER_TO_COMPANY_MM = 1.9;
+const GAP_NAME_ROLE_MM = 4;
+const GAP_BODY_MM      = 3.5;
+const GAP_TO_CONTACTS_MM = 3.25;
+const GAP_TO_COMPANY_MM  = 1.9;
 
-// Schriftgrößen (pt) aus deinem PDF – wir mappen sie 1:1
+// QR (Rückseite)
+const QR_SIZE_MM = 32;
+const QR_X_MM    = 52.8;
+const QR_Y_MM    = 18.85;
+
+// Schriftgrößen (pt -> px). 1pt = 96/72 px ≈ 1.3333
+const PT2PX = 96 / 72;
 const NAME_PT = 10;
 const ROLE_PT = 8;
 const BODY_PT = 8;
+const NAME_PX = NAME_PT * PT2PX; // ≈ 13.33
+const ROLE_PX = ROLE_PT * PT2PX; // ≈ 10.67
+const BODY_PX = BODY_PT * PT2PX; // ≈ 10.67
 
-// QR auf der Rückseite – identisch zu route.ts
-const QR_SIZE_MM = 32;
-const QR_X_MM = 52.8;
-const QR_Y_FROM_BOTTOM_MM = 18.85;
+// mm -> px (Basisskala). Wir definieren 4 px pro mm (ergibt 340×220 px unskaliert)
+const pxPerMm = 4;
+const mm = (val: number) => val * pxPerMm;
 
-// Hintergrund-Grafiken (PNG/SVG), liegend im /public
-const FRONT_BG = "/templates/omicron-front.png";
-const BACK_BG  = "/templates/omicron-back.png";
-
-// ---------- Utils ----------
-const MM_TO_PX = 96 / 25.4; // CSS px @ 96dpi
-const PT_TO_PX = (pt: number) => (pt / 72) * 96;
-
-function mm(n: number) {
-  return n * MM_TO_PX;
-}
-
-type Align = "left" | "center" | "right";
-
-type FrontProps = {
-  name: string;
-  role?: string;
-  email?: string;
-  phone?: string;
-  url?: string;
-  company?: string; // mehrzeilig
-  // optional: override background paths
-  frontBgSrc?: string;
-};
-
-type BackProps = {
-  name: string;
-  role?: string;
-  email?: string;
-  phone?: string;
-  url?: string;
-  company?: string; // für ORG/Label
-  backBgSrc?: string;
-};
-
-// Responsive Scale-Hook: skaliert die 85×55-mm-Karte in die Breite des Wrappers
-function useFitScale(wrapperRef: React.RefObject<HTMLDivElement | null>, baseWidthPx: number) {
+// ---------- Hook: skaliert den Inhalt, damit er responsiv in den Wrapper passt ----------
+function useFitScale(ref: React.RefObject<HTMLDivElement>, baseWidthPx: number) {
   const [scale, setScale] = useState(1);
   useEffect(() => {
-    function update() {
-      const el = wrapperRef.current;
-      if (!el) return;
-      const w = el.clientWidth;
-      // Kleine safety-Marge
-      setScale(Math.max(0.1, Math.min(1, w / baseWidthPx)));
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [wrapperRef, baseWidthPx]);
+    if (!ref.current) return;
+    const el = ref.current;
+
+    const ro = new ResizeObserver(() => {
+      const wrapW = el.clientWidth;
+      if (!wrapW) return;
+      const s = wrapW / baseWidthPx;
+      setScale(s);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, baseWidthPx]);
   return scale;
 }
 
-// vCard-Helfer (wie in deiner API)
+// ---------- vCard-Helfer (wie in deiner API) ----------
 function vEscape(s: string) {
   return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
-function buildVCard3(opts: { fullName: string; org?: string; title?: string; email?: string; tel?: string; url?: string; addrLabel?: string; }) {
+function buildVCard3(opts: {
+  fullName: string;
+  org?: string;
+  title?: string;
+  email?: string;
+  tel?: string;
+  url?: string;
+  addrLabel?: string; // freie mehrzeilige Adresse
+}) {
   const { fullName, org, title, email, tel, url, addrLabel } = opts;
-  const lines = [
+  const lines: string[] = [
     "BEGIN:VCARD",
     "VERSION:3.0",
     `FN:${vEscape(fullName)}`
@@ -100,146 +81,148 @@ function buildVCard3(opts: { fullName: string; org?: string; title?: string; ema
   return lines.join("\r\n");
 }
 
-// Eine Zeile Text, mm-genau positioniert
-function TextLine({
-  xMm,
-  yMm,
-  sizePt,
-  weight = 300,
-  italic = false,
-  children,
-  align = "left",
-}: {
-  xMm: number;
-  yMm: number; // von oben
-  sizePt: number;
-  weight?: 300 | 700;
-  italic?: boolean;
-  align?: Align;
-  children: React.ReactNode;
+// ---------- Front (Vorderseite) ----------
+export function BusinessCardFront(props: {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  company?: string; // mehrzeilig
+  bgSrc?: string;   // optional: /templates/omicron_front.png
 }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: mm(xMm),
-        top: mm(yMm),
-        width: mm(CARD_W_MM - xMm - 5), // großzügige Breite für Zeilenumbruch
-        fontFamily: '"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
-        fontWeight: weight,
-        fontStyle: italic ? "italic" : "normal",
-        fontSize: PT_TO_PX(sizePt),
-        lineHeight: 1, // wir steuern Abstände über die yMm-Koordinaten
-        textAlign: align,
-        color: "oklch(0.145 0 0)", // wie dein --foreground (sehr dunkel)
-        whiteSpace: "pre-wrap",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+  const { name, role = "", email = "", phone = "", company = "", bgSrc = "/templates/omicron_front.png" } = props;
 
-// ---------- Vorderseite ----------
-export function BusinessCardFront(props: FrontProps) {
-  const {
-    name,
-    role = "",
-    email = "",
-    phone = "",
-    url = "",
-    company = "",
-    frontBgSrc = FRONT_BG,
-  } = props;
-
+  // Wrapper & Skalierung
   const wrapRef = useRef<HTMLDivElement>(null);
   const baseWidthPx = mm(CARD_W_MM);
   const scale = useFitScale(wrapRef, baseWidthPx);
 
-  // y-Akkumulator wie im PDF
+  // y-Akkumulator (von oben nach unten, wie PDF)
   const y0 = TOP_MM;
   let y = y0;
 
-  const lines = [] as Array<JSX.Element>;
+  const lines: React.ReactElement[] = [];
 
   // Name (Bold, 10pt)
   lines.push(
-    <TextLine key="name" xMm={LEFT_MM} yMm={y} sizePt={NAME_PT} weight={700}>
+    <div
+      key="name"
+      style={{
+        position: "absolute",
+        left: mm(L_MM),
+        top: mm(y),
+        width: mm(W_MM),
+        fontFamily: "Frutiger LT Pro",
+        fontWeight: 700,
+        fontSize: NAME_PX,
+        lineHeight: 1,
+      }}
+    >
       {name}
-    </TextLine>
+    </div>
   );
   y += GAP_NAME_ROLE_MM;
 
-  // Rolle (LightItalic, 8pt)
+  // Rolle (Light Italic, 8pt)
   if (role) {
     lines.push(
-      <TextLine key="role" xMm={LEFT_MM} yMm={y} sizePt={ROLE_PT} weight={300} italic>
+      <div
+        key="role"
+        style={{
+          position: "absolute",
+          left: mm(L_MM),
+          top: mm(y),
+          width: mm(W_MM),
+          fontFamily: "Frutiger LT Pro",
+          fontStyle: "italic",
+          fontWeight: 300,
+          fontSize: ROLE_PX,
+          lineHeight: 1,
+        }}
+      >
         {role}
-      </TextLine>
+      </div>
     );
     y += GAP_NAME_ROLE_MM;
   }
 
-  // Spacer zu Kontakten
-  y += SPACER_TO_CONTACT_MM;
+  // Abstand zu Kontakten
+  y += GAP_TO_CONTACTS_MM;
 
-  // Kontakte (Light, 8pt), jeweils 3.5mm Abstand
-  if (phone) {
+  // Kontakte (Light, 8pt)
+  const contact: string[] = [];
+  if (phone) contact.push(`T ${phone}`);
+  if (email) contact.push(email);
+  // URL steht bei dir im Preview nicht auf der Front (entspricht PDF-Front)
+
+  for (const [i, t] of contact.entries()) {
     lines.push(
-      <TextLine key="phone" xMm={LEFT_MM} yMm={y} sizePt={BODY_PT} weight={300}>
-        {`T ${phone}`}
-      </TextLine>
+      <div
+        key={`contact-${i}`}
+        style={{
+          position: "absolute",
+          left: mm(L_MM),
+          top: mm(y),
+          width: mm(W_MM),
+          fontFamily: "Frutiger LT Pro",
+          fontWeight: 300,
+          fontSize: BODY_PX,
+          lineHeight: 1,
+          whiteSpace: "pre-wrap",
+          opacity: 0.9,
+        }}
+      >
+        {t}
+      </div>
     );
     y += GAP_BODY_MM;
   }
-  if (email) {
-    lines.push(
-      <TextLine key="email" xMm={LEFT_MM} yMm={y} sizePt={BODY_PT} weight={300}>
-        {email}
-      </TextLine>
-    );
-    y += GAP_BODY_MM;
-  }
-  if (url) {
-    lines.push(
-      <TextLine key="url" xMm={LEFT_MM} yMm={y} sizePt={BODY_PT} weight={300}>
-        {url}
-      </TextLine>
-    );
-    y += GAP_BODY_MM;
-  }
 
-  // Spacer zu Firmenadresse
-  y += SPACER_TO_COMPANY_MM;
+  // Abstand zu Firma
+  y += GAP_TO_COMPANY_MM;
 
-  // Firmenadresse (Textarea → echte Zeilen), Light 8pt
+  // Firma/Adresse (mehrzeilig)
   if (company) {
     const addrLines = company.replace(/\r\n/g, "\n").split("\n");
-    addrLines.forEach((ln, i) => {
+    for (const [i, t] of addrLines.entries()) {
       lines.push(
-        <TextLine key={`addr-${i}`} xMm={LEFT_MM} yMm={y} sizePt={BODY_PT} weight={300}>
-          {ln}
-        </TextLine>
+        <div
+          key={`addr-${i}`}
+          style={{
+            position: "absolute",
+            left: mm(L_MM),
+            top: mm(y),
+            width: mm(W_MM),
+            fontFamily: "Frutiger LT Pro",
+            fontWeight: 300,
+            fontSize: BODY_PX,
+            lineHeight: 1,
+            whiteSpace: "pre",
+            opacity: 0.9,
+          }}
+        >
+          {t}
+        </div>
       );
       y += GAP_BODY_MM;
-    });
+    }
   }
 
   return (
     <div ref={wrapRef} className="w-full">
       <div
         style={{
+          position: "relative",
           width: mm(CARD_W_MM),
           height: mm(CARD_H_MM),
           transform: `scale(${scale})`,
           transformOrigin: "top left",
-          position: "relative",
         }}
       >
-        {/* Hintergrund exakt randlos */}
+        {/* Hintergrundbild der Vorderseite (keine Ecken/Radius/Shadow) */}
         <img
-          src={frontBgSrc}
-          alt="Front background"
+          src={bgSrc}
+          alt="Card Front"
           style={{
             position: "absolute",
             inset: 0,
@@ -248,83 +231,90 @@ export function BusinessCardFront(props: FrontProps) {
             objectFit: "cover",
             borderRadius: 0,
           }}
-          draggable={false}
         />
-        {/* Text-Lines */}
+        {/* Text-Layer */}
         {lines}
       </div>
     </div>
   );
 }
 
-// ---------- Rückseite (vCard-QR) ----------
-export function BusinessCardBack(props: BackProps) {
+// ---------- Back (Rückseite mit vCard-QR) ----------
+export function BusinessCardBack(props: {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  company?: string; // mehrzeilig → ORG (erste Zeile) + LABEL
+  url?: string;
+  bgSrc?: string;   // optional: /templates/omicron_back.png
+}) {
   const {
     name,
     role = "",
     email = "",
     phone = "",
-    url = "",
     company = "",
-    backBgSrc = BACK_BG,
+    url = "",
+    bgSrc = "/templates/omicron_back.png",
   } = props;
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const baseWidthPx = mm(CARD_W_MM);
   const scale = useFitScale(wrapRef, baseWidthPx);
 
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
-
-  // vCard generieren wie in der API
-  const orgName = (company || "").split(/\r?\n/)[0] || "";
-  const vcard = useMemo(
+  // vCard bauen
+  const org = (company || "").split(/\r?\n/)[0] || "";
+  const vcardStr = useMemo(
     () =>
       buildVCard3({
         fullName: name,
-        org: orgName || undefined,
+        org: org || undefined,
         title: role || undefined,
         email: email || undefined,
         tel: phone || undefined,
         url: url || undefined,
         addrLabel: company || undefined,
       }),
-    [name, orgName, role, email, phone, url, company]
+    [name, org, role, email, phone, url, company]
   );
 
-  // QR generieren (1024 px → superscharf)
+  // QR als DataURL erzeugen
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   useEffect(() => {
-    let isCancelled = false;
-    QRCode.toDataURL(vcard, {
-      width: 1024,
-      margin: 0,
-      errorCorrectionLevel: "M",
-    }).then((d) => {
-      if (!isCancelled) setQrDataUrl(d);
-    });
+    let active = true;
+    (async () => {
+      try {
+        const dataUrl = await QRCode.toDataURL(vcardStr, {
+          width: 1024,
+          margin: 0,
+          errorCorrectionLevel: "M",
+        });
+        if (active) setQrDataUrl(dataUrl);
+      } catch {
+        if (active) setQrDataUrl("");
+      }
+    })();
     return () => {
-      isCancelled = true;
+      active = false;
     };
-  }, [vcard]);
-
-  // QR-Position (y ist im PDF von unten – hier in "top" umrechnen)
-  const qrWidthPx = mm(QR_SIZE_MM);
-  const qrLeftPx = mm(QR_X_MM);
-  const qrTopPx = mm(CARD_H_MM - (QR_Y_FROM_BOTTOM_MM + QR_SIZE_MM));
+  }, [vcardStr]);
 
   return (
     <div ref={wrapRef} className="w-full">
       <div
         style={{
+          position: "relative",
           width: mm(CARD_W_MM),
           height: mm(CARD_H_MM),
           transform: `scale(${scale})`,
           transformOrigin: "top left",
-          position: "relative",
         }}
       >
+        {/* Hintergrundbild der Rückseite */}
         <img
-          src={backBgSrc}
-          alt="Back background"
+          src={bgSrc}
+          alt="Card Back"
           style={{
             position: "absolute",
             inset: 0,
@@ -333,22 +323,20 @@ export function BusinessCardBack(props: BackProps) {
             objectFit: "cover",
             borderRadius: 0,
           }}
-          draggable={false}
         />
 
-        {/* QR */}
+        {/* QR an der exakten PDF-Position */}
         {qrDataUrl && (
           <img
             src={qrDataUrl}
             alt="vCard QR"
             style={{
               position: "absolute",
-              left: qrLeftPx,
-              top: qrTopPx,
-              width: qrWidthPx,
-              height: qrWidthPx,
+              left: mm(QR_X_MM),
+              top: mm(QR_Y_MM),
+              width: mm(QR_SIZE_MM),
+              height: mm(QR_SIZE_MM),
             }}
-            draggable={false}
           />
         )}
       </div>
