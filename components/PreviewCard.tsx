@@ -23,7 +23,7 @@ type Props = {
   url?: string;
 };
 
-export function BusinessCardFront({ name, role="", email="", phone="", company="" }: Props) {
+export function BusinessCardFront({ name, role="", email="", phone="", company="", url = ""}: Props) {
   // Positions in px
   const left = MM2PX(LEFT_MM);
   const colWidth = MM2PX(COL_W_MM);
