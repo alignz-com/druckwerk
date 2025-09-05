@@ -10,13 +10,13 @@ import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 
 export default function PreviewPage() {
   // Demo-Defaults
-  const [name, setName] = useState("Pascal Rossi");
-  const [role, setRole] = useState("CEO & Founder");
-  const [email, setEmail] = useState("pascal@alignz.com");
-  const [phone, setPhone] = useState("+41 79 530 74 60");
-  const [mobile, setMobile] = useState("+41 79 530 74 60");
-  const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
-  const [url, setUrl] = useState("https://alignz.com/pascal");
+  const [name, setName] = useState("Julia Lind");
+  const [role, setRole] = useState("Financial & Legal Services");
+  const [email, setEmail] = useState("julia.lind@omicronenergy.com");
+  const [phone, setPhone] = useState("+43 59495 2038");
+  const [mobile, setMobile] = useState("");
+  const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
+  const [url, setUrl] = useState("www.omicronenergy.com");
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {
