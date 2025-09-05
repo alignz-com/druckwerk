@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatPhones } from "@/lib/formatPhones";
 import QRCode from "qrcode";
 
 export type Props = {
@@ -8,6 +9,7 @@ export type Props = {
   role?: string;
   email?: string;
   phone?: string;
+  mobile?: string;
   company?: string; // multiline
   url?: string;
   /** Feintuning für QR nur in der Preview (mm) */
@@ -84,7 +86,7 @@ function buildVCard3(o: {
 
 /* ============================== FRONT ============================== */
 export function BusinessCardFront(props: Props) {
-  const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
+  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = props;
 
   // y-Positionen (Baseline) in mm – identisch zur PDF-Route
   let y = TOP;
@@ -97,8 +99,9 @@ export function BusinessCardFront(props: Props) {
   y += CONTACT_SPACER;
 
   const contacts: Array<{ text: string; y: number }> = [];
-  if (phone) {
-    contacts.push({ text: `T ${phone}`, y });
+  const phoneLine = formatPhones(phone, mobile); // <— mobile kommt aus deinem State
+  if (phoneLine) {
+    contacts.push({ text: phoneLine, y });
     y += GAP_CONTACT;
   }
   if (email) {
@@ -175,7 +178,7 @@ export function BusinessCardFront(props: Props) {
 
 /* =============================== BACK =============================== */
 export function BusinessCardBack(props: Props) {
-  const { name, role = "", email = "", phone = "", company = "", url = "", qrOverride } = props;
+  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride } = props;
 
   const org = splitLines(company)[0] ?? "";
   const vcard = useMemo(
