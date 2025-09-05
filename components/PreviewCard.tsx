@@ -1,44 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
-/**
- * Geometrie / Maße
- * – Wir rendern die Karte in einem fixen Pixel-Rahmen (BASE_PX_W),
- *   rechnen aber ALLES in mm bzw. pt (wie im PDF) und konvertieren dann.
- */
+// ----- Konstanten: Karte 85 × 55 mm -----
+const CARD_MM_W = 85;
+const CARD_MM_H = 55;
+const BASE_PX_W = 1000;                 // interne Renderbreite
+const PX_PER_MM = BASE_PX_W / CARD_MM_W;
+const mm = (n: number) => n * PX_PER_MM;
+const pt = (n: number) => (n * 96) / 72; // 1pt = 1.3333px @96dpi
 
-const CARD_MM_W = 85.0;           // Kartenbreite (85 mm)
-const CARD_MM_H = 54.0;           // Kartenhöhe (54 mm)
-const BASE_PX_W = 1000;           // Renderbreite in Pixel für die Preview
-const pxPerMm   = BASE_PX_W / CARD_MM_W;
+// Layout wie in deiner PDF-Route:
+const LEFT_MM = 24.4;   // Textspalte: linker Rand
+const TOP_MM  = 24;     // erste Grundlinie von oben
+const COL_W_MM = 85;    // Breite der (weichen) Textspalte
 
-const mm = (n: number) => n * pxPerMm;
-const ptToPx = (pt: number) => mm(pt * 0.3527777778); // 1 pt = 0.35278 mm
+// Abstände
+const GAP_NAME_MM = 4;
+const GAP_BODY_MM = 3.5;
 
-// Layout (EXAKT wie in deiner PDF-Route)
-const LEFT_MM       = 24.4;  // Textspalte: linker Rand
-const TOP_MM        = 24.0;  // erste Grundlinie Abstand von oben
-const COL_W_MM      = 85.0;  // Spaltenbreite (du nutzt volle Breite)
-const NAME_PT       = 10;
-const ROLE_PT       = 8;
-const BODY_PT       = 8;
-const GAP_NAME_MM   = 4.0;   // Name/Rolle Zeilenabstand
-const GAP_BODY_MM   = 3.5;   // Body Zeilenabstand
-const GAP_CONTACT_MM= 3.25;  // Abstand Rolle → Kontakt
-const GAP_TO_COMP_MM= 1.9;   // Abstand Kontakt → Adresse
-
-// Rückseite QR (wie PDF)
-const QR_SIZE_MM = 32.0;
-const QR_X_MM    = 52.8;
-const QR_Y_MM    = 18.85;
-
-// Hilfen
-function vEscape(s: string) {
-  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
-}
-
+// vCard-Builder (wie in /api/pdf)
+const vEscape = (s: string) =>
+  s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 function buildVCard3(opts: {
   fullName: string;
   org?: string;
@@ -49,89 +33,106 @@ function buildVCard3(opts: {
   addrLabel?: string;
 }) {
   const { fullName, org, title, email, tel, url, addrLabel } = opts;
-  const lines = [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    `FN:${vEscape(fullName)}`,
-    ...(org   ? [`ORG:${vEscape(org)}`] : []),
-    ...(title ? [`TITLE:${vEscape(title)}`] : []),
-    ...(tel   ? [`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`] : []),
-    ...(email ? [`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`] : []),
-    ...(url   ? [`URL:${vEscape(url)}`] : []),
-    ...(addrLabel ? [`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`] : []),
-    "END:VCARD",
-  ];
+  const lines: string[] = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
+  if (org)   lines.push(`ORG:${vEscape(org)}`);
+  if (title) lines.push(`TITLE:${vEscape(title)}`);
+  if (tel)   lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
+  if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+  if (url)   lines.push(`URL:${vEscape(url)}`);
+  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+  lines.push("END:VCARD");
   return lines.join("\r\n");
 }
 
-type CommonProps = {
-  /** PNG oder SVG der Template-Seite im /public/templates  (optional; sonst blank) */
-  backgroundSrc?: string;
-  /** Rahmen + Schnittmarken anzeigen */
-  frame?: boolean;
-};
+// Kleiner Helfer zum Auto-Scale
+export function AutoScale({ width, children }: { width: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      setScale(Math.min(1, Math.max(0.3, w / width)));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
+  return (
+    <div ref={ref} className="w-full">
+      <div style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}>{children}</div>
+    </div>
+  );
+}
 
-export type FrontProps = CommonProps & {
+// Trim-/Schnittmarken (optional)
+function CropMarks() {
+  const L = 5; // mm Länge
+  const T = 2; // mm vom Rand nach innen
+  const s = { position: "absolute" as const, background: "rgba(0,0,0,.6)" };
+  return (
+    <>
+      {/* oben links */}
+      <div style={{ ...s, left: mm(T), top: mm(T), width: mm(L), height: 1 }} />
+      <div style={{ ...s, left: mm(T), top: mm(T), width: 1, height: mm(L) }} />
+      {/* oben rechts */}
+      <div style={{ ...s, right: mm(T), top: mm(T), width: mm(L), height: 1 }} />
+      <div style={{ ...s, right: mm(T), top: mm(T), width: 1, height: mm(L) }} />
+      {/* unten links */}
+      <div style={{ ...s, left: mm(T), bottom: mm(T), width: mm(L), height: 1 }} />
+      <div style={{ ...s, left: mm(T), bottom: mm(T), width: 1, height: mm(L) }} />
+      {/* unten rechts */}
+      <div style={{ ...s, right: mm(T), bottom: mm(T), width: mm(L), height: 1 }} />
+      <div style={{ ...s, right: mm(T), bottom: mm(T), width: 1, height: mm(L) }} />
+    </>
+  );
+}
+
+// ---------- FRONT ----------
+export function BusinessCardFront(props: {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
   company?: string; // mehrzeilig
-};
+  backgroundSrc: string;
+  frame?: boolean;
+}) {
+  const { name, role = "", email = "", phone = "", company = "", backgroundSrc, frame } = props;
 
-export function BusinessCardFront({
-  name,
-  role = "",
-  email = "",
-  phone = "",
-  company = "",
-  backgroundSrc = "/templates/omicron-front.png",
-  frame = true,
-}: FrontProps) {
+  // Zeilen (nur Top-Down – exakt wie PDF)
+  const namePx = pt(10);
+  const rolePx = pt(8);
+  const bodyPx = pt(8);
 
-  // Spalten-Startkoordinate (in px)
   const xLeft = mm(LEFT_MM);
   const firstBaseY = mm(TOP_MM);
 
-  // Textblöcke (Reihenfolge/Abstände wie PDF)
-  const lines = useMemo(() => {
-    const L: Array<{ text: string; sizePx: number; dyMm: number; className?: string }> = [];
+  type Line = { text: string; sizePx: number; dyMm: number; className?: string };
+  const lines: Line[] = [];
 
-    // Name (Bold)
-    L.push({ text: name, sizePx: ptToPx(NAME_PT), dyMm: 0, className: "frutiger-bold" });
+  // Name (Bold)
+  lines.push({ text: name, sizePx: namePx, dyMm: 0, className: "font-bold" });
+  // Rolle (LightItalic)
+  if (role) lines.push({ text: role, sizePx: rolePx, dyMm: GAP_NAME_MM, className: "italic font-light" });
+  // Abstand
+  lines.push({ text: "", sizePx: bodyPx, dyMm: 3.25 });
 
-    // Rolle (LightItalic)
-    if (role) {
-      L.push({ text: role, sizePx: ptToPx(ROLE_PT), dyMm: GAP_NAME_MM, className: "frutiger-light frutiger-italic" });
-    }
+  // Kontakte
+  if (phone) lines.push({ text: `T ${phone}`, sizePx: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" });
+  if (email) lines.push({ text: email,       sizePx: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" });
+  // URL lassen wir im Front-Mock weg (dein PDF hat’s im Kontakt-Block; falls gewünscht, hier einkommentieren)
+  // if (url)   lines.push({ text: url,         sizePx: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" });
 
-    // Abstand zu Kontakten
-    L.push({ text: "", sizePx: ptToPx(BODY_PT), dyMm: GAP_CONTACT_MM });
+  // Abstand zu Firma
+  lines.push({ text: "", sizePx: bodyPx, dyMm: 1.9 });
 
-    // Kontakte
-    if (phone) L.push({ text: `T ${phone}`, sizePx: ptToPx(BODY_PT), dyMm: GAP_BODY_MM, className: "frutiger-light" });
-    if (email) L.push({ text: email,        sizePx: ptToPx(BODY_PT), dyMm: GAP_BODY_MM, className: "frutiger-light" });
-    // URL in der Preview zeigen (wie im PDF-Kontaktblock)
-    // (Wenn du sie nicht willst, einfach auskommentieren.)
-    // if (url)   L.push({ text: url,          sizePx: ptToPx(BODY_PT), dyMm: GAP_BODY_MM, className: "frutiger-light" });
+  // Firma/Adresse (mehrzeilig)
+  const addr = (company || "").replace(/\r\n/g, "\n").split("\n").filter(Boolean);
+  for (const l of addr) lines.push({ text: l, sizePx: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" });
 
-    // Abstand zu Firma
-    L.push({ text: "", sizePx: ptToPx(BODY_PT), dyMm: GAP_TO_COMP_MM });
-
-    // Firmenadresse (mehrzeilig)
-    if (company) {
-      const parts = company.replace(/\r\n/g, "\n").split("\n");
-      for (const p of parts) {
-        L.push({ text: p, sizePx: ptToPx(BODY_PT), dyMm: GAP_BODY_MM, className: "frutiger-light text-muted-foreground" });
-      }
-    }
-
-    return L;
-  }, [name, role, email, phone, company]);
-
-  // Wir positionieren jede Zeile untereinander ab erster Grundlinie.
-  // In PDF rechnest du von oben nach unten – hier genauso.
-  let cursorY = firstBaseY;
+  // Render
+  let y = firstBaseY;
 
   return (
     <div
@@ -139,36 +140,22 @@ export function BusinessCardFront({
       style={{
         width: BASE_PX_W,
         height: mm(CARD_MM_H),
-        boxShadow: frame ? "0 0 0 1px rgba(0,0,0,.08)" : undefined,
+        border: frame ? "1px solid rgba(0,0,0,.08)" : undefined,
+        boxShadow: frame ? "0 8px 20px rgba(0,0,0,.06)" : undefined,
       }}
     >
-      {/* Hintergrund-Template */}
-      {backgroundSrc ? (
-        <img
-          src={backgroundSrc}
-          alt=""
-          className="absolute inset-0 h-full w-full rounded-2xl object-cover"
-          draggable={false}
-        />
-      ) : null}
+      <img
+        src={backgroundSrc}
+        alt=""
+        className="absolute inset-0 h-full w-full rounded-2xl object-cover"
+        draggable={false}
+      />
 
       {/* Textspalte */}
-      <div
-        className="absolute"
-        style={{
-          left: xLeft,
-          top: 0,
-          width: mm(COL_W_MM),
-          height: "100%",
-        }}
-      >
+      <div className="absolute" style={{ left: xLeft, top: 0, width: mm(COL_W_MM), height: "100%" }}>
         {lines.map((l, i) => {
-          if (i === 0) {
-            // erste Zeile beginnt bei firstBaseY
-            cursorY = firstBaseY;
-          } else {
-            cursorY += mm(l.dyMm);
-          }
+          if (i > 0) y += mm(l.dyMm);
+          if (!l.text) return null;
           return (
             <div
               key={i}
@@ -176,11 +163,10 @@ export function BusinessCardFront({
               style={{
                 position: "absolute",
                 left: 0,
-                top: cursorY,
-                transform: "translateY(-50%)", // Basislinie ~ mittig ausgleichen
+                top: y,
                 fontSize: l.sizePx,
                 lineHeight: 1,
-                color: "black",
+                color: "#000",
                 whiteSpace: "pre-wrap",
               }}
             >
@@ -190,67 +176,43 @@ export function BusinessCardFront({
         })}
       </div>
 
-      {/* optionale Schnittmarken */}
       {frame && <CropMarks />}
     </div>
   );
 }
 
-export type BackProps = CommonProps & {
+// ---------- BACK ----------
+export function BusinessCardBack(props: {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
-  company?: string; // mehrzeilig
+  company?: string;
   url?: string;
-  /** Wenn true, rendert QR als vCard (wie PDF). Sonst direkt URL/mailto. */
-  vcard?: boolean;
-};
+  vcard?: boolean;        // wenn true → vCard-QR; sonst URL/mailto
+  backgroundSrc: string;
+  frame?: boolean;
+}) {
+  const { name, role = "", email = "", phone = "", company = "", url = "", vcard = true, backgroundSrc, frame } = props;
 
-export function BusinessCardBack({
-  name,
-  role = "",
-  email = "",
-  phone = "",
-  company = "",
-  url = "",
-  vcard = true,
-  backgroundSrc = "/templates/omicron-back.png",
-  frame = true,
-}: BackProps) {
-  const [qrSrc, setQrSrc] = useState<string>("");
+  // Ziel für QR
+  const orgName = (company || "").split(/\r?\n/)[0] || "";
+  const addrLabel = company || "";
+  const qrPayload = vcard
+    ? buildVCard3({ fullName: name, org: orgName, title: role || undefined, email: email || undefined, tel: phone || undefined, url: url || undefined, addrLabel })
+    : (url || (email ? `mailto:${email}` : ""));
 
+  // QR DataURL
+  const [qr, setQr] = useState<string>("");
   useEffect(() => {
-    (async () => {
-      try {
-        let payload = "";
-        if (vcard) {
-          const orgName = (company || "").split(/\r?\n/)[0] || "";
-          const addrLabel = company || "";
-          payload = buildVCard3({
-            fullName: name,
-            org: orgName,
-            title: role || undefined,
-            email: email || undefined,
-            tel: phone || undefined,
-            url: url || undefined,
-            addrLabel,
-          });
-        } else {
-          payload = url || (email ? `mailto:${email}` : "");
-        }
+    if (!qrPayload) return;
+    QRCode.toDataURL(qrPayload, { width: 1024, margin: 0, errorCorrectionLevel: "M" }).then(setQr).catch(() => setQr(""));
+  }, [qrPayload]);
 
-        const dataUrl = await QRCode.toDataURL(payload, {
-          width: 1024,
-          margin: 0,
-          errorCorrectionLevel: "M",
-        });
-        setQrSrc(dataUrl);
-      } catch {
-        setQrSrc("");
-      }
-    })();
-  }, [name, role, email, phone, company, url, vcard]);
+  // Position (PDF-Matching: x,y von links/unten)
+  const qrSizeMM = 32;
+  const qxMM = 52.8;
+  const qyMM = 18.85;
 
   return (
     <div
@@ -258,29 +220,27 @@ export function BusinessCardBack({
       style={{
         width: BASE_PX_W,
         height: mm(CARD_MM_H),
-        boxShadow: frame ? "0 0 0 1px rgba(0,0,0,.08)" : undefined,
+        border: frame ? "1px solid rgba(0,0,0,.08)" : undefined,
+        boxShadow: frame ? "0 8px 20px rgba(0,0,0,.06)" : undefined,
       }}
     >
-      {backgroundSrc ? (
-        <img
-          src={backgroundSrc}
-          alt=""
-          className="absolute inset-0 h-full w-full rounded-2xl object-cover"
-          draggable={false}
-        />
-      ) : null}
+      <img
+        src={backgroundSrc}
+        alt=""
+        className="absolute inset-0 h-full w-full rounded-2xl object-cover"
+        draggable={false}
+      />
 
-      {/* QR exakt wie im PDF */}
-      {qrSrc && (
+      {qr && (
         <img
-          src={qrSrc}
+          src={qr}
           alt="QR"
           className="absolute"
           style={{
-            left: mm(QR_X_MM),
-            bottom: mm(QR_Y_MM), // PDF-Koordinaten gemessen von unten; hier deshalb bottom
-            width: mm(QR_SIZE_MM),
-            height: mm(QR_SIZE_MM),
+            left: mm(qxMM),
+            bottom: mm(qyMM),
+            width: mm(qrSizeMM),
+            height: mm(qrSizeMM),
           }}
           draggable={false}
         />
@@ -288,31 +248,5 @@ export function BusinessCardBack({
 
       {frame && <CropMarks />}
     </div>
-  );
-}
-
-/** kleine Schnittmarken wie im Screenshot */
-function CropMarks() {
-  const mark = 6; // mm
-  const inset = 3; // mm nach innen
-  const s = {
-    w: 1,
-    color: "rgba(0,0,0,.5)",
-  };
-  return (
-    <>
-      {/* oben links */}
-      <div style={{ position: "absolute", left: mm(inset), top: mm(inset), width: mm(mark), height: s.w, background: s.color }} />
-      <div style={{ position: "absolute", left: mm(inset), top: mm(inset), width: s.w, height: mm(mark), background: s.color }} />
-      {/* oben rechts */}
-      <div style={{ position: "absolute", right: mm(inset), top: mm(inset), width: mm(mark), height: s.w, background: s.color }} />
-      <div style={{ position: "absolute", right: mm(inset), top: mm(inset), width: s.w, height: mm(mark), background: s.color }} />
-      {/* unten links */}
-      <div style={{ position: "absolute", left: mm(inset), bottom: mm(inset), width: mm(mark), height: s.w, background: s.color }} />
-      <div style={{ position: "absolute", left: mm(inset), bottom: mm(inset), width: s.w, height: mm(mark), background: s.color }} />
-      {/* unten rechts */}
-      <div style={{ position: "absolute", right: mm(inset), bottom: mm(inset), width: mm(mark), height: s.w, background: s.color }} />
-      <div style={{ position: "absolute", right: mm(inset), bottom: mm(inset), width: s.w, height: mm(mark), background: s.color }} />
-    </>
   );
 }
