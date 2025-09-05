@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export default function PreviewPage() {
   const [name, setName] = useState("Pascal Rossi");
@@ -11,104 +15,87 @@ export default function PreviewPage() {
   const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
   const [url, setUrl] = useState("https://alignz.com/pascal");
 
-  const cardProps = { name, role, email, phone, company, url };
+  async function generate() {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, role, email, phone, company, url, template: "omicron" }),
+    });
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = "card.pdf";
+    a.click();
+    URL.revokeObjectURL(href);
+  }
 
   return (
-    <main
-      className="
-        mx-auto
-        max-w-screen-xl        /* zentriert & begrenzt */
-        px-4 sm:px-6 lg:px-8   /* schöne Seitenränder */
-        py-6 sm:py-8 lg:py-10  /* oben/unten Luft */
-      "
-    >
-      <h1 className="mb-6 text-xl font-semibold tracking-tight">
-        Business Card – Omicron
-      </h1>
+    <main className="mx-auto max-w-[1200px] p-6 md:p-8">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
-      <div
-        className="
-          grid gap-6 lg:gap-8
-          lg:grid-cols-[minmax(320px,420px)_1fr]  /* linke Spalte fix-bis-420, rechts flexibel */
-        "
-      >
+      <div className="grid gap-6 md:grid-cols-[minmax(0,520px)_1fr]">
         {/* Formular */}
-        <section className="rounded-lg border bg-card p-5 shadow-sm lg:self-start lg:sticky lg:top-6">
-          <h2 className="mb-4 text-base font-medium text-muted-foreground">Details</h2>
-
-          <div className="space-y-4">
-            <label className="block">
-              <span className="text-sm">Name</span>
-              <input
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm">Funktion / Titel</span>
-              <input
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm">E-Mail</span>
-              <input
-                type="email"
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm">Telefon</span>
-              <input
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm">Firmenadresse (mehrzeilig)</span>
-              <textarea
-                rows={4}
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm">URL für QR (optional)</span>
-              <input
-                className="mt-1 w-full rounded-md border px-3 py-2"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </label>
-
-            <button className="mt-2 w-full rounded-md bg-black py-2.5 font-medium text-white">
+        <Card>
+          <CardHeader>
+            <CardTitle>Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">Name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">Funktion / Titel</label>
+              <Input value={role} onChange={(e) => setRole(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">E-Mail</label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">Telefon</label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">Firmenadresse (mehrzeilig)</label>
+              <Textarea rows={5} value={company} onChange={(e) => setCompany(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm text-muted-foreground">URL für QR (optional)</label>
+              <Input value={url} onChange={(e) => setUrl(e.target.value)} />
+            </div>
+            <Button className="w-full" onClick={generate}>
               Generate PDF
-            </button>
-          </div>
-        </section>
+            </Button>
+          </CardContent>
+        </Card>
 
-        {/* Preview */}
-        <section className="rounded-lg border bg-card p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-medium text-muted-foreground">Live Preview</h2>
+        {/* Live Preview */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mx-auto max-w-[560px] rounded-xl border bg-white p-4 shadow-sm">
+                {/* Rahmen NICHT doppelt: nur dieser Container */}
+                <BusinessCardFront name={name} role={role} email={email} phone={phone} company={company} url={url} />
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-6">
-            {/* Ein einzelner sauberer Rahmen je Karte kommt aus PreviewCard.Frame */}
-            <BusinessCardFront {...cardProps} />
-            <BusinessCardBack  {...cardProps} />
-          </div>
-        </section>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mx-auto max-w-[560px] rounded-xl border bg-white p-4 shadow-sm">
+                <BusinessCardBack name={name} role={role} email={email} phone={phone} company={company} url={url} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );
