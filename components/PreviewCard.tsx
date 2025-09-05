@@ -3,26 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-/* =========================
-   Öffentliche Props
-========================= */
-export type CardPreviewProps = {
+type Props = {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
-  company?: string;   // Mehrzeilig
-  url?: string;       // optional zusätzlich in vCard
-  /** Rahmen um die Karte im Preview zeigen (Default true) */
-  withFrame?: boolean;
-  /** Nur Preview: QR-Feintuning in mm */
+  company?: string;
+  url?: string;
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* =========================
-   Geometrie in Millimetern
-   (identisch zur PDF-Berechnung)
-========================= */
+/* ---------- Geometrie (mm) ---------- */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
@@ -34,85 +25,60 @@ const GAP_CONTACT_MM = 3.5;
 const CONTACT_BLOCK_SPACER_MM = 3.25;
 const COMPANY_SPACER_MM = 1.9;
 
-// pt → mm (PDF nutzt pt, SVG hier arbeitet im mm-ViewBox)
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME_MM = ptToMm(10); // 10 pt
-const ROLE_MM = ptToMm(8);  // 8 pt
-const BODY_MM = ptToMm(8);  // 8 pt
+const NAME_MM = ptToMm(10);
+const ROLE_MM = ptToMm(8);
+const BODY_MM = ptToMm(8);
 
-// QR-Defaults (Preview minimal enger als PDF; kannst auf PDF-Werte zurückstellen)
+/* QR-Defaults (leicht nach links/oben und kleiner) */
 const QR_DEFAULT = {
-  xMm: 50.6,     // PDF: 52.8
-  yMm: 17.9,     // PDF: 18.85
-  sizeMm: 29.5,  // PDF: 32
+  xMm: 48.8,
+  yMm: 16.2,
+  sizeMm: 29.8,
 };
 
-/* =========================
-   Utils
-========================= */
-const splitLines = (s?: string) =>
-  (s ?? "")
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((l) => l.trimEnd())
-    .filter(Boolean);
-
+/* ---------- vCard ---------- */
 function vEscape(s: string) {
   return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
-
 function buildVCard3(o: {
-  fullName: string;
-  org?: string;
-  title?: string;
-  email?: string;
-  tel?: string;
-  url?: string;
-  addrLabel?: string;
+  fullName: string; org?: string; title?: string; email?: string; tel?: string; url?: string; addrLabel?: string;
 }) {
   const { fullName, org, title, email, tel, url, addrLabel } = o;
   const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
-  if (org) lines.push(`ORG:${vEscape(org)}`);
+  if (org)   lines.push(`ORG:${vEscape(org)}`);
   if (title) lines.push(`TITLE:${vEscape(title)}`);
-  if (tel) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
+  if (tel)   lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
   if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL:${vEscape(url)}`);
+  if (url)   lines.push(`URL:${vEscape(url)}`);
   if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
 
-/* =========================
-   Rahmen-Wrapper (nur Preview)
-========================= */
-function Frame({
-  title,
-  children,
-  withFrame = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  withFrame?: boolean;
-}) {
-  if (!withFrame) return <>{children}</>;
+const splitLines = (s?: string) =>
+  (s ?? "").replace(/\r\n/g, "\n").split("\n").map((l) => l.trimEnd()).filter(Boolean);
 
+/* ======================================================================= */
+/* FRAME                                                                    */
+/* ======================================================================= */
+function Frame({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <figure className="rounded-xl border border-border/80 bg-card shadow-sm p-4">
-      <figcaption className="mb-3 text-sm font-medium text-muted-foreground">{title}</figcaption>
-      <div className="rounded-lg border border-border bg-white p-3">
-        {children}
-      </div>
+    <figure className="rounded-xl border border-border/80 bg-card shadow-sm p-0">
+      <figcaption className="px-2 py-1 text-sm font-medium text-muted-foreground">
+        {title}
+      </figcaption>
+      {children}
     </figure>
   );
 }
 
-/* =======================================================================
-   FRONT
-======================================================================= */
-export function BusinessCardFront(props: CardPreviewProps) {
-  const { name, role = "", email = "", phone = "", company = "", url = "", withFrame = true } = props;
+/* ======================================================================= */
+/* FRONT                                                                    */
+/* ======================================================================= */
+export function BusinessCardFront(props: Props) {
+  const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  // Y-Akkumulator (Baseline-Positionen in mm)
   let y = TOP_MM;
   const nameY = y;
   y += GAP_NAME_MM;
@@ -123,23 +89,20 @@ export function BusinessCardFront(props: CardPreviewProps) {
   y += CONTACT_BLOCK_SPACER_MM;
 
   const contacts: Array<{ text: string; y: number }> = [];
-  if (phone) { contacts.push({ text: `T +${phone.replace(/^\+/, "")}`, y }); y += GAP_CONTACT_MM; }
-  if (email) { contacts.push({ text: email, y }); y += GAP_CONTACT_MM; }
-  if (url)   { contacts.push({ text: url,   y }); y += GAP_CONTACT_MM; }
+  if (phone) { contacts.push({ text: `T ${phone}`, y }); y += GAP_CONTACT_MM; }
+  if (email) { contacts.push({ text: email,        y }); y += GAP_CONTACT_MM; }
+  if (url)   { contacts.push({ text: url,          y }); y += GAP_CONTACT_MM; }
 
   y += COMPANY_SPACER_MM;
-
   const addr = splitLines(company).map((text, i) => ({ text, y: y + i * GAP_CONTACT_MM }));
 
   return (
-    <Frame title="Card Front" withFrame={withFrame}>
+    <Frame title="Card Front">
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block" }}
-        aria-label="Business card front"
+        style={{ maxWidth: 520, height: "auto", display: "block", margin: 0 }}
       >
-        {/* Hintergrund als PNG (Druckvorlage) */}
         <image
           href="/templates/omicron-front.png"
           x={0}
@@ -148,22 +111,19 @@ export function BusinessCardFront(props: CardPreviewProps) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-
-        {/* Text in mm (unitlose fontSize → ViewBox-User-Units = mm) */}
         <g
           fontFamily='"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
           fill="black"
           dominantBaseline="alphabetic"
         >
-          <text x={LEFT_MM} y={nameY} fontSize={NAME_MM} fontWeight={700}>
+          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_MM}mm`} fontWeight={700}>
             {name}
           </text>
-
           {role && (
             <text
               x={LEFT_MM}
               y={roleY}
-              fontSize={ROLE_MM}
+              fontSize={`${ROLE_MM}mm`}
               fontStyle="italic"
               fontWeight={300}
               opacity={0.9}
@@ -171,15 +131,13 @@ export function BusinessCardFront(props: CardPreviewProps) {
               {role}
             </text>
           )}
-
           {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_MM} fontWeight={300}>
+            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
               {l.text}
             </text>
           ))}
-
           {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_MM} fontWeight={300}>
+            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
               {l.text}
             </text>
           ))}
@@ -189,13 +147,12 @@ export function BusinessCardFront(props: CardPreviewProps) {
   );
 }
 
-/* =======================================================================
-   BACK
-======================================================================= */
-export function BusinessCardBack(props: CardPreviewProps) {
-  const { name, role = "", email = "", phone = "", company = "", url = "", withFrame = true, qrOverride } = props;
+/* ======================================================================= */
+/* BACK                                                                     */
+/* ======================================================================= */
+export function BusinessCardBack(props: Props) {
+  const { name, role = "", email = "", phone = "", company = "", url = "", qrOverride } = props;
 
-  // vCard auf Basis der Form-Werte
   const org = splitLines(company)[0] ?? "";
   const vcard = useMemo(
     () =>
@@ -211,8 +168,8 @@ export function BusinessCardBack(props: CardPreviewProps) {
     [name, role, email, phone, url, company, org]
   );
 
-  // QR erzeugen
   const [qrData, setQrData] = useState<string>("");
+
   useEffect(() => {
     let stop = false;
     (async () => {
@@ -230,18 +187,16 @@ export function BusinessCardBack(props: CardPreviewProps) {
     return () => { stop = true; };
   }, [vcard]);
 
-  // QR-Position/Größe (mm)
   const qx = qrOverride?.xMm ?? QR_DEFAULT.xMm;
   const qy = qrOverride?.yMm ?? QR_DEFAULT.yMm;
   const qs = qrOverride?.sizeMm ?? QR_DEFAULT.sizeMm;
 
   return (
-    <Frame title="Card Back" withFrame={withFrame}>
+    <Frame title="Card Back">
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block" }}
-        aria-label="Business card back"
+        style={{ maxWidth: 520, height: "auto", display: "block", margin: 0 }}
       >
         <image
           href="/templates/omicron-back.png"
