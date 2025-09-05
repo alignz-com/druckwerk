@@ -1,62 +1,12 @@
+// components/PreviewCard.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import QRCode from "qrcode";
-import Image from "next/image";
 
-/** ===== Omicron-Geometrie (mm/pt) – wie in der PDF-Route ===== */
-const OMI = {
-  // Textspalte (Front)
-  TEXT_LEFT_MM: 24.4,        // L
-  TEXT_TOP_MM: 24,           // TOP (erste Grundlinie von oben)
-  TEXT_COL_WIDTH_MM: 85,     // W
-  NAME_SIZE_PT: 10,
-  ROLE_SIZE_PT: 8,
-  BODY_SIZE_PT: 8,
-  GAP_NAME_MM: 4,            // Zeilenabstand Name/Rolle
-  GAP_AFTER_ROLE_MM: 3.25,   // Abstand Rolle -> Kontakte
-  GAP_BODY_MM: 3.5,          // Zeilenabstand im Body
-  GAP_BEFORE_COMPANY_MM: 1.9,// Abstand Kontakte -> Firma/Adresse
-
-  // QR (Back)
-  QR_SIZE_MM: 32,
-  QR_X_MM: 52.8,
-  QR_Y_MM: 18.85,            // von unten (PDF); wir nutzen unten in CSS
-} as const;
-
-/** ===== Nur für PREVIEW (CSS): mm -> px bei 96 dpi ===== */
-const mm2px = (mm: number) => (mm * 96) / 25.4;
-
-/** ===== Feintuning NUR für die Preview (PDF bleibt unberührt!) ===== */
-const PREVIEW_TUNE = {
-  TEXT_DX_MM: -1.2,   // negativ = weiter nach links
-  TEXT_DY_MM:  0.8,   // positiv = weiter nach oben
-  QR_DX_MM:   -1.5,
-  QR_DY_MM:    1.2,
-};
-
-/** vCard helpers (wie in der PDF-Route) */
-function vEscape(s: string) {
-  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
-}
-function buildVCard3(opts: {
-  fullName: string; org?: string; title?: string; email?: string; tel?: string; url?: string; addrLabel?: string;
-}) {
-  const { fullName, org, title, email, tel, url, addrLabel } = opts;
-  const lines = [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    `FN:${vEscape(fullName)}`,
-    org   ? `ORG:${vEscape(org)}` : "",
-    title ? `TITLE:${vEscape(title)}` : "",
-    tel   ? `TEL;TYPE=WORK,VOICE:${vEscape(tel)}` : "",
-    email ? `EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}` : "",
-    url   ? `URL:${vEscape(url)}` : "",
-    addrLabel ? `ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;` : "",
-    "END:VCARD",
-  ].filter(Boolean);
-  return lines.join("\r\n");
-}
+// Vorlagen (mit Schnittmarken) – deine PNGs:
+import frontBg from "@/public/templates/omicron-front.png";
+import backBg  from "@/public/templates/omicron-back.png";
 
 type Props = {
   name: string;
@@ -65,118 +15,125 @@ type Props = {
   phone?: string;
   company?: string;
   url?: string;
+  frame?: boolean;       // <— neu: Außenrahmen rendern?
 };
 
-export default function PreviewCard({
-  name, role = "", email = "", phone = "", company = "", url = "",
-}: Props) {
-  const [qrSrc, setQrSrc] = useState<string>("");
+// mm → px bei einem Preview-Basismaß von 1000px Breite (einfach skalierbar)
+const CARD_MM_W = 85.0;
+const BASE_PX_W  = 1000;                 // Basisbreite der Vorschau in px
+const pxPerMm    = BASE_PX_W / CARD_MM_W;
 
-  // vCard-QR wie in der PDF
-  useEffect(() => {
-    const orgName = (company || "").split(/\r?\n/)[0] || "";
-    const vcard = buildVCard3({
-      fullName: name,
-      org: orgName,
-      title: role || undefined,
-      email: email || undefined,
-      tel: phone || undefined,
-      url: url || undefined,
-      addrLabel: company || undefined,
+// Koordinaten wie im PDF:
+const L_MM   = 24.4;   // linker Rand
+const TOP_MM = 24.0;   // Abstand von oben zur 1. Grundlinie
+const COL_W_MM = 85.0; // Spaltenbreite (wie im PDF genutzt)
+const GAP_NAME_MM   = 4.0;
+const GAP_BODY_MM   = 3.5;
+
+const QR_SIZE_MM = 32.0;
+const QR_X_MM = 52.8;
+const QR_Y_MM = 18.85;
+
+function mm(n: number) { return n * pxPerMm; }
+
+function buildVCard3(opts: {
+  fullName: string; org?: string; title?: string; email?: string; tel?: string; url?: string; addrLabel?: string;
+}) {
+  const esc = (s: string) => s.replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;");
+  const L = [
+    "BEGIN:VCARD","VERSION:3.0",
+    `FN:${esc(opts.fullName)}`
+  ];
+  if (opts.org)   L.push(`ORG:${esc(opts.org)}`);
+  if (opts.title) L.push(`TITLE:${esc(opts.title)}`);
+  if (opts.tel)   L.push(`TEL;TYPE=WORK,VOICE:${esc(opts.tel)}`);
+  if (opts.email) L.push(`EMAIL;TYPE=INTERNET,WORK:${esc(opts.email)}`);
+  if (opts.url)   L.push(`URL:${esc(opts.url)}`);
+  if (opts.addrLabel) L.push(`ADR;TYPE=WORK;LABEL="${esc(opts.addrLabel)}":;;;;;;`);
+  L.push("END:VCARD");
+  return L.join("\r\n");
+}
+
+export default function PreviewCard({
+  name, role = "", email = "", phone = "", company = "", url = "", frame = true,
+}: Props) {
+
+  // vCard-QR wie im PDF
+  const vcardDataUrl = useMemo(async () => {
+    const org = (company || "").split(/\r?\n/)[0] || "";
+    const v = buildVCard3({
+      fullName: name, org, title: role || undefined,
+      email: email || undefined, tel: phone || undefined, url: url || undefined,
+      addrLabel: company || "",
     });
-    QRCode.toDataURL(vcard, { width: 1024, margin: 0, errorCorrectionLevel: "M" })
-      .then(setQrSrc)
-      .catch(() => setQrSrc(""));
+    return await QRCode.toDataURL(v, { width: 1024, margin: 0, errorCorrectionLevel: "M" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, role, email, phone, company, url]);
 
-  // Maße/Positionen für Preview (px)
-  const textLeft = useMemo(
-    () => mm2px(OMI.TEXT_LEFT_MM + PREVIEW_TUNE.TEXT_DX_MM), []
-  );
-  const textTop = useMemo(
-    () => mm2px(OMI.TEXT_TOP_MM + PREVIEW_TUNE.TEXT_DY_MM), []
-  );
-  const colWidth = useMemo(() => mm2px(OMI.TEXT_COL_WIDTH_MM), []);
-  const qrSizePx = useMemo(() => mm2px(OMI.QR_SIZE_MM), []);
-  const qrX = useMemo(() => mm2px(OMI.QR_X_MM + PREVIEW_TUNE.QR_DX_MM), []);
-  const qrY = useMemo(() => mm2px(OMI.QR_Y_MM + PREVIEW_TUNE.QR_DY_MM), []);
-
-  const companyLines = useMemo(
-    () => (company || "").replace(/\r\n/g, "\n").split("\n"),
-    [company]
-  );
-
   return (
-    <div className="relative mx-auto aspect-[210/297] w-[520px] rounded-2xl border bg-white p-8">
+    <div className="font-frutiger">
       {/* FRONT */}
-      <div className="relative h-1/2 w-full overflow-hidden rounded-lg border">
-        <Image
-          src="/templates/omicron-front.png"  // <— PNG/JPG Export deiner Vorderseite
-          alt=""
-          fill
-          className="object-contain"
-          priority
-        />
-        {/* Textblock absolut */}
+      <div
+        className={`relative mx-auto ${frame ? "rounded-2xl border p-6 shadow-sm" : ""}`}
+        style={{ width: BASE_PX_W }}
+      >
+        <img src={frontBg.src} alt="" className="w-full h-auto select-none pointer-events-none rounded-xl" />
+
+        {/* Textblock absolut positioniert – Startpunkt L/TOP wie im PDF */}
         <div
           className="absolute"
-          style={{ left: textLeft, top: textTop, width: colWidth }}
+          style={{ left: mm(L_MM), top: mm(TOP_MM) }}
         >
-          <div style={{ fontFamily: "FrutigerLTPro-Bold, system-ui", fontSize: OMI.NAME_SIZE_PT }}>
-            {name}
-          </div>
+          {/* Name */}
+          <div className="frutiger-bold" style={{ fontSize: mm(10) }}>{name}</div>
 
+          {/* Rolle */}
           {role && (
-            <div
-              style={{
-                fontFamily: "FrutigerLTPro-LightItalic, system-ui",
-                fontSize: OMI.ROLE_SIZE_PT,
-                marginTop: `${OMI.GAP_NAME_MM}mm`,
-              }}
-            >
+            <div className="frutiger-light frutiger-italic" style={{ fontSize: mm(8), marginTop: mm(GAP_NAME_MM) }}>
               {role}
             </div>
           )}
 
-          <div style={{ marginTop: `${OMI.GAP_AFTER_ROLE_MM}mm` }} />
+          {/* Spacer */}
+          <div style={{ marginTop: mm(3.25) }} />
 
-          <div style={{ fontFamily: "FrutigerLTPro-Light, system-ui", fontSize: OMI.BODY_SIZE_PT, lineHeight: 1.2 }}>
-            {phone && <div style={{ marginBottom: `${OMI.GAP_BODY_MM}mm` }}>T {phone}</div>}
-            {email && <div style={{ marginBottom: `${OMI.GAP_BODY_MM}mm` }}>{email}</div>}
-            {url   && <div style={{ marginBottom: `${OMI.GAP_BODY_MM}mm` }}>{url}</div>}
-
-            <div style={{ marginTop: `${OMI.GAP_BEFORE_COMPANY_MM}mm` }} />
-            {companyLines.map((l, i) => (
-              <div key={i} style={{ marginBottom: `${OMI.GAP_BODY_MM}mm` }}>
-                {l}
-              </div>
-            ))}
+          {/* Kontakte */}
+          <div className="space-y-[1px] frutiger-light" style={{ fontSize: mm(8) }}>
+            {phone && <div>{`T ${phone}`}</div>}
+            {email && <div>{email}</div>}
+            {url   && <div>{url}</div>}
           </div>
+
+          {/* Abstand zu Adresse */}
+          <div style={{ marginTop: mm(1.9) }} />
+
+          {/* Adresse */}
+          {company && (
+            <div className="whitespace-pre-line frutiger-light" style={{ fontSize: mm(8) }}>
+              {company}
+            </div>
+          )}
         </div>
       </div>
 
       {/* BACK */}
-      <div className="relative mt-8 h-1/2 w-full overflow-hidden rounded-lg border">
-        <Image
-          src="/templates/omicron-back.png"   // <— PNG/JPG Export deiner Rückseite
-          alt=""
-          fill
-          className="object-contain"
-          priority
-        />
-        {qrSrc && (
+      <div
+        className={`relative mx-auto mt-8 ${frame ? "rounded-2xl border p-6 shadow-sm" : ""}`}
+        style={{ width: BASE_PX_W }}
+      >
+        <img src={backBg.src} alt="" className="w-full h-auto select-none pointer-events-none rounded-xl" />
+
+        {/* QR exakt wie im PDF */}
+        <div
+          className="absolute"
+          style={{ left: mm(QR_X_MM), bottom: mm(QR_Y_MM) }} // PNG unten links: in deinem Back-Template steht QR recht unten. Wenn es optisch zu hoch/tief sitzt, hier „bottom/top“ tauschen.
+        >
           <img
-            src={qrSrc}
+            src={typeof vcardDataUrl === "string" ? vcardDataUrl : ""}
             alt="QR"
-            className="absolute"
-            style={{
-              left: qrX,
-              bottom: qrY,              // wie PDF: y von unten
-              width: qrSizePx,
-              height: qrSizePx,
-            }}
+            style={{ width: mm(QR_SIZE_MM), height: mm(QR_SIZE_MM) }}
           />
-        )}
+        </div>
       </div>
     </div>
   );
