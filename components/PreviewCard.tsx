@@ -24,9 +24,9 @@ const LEFT = 22;
 const TOP = 19;
 
 const GAP_NAME = 3;
-const GAP_CONTACT = 2;
-const CONTACT_SPACER = 2;
-const COMPANY_SPACER = 2;
+const GAP_CONTACT = 2.5;
+const CONTACT_SPACER = 2.5;
+const COMPANY_SPACER = 2.5;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
