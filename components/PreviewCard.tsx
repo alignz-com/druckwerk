@@ -2,59 +2,72 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-// 85 x 55 mm Karte
+// Karte 85 × 55 mm
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
-const MM2PX = (mm: number) => mm * 3.7795275591; // 96dpi CSS mm->px
+const mm2px = (mm: number) => mm * 3.7795275591; // 96dpi CSS-Umrechnung
 
-// Deine Layout-Werte (identisch zur PDF-Route)
+// Layout-Werte (identisch zur PDF-Route)
 const LEFT_MM = 24.4;
-const COL_W_MM = 85;   // du nutzt volle Breite links (kannst reduzieren)
-const TOP_MM  = 24;    // Abstand von oben zur ersten Grundlinie
+const COL_W_MM = 85; // volle Breite (anpassbar)
+const TOP_MM = 24;
 const GAP_NAME_MM = 4;
 const GAP_BODY_MM = 3.5;
 
-type Props = {
+// ------ Prop-Typen getrennt ------
+type FrontProps = {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
-  company?: string; // multi-line
+  company?: string; // mehrzeilig
   url?: string;
 };
 
-export function BusinessCardFront({ name, role="", email="", phone="", company="", url = ""}: Props) {
-  // Positions in px
-  const left = MM2PX(LEFT_MM);
-  const colWidth = MM2PX(COL_W_MM);
-  const topY = MM2PX(TOP_MM);
+type BackProps = {
+  email?: string;
+  url?: string;
+};
 
-  // Typo sizes (px, matching roughly your PDF sizes)
-  const namePx = 10 * 1.333; // 10pt ≈ 13.33px
-  const rolePx =  8 * 1.333;
-  const bodyPx =  8 * 1.333;
+// ------ Front: Texte exakt positioniert ------
+export function BusinessCardFront({
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  company = "",
+  url = "",
+}: FrontProps) {
+  const left = mm2px(LEFT_MM);
+  const colWidth = mm2px(COL_W_MM);
+  const topY = mm2px(TOP_MM);
 
-  // Build lines like in PDF
-  const lines: Array<{ text: string; size: number; weight?: number; italic?: boolean; dyMm?: number }> = [];
+  // pt → px (≈ *1.333)
+  const namePx = 10 * 1.333; // 10pt
+  const rolePx = 8 * 1.333;  // 8pt
+  const bodyPx = 8 * 1.333;  // 8pt
+
+  type L = { text: string; size: number; weight?: number; italic?: boolean; dyMm?: number };
+  const lines: L[] = [];
 
   // Name bold
   lines.push({ text: name, size: namePx, weight: 700, dyMm: 0 });
 
-  // Role
+  // Rolle (italic)
   if (role) lines.push({ text: role, size: rolePx, weight: 300, italic: true, dyMm: GAP_NAME_MM });
 
-  // Spacer
+  // Abstand zu Kontakten
   lines.push({ text: "", size: bodyPx, dyMm: 3.25 });
 
-  // Contacts
+  // Kontakte
   if (phone) lines.push({ text: `T ${phone}`, size: bodyPx, weight: 300, dyMm: GAP_BODY_MM });
   if (email) lines.push({ text: email, size: bodyPx, weight: 300, dyMm: GAP_BODY_MM });
   if (url)   lines.push({ text: url, size: bodyPx, weight: 300, dyMm: GAP_BODY_MM });
 
-  // Spacer to company
+  // Abstand zu Firma
   lines.push({ text: "", size: bodyPx, dyMm: 1.9 });
 
-  // Company multiline
+  // Firma (mehrzeilig)
   if (company) {
     const parts = company.replace(/\r\n/g, "\n").split("\n");
     for (const p of parts) {
@@ -62,21 +75,20 @@ export function BusinessCardFront({ name, role="", email="", phone="", company="
     }
   }
 
-  // Accumulate y positions
+  // y-Koordinaten aufsummieren
   let y = topY;
-  const positioned = [];
-  for (let i = 0; i < lines.length; i++) {
-    const { dyMm = (i === 0 ? 0 : GAP_BODY_MM) } = lines[i];
-    if (i !== 0) y -= MM2PX(dyMm);
-    positioned.push({ ...lines[i], y });
-  }
+  const positioned = lines.map((l, i) => {
+    const dy = i === 0 ? 0 : (l.dyMm ?? GAP_BODY_MM);
+    y -= mm2px(dy);
+    return { ...l, y };
+  });
 
   return (
     <div
-      className="relative font-frutiger select-none"
+      className="relative select-none font-frutiger"
       style={{
-        width:  MM2PX(CARD_W_MM),
-        height: MM2PX(CARD_H_MM),
+        width: mm2px(CARD_W_MM),
+        height: mm2px(CARD_H_MM),
         backgroundImage: `url(/templates/omicron-front.png)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -107,11 +119,12 @@ export function BusinessCardFront({ name, role="", email="", phone="", company="
   );
 }
 
-export function BusinessCardBack({ email, url }: Props) {
-  // QR: 32 mm @ Position (52.8mm, 18.85mm)
-  const qrSize = MM2PX(32);
-  const qx = MM2PX(52.8);
-  const qy = MM2PX(18.85);
+// ------ Back: QR exakt positioniert ------
+export function BusinessCardBack({ email, url }: BackProps) {
+  // QR 32 mm bei (52.8 mm, 18.85 mm)
+  const qrSize = mm2px(32);
+  const qx = mm2px(52.8);
+  const qy = mm2px(18.85);
 
   const target = useMemo(() => {
     if (url) return url;
@@ -125,7 +138,7 @@ export function BusinessCardBack({ email, url }: Props) {
     let cancelled = false;
     async function gen() {
       if (!target) { setQrDataUrl(""); return; }
-      const { toDataURL } = await import("qrcode"); // client-only
+      const { toDataURL } = await import("qrcode"); // nur Client
       const dataUrl = await toDataURL(target, { width: 512, margin: 0, errorCorrectionLevel: "M" });
       if (!cancelled) setQrDataUrl(dataUrl);
     }
@@ -137,8 +150,8 @@ export function BusinessCardBack({ email, url }: Props) {
     <div
       className="relative select-none"
       style={{
-        width:  MM2PX(CARD_W_MM),
-        height: MM2PX(CARD_H_MM),
+        width: mm2px(CARD_W_MM),
+        height: mm2px(CARD_H_MM),
         backgroundImage: `url(/templates/omicron-back.png)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
