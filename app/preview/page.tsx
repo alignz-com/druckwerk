@@ -16,7 +16,7 @@ export default function PreviewPage() {
   const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
   const [url, setUrl]         = useState("https://alignz.com/pascal");
 
-  const template = "omicron"; // PDF-Template-Name
+  const template = "omicron";
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {
@@ -38,7 +38,6 @@ export default function PreviewPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Form */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Details</CardTitle>
@@ -74,12 +73,11 @@ export default function PreviewPage() {
           </CardFooter>
         </Card>
 
-        {/* Live Preview */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Live Preview</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-8">
+          <CardContent className="flex flex-col gap-6">
             <AutoScale width={1000}>
               <BusinessCardFront
                 name={name}
@@ -88,7 +86,7 @@ export default function PreviewPage() {
                 phone={phone}
                 company={company}
                 backgroundSrc="/templates/omicron-front.png"
-                frame
+                // showTrim // ← nur zum Debuggen
               />
               <div style={{ height: 24 }} />
               <BusinessCardBack
@@ -100,7 +98,7 @@ export default function PreviewPage() {
                 url={url}
                 vcard
                 backgroundSrc="/templates/omicron-back.png"
-                frame
+                // showTrim // ← nur zum Debuggen
               />
             </AutoScale>
           </CardContent>
