@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import PreviewCard from "@/components/PreviewCard";
 
 export default function PreviewPage() {
   // Demo-Defaults
@@ -96,15 +96,7 @@ export default function PreviewPage() {
             <CardTitle className="text-lg">Live Preview</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-            <BusinessCardFront
-              name={name}
-              role={role}
-              email={email}
-              phone={phone}
-              company={company}
-              url={url}
-            />
-            <BusinessCardBack
+            <PreviewCard
               name={name}
               role={role}
               email={email}
