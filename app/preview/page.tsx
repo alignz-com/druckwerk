@@ -34,11 +34,12 @@ export default function PreviewPage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
+    <main className="mx-auto max-w-7xl p-4 sm:p-6">
+      <h1 className="mb-4 text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
+      {/* Responsive grid: stack on small, 2 cols on md+ */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-lg">Details</CardTitle>
           </CardHeader>
@@ -73,33 +74,39 @@ export default function PreviewPage() {
           </CardFooter>
         </Card>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-lg">Live Preview</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {/* AutoScale makes this responsive (fills the column width) */}
             <AutoScale width={1000}>
-              <BusinessCardFront
-                name={name}
-                role={role}
-                email={email}
-                phone={phone}
-                company={company}
-                backgroundSrc="/templates/omicron-front.png"
-                // showTrim // ← nur zum Debuggen
-              />
+              {/* no borders, no rounded corners on the previews */}
+              <div className="border-none shadow-none">
+                <BusinessCardFront
+                  name={name}
+                  role={role}
+                  email={email}
+                  phone={phone}
+                  company={company}
+                  backgroundSrc="/templates/omicron-front.png"
+                />
+              </div>
+
               <div style={{ height: 24 }} />
-              <BusinessCardBack
-                name={name}
-                role={role}
-                email={email}
-                phone={phone}
-                company={company}
-                url={url}
-                vcard
-                backgroundSrc="/templates/omicron-back.png"
-                // showTrim // ← nur zum Debuggen
-              />
+
+              <div className="border-none shadow-none">
+                <BusinessCardBack
+                  name={name}
+                  role={role}
+                  email={email}
+                  phone={phone}
+                  company={company}
+                  url={url}
+                  vcard
+                  backgroundSrc="/templates/omicron-back.png"
+                />
+              </div>
             </AutoScale>
           </CardContent>
         </Card>
