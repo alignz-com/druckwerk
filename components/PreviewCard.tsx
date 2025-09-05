@@ -3,38 +3,38 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
-/** ---------- geometry (mm) ---------- */
+/* ---------- Card geometry (ISO business card) ---------- */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
-// internal render width; everything else derives from mm
+/* Internal render width; everything derives from mm */
 const BASE_W_PX = 1000;
 const PX_PER_MM = BASE_W_PX / CARD_W_MM;
 const mm = (n: number) => n * PX_PER_MM;
-const pt = (n: number) => (n * 96) / 72; // 1pt @96dpi
+const pt = (n: number) => (n * 96) / 72;
 
-/** ---------- tweak here to nudge positions/sizes ---------- */
-// text column (relative to left/top, like in the PDF)
-const TEXT_LEFT_MM = 20.5;   // was 24.4 → further left
-const TEXT_TOP_MM  = 20;     // was 24 → higher
+/* ---------- TEXT & QR positions (match the PDF) ---------- */
+/* If you need micro-tuning later, change these two only */
+const TEXT_LEFT_MM = 24.4;   // PDF: 24.4 mm from left
+const TEXT_TOP_MM  = 24.0;   // PDF: first baseline 24 mm from top
+
+/* column width / gaps (PDF) */
 const TEXT_COL_W_MM = 85;
+const GAP_NAME_MM   = 4.0;
+const GAP_BODY_MM   = 3.5;
 
-// preview text looks a touch smaller than in the PDF at 1:1, so scale slightly
-const TEXT_SCALE = 1.15;     // 15% larger visual size
+/* visual scale so HTML matches perceived PDF size */
+const TEXT_SCALE = 1.30;     // ← bumped (looked small previously)
 
-// vertical gaps
-const GAP_NAME_MM = 4;
-const GAP_BODY_MM = 3.5;
+/* Back side QR — use the PDF values */
+const QR_MM   = 32.0;
+const QR_X_MM = 52.8;
+const QR_Y_MM = 18.85;
 
-/** back side QR (preview only; PDF keeps 32 mm) */
-const QR_MM     = 28;      // was 32 → looked too big in PNG slot
-const QR_X_MM   = 56;      // was 52.8 → a tad more to the right
-const QR_Y_MM   = 20;      // was 18.85 → a hair higher
-
-/** trim marks (optional) */
+/* Optional crop marks (debug), disabled by default */
 function CropMarks() {
   const L = 5; const T = 2;
-  const s = { position: "absolute" as const, background: "rgba(0,0,0,.6)" };
+  const s = { position: "absolute" as const, background: "rgba(0,0,0,.55)" };
   return (
     <>
       <div style={{ ...s, left: mm(T), top: mm(T), width: mm(L), height: 1 }} />
@@ -49,7 +49,7 @@ function CropMarks() {
   );
 }
 
-/** auto-scale wrapper so the card always fits its container */
+/* Auto-scale wrapper so the card always fits the parent width */
 export function AutoScale({ width, children }: { width: number; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
@@ -58,19 +58,21 @@ export function AutoScale({ width, children }: { width: number; children: React.
     if (!el) return;
     const ro = new ResizeObserver(() => {
       const w = el.clientWidth;
-      setScale(Math.min(1, Math.max(0.3, w / width)));
+      setScale(Math.min(1, Math.max(0.35, w / width)));
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, [width]);
   return (
     <div ref={ref} className="w-full">
-      <div style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}>{children}</div>
+      <div style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+        {children}
+      </div>
     </div>
   );
 }
 
-/** vCard helpers (same logic as your /api/pdf) */
+/* vCard helpers (mirrors your API) */
 const vEscape = (s: string) =>
   s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 function buildVCard3(opts: {
@@ -88,7 +90,12 @@ function buildVCard3(opts: {
   return lines.join("\r\n");
 }
 
-/** ---------- FRONT ---------- */
+/* Keep Frutiger without relying on Tailwind token mapping */
+const FRUTIGER_STYLE: React.CSSProperties = {
+  fontFamily: '"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
+};
+
+/* ---------- FRONT ---------- */
 export function BusinessCardFront(props: {
   name: string;
   role?: string;
@@ -105,12 +112,10 @@ export function BusinessCardFront(props: {
   const bodyPx = pt(8  * TEXT_SCALE);
 
   const xLeft = mm(TEXT_LEFT_MM);
-  const firstBaseY = mm(TEXT_TOP_MM);
+  const firstY = mm(TEXT_TOP_MM);
 
   type Line = { text: string; size: number; dyMm: number; className?: string };
-  const lines: Line[] = [
-    { text: name, size: namePx, dyMm: 0, className: "font-bold" },
-  ];
+  const lines: Line[] = [{ text: name, size: namePx, dyMm: 0, className: "font-bold" }];
   if (role) lines.push({ text: role, size: rolePx, dyMm: GAP_NAME_MM, className: "italic font-light" });
 
   // spacer to contacts
@@ -126,20 +131,19 @@ export function BusinessCardFront(props: {
     .replace(/\r\n/g, "\n")
     .split("\n")
     .filter(Boolean)
-    .forEach(l => lines.push({ text: l, size: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" }));
+    .forEach((l) => lines.push({ text: l, size: bodyPx, dyMm: GAP_BODY_MM, className: "font-light" }));
 
-  // render (no rounded corners / shadows)
-  let y = firstBaseY;
+  let y = firstY;
 
   return (
     <div
-      className="relative bg-white"
+      className="relative"
       style={{ width: BASE_W_PX, height: mm(CARD_H_MM) }}
     >
       <img
         src={backgroundSrc}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
         draggable={false}
       />
       <div className="absolute" style={{ left: xLeft, top: 0, width: mm(TEXT_COL_W_MM), height: "100%" }}>
@@ -149,8 +153,8 @@ export function BusinessCardFront(props: {
           return (
             <div
               key={i}
-              className={`font-[300] ${l.className ?? ""}`}
-              style={{ position: "absolute", left: 0, top: y, fontSize: l.size, lineHeight: 1, color: "#000", whiteSpace: "pre-wrap" }}
+              className={`text-black ${l.className ?? ""}`}
+              style={{ ...FRUTIGER_STYLE, position: "absolute", left: 0, top: y, fontSize: l.size, lineHeight: 1, whiteSpace: "pre-wrap" }}
             >
               {l.text}
             </div>
@@ -162,7 +166,7 @@ export function BusinessCardFront(props: {
   );
 }
 
-/** ---------- BACK ---------- */
+/* ---------- BACK ---------- */
 export function BusinessCardBack(props: {
   name: string;
   role?: string;
@@ -191,18 +195,18 @@ export function BusinessCardBack(props: {
   }, [payload]);
 
   return (
-    <div className="relative bg-white" style={{ width: BASE_W_PX, height: mm(CARD_H_MM) }}>
+    <div className="relative" style={{ width: BASE_W_PX, height: mm(CARD_H_MM) }}>
       <img
         src={backgroundSrc}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
         draggable={false}
       />
       {qr && (
         <img
           src={qr}
           alt="QR"
-          className="absolute"
+          className="absolute select-none pointer-events-none"
           style={{
             left: mm(QR_X_MM),
             bottom: mm(QR_Y_MM),
