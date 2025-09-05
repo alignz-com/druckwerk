@@ -22,29 +22,51 @@ function vEscape(s: string) {
     .replace(/;/g, "\\;");
 }
 
+function splitName(full: string) {
+  const s = (full || "").trim().replace(/\s+/g, " ");
+  if (!s) return { given: "", family: "" };
+  const parts = s.split(" ");
+  if (parts.length === 1) return { given: parts[0], family: "" };
+  const family = parts.pop() as string;
+  const given = parts.join(" ");
+  return { given, family };
+}
+
 function buildVCard3(opts: {
   fullName: string;
   org?: string;
   title?: string;
   email?: string;
-  tel?: string;
+  phone?: string;   // WORK
+  mobile?: string;  // MOBILE
   url?: string;
-  addrLabel?: string; // freie mehrzeilige Adresse
+  addrLabel?: string; // multiline label shown by many scanners
 }) {
-  const { fullName, org, title, email, tel, url, addrLabel } = opts;
+  const { fullName, org, title, email, phone, mobile, url, addrLabel } = opts;
+
+  const { given, family } = splitName(fullName);
   const lines: string[] = [
     "BEGIN:VCARD",
     "VERSION:3.0",
+    `N:${vEscape(family)};${vEscape(given)};;;`,
     `FN:${vEscape(fullName)}`,
   ];
-  if (org) lines.push(`ORG:${vEscape(org)}`);
-  if (title) lines.push(`TITLE:${vEscape(title)}`);
-  if (tel) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
-  if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL:${vEscape(url)}`);
-  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+
+  if (org)    lines.push(`ORG:${vEscape(org)}`);
+  if (title)  lines.push(`TITLE:${vEscape(title)}`);
+  if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
+  if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
+  if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+  if (url)    lines.push(`URL:${vEscape(url)}`);
+
+  if (addrLabel) {
+    // ADR: PO Box ; Extended ; Street ; City ; Region ; Postal ; Country
+    const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
+    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
+  }
+
   lines.push("END:VCARD");
-  return lines.join("\r\n"); // CRLF für Scanner-Kompatibilität
+  return lines.join("\r\n"); // CRLF for compatibility
 }
 
 type Payload = {
@@ -268,12 +290,14 @@ export async function POST(req: Request) {
   // 5) Rückseite – vCard-QR (32 mm)
   const orgName = (company || "").split(/\r?\n/)[0] || "";
   const addrLabel = company || "";
+  
   const vcard = buildVCard3({
     fullName: name,
     org: orgName,
     title: role || undefined,
     email: email || undefined,
-    tel: (mobile || phone) || undefined, // ⬅️ mobile bevorzugt
+    phone: phone || undefined,     // keep work
+    mobile: mobile || undefined,   // add mobile
     url: url || undefined,
     addrLabel,
   });
