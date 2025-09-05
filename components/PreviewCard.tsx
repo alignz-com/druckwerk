@@ -10,10 +10,11 @@ type Props = {
   phone?: string;
   company?: string;
   url?: string;
+  /** Feintuning nur für die Preview (mm = viewBox-Units) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* ---------- Geometrie (mm) ---------- */
+/* ---------- Geometrie in mm (= viewBox-Units) ---------- */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
@@ -25,16 +26,18 @@ const GAP_CONTACT_MM = 3.5;
 const CONTACT_BLOCK_SPACER_MM = 3.25;
 const COMPANY_SPACER_MM = 1.9;
 
+/* PDF-Schriftgrößen in pt -> mm.
+   Wir benutzen aber *unitlos* (viewBox-Units), d. h. exakt diese mm-Werte. */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME_MM = ptToMm(10);
-const ROLE_MM = ptToMm(8);
-const BODY_MM = ptToMm(8);
+const NAME_SIZE = ptToMm(10); // 10pt
+const ROLE_SIZE = ptToMm(8);  //  8pt
+const BODY_SIZE = ptToMm(8);  //  8pt
 
-/* QR-Defaults (leicht nach links/oben und kleiner) */
+/* QR-Defaults – leicht nach links/oben & etwas kleiner, wie gewünscht */
 const QR_DEFAULT = {
-  xMm: 48.8,
-  yMm: 16.2,
-  sizeMm: 29.8,
+  xMm: 47.6,
+  yMm: 15.6,
+  sizeMm: 28.8,
 };
 
 /* ---------- vCard ---------- */
@@ -59,16 +62,14 @@ function buildVCard3(o: {
 const splitLines = (s?: string) =>
   (s ?? "").replace(/\r\n/g, "\n").split("\n").map((l) => l.trimEnd()).filter(Boolean);
 
-/* ======================================================================= */
-/* FRAME                                                                    */
-/* ======================================================================= */
+/* ---------- kleins Wrapper mit Überschrift (einziger Rahmen) ---------- */
 function Frame({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <figure className="rounded-xl border border-border/80 bg-card shadow-sm p-0">
-      <figcaption className="px-2 py-1 text-sm font-medium text-muted-foreground">
+    <figure className="rounded-lg border border-border bg-card shadow-sm">
+      <figcaption className="px-3 py-2 text-sm font-medium text-muted-foreground">
         {title}
       </figcaption>
-      {children}
+      <div className="px-2 pb-2">{children}</div>
     </figure>
   );
 }
@@ -79,8 +80,8 @@ function Frame({ title, children }: { title: string; children: React.ReactNode }
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  let y = TOP_MM;
-  const nameY = y;
+  let y = TOP_MM;           // Baseline erster Text
+  const nameY = y;          // Name
   y += GAP_NAME_MM;
 
   const roleY = role ? y : y;
@@ -101,8 +102,10 @@ export function BusinessCardFront(props: Props) {
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block", margin: 0 }}
+        style={{ maxWidth: 520, height: "auto", display: "block" }}
+        aria-label="Business card front"
       >
+        {/* Hintergrund exakt auf viewBox */}
         <image
           href="/templates/omicron-front.png"
           x={0}
@@ -111,33 +114,31 @@ export function BusinessCardFront(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
+
+        {/* Text – *alle* Werte ohne Einheit => viewBox-Units (mm) */}
         <g
           fontFamily='"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
           fill="black"
           dominantBaseline="alphabetic"
         >
-          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_MM}mm`} fontWeight={700}>
+          <text x={LEFT_MM} y={nameY} fontSize={NAME_SIZE} fontWeight={700}>
             {name}
           </text>
+
           {role && (
-            <text
-              x={LEFT_MM}
-              y={roleY}
-              fontSize={`${ROLE_MM}mm`}
-              fontStyle="italic"
-              fontWeight={300}
-              opacity={0.9}
-            >
+            <text x={LEFT_MM} y={roleY} fontSize={ROLE_SIZE} fontStyle="italic" fontWeight={300} opacity={0.9}>
               {role}
             </text>
           )}
+
           {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_SIZE} fontWeight={300}>
               {l.text}
             </text>
           ))}
+
           {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_SIZE} fontWeight={300}>
               {l.text}
             </text>
           ))}
@@ -196,7 +197,8 @@ export function BusinessCardBack(props: Props) {
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block", margin: 0 }}
+        style={{ maxWidth: 520, height: "auto", display: "block" }}
+        aria-label="Business card back"
       >
         <image
           href="/templates/omicron-back.png"
@@ -206,16 +208,7 @@ export function BusinessCardBack(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-        {qrData && (
-          <image
-            href={qrData}
-            x={qx}
-            y={qy}
-            width={qs}
-            height={qs}
-            preserveAspectRatio="none"
-          />
-        )}
+        {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
       </svg>
     </Frame>
   );
