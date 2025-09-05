@@ -3,19 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-/** Props für beide Seiten */
+/** Shared props */
 export type Props = {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
-  company?: string; // mehrzeilig
+  company?: string; // multiline
   url?: string;
-  /** Feintuning nur für die Preview (mm) */
+  /** Fine-tune QR just for the preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* ==================== Geometrie (mm) – wie im PDF ==================== */
+/* =================== Geometry in mm (like PDF) =================== */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
@@ -27,17 +27,18 @@ const GAP_CONTACT_MM = 3.5;
 const CONTACT_BLOCK_SPACER_MM = 3.25;
 const COMPANY_SPACER_MM = 1.9;
 
-/* PDF-Schriftgrößen (pt) → mm */
-const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME_MM = ptToMm(10); // 10 pt
-const ROLE_MM = ptToMm(8);  //  8 pt
-const BODY_MM = ptToMm(8);  //  8 pt
+/* ---- Typography: use px for font-size (stable across browsers) ----
+   1 pt = 96/72 px = 1.333333… px  */
+const ptToPx = (pt: number) => (pt * 96) / 72;
+const NAME_PX = ptToPx(10); // 10 pt -> 13.333 px
+const ROLE_PX = ptToPx(8);  //  8 pt -> 10.666 px
+const BODY_PX = ptToPx(8);  //  8 pt -> 10.666 px
 
-/* QR Default (leicht links/oben & etwas kleiner als PDF, kannst du bei Bedarf feintunen) */
+/* ---- QR defaults (slightly smaller & shifted left/up for the white box) ---- */
 const QR_DEFAULT = {
-  xMm: 50.6,   // PDF war ~52.8
-  yMm: 17.9,   // PDF war ~18.85
-  sizeMm: 29.5 // PDF war ~32
+  xMm: 49.8,    // was ~52.8 in PDF
+  yMm: 18.3,    // was ~18.85
+  sizeMm: 27.6, // was 32
 };
 
 /* Helpers */
@@ -80,7 +81,7 @@ function buildVCard3(o: {
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  // Y-Positionen (mm) identisch zur PDF-Logik (von oben nach unten)
+  // y positions in mm (top → bottom), identical to the PDF logic
   let y = TOP_MM;
   const nameY = y;
   y += GAP_NAME_MM;
@@ -92,7 +93,7 @@ export function BusinessCardFront(props: Props) {
 
   const contacts: Array<{ text: string; y: number }> = [];
   if (phone) {
-    contacts.push({ text: `T +${phone.replace(/^\+?/, "")}`, y });
+    contacts.push({ text: `T ${phone}`, y });
     y += GAP_CONTACT_MM;
   }
   if (email) {
@@ -108,7 +109,7 @@ export function BusinessCardFront(props: Props) {
 
   const addr = splitLines(company).map((text, i) => ({
     text,
-    y: y + i * GAP_CONTACT_MM
+    y: y + i * GAP_CONTACT_MM,
   }));
 
   return (
@@ -119,7 +120,7 @@ export function BusinessCardFront(props: Props) {
         style={{ maxWidth: 560, height: "auto", display: "block" }}
         aria-label="Business card front"
       >
-        {/* Hintergrund */}
+        {/* Background */}
         <image
           href="/templates/omicron-front.png"
           x={0}
@@ -128,13 +129,13 @@ export function BusinessCardFront(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-        {/* Text (in mm) */}
+        {/* Text (positions in mm; font-size in px) */}
         <g
           fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
           fill="#111"
           dominantBaseline="alphabetic"
         >
-          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_MM}mm`} fontWeight={700}>
+          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_PX}px`} fontWeight={700}>
             {name}
           </text>
 
@@ -142,7 +143,7 @@ export function BusinessCardFront(props: Props) {
             <text
               x={LEFT_MM}
               y={roleY}
-              fontSize={`${ROLE_MM}mm`}
+              fontSize={`${ROLE_PX}px`}
               fontStyle="italic"
               fontWeight={300}
               opacity={0.95}
@@ -152,13 +153,13 @@ export function BusinessCardFront(props: Props) {
           )}
 
           {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_PX}px`} fontWeight={300}>
               {l.text}
             </text>
           ))}
 
           {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_PX}px`} fontWeight={300}>
               {l.text}
             </text>
           ))}
@@ -183,7 +184,7 @@ export function BusinessCardBack(props: Props) {
         email: email || undefined,
         tel: phone || undefined,
         url: url || undefined,
-        addrLabel: company || undefined
+        addrLabel: company || undefined,
       }),
     [name, role, email, phone, url, company, org]
   );
@@ -197,7 +198,7 @@ export function BusinessCardBack(props: Props) {
         const data = await QRCode.toDataURL(vcard, {
           margin: 0,
           errorCorrectionLevel: "M",
-          scale: 8
+          scale: 8,
         });
         if (!stop) setQrData(data);
       } catch {
@@ -229,9 +230,7 @@ export function BusinessCardBack(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-        {qrData && (
-          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
-        )}
+        {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>
