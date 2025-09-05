@@ -99,7 +99,11 @@ function buildVCard3(o: {
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
   if (url)    lines.push(`URL:${vEscape(url)}`);
-  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+  if (addrLabel) {
+  // ADR: PO Box ; Extended ; Street ; City ; Region ; Postal ; Country
+  const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
+  lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
+}
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
