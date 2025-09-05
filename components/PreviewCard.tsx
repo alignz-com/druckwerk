@@ -20,8 +20,8 @@ export type Props = {
 const CARD_W = 85;
 const CARD_H = 55;
 
-const LEFT = 20;
-const TOP = 18;
+const LEFT = 22;
+const TOP = 19;
 
 const GAP_NAME = 3;
 const GAP_CONTACT = 2;
