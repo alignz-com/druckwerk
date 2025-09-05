@@ -19,25 +19,30 @@ const CARD_W = 85;
 const CARD_H = 55;
 
 const LEFT = 24.4;
-const TOP = 24;
+const TOP = 20;
 
-const GAP_NAME = 4;
-const GAP_CONTACT = 3.5;
-const CONTACT_SPACER = 3.25;
-const COMPANY_SPACER = 1.9;
+const GAP_NAME = 3;
+const GAP_CONTACT = 2.5;
+const CONTACT_SPACER = 2.2;
+const COMPANY_SPACER = 1.3;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME = ptToMm(10); // 10pt
-const ROLE = ptToMm(8);  //  8pt
-const BODY = ptToMm(8);  //  8pt
+
+const FONT_SCALE_NAME = 0.7;
+const FONT_SCALE_ROLE = 0.7;
+const FONT_SCALE_BODY = 0.7;
+
+const NAME = ptToMm(10) * FONT_SCALE_NAME;
+const ROLE = ptToMm(8)  * FONT_SCALE_ROLE;
+const BODY = ptToMm(8)  * FONT_SCALE_BODY;
 
 /* QR — leicht kleiner und etwas nach links/oben für die weiße Box der Rückseite */
 const QR_DEFAULT = {
-  xMm: 49.8,     // PDF war ~52.8
-  yMm: 18.2,     // PDF war ~18.85
-  sizeMm: 27.8,  // PDF war 32
+  xMm: 47.8,     // PDF war ~52.8
+  yMm: 15.2,     // PDF war ~18.85
+  sizeMm: 25,  // PDF war 32
 };
 
 /* ---------- kleine Helfer ---------- */
