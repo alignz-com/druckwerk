@@ -30,9 +30,9 @@ const COMPANY_SPACER = 1.3;
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
 
-const FONT_SCALE_NAME = 0.7;
-const FONT_SCALE_ROLE = 0.7;
-const FONT_SCALE_BODY = 0.7;
+const FONT_SCALE_NAME = 0.75;
+const FONT_SCALE_ROLE = 0.75;
+const FONT_SCALE_BODY = 0.75;
 
 const NAME = ptToMm(10) * FONT_SCALE_NAME;
 const ROLE = ptToMm(8)  * FONT_SCALE_ROLE;
@@ -40,7 +40,7 @@ const BODY = ptToMm(8)  * FONT_SCALE_BODY;
 
 /* QR — leicht kleiner und etwas nach links/oben für die weiße Box der Rückseite */
 const QR_DEFAULT = {
-  xMm: 44.8,     // PDF war ~52.8
+  xMm: 45,     // PDF war ~52.8
   yMm: 15,     // PDF war ~18.85
   sizeMm: 25,  // PDF war 32
 };
