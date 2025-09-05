@@ -1,20 +1,21 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-type Props = {
+/** Props für beide Seiten */
+export type Props = {
   name: string;
   role?: string;
   email?: string;
   phone?: string;
-  company?: string; // multiline
+  company?: string; // mehrzeilig
   url?: string;
-  /** Feintuning nur für die Preview (in mm) */
+  /** Feintuning nur für die Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* ---------- Geometrie wie im PDF (mm) ---------- */
+/* ==================== Geometrie (mm) – wie im PDF ==================== */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
@@ -28,18 +29,18 @@ const COMPANY_SPACER_MM = 1.9;
 
 /* PDF-Schriftgrößen (pt) → mm */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME_MM = ptToMm(10); // 10pt
-const ROLE_MM = ptToMm(8);  // 8pt
-const BODY_MM = ptToMm(8);  // 8pt
+const NAME_MM = ptToMm(10); // 10 pt
+const ROLE_MM = ptToMm(8);  //  8 pt
+const BODY_MM = ptToMm(8);  //  8 pt
 
-/* QR-Position (mm) – leicht korrigiert, damit er schön in die weiße Fläche passt */
+/* QR Default (leicht links/oben & etwas kleiner als PDF, kannst du bei Bedarf feintunen) */
 const QR_DEFAULT = {
-  xMm: 49.8,   // etwas weiter links
-  yMm: 17.6,   // etwas weiter oben
-  sizeMm: 29.0 // etwas kleiner
+  xMm: 50.6,   // PDF war ~52.8
+  yMm: 17.9,   // PDF war ~18.85
+  sizeMm: 29.5 // PDF war ~32
 };
 
-/* -------- Helpers -------- */
+/* Helpers */
 const splitLines = (s?: string) =>
   (s ?? "")
     .replace(/\r\n/g, "\n")
@@ -47,48 +48,39 @@ const splitLines = (s?: string) =>
     .map((l) => l.trimEnd())
     .filter(Boolean);
 
-// vCard
 function vEscape(s: string) {
-  return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
 }
 function buildVCard3(o: {
-  fullName: string; org?: string; title?: string; email?: string; tel?: string; url?: string; addrLabel?: string;
+  fullName: string;
+  org?: string;
+  title?: string;
+  email?: string;
+  tel?: string;
+  url?: string;
+  addrLabel?: string;
 }) {
   const { fullName, org, title, email, tel, url, addrLabel } = o;
   const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
-  if (org)   lines.push(`ORG:${vEscape(org)}`);
+  if (org) lines.push(`ORG:${vEscape(org)}`);
   if (title) lines.push(`TITLE:${vEscape(title)}`);
-  if (tel)   lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
+  if (tel) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
   if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url)   lines.push(`URL:${vEscape(url)}`);
+  if (url) lines.push(`URL:${vEscape(url)}`);
   if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
 
-/** beobachtet die gerenderte Breite und liefert px pro mm */
-function usePxPerMm(ref: React.RefObject<HTMLDivElement>) {
-  const [pxPerMm, setPxPerMm] = useState<number>(3); // Fallback
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-    const ro = new ResizeObserver(() => {
-      const wPx = el.clientWidth;
-      if (wPx > 0) setPxPerMm(wPx / CARD_W_MM);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [ref]);
-  return pxPerMm;
-}
-
-/* ======================================================================= */
-/* FRONT                                                                    */
-/* ======================================================================= */
+/* ============================== FRONT ============================== */
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  // y-Akkumulator wie im PDF (mm)
+  // Y-Positionen (mm) identisch zur PDF-Logik (von oben nach unten)
   let y = TOP_MM;
   const nameY = y;
   y += GAP_NAME_MM;
@@ -99,27 +91,32 @@ export function BusinessCardFront(props: Props) {
   y += CONTACT_BLOCK_SPACER_MM;
 
   const contacts: Array<{ text: string; y: number }> = [];
-  if (phone) { contacts.push({ text: `T +${phone.replace(/^\+/, "")}`, y }); y += GAP_CONTACT_MM; }
-  if (email) { contacts.push({ text: email, y }); y += GAP_CONTACT_MM; }
-  if (url)   { contacts.push({ text: url, y }); y += GAP_CONTACT_MM; }
+  if (phone) {
+    contacts.push({ text: `T +${phone.replace(/^\+?/, "")}`, y });
+    y += GAP_CONTACT_MM;
+  }
+  if (email) {
+    contacts.push({ text: email, y });
+    y += GAP_CONTACT_MM;
+  }
+  if (url) {
+    contacts.push({ text: url, y });
+    y += GAP_CONTACT_MM;
+  }
 
   y += COMPANY_SPACER_MM;
 
-  const addr = splitLines(company).map((text, i) => ({ text, y: y + i * GAP_CONTACT_MM }));
-
-  // dynamische Font-Skalierung
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const pxPerMm = usePxPerMm(wrapRef);
-  const NAME_PX = NAME_MM * pxPerMm;
-  const ROLE_PX = ROLE_MM * pxPerMm;
-  const BODY_PX = BODY_MM * pxPerMm;
+  const addr = splitLines(company).map((text, i) => ({
+    text,
+    y: y + i * GAP_CONTACT_MM
+  }));
 
   return (
-    <div ref={wrapRef} className="w-full">
+    <figure className="select-none">
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ height: "auto", display: "block" }}
+        style={{ maxWidth: 560, height: "auto", display: "block" }}
         aria-label="Business card front"
       >
         {/* Hintergrund */}
@@ -131,13 +128,13 @@ export function BusinessCardFront(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-        {/* Text (Koordinaten in mm, Schrift in px → skaliert korrekt) */}
+        {/* Text (in mm) */}
         <g
-          fontFamily='"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
-          fill="black"
+          fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
+          fill="#111"
           dominantBaseline="alphabetic"
         >
-          <text x={LEFT_MM} y={nameY} style={{ fontSize: NAME_PX, fontWeight: 700 }}>
+          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_MM}mm`} fontWeight={700}>
             {name}
           </text>
 
@@ -145,32 +142,34 @@ export function BusinessCardFront(props: Props) {
             <text
               x={LEFT_MM}
               y={roleY}
-              style={{ fontSize: ROLE_PX, fontStyle: "italic", fontWeight: 300, opacity: 0.9 }}
+              fontSize={`${ROLE_MM}mm`}
+              fontStyle="italic"
+              fontWeight={300}
+              opacity={0.95}
             >
               {role}
             </text>
           )}
 
           {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} style={{ fontSize: BODY_PX, fontWeight: 300 }}>
+            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
               {l.text}
             </text>
           ))}
 
           {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} style={{ fontSize: BODY_PX, fontWeight: 300 }}>
+            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
               {l.text}
             </text>
           ))}
         </g>
       </svg>
-    </div>
+      <figcaption className="sr-only">Card Front</figcaption>
+    </figure>
   );
 }
 
-/* ======================================================================= */
-/* BACK                                                                     */
-/* ======================================================================= */
+/* =============================== BACK =============================== */
 export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "", qrOverride } = props;
 
@@ -184,7 +183,7 @@ export function BusinessCardBack(props: Props) {
         email: email || undefined,
         tel: phone || undefined,
         url: url || undefined,
-        addrLabel: company || undefined,
+        addrLabel: company || undefined
       }),
     [name, role, email, phone, url, company, org]
   );
@@ -198,7 +197,7 @@ export function BusinessCardBack(props: Props) {
         const data = await QRCode.toDataURL(vcard, {
           margin: 0,
           errorCorrectionLevel: "M",
-          scale: 8,
+          scale: 8
         });
         if (!stop) setQrData(data);
       } catch {
@@ -215,11 +214,11 @@ export function BusinessCardBack(props: Props) {
   const qs = qrOverride?.sizeMm ?? QR_DEFAULT.sizeMm;
 
   return (
-    <div className="w-full">
+    <figure className="select-none">
       <svg
         viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
         width="100%"
-        style={{ height: "auto", display: "block" }}
+        style={{ maxWidth: 560, height: "auto", display: "block" }}
         aria-label="Business card back"
       >
         <image
@@ -230,8 +229,11 @@ export function BusinessCardBack(props: Props) {
           height={CARD_H_MM}
           preserveAspectRatio="none"
         />
-        {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
+        {qrData && (
+          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
+        )}
       </svg>
-    </div>
+      <figcaption className="sr-only">Card Back</figcaption>
+    </figure>
   );
 }
