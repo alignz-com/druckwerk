@@ -10,34 +10,47 @@ type Props = {
   phone?: string;
   company?: string;
   url?: string;
-  /** Feintuning nur für die Preview (mm = viewBox-Units) */
+  /** Optionales Feintuning für die QR-Position in mm (nur Preview) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* ---------- Geometrie in mm (= viewBox-Units) ---------- */
+/* ---------- Geometrie (mm) wie im PDF ---------- */
 const CARD_W_MM = 85;
 const CARD_H_MM = 55;
 
 const LEFT_MM = 24.4;
 const TOP_MM = 24;
 
+/** Baseline-Abstände (vor Korrektur) */
 const GAP_NAME_MM = 4;
 const GAP_CONTACT_MM = 3.5;
 const CONTACT_BLOCK_SPACER_MM = 3.25;
 const COMPANY_SPACER_MM = 1.9;
 
-/* PDF-Schriftgrößen in pt -> mm.
-   Wir benutzen aber *unitlos* (viewBox-Units), d. h. exakt diese mm-Werte. */
-const ptToMm = (pt: number) => (pt * 25.4) / 72;
-const NAME_SIZE = ptToMm(10); // 10pt
-const ROLE_SIZE = ptToMm(8);  //  8pt
-const BODY_SIZE = ptToMm(8);  //  8pt
+/* ---------- PDF -> Screen Korrektur ---------- */
+/** Browser rendert Fonts “optisch größer” als pdf-lib. */
+const FONT_ADJ = 0.72;      // 0.70–0.76: kleiner/größer
+const LH_ADJ = 0.88;        // 0.85–0.92: enger/luftiger
 
-/* QR-Defaults – leicht nach links/oben & etwas kleiner, wie gewünscht */
+/* PDF-Schriftgrößen (pt) → mm */
+const ptToMm = (pt: number) => (pt * 25.4) / 72;
+
+/** Korrigierte Größen */
+const NAME_MM = ptToMm(10) * FONT_ADJ; // 10pt
+const ROLE_MM = ptToMm(8) * FONT_ADJ;  // 8pt
+const BODY_MM = ptToMm(8) * FONT_ADJ;  // 8pt
+
+/** Korrigierte Zeilenabstände */
+const GAP_NAME_ADJ_MM = GAP_NAME_MM * LH_ADJ;
+const GAP_CONTACT_ADJ_MM = GAP_CONTACT_MM * LH_ADJ;
+const CONTACT_BLOCK_SPACER_ADJ_MM = CONTACT_BLOCK_SPACER_MM * LH_ADJ;
+const COMPANY_SPACER_ADJ_MM = COMPANY_SPACER_MM * LH_ADJ;
+
+/* ---------- QR-Defaults (optisch an Vorlage angeglichen) ---------- */
 const QR_DEFAULT = {
-  xMm: 47.6,
-  yMm: 15.6,
-  sizeMm: 28.8,
+  xMm: 49.2,   // etwas weiter links
+  yMm: 17.2,   // etwas höher
+  sizeMm: 26.8 // kleiner, passt in die weiße Fläche
 };
 
 /* ---------- vCard ---------- */
@@ -62,89 +75,87 @@ function buildVCard3(o: {
 const splitLines = (s?: string) =>
   (s ?? "").replace(/\r\n/g, "\n").split("\n").map((l) => l.trimEnd()).filter(Boolean);
 
-/* ---------- kleins Wrapper mit Überschrift (einziger Rahmen) ---------- */
-function Frame({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <figure className="rounded-lg border border-border bg-card shadow-sm">
-      <figcaption className="px-3 py-2 text-sm font-medium text-muted-foreground">
-        {title}
-      </figcaption>
-      <div className="px-2 pb-2">{children}</div>
-    </figure>
-  );
-}
-
 /* ======================================================================= */
 /* FRONT                                                                    */
 /* ======================================================================= */
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  let y = TOP_MM;           // Baseline erster Text
-  const nameY = y;          // Name
-  y += GAP_NAME_MM;
+  // Grundlinien wie im PDF – mit angepassten Abständen
+  let y = TOP_MM;                  // Baseline Name
+  const nameY = y;
+  y += GAP_NAME_ADJ_MM;
 
   const roleY = role ? y : y;
-  if (role) y += GAP_NAME_MM;
+  if (role) y += GAP_NAME_ADJ_MM;
 
-  y += CONTACT_BLOCK_SPACER_MM;
+  y += CONTACT_BLOCK_SPACER_ADJ_MM;
 
   const contacts: Array<{ text: string; y: number }> = [];
-  if (phone) { contacts.push({ text: `T ${phone}`, y }); y += GAP_CONTACT_MM; }
-  if (email) { contacts.push({ text: email,        y }); y += GAP_CONTACT_MM; }
-  if (url)   { contacts.push({ text: url,          y }); y += GAP_CONTACT_MM; }
+  if (phone) { contacts.push({ text: `T +${phone.replace(/^\+?/, "")}`, y }); y += GAP_CONTACT_ADJ_MM; }
+  if (email) { contacts.push({ text: email,                        y }); y += GAP_CONTACT_ADJ_MM; }
+  if (url)   { contacts.push({ text: url,                          y }); y += GAP_CONTACT_ADJ_MM; }
 
-  y += COMPANY_SPACER_MM;
-  const addr = splitLines(company).map((text, i) => ({ text, y: y + i * GAP_CONTACT_MM }));
+  y += COMPANY_SPACER_ADJ_MM;
+
+  const addr = splitLines(company).map((text, i) => ({ text, y: y + i * GAP_CONTACT_ADJ_MM }));
 
   return (
-    <Frame title="Card Front">
-      <svg
-        viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
-        width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block" }}
-        aria-label="Business card front"
-      >
-        {/* Hintergrund exakt auf viewBox */}
-        <image
-          href="/templates/omicron-front.png"
-          x={0}
-          y={0}
-          width={CARD_W_MM}
-          height={CARD_H_MM}
-          preserveAspectRatio="none"
-        />
-
-        {/* Text – *alle* Werte ohne Einheit => viewBox-Units (mm) */}
-        <g
-          fontFamily='"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
-          fill="black"
-          dominantBaseline="alphabetic"
+    <figure className="select-none">
+      <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <svg
+          viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
+          width="100%"
+          style={{ maxWidth: 520, height: "auto", display: "block" }}
+          aria-label="Business card front"
         >
-          <text x={LEFT_MM} y={nameY} fontSize={NAME_SIZE} fontWeight={700}>
-            {name}
-          </text>
-
-          {role && (
-            <text x={LEFT_MM} y={roleY} fontSize={ROLE_SIZE} fontStyle="italic" fontWeight={300} opacity={0.9}>
-              {role}
+          {/* Hintergrund */}
+          <image
+            href="/templates/omicron-front.png"
+            x={0}
+            y={0}
+            width={CARD_W_MM}
+            height={CARD_H_MM}
+            preserveAspectRatio="none"
+          />
+          {/* Text (mm) */}
+          <g
+            fontFamily='"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+            fill="black"
+            dominantBaseline="alphabetic"
+          >
+            <text x={LEFT_MM} y={nameY} fontSize={`${NAME_MM}mm`} fontWeight={700}>
+              {name}
             </text>
-          )}
 
-          {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_SIZE} fontWeight={300}>
-              {l.text}
-            </text>
-          ))}
+            {role && (
+              <text
+                x={LEFT_MM}
+                y={roleY}
+                fontSize={`${ROLE_MM}mm`}
+                fontStyle="italic"
+                fontWeight={300}
+              >
+                {role}
+              </text>
+            )}
 
-          {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={BODY_SIZE} fontWeight={300}>
-              {l.text}
-            </text>
-          ))}
-        </g>
-      </svg>
-    </Frame>
+            {contacts.map((l, i) => (
+              <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+                {l.text}
+              </text>
+            ))}
+
+            {addr.map((l, i) => (
+              <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_MM}mm`} fontWeight={300}>
+                {l.text}
+              </text>
+            ))}
+          </g>
+        </svg>
+      </div>
+      <figcaption className="sr-only">Card Front</figcaption>
+    </figure>
   );
 }
 
@@ -193,23 +204,35 @@ export function BusinessCardBack(props: Props) {
   const qs = qrOverride?.sizeMm ?? QR_DEFAULT.sizeMm;
 
   return (
-    <Frame title="Card Back">
-      <svg
-        viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
-        width="100%"
-        style={{ maxWidth: 520, height: "auto", display: "block" }}
-        aria-label="Business card back"
-      >
-        <image
-          href="/templates/omicron-back.png"
-          x={0}
-          y={0}
-          width={CARD_W_MM}
-          height={CARD_H_MM}
-          preserveAspectRatio="none"
-        />
-        {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
-      </svg>
-    </Frame>
+    <figure className="select-none">
+      <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <svg
+          viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
+          width="100%"
+          style={{ maxWidth: 520, height: "auto", display: "block" }}
+          aria-label="Business card back"
+        >
+          <image
+            href="/templates/omicron-back.png"
+            x={0}
+            y={0}
+            width={CARD_W_MM}
+            height={CARD_H_MM}
+            preserveAspectRatio="none"
+          />
+          {qrData && (
+            <image
+              href={qrData}
+              x={qx}
+              y={qy}
+              width={qs}
+              height={qs}
+              preserveAspectRatio="none"
+            />
+          )}
+        </svg>
+      </div>
+      <figcaption className="sr-only">Card Back</figcaption>
+    </figure>
   );
 }
