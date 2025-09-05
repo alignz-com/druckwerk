@@ -104,7 +104,14 @@ export default function PreviewPage() {
               company={company}
               url={url}
             />
-            <BusinessCardBack email={email} url={url} />
+            <BusinessCardBack
+              name={name}
+              role={role}
+              email={email}
+              phone={phone}
+              company={company}
+              url={url}
+            />
           </CardContent>
         </Card>
       </div>
