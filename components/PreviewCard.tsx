@@ -64,25 +64,33 @@ function vEscape(s: string) {
 }
 
 function buildVCard3(o: {
-  fullName: string;
-  org?: string;
-  title?: string;
-  email?: string;
-  tel?: string;
-  url?: string;
-  addrLabel?: string;
-}) {
-  const { fullName, org, title, email, tel, url, addrLabel } = o;
-  const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
-  if (org) lines.push(`ORG:${vEscape(org)}`);
-  if (title) lines.push(`TITLE:${vEscape(title)}`);
-  if (tel) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
-  if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL:${vEscape(url)}`);
-  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
-  lines.push("END:VCARD");
-  return lines.join("\r\n");
-}
+    fullName: string;
+    org?: string;
+    title?: string;
+    email?: string;
+    phone?: string;   // ← ergänzt
+    mobile?: string;  // ← ergänzt
+    url?: string;
+    addrLabel?: string;
+  }) {
+    const { fullName, org, title, email, phone, mobile, url, addrLabel } = o;
+  
+    const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
+  
+    if (org)    lines.push(`ORG:${vEscape(org)}`);
+    if (title)  lines.push(`TITLE:${vEscape(title)}`);
+  
+    if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
+    if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
+  
+    if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+    if (url)    lines.push(`URL:${vEscape(url)}`);
+    if (addrLabel)
+      lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+  
+    lines.push("END:VCARD");
+    return lines.join("\r\n");
+  }
 
 /* ============================== FRONT ============================== */
 export function BusinessCardFront(props: Props) {
