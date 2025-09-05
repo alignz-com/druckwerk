@@ -14,6 +14,7 @@ export default function PreviewPage() {
   const [role, setRole] = useState("CEO & Founder");
   const [email, setEmail] = useState("pascal@alignz.com");
   const [phone, setPhone] = useState("+41 79 530 74 60");
+  const [mobile, setMobile] = useState("+41 79 530 74 60");
   const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
   const [url, setUrl] = useState("https://alignz.com/pascal");
 
@@ -21,7 +22,7 @@ export default function PreviewPage() {
     const res = await fetch("/api/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, role, email, phone, company, url, template: "omicron" }),
+      body: JSON.stringify({ name, role, email, phone, mobile, company, url, template: "omicron" }),
     });
     const blob = await res.blob();
     const href = URL.createObjectURL(blob);
@@ -49,8 +50,18 @@ export default function PreviewPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="role">Funktion / Titel</Label>
+              <Label htmlFor="role">Function / Title</Label>
               <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Mobile</Label>
+              <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
@@ -59,12 +70,12 @@ export default function PreviewPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone">Telefon</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Label htmlFor="url">URL</Label>
+              <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="company">Firmenadresse (mehrzeilig)</Label>
+              <Label htmlFor="company">Company & Address</Label>
               <Textarea
                 id="company"
                 value={company}
@@ -73,10 +84,7 @@ export default function PreviewPage() {
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="url">URL für QR (optional)</Label>
-              <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
-            </div>
+
 
             <Button onClick={generate} className="w-full">Generate PDF</Button>
           </CardContent>
