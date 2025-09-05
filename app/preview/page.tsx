@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 
 export default function PreviewPage() {
+  // Demo-Defaults
   const [name, setName] = useState("Pascal Rossi");
   const [role, setRole] = useState("CEO & Founder");
   const [email, setEmail] = useState("pascal@alignz.com");
@@ -15,7 +17,7 @@ export default function PreviewPage() {
   const [company, setCompany] = useState("Alignz AG\nSeestrasse 12\n8000 Zürich");
   const [url, setUrl] = useState("https://alignz.com/pascal");
 
-  async function generate() {
+  const generate = async () => {
     const res = await fetch("/api/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -28,58 +30,67 @@ export default function PreviewPage() {
     a.download = "card.pdf";
     a.click();
     URL.revokeObjectURL(href);
-  }
+  };
 
   return (
-    <main className="mx-auto max-w-[1200px] p-6 md:p-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
+    <main className="mx-auto max-w-[1200px] p-6 md:p-8 lg:p-10 space-y-6">
+      <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
-      <div className="grid gap-6 md:grid-cols-[minmax(0,520px)_1fr]">
-        {/* Formular */}
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-[480px_minmax(0,1fr)]">
+        {/* Left: form */}
+        <Card className="h-fit">
           <CardHeader>
-            <CardTitle>Details</CardTitle>
+            <CardTitle className="text-base md:text-lg">Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">Name</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
+
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">Funktion / Titel</label>
-              <Input value={role} onChange={(e) => setRole(e.target.value)} />
+              <Label htmlFor="role">Funktion / Titel</Label>
+              <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
             </div>
+
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">E-Mail</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="email">E-Mail</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
+
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">Telefon</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Label htmlFor="phone">Telefon</Label>
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
+
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">Firmenadresse (mehrzeilig)</label>
-              <Textarea rows={5} value={company} onChange={(e) => setCompany(e.target.value)} />
+              <Label htmlFor="company">Firmenadresse (mehrzeilig)</Label>
+              <Textarea
+                id="company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                rows={5}
+              />
             </div>
+
             <div className="grid gap-2">
-              <label className="text-sm text-muted-foreground">URL für QR (optional)</label>
-              <Input value={url} onChange={(e) => setUrl(e.target.value)} />
+              <Label htmlFor="url">URL für QR (optional)</Label>
+              <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
-            <Button className="w-full" onClick={generate}>
-              Generate PDF
-            </Button>
+
+            <Button onClick={generate} className="w-full">Generate PDF</Button>
           </CardContent>
         </Card>
 
-        {/* Live Preview */}
+        {/* Right: preview */}
         <div className="space-y-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="mx-auto max-w-[560px] rounded-xl border bg-white p-4 shadow-sm">
-                {/* Rahmen NICHT doppelt: nur dieser Container */}
+            {/* nur 1 Rahmen – innen KEINE zusätzliche Shadow/Borders */}
+            <CardContent className="pt-2">
+              <div className="rounded-lg overflow-hidden">
                 <BusinessCardFront name={name} role={role} email={email} phone={phone} company={company} url={url} />
               </div>
             </CardContent>
@@ -89,9 +100,18 @@ export default function PreviewPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="mx-auto max-w-[560px] rounded-xl border bg-white p-4 shadow-sm">
-                <BusinessCardBack name={name} role={role} email={email} phone={phone} company={company} url={url} />
+            <CardContent className="pt-2">
+              <div className="rounded-lg overflow-hidden">
+                <BusinessCardBack
+                  name={name}
+                  role={role}
+                  email={email}
+                  phone={phone}
+                  company={company}
+                  url={url}
+                  /* bei Bedarf live feintunen: */
+                  // qrOverride={{ xMm: 49.2, yMm: 17.9, sizeMm: 27.2 }}
+                />
               </div>
             </CardContent>
           </Card>
