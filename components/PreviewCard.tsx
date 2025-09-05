@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-/** Shared props */
 export type Props = {
   name: string;
   role?: string;
@@ -11,37 +10,37 @@ export type Props = {
   phone?: string;
   company?: string; // multiline
   url?: string;
-  /** Fine-tune QR just for the preview (mm) */
+  /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
 
-/* =================== Geometry in mm (like PDF) =================== */
-const CARD_W_MM = 85;
-const CARD_H_MM = 55;
+/* ---------- Geometrie exakt wie im PDF (mm) ---------- */
+const CARD_W = 85;
+const CARD_H = 55;
 
-const LEFT_MM = 24.4;
-const TOP_MM = 24;
+const LEFT = 24.4;
+const TOP = 24;
 
-const GAP_NAME_MM = 4;
-const GAP_CONTACT_MM = 3.5;
-const CONTACT_BLOCK_SPACER_MM = 3.25;
-const COMPANY_SPACER_MM = 1.9;
+const GAP_NAME = 4;
+const GAP_CONTACT = 3.5;
+const CONTACT_SPACER = 3.25;
+const COMPANY_SPACER = 1.9;
 
-/* ---- Typography: use px for font-size (stable across browsers) ----
-   1 pt = 96/72 px = 1.333333… px  */
-const ptToPx = (pt: number) => (pt * 96) / 72;
-const NAME_PX = ptToPx(10); // 10 pt -> 13.333 px
-const ROLE_PX = ptToPx(8);  //  8 pt -> 10.666 px
-const BODY_PX = ptToPx(8);  //  8 pt -> 10.666 px
+/* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
+   1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
+const ptToMm = (pt: number) => (pt * 25.4) / 72;
+const NAME = ptToMm(10); // 10pt
+const ROLE = ptToMm(8);  //  8pt
+const BODY = ptToMm(8);  //  8pt
 
-/* ---- QR defaults (slightly smaller & shifted left/up for the white box) ---- */
+/* QR — leicht kleiner und etwas nach links/oben für die weiße Box der Rückseite */
 const QR_DEFAULT = {
-  xMm: 49.8,    // was ~52.8 in PDF
-  yMm: 18.3,    // was ~18.85
-  sizeMm: 27.6, // was 32
+  xMm: 49.8,     // PDF war ~52.8
+  yMm: 18.2,     // PDF war ~18.85
+  sizeMm: 27.8,  // PDF war 32
 };
 
-/* Helpers */
+/* ---------- kleine Helfer ---------- */
 const splitLines = (s?: string) =>
   (s ?? "")
     .replace(/\r\n/g, "\n")
@@ -56,6 +55,7 @@ function vEscape(s: string) {
     .replace(/,/g, "\\,")
     .replace(/;/g, "\\;");
 }
+
 function buildVCard3(o: {
   fullName: string;
   org?: string;
@@ -81,85 +81,78 @@ function buildVCard3(o: {
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", company = "", url = "" } = props;
 
-  // y positions in mm (top → bottom), identical to the PDF logic
-  let y = TOP_MM;
+  // y-Positionen (Baseline) in mm – identisch zur PDF-Route
+  let y = TOP;
   const nameY = y;
-  y += GAP_NAME_MM;
+  y += GAP_NAME;
 
   const roleY = role ? y : y;
-  if (role) y += GAP_NAME_MM;
+  if (role) y += GAP_NAME;
 
-  y += CONTACT_BLOCK_SPACER_MM;
+  y += CONTACT_SPACER;
 
   const contacts: Array<{ text: string; y: number }> = [];
   if (phone) {
     contacts.push({ text: `T ${phone}`, y });
-    y += GAP_CONTACT_MM;
+    y += GAP_CONTACT;
   }
   if (email) {
     contacts.push({ text: email, y });
-    y += GAP_CONTACT_MM;
+    y += GAP_CONTACT;
   }
   if (url) {
     contacts.push({ text: url, y });
-    y += GAP_CONTACT_MM;
+    y += GAP_CONTACT;
   }
 
-  y += COMPANY_SPACER_MM;
+  y += COMPANY_SPACER;
 
   const addr = splitLines(company).map((text, i) => ({
     text,
-    y: y + i * GAP_CONTACT_MM,
+    y: y + i * GAP_CONTACT,
   }));
 
   return (
     <figure className="select-none">
       <svg
-        viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
+        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
         style={{ maxWidth: 560, height: "auto", display: "block" }}
         aria-label="Business card front"
       >
-        {/* Background */}
+        {/* Hintergrund */}
         <image
           href="/templates/omicron-front.png"
           x={0}
           y={0}
-          width={CARD_W_MM}
-          height={CARD_H_MM}
+          width={CARD_W}
+          height={CARD_H}
           preserveAspectRatio="none"
         />
-        {/* Text (positions in mm; font-size in px) */}
+        {/* Text – ACHTUNG: fontSize ohne Einheit (User-Units == mm) */}
         <g
           fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
           fill="#111"
           dominantBaseline="alphabetic"
         >
-          <text x={LEFT_MM} y={nameY} fontSize={`${NAME_PX}px`} fontWeight={700}>
+          <text x={LEFT} y={nameY} fontSize={NAME} fontWeight={700}>
             {name}
           </text>
 
           {role && (
-            <text
-              x={LEFT_MM}
-              y={roleY}
-              fontSize={`${ROLE_PX}px`}
-              fontStyle="italic"
-              fontWeight={300}
-              opacity={0.95}
-            >
+            <text x={LEFT} y={roleY} fontSize={ROLE} fontWeight={300} fontStyle="italic" opacity={0.95}>
               {role}
             </text>
           )}
 
           {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_PX}px`} fontWeight={300}>
+            <text key={`c-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
               {l.text}
             </text>
           ))}
 
           {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT_MM} y={l.y} fontSize={`${BODY_PX}px`} fontWeight={300}>
+            <text key={`a-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
               {l.text}
             </text>
           ))}
@@ -217,7 +210,7 @@ export function BusinessCardBack(props: Props) {
   return (
     <figure className="select-none">
       <svg
-        viewBox={`0 0 ${CARD_W_MM} ${CARD_H_MM}`}
+        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
         style={{ maxWidth: 560, height: "auto", display: "block" }}
         aria-label="Business card back"
@@ -226,8 +219,8 @@ export function BusinessCardBack(props: Props) {
           href="/templates/omicron-back.png"
           x={0}
           y={0}
-          width={CARD_W_MM}
-          height={CARD_H_MM}
+          width={CARD_W}
+          height={CARD_H}
           preserveAspectRatio="none"
         />
         {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
