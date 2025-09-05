@@ -40,8 +40,8 @@ const BODY = ptToMm(8)  * FONT_SCALE_BODY;
 
 /* QR — leicht kleiner und etwas nach links/oben für die weiße Box der Rückseite */
 const QR_DEFAULT = {
-  xMm: 47.8,     // PDF war ~52.8
-  yMm: 15.2,     // PDF war ~18.85
+  xMm: 44.8,     // PDF war ~52.8
+  yMm: 15,     // PDF war ~18.85
   sizeMm: 25,  // PDF war 32
 };
 
