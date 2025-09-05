@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatPhones } from "@/lib/formatPhones";
+import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
 
 export type Props = {
@@ -133,7 +134,8 @@ export function BusinessCardFront(props: Props) {
 
   y += COMPANY_SPACER;
 
-  const addr = splitLines(company).map((text, i) => ({
+  const { lines: addrLines } = normalizeAddress(company);
+  const addr = addrLines.map((text, i) => ({
     text,
     y: y + i * GAP_CONTACT,
   }));
@@ -198,21 +200,21 @@ export function BusinessCardFront(props: Props) {
 export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride } = props;
   
-  const org = splitLines(company)[0] ?? "";
-  
+  const { org, label } = normalizeAddress(company);
+
   const vcard = useMemo(
     () =>
       buildVCard3({
-        fullName: name,                 // Person -> FN
-        org,                            // Firma -> ORG
+        fullName: name,               // bleibt der Personenname
+        org,                          // Firma sauber erkannt (oder undefined)
         title: role || undefined,
         email: email || undefined,
-        phone: phone || undefined,      // WORK
-        mobile: mobile || undefined,    // CELL/MOBILE
+        phone: phone || undefined,    // WORK
+        mobile: mobile || undefined,  // MOBILE
         url: url || undefined,
-        addrLabel: company || undefined,
+        addrLabel: label || undefined // mehrzeiliges, sauberes Label für ADR
       }),
-    [name, role, email, phone, mobile, url, company, org] // ← mobile MUSS in deps
+    [name, role, email, phone, mobile, url, org, label] // ← company entfällt, org/label reichen
   );
 
   const [qrData, setQrData] = useState<string>("");
