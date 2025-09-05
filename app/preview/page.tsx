@@ -51,115 +51,124 @@ export default function PreviewPage() {
       <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
 
       <div className="grid gap-6 lg:grid-cols-[480px_minmax(0,1fr)]">
-        {/* Left: form */}
-        {/* Order information (sits above “Details” on the left) */}
-        <Card className="h-fit">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base md:text-lg">Order information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {/* Quantity */}
-              <div className="grid gap-2">
-                <Label htmlFor="qty">Quantity</Label>
-                <Select value={quantity} onValueChange={setQuantity}>
-                  <SelectTrigger id="qty">
-                    <SelectValue placeholder="Select quantity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QUANTITIES.map((q) => (
-                      <SelectItem key={q} value={String(q)}>
-                        {q.toLocaleString("en-US")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* Left column: Order info + Details stacked */}
+        <div className="space-y-6">
+          {/* Order information */}
+          <Card className="h-fit">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base md:text-lg">Order information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {/* Quantity */}
+                <div className="grid gap-2">
+                  <Label htmlFor="qty">Quantity</Label>
+                  <Select value={quantity} onValueChange={setQuantity}>
+                    <SelectTrigger id="qty">
+                      <SelectValue placeholder="Select quantity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QUANTITIES.map((q) => (
+                        <SelectItem key={q} value={String(q)}>
+                          {q.toLocaleString("en-US")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+      
+                {/* Template */}
+                <div className="grid gap-2">
+                  <Label htmlFor="template">Template</Label>
+                  <Select value={template} onValueChange={setTemplate}>
+                    <SelectTrigger id="template">
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEMPLATES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-        
-              {/* Template */}
+            </CardContent>
+          </Card>
+      
+          {/* Details */}
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="text-base md:text-lg">Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="template">Template</Label>
-                <Select value={template} onValueChange={setTemplate}>
-                  <SelectTrigger id="template">
-                    <SelectValue placeholder="Select template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TEMPLATES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-base md:text-lg">Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="role">Function / Title</Label>
-              <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Mobile</Label>
-              <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-Mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="url">URL</Label>
-              <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="company">Company & Address</Label>
-              <Textarea
-                id="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                rows={5}
-              />
-            </div>
-
-
-
-            <Button onClick={generate} className="w-full">Generate PDF</Button>
-          </CardContent>
-        </Card>
-
-        {/* Right: preview */}
+      
+              <div className="grid gap-2">
+                <Label htmlFor="role">Function / Title</Label>
+                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
+              </div>
+      
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+      
+              <div className="grid gap-2">
+                <Label htmlFor="mobile">Mobile</Label>
+                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+              </div>
+      
+              <div className="grid gap-2">
+                <Label htmlFor="email">E-Mail</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+      
+              <div className="grid gap-2">
+                <Label htmlFor="url">URL</Label>
+                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+              </div>
+      
+              <div className="grid gap-2">
+                <Label htmlFor="company">Company & Address</Label>
+                <Textarea
+                  id="company"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  rows={5}
+                />
+              </div>
+      
+              <Button onClick={generate} className="w-full">Generate PDF</Button>
+            </CardContent>
+          </Card>
+        </div>
+      
+        {/* Right column: preview stacked */}
         <div className="space-y-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
-            {/* nur 1 Rahmen – innen KEINE zusätzliche Shadow/Borders */}
             <CardContent className="pt-2">
               <div className="rounded-lg overflow-hidden">
-                <BusinessCardFront name={name} role={role} email={email} phone={phone} mobile={mobile} company={company} url={url} />
+                <BusinessCardFront
+                  name={name}
+                  role={role}
+                  email={email}
+                  phone={phone}
+                  mobile={mobile}
+                  company={company}
+                  url={url}
+                />
               </div>
             </CardContent>
           </Card>
-
+      
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
@@ -174,8 +183,6 @@ export default function PreviewPage() {
                   mobile={mobile}
                   company={company}
                   url={url}
-                  /* bei Bedarf live feintunen: */
-                  // qrOverride={{ xMm: 49.2, yMm: 17.9, sizeMm: 27.2 }}
                 />
               </div>
             </CardContent>
