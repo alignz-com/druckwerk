@@ -134,11 +134,10 @@ export function BusinessCardFront(props: Props) {
 
   y += COMPANY_SPACER;
 
-  const { lines: addrLines } = normalizeAddress(company);
-  const addr = addrLines.map((text, i) => ({
-    text,
-    y: y + i * GAP_CONTACT,
-  }));
+  const addr = (company ?? "")
+  .replace(/\r\n/g, "\n")
+  .split("\n")
+  .map((text, i) => ({ text, y: y + i * GAP_CONTACT }));
 
   return (
     <figure className="select-none">
