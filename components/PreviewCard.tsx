@@ -62,36 +62,30 @@ function vEscape(s: string) {
     .replace(/,/g, "\\,")
     .replace(/;/g, "\\;");
 }
-
 function buildVCard3(o: {
-    fullName: string;
-    org?: string;
-    title?: string;
-    email?: string;
-    phone?: string;   // ← ergänzt
-    mobile?: string;  // ← ergänzt
-    url?: string;
-    addrLabel?: string;
-  }) {
-    const { fullName, org, title, email, phone, mobile, url, addrLabel } = o;
-  
-    const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
-  
-    if (org)    lines.push(`ORG:${vEscape(org)}`);
-    if (title)  lines.push(`TITLE:${vEscape(title)}`);
-  
-    if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
-    if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
-  
-    if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-    if (url)    lines.push(`URL:${vEscape(url)}`);
-    if (addrLabel)
-      lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
-  
-    lines.push("END:VCARD");
-    return lines.join("\r\n");
-  }
+  fullName: string;
+  org?: string;
+  title?: string;
+  email?: string;
+  phone?: string;   // Festnetz/Work
+  mobile?: string;  // Mobile
+  url?: string;
+  addrLabel?: string;
+}) {
+  const { fullName, org, title, email, phone, mobile, url, addrLabel } = o;
+  const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${vEscape(fullName)}`];
 
+  if (org)    lines.push(`ORG:${vEscape(org)}`);
+  if (title)  lines.push(`TITLE:${vEscape(title)}`);
+  if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
+  if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
+  if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+  if (url)    lines.push(`URL:${vEscape(url)}`);
+  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+
+  lines.push("END:VCARD");
+  return lines.join("\r\n");
+}
 /* ============================== FRONT ============================== */
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = props;
@@ -187,20 +181,22 @@ export function BusinessCardFront(props: Props) {
 /* =============================== BACK =============================== */
 export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride } = props;
-
+  
   const org = splitLines(company)[0] ?? "";
+  
   const vcard = useMemo(
     () =>
       buildVCard3({
-        fullName: name,
-        org,
+        fullName: name,                 // Person -> FN
+        org,                            // Firma -> ORG
         title: role || undefined,
         email: email || undefined,
-        tel: phone || undefined,
+        phone: phone || undefined,      // WORK
+        mobile: mobile || undefined,    // CELL/MOBILE
         url: url || undefined,
         addrLabel: company || undefined,
       }),
-    [name, role, email, phone, url, company, org]
+    [name, role, email, phone, mobile, url, company, org] // ← mobile MUSS in deps
   );
 
   const [qrData, setQrData] = useState<string>("");
