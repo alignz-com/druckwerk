@@ -2,11 +2,61 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-// Card size
+/* ====== constants ====== */
 const CARD_W = "85mm";
 const CARD_H = "55mm";
 
-// ---------- FRONT (pure CSS flow; mm/pt for exact spacing) ----------
+/* === spacing and positions (same as your API) === */
+const LEFT_MM = 24.4;     // column left
+const TOP_MM  = 24;       // first baseline offset from top
+const COL_W_MM = 85;      // column width
+const NAME_PT = 10;
+const ROLE_PT = 8;
+const BODY_PT = 8;
+const GAP_HEAD_MM = 4;     // name/role line gap
+const GAP_BODY_MM = 3.5;   // contact/company line gap
+const CONTACT_SPACER_MM = 3.25;
+const COMPANY_SPACER_MM = 1.9;
+
+/* === QR on back (same as API) === */
+const QR_SIZE_MM = 32;
+const QR_X_MM = 52.8;
+const QR_Y_MM = 18.85;
+
+/* ====== vCard helpers (same as API) ====== */
+function vEscape(s: string) {
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+function buildVCard3(opts: {
+  fullName: string;
+  org?: string;
+  title?: string;
+  email?: string;
+  tel?: string;
+  url?: string;
+  addrLabel?: string;
+}) {
+  const { fullName, org, title, email, tel, url, addrLabel } = opts;
+  const lines: string[] = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${vEscape(fullName)}`
+  ];
+  if (org)   lines.push(`ORG:${vEscape(org)}`);
+  if (title) lines.push(`TITLE:${vEscape(title)}`);
+  if (tel)   lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(tel)}`);
+  if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
+  if (url)   lines.push(`URL:${vEscape(url)}`);
+  if (addrLabel) lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":;;;;;;`);
+  lines.push("END:VCARD");
+  return lines.join("\r\n"); // CRLF
+}
+
+/* ====== FRONT ====== */
 export function BusinessCardFront({
   name,
   role = "",
@@ -15,11 +65,16 @@ export function BusinessCardFront({
   company = "",
   url = "",
 }: {
-  name: string; role?: string; email?: string; phone?: string; company?: string; url?: string;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  url?: string;
 }) {
   return (
     <div
-      className="relative select-none font-frutiger"
+      className="relative select-none font-frutiger antialiased"
       style={{
         width: CARD_W,
         height: CARD_H,
@@ -30,27 +85,44 @@ export function BusinessCardFront({
         overflow: "hidden",
       }}
     >
-      {/* Position the text block once; let normal flow handle lines */}
+      {/* One positioned container; normal flow handles the line order */}
       <div
         className="absolute"
         style={{
-          left: "24.4mm",     // LEFT
-          top:  "24mm",       // TOP baseline area
-          width: "85mm",      // column width (adjust if needed)
+          left: `${LEFT_MM}mm`,
+          top:  `${TOP_MM}mm`,
+          width: `${COL_W_MM}mm`,
         }}
       >
         {/* Name */}
-        <div style={{ fontSize: "10pt", lineHeight: 1.15, fontWeight: 700 }}>{name}</div>
+        <div style={{ fontSize: `${NAME_PT}pt`, lineHeight: 1.15, fontWeight: 700 }}>
+          {name}
+        </div>
 
         {/* Role */}
         {role && (
-          <div style={{ marginTop: "4mm", fontSize: "8pt", lineHeight: 1.2, fontStyle: "italic", fontWeight: 300 }}>
+          <div
+            style={{
+              marginTop: `${GAP_HEAD_MM}mm`,
+              fontSize: `${ROLE_PT}pt`,
+              lineHeight: 1.2,
+              fontStyle: "italic",
+              fontWeight: 300,
+            }}
+          >
             {role}
           </div>
         )}
 
         {/* Contacts */}
-        <div style={{ marginTop: "3.25mm", fontSize: "8pt", lineHeight: 1.2, fontWeight: 300 }}>
+        <div
+          style={{
+            marginTop: `${CONTACT_SPACER_MM}mm`,
+            fontSize: `${BODY_PT}pt`,
+            lineHeight: 1.2,
+            fontWeight: 300,
+          }}
+        >
           {phone && <div>{`T ${phone}`}</div>}
           {email && <div>{email}</div>}
           {url   && <div>{url}</div>}
@@ -60,8 +132,8 @@ export function BusinessCardFront({
         {company && (
           <div
             style={{
-              marginTop: "1.9mm",
-              fontSize: "8pt",
+              marginTop: `${COMPANY_SPACER_MM}mm`,
+              fontSize: `${BODY_PT}pt`,
               lineHeight: 1.2,
               fontWeight: 300,
               whiteSpace: "pre-line",
@@ -75,21 +147,55 @@ export function BusinessCardFront({
   );
 }
 
-// ---------- BACK (QR @ 27 mm) ----------
-export function BusinessCardBack({ email, url }: { email?: string; url?: string }) {
-  const target = useMemo(() => (url ? url : email ? `mailto:${email}` : ""), [url, email]);
+/* ====== BACK (vCard QR, 32 mm) ====== */
+export function BusinessCardBack({
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  company = "",
+  url = "",
+}: {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  url?: string;
+}) {
+  const orgName   = (company || "").split(/\r?\n/)[0] || "";
+  const addrLabel = company || "";
+
+  const vcard = useMemo(
+    () =>
+      buildVCard3({
+        fullName: name,
+        org: orgName || undefined,
+        title: role || undefined,
+        email: email || undefined,
+        tel: phone || undefined,
+        url: url || undefined,
+        addrLabel,
+      }),
+    [name, orgName, role, email, phone, url, addrLabel]
+  );
+
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   useEffect(() => {
     let cancel = false;
     (async () => {
-      if (!target) { setQrDataUrl(""); return; }
+      if (!vcard) { setQrDataUrl(""); return; }
       const { toDataURL } = await import("qrcode");
-      const dataUrl = await toDataURL(target, { width: 512, margin: 0, errorCorrectionLevel: "M" });
+      const dataUrl = await toDataURL(vcard, {
+        width: 1024,
+        margin: 0,
+        errorCorrectionLevel: "M",
+      });
       if (!cancel) setQrDataUrl(dataUrl);
     })();
     return () => { cancel = true; };
-  }, [target]);
+  }, [vcard]);
 
   return (
     <div
@@ -110,10 +216,10 @@ export function BusinessCardBack({ email, url }: { email?: string; url?: string 
           alt="QR"
           style={{
             position: "absolute",
-            left: "52.8mm",   // adjust if your white box demands it
-            top:  "18.85mm",
-            width: "27mm",    // ← smaller QR
-            height: "27mm",
+            left: `${QR_X_MM}mm`,
+            top:  `${QR_Y_MM}mm`,
+            width: `${QR_SIZE_MM}mm`,
+            height: `${QR_SIZE_MM}mm`,
           }}
         />
       )}
