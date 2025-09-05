@@ -200,21 +200,25 @@ export function BusinessCardFront(props: Props) {
 export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride } = props;
   
+  // nachher
   const { org, label } = normalizeAddress(company);
-
+  
+  // Fallback wie in der PDF-Route: wenn label leer, nimm company
+  const addrLabel = (label && label.trim()) ? label : (company || undefined);
+  
   const vcard = useMemo(
     () =>
       buildVCard3({
-        fullName: name,               // bleibt der Personenname
-        org,                          // Firma sauber erkannt (oder undefined)
+        fullName: name,
+        org,
         title: role || undefined,
         email: email || undefined,
-        phone: phone || undefined,    // WORK
-        mobile: mobile || undefined,  // MOBILE
+        phone: phone || undefined,
+        mobile: mobile || undefined,
         url: url || undefined,
-        addrLabel: label || undefined // mehrzeiliges, sauberes Label für ADR
+        addrLabel, // <- jetzt sicher befüllt
       }),
-    [name, role, email, phone, mobile, url, org, label] // ← company entfällt, org/label reichen
+    [name, role, email, phone, mobile, url, org, addrLabel] // <- addrLabel in deps!
   );
 
   const [qrData, setQrData] = useState<string>("");
