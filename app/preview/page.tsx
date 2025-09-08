@@ -162,7 +162,7 @@ export default function PreviewPage() {
                 />
               </div>
       
-              <Button onClick={generate} className="w-full">Generate PDF</Button>
+              <Button className="w-full">Order Business Card</Button>
             </CardContent>
           </Card>
         </div>
