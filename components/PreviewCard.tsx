@@ -6,6 +6,86 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
 import { TEMPLATE_REGISTRY, type TemplateId } from "@/lib/cardTemplates";
 
+function FrontTextOverlay({
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  mobile = "",
+  company = "",
+  url = "",
+}: {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  company?: string;
+  url?: string;
+}) {
+  let y = TOP;
+  const nameY = y;
+  y += GAP_NAME;
+
+  const roleY = role ? y : y;
+  if (role) y += GAP_NAME;
+
+  y += CONTACT_SPACER;
+
+  const contacts: Array<{ text: string; y: number }> = [];
+  const phoneLine = formatPhones(phone, mobile);
+  if (phoneLine) {
+    contacts.push({ text: phoneLine, y });
+    y += GAP_CONTACT;
+  }
+  if (email) {
+    contacts.push({ text: email, y });
+    y += GAP_CONTACT;
+  }
+  if (url) {
+    contacts.push({ text: url, y });
+    y += GAP_CONTACT;
+  }
+
+  y += COMPANY_SPACER;
+
+  const addr = (company ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((text, i) => ({ text, y: y + i * GAP_CONTACT }));
+
+  return (
+    <g
+      fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
+      fill="#111"
+      dominantBaseline="alphabetic"
+    >
+      <text x={LEFT} y={nameY} fontSize={NAME} fontWeight={700}>
+        {name}
+      </text>
+
+      {role && (
+        <text x={LEFT} y={roleY} fontSize={ROLE} fontWeight={300} fontStyle="italic" opacity={0.95}>
+          {role}
+        </text>
+      )}
+
+      {contacts.map((l, i) => (
+        <text key={`c-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
+          {l.text}
+        </text>
+      ))}
+
+      {addr.map((l, i) => (
+        <text key={`a-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
+          {l.text}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+
 export type Props = {
   name: string;
   role?: string;
@@ -173,34 +253,15 @@ export function BusinessCardFront(props: Props) {
           preserveAspectRatio="xMidYMid meet"
         />
         
-        {/* Text – ACHTUNG: fontSize ohne Einheit (User-Units == mm) */}
-        <g
-          fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
-          fill="#111"
-          dominantBaseline="alphabetic"
-        >
-          <text x={LEFT} y={nameY} fontSize={NAME} fontWeight={700}>
-            {name}
-          </text>
-
-          {role && (
-            <text x={LEFT} y={roleY} fontSize={ROLE} fontWeight={300} fontStyle="italic" opacity={0.95}>
-              {role}
-            </text>
-          )}
-
-          {contacts.map((l, i) => (
-            <text key={`c-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
-              {l.text}
-            </text>
-          ))}
-
-          {addr.map((l, i) => (
-            <text key={`a-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
-              {l.text}
-            </text>
-          ))}
-        </g>
+        <FrontTextOverlay
+          name={name}
+          role={role}
+          email={email}
+          phone={phone}
+          mobile={mobile}
+          company={company}
+          url={url}
+        />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
@@ -284,22 +345,6 @@ export function BusinessCardFront(props: Props) {
     </figure>
   );
 }*/
-function FrontTextOverlay({ name, role, email, phone, mobile, company, url }:{
-  name:string; role?:string; email?:string; phone?:string; mobile?:string; company?:string; url?:string;
-}) {
-  // reuse your exact front layout code that computes y positions, contacts, addr…
-  // then return the <g>…</g> with <text> nodes. Nothing else changes.
-  // (Move your existing front text block into here and call it from BusinessCardFront.)
-  return (
-    <g
-      fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
-      fill="#111"
-      dominantBaseline="alphabetic"
-    >
-      {/* ... all your <text> from the front ... */}
-    </g>
-  );
-}
 
 
 export function BusinessCardBack(props: Props) {
