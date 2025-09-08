@@ -17,7 +17,12 @@ import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 
 // + add:
 const QUANTITIES = [50, 100, 250, 500, 1000];
-const TEMPLATES = [{ value: "omicron", label: "QR Code" }];
+const TEMPLATES = [
+  { value: "qrcode", label: "QR Code" },
+  { value: "doublesided", label: "Doublesided" },
+  { value: "claim", label: "Claim" },
+  { value: "omicron-lab", label: "Omicron Lab" },
+] as const;
 
 export default function PreviewPage() {
   // Demo-Defaults
@@ -171,6 +176,7 @@ export default function PreviewPage() {
             <CardContent className="pt-2">
               <div className="rounded-lg overflow-hidden">
                 <BusinessCardFront
+                  templateId={template as any}
                   name={name}
                   role={role}
                   email={email}
@@ -190,6 +196,7 @@ export default function PreviewPage() {
             <CardContent className="pt-2">
               <div className="rounded-lg overflow-hidden">
                 <BusinessCardBack
+                  templateId={template as any}
                   name={name}
                   role={role}
                   email={email}

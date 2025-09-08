@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatPhones } from "@/lib/formatPhones";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
+import { TEMPLATE_REGISTRY, type TemplateId } from "@/lib/cardTemplates";
 
 export type Props = {
   name: string;
@@ -157,14 +158,18 @@ export function BusinessCardFront(props: Props) {
         aria-label="Business card front"
       >
         {/* Hintergrund */}
+
+        const tpl = TEMPLATE_REGISTRY[props.templateId ?? "qrcode"];
+
         <image
-          href="/templates/omicron-front.png"
+          href={tpl.frontPng}
           x={0}
           y={0}
           width={CARD_W}
           height={CARD_H}
           preserveAspectRatio="xMidYMid meet"
         />
+        
         {/* Text – ACHTUNG: fontSize ohne Einheit (User-Units == mm) */}
         <g
           fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
