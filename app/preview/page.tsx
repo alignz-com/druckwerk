@@ -17,7 +17,7 @@ import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 
 // + add:
 const QUANTITIES = [50, 100, 250, 500, 1000];
-const TEMPLATES = [{ value: "omicron", label: "Omicron" }];
+const TEMPLATES = [{ value: "omicron", label: "QR Code" }];
 
 export default function PreviewPage() {
   // Demo-Defaults
