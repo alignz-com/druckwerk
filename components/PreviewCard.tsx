@@ -6,6 +6,47 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
 import { TEMPLATE_REGISTRY, type TemplateId } from "@/lib/cardTemplates";
 
+function SmoothSvgImage({
+  src,
+  x, y, width, height,
+  preserveAspectRatio = "xMidYMid meet",
+}: {
+  src: string;
+  x: number; y: number; width: number; height: number;
+  preserveAspectRatio?: string;
+}) {
+  const [displaySrc, setDisplaySrc] = useState(src);      // what SVG currently shows
+  const [entering, setEntering] = useState(false);        // drives opacity transition
+
+  useEffect(() => {
+    if (!src) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      // swap to new source, then fade it in
+      setDisplaySrc(src);
+      setEntering(true);                // start at opacity-0
+      requestAnimationFrame(() => {     // next tick -> opacity-100
+        setEntering(false);
+      });
+    };
+    img.onerror = () => {/* keep old image on error */};
+    img.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+
+  // Old image stays visible until new is loaded (because displaySrc only changes after load).
+  return (
+    <image
+      href={displaySrc}
+      x={x} y={y} width={width} height={height}
+      preserveAspectRatio={preserveAspectRatio as any}
+      className={`transition-opacity duration-300 ${entering ? "opacity-0" : "opacity-100"}`}
+    />
+  );
+}
+
 function FrontTextOverlay({
   name,
   role = "",
@@ -244,8 +285,8 @@ export function BusinessCardFront(props: Props) {
       >
         {/* Hintergrund */}
 
-        <image
-          href={tpl.frontPng}
+       <SmoothSvgImage
+          src={tpl.frontPng}
           x={0}
           y={0}
           width={CARD_W}
