@@ -319,10 +319,9 @@ export function BusinessCardBack(props: Props) {
         phone: phone || undefined,
         mobile: mobile || undefined,
         url: url || undefined,
-        linkedin: linkedin || undefined,
         addrLabel,
       }),
-    [name, role, email, phone, mobile, url, linkedin, org, addrLabel]
+    [name, role, email, phone, mobile, url, org, addrLabel]
   );
 
   const [qrData, setQrData] = useState<string>("");
