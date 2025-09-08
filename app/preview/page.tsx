@@ -21,11 +21,11 @@ const TEMPLATES = [{ value: "omicron", label: "Omicron" }];
 
 export default function PreviewPage() {
   // Demo-Defaults
-  const [name, setName] = useState("Julia Lind");
-  const [role, setRole] = useState("Financial & Legal Services");
-  const [email, setEmail] = useState("julia.lind@omicronenergy.com");
-  const [phone, setPhone] = useState("+43 59495 2038");
-  const [mobile, setMobile] = useState("");
+  const [name, setName] = useState("Martin Eichberger");
+  const [role, setRole] = useState("Corporate Communications");
+  const [email, setEmail] = useState("martin.eichberger@omicronenergy.com");
+  const [phone, setPhone] = useState("+43 59495 2099");
+  const [mobile, setMobile] = useState("+43 664 88876851");
   const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
   const [url, setUrl] = useState("www.omicronenergy.com");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
