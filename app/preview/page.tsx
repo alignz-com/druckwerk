@@ -34,7 +34,7 @@ export default function PreviewPage() {
   const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
   const [url, setUrl] = useState("www.omicronenergy.com");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
-  const [template, setTemplate] = useState<string>("omicron");
+ const [template, setTemplate] = useState<string>("qrcode");
 
   const generate = async () => {
     const res = await fetch("/api/pdf", {

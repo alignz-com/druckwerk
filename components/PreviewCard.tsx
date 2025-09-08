@@ -113,7 +113,9 @@ function buildVCard3(o: {
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = props;
 
-  const tpl = TEMPLATE_REGISTRY[props.templateId ?? "qrcode"];
+  const tpl =
+  TEMPLATE_REGISTRY[(props.templateId as TemplateId) ?? "qrcode"] ??
+  TEMPLATE_REGISTRY["qrcode"]; // <- fallback
 
   // y-Positionen (Baseline) in mm – identisch zur PDF-Route
   let y = TOP;
@@ -303,9 +305,9 @@ function FrontTextOverlay({ name, role, email, phone, mobile, company, url }:{
 export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride, templateId = "qrcode" } = props;
 
-  const tpl = TEMPLATE_REGISTRY[templateId];
+  const tpl = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY["qrcode"];
 
-  // ---- QR vCard (only if backMode === "qr")
+  // vCard only needed if tpl.backMode === "qr"
   const { org, label } = normalizeAddress(company);
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
 
