@@ -14,6 +14,7 @@ export type Props = {
   mobile?: string;
   company?: string; // multiline
   url?: string;
+  templateId?: TemplateId; 
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
@@ -112,6 +113,8 @@ function buildVCard3(o: {
 export function BusinessCardFront(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = props;
 
+  const tpl = TEMPLATE_REGISTRY[props.templateId ?? "qrcode"];
+
   // y-Positionen (Baseline) in mm – identisch zur PDF-Route
   let y = TOP;
   const nameY = y;
@@ -159,8 +162,6 @@ export function BusinessCardFront(props: Props) {
       >
         {/* Hintergrund */}
 
-        const tpl = TEMPLATE_REGISTRY[props.templateId ?? "qrcode"];
-
         <image
           href={tpl.frontPng}
           x={0}
@@ -205,7 +206,7 @@ export function BusinessCardFront(props: Props) {
 }
 
 /* =============================== BACK =============================== */
-export function BusinessCardBack(props: Props) {
+/*export function BusinessCardBack(props: Props) {
   const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride } = props;
   
   // nachher
@@ -276,6 +277,104 @@ export function BusinessCardBack(props: Props) {
           preserveAspectRatio="xMidYMid meet"
         />
         {qrData && <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />}
+      </svg>
+      <figcaption className="sr-only">Card Back</figcaption>
+    </figure>
+  );
+}*/
+function FrontTextOverlay({ name, role, email, phone, mobile, company, url }:{
+  name:string; role?:string; email?:string; phone?:string; mobile?:string; company?:string; url?:string;
+}) {
+  // reuse your exact front layout code that computes y positions, contacts, addr…
+  // then return the <g>…</g> with <text> nodes. Nothing else changes.
+  // (Move your existing front text block into here and call it from BusinessCardFront.)
+  return (
+    <g
+      fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
+      fill="#111"
+      dominantBaseline="alphabetic"
+    >
+      {/* ... all your <text> from the front ... */}
+    </g>
+  );
+}
+
+
+export function BusinessCardBack(props: Props) {
+  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride, templateId = "qrcode" } = props;
+
+  const tpl = TEMPLATE_REGISTRY[templateId];
+
+  // ---- QR vCard (only if backMode === "qr")
+  const { org, label } = normalizeAddress(company);
+  const addrLabel = (label && label.trim()) ? label : (company || undefined);
+
+  const vcard = useMemo(
+    () =>
+      buildVCard3({
+        fullName: name,
+        org,
+        title: role || undefined,
+        email: email || undefined,
+        phone: phone || undefined,
+        mobile: mobile || undefined,
+        url: url || undefined,
+        linkedin: linkedin || undefined,
+        addrLabel,
+      }),
+    [name, role, email, phone, mobile, url, linkedin, org, addrLabel]
+  );
+
+  const [qrData, setQrData] = useState<string>("");
+
+  useEffect(() => {
+    let stop = false;
+    if (tpl.backMode !== "qr") {
+      setQrData("");
+      return;
+    }
+    (async () => {
+      try {
+        const data = await QRCode.toDataURL(vcard, { margin: 0, errorCorrectionLevel: "M", scale: 8 });
+        if (!stop) setQrData(data);
+      } catch {
+        if (!stop) setQrData("");
+      }
+    })();
+    return () => { stop = true; };
+  }, [vcard, tpl.backMode]);
+
+  // Position
+  const qx = (qrOverride?.xMm ?? tpl.qr?.xMm ?? QR_DEFAULT.xMm);
+  const qy = (qrOverride?.yMm ?? tpl.qr?.yMm ?? QR_DEFAULT.yMm);
+  const qs = (qrOverride?.sizeMm ?? tpl.qr?.sizeMm ?? QR_DEFAULT.sizeMm);
+
+  return (
+    <figure className="select-none">
+      <svg
+        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        width="100%"
+        style={{ maxWidth: 560, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        aria-label="Business card back"
+      >
+        <image
+          href={tpl.backPng ?? "/templates/omicron-back.png"}
+          x={0} y={0} width={CARD_W} height={CARD_H} preserveAspectRatio="xMidYMid meet"
+        />
+
+        {tpl.backMode === "qr" && qrData && (
+          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
+        )}
+
+        {tpl.backMode === "sameAsFront" && (
+          // Reuse the *text block* from front: render the same SVG overlay again.
+          // Simplest approach: call a small shared sub-component that draws the text.
+          <FrontTextOverlay
+            name={name} role={role} email={email} phone={phone} mobile={mobile} company={company} url={url}
+          />
+        )}
+
+        {/* backMode "claim" is just the background image; nothing else to draw */}
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>
