@@ -105,32 +105,32 @@ export default function PreviewPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
               </div>
       
               <div className="grid gap-2">
                 <Label htmlFor="role">Function / Title</Label>
-                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
+                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} maxLength={45} />
               </div>
       
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19}/>
               </div>
       
               <div className="grid gap-2">
                 <Label htmlFor="mobile">Mobile</Label>
-                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19}/>
               </div>
       
               <div className="grid gap-2">
                 <Label htmlFor="email">E-Mail</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50}/>
               </div>
       
               <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
-                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)}  maxLength={32}/>
               </div>
       
               <div className="grid gap-2">
@@ -138,8 +138,22 @@ export default function PreviewPage() {
                 <Textarea
                   id="company"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  rows={5}
+                  rows={3} // zeigt 3 Zeilen an
+                  onChange={(e) => {
+                    const maxLines = 3;
+                    const maxPerLine = 48;
+
+                    // split input into lines
+                    let lines = e.target.value.split("\n");
+
+                    // limit number of lines
+                    lines = lines.slice(0, maxLines);
+
+                    // truncate each line to maxPerLine chars
+                    lines = lines.map((line) => line.slice(0, maxPerLine));
+
+                    setCompany(lines.join("\n"));
+                  }}
                 />
               </div>
       
