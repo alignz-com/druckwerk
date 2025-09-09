@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Analytics } from "@vercel/analytics/next"
-import type { Metadata } from "next";
 import {
   Select,
   SelectTrigger,
@@ -25,10 +24,6 @@ const TEMPLATES = [
   { value: "claim", label: "Claim" },
   { value: "omicron-lab", label: "Omicron Lab" },
 ] as const;
-
-export const metadata: Metadata = {
-  title: "Business Card Preview",
-};
 
 export default function PreviewLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
