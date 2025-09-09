@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Business Card Preview",
+  title: "Omicron - Business Card - Order",
   icons: {
     icon: "/favicon.ico",
   },
