@@ -25,10 +25,6 @@ const TEMPLATES = [
   { value: "omicron-lab", label: "Omicron Lab" },
 ] as const;
 
-export default function PreviewLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
 export default function PreviewPage() {
   // Demo-Defaults
   const [name, setName] = useState("Martin Eichberger");
