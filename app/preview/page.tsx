@@ -211,6 +211,7 @@ export default function PreviewPage() {
           </Card>
         </div>
       </div>
+        <Analytics />
     </main>
   );
 }
