@@ -7,6 +7,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { formatPhones } from "@/lib/formatPhones";
+import { put } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
@@ -314,18 +315,35 @@ export async function POST(req: Request) {
   const qx = mm2pt(52.8);
   const qy = mm2pt(18.85);
   back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
-
-  // 6) Speichern & Response (ArrayBuffer)
+  
+  // 6) Speichern → Buffer
   const bytes = await tplDoc.save();
-  const abuf = new ArrayBuffer(bytes.length);
-  new Uint8Array(abuf).set(bytes);
+  const buffer = Buffer.from(bytes);
 
-  const isDebug = new URL(req.url).searchParams.has("debug");
-  const headers: Record<string, string> = {
-    "Content-Type": "application/pdf",
-    "Content-Disposition": 'attachment; filename="card.pdf"',
-  };
-  if (isDebug) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
+  // Debug-Preview behalten
+  const urlObj = new URL(req.url);
+  const isDebug = urlObj.searchParams.has("debug");
+  if (isDebug) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'inline; filename="preview.pdf"',
+    };
+    if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
+    return new NextResponse(buffer, { headers });
+  }
 
-  return new NextResponse(abuf, { headers });
+  // Upload zu Vercel Blob
+  const orderId = Date.now().toString(); // oder aus body nehmen
+  const fileName = `orders/order_${orderId}.pdf`;
+
+  const { url } = await put(fileName, buffer, {
+    access: "public", // oder "private"
+    contentType: "application/pdf",
+  });
+
+  // Antwort an den Client
+  return NextResponse.json({
+    message: "✅ Bestellung erhalten",
+    url,
+  });
 }

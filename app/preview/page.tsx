@@ -163,7 +163,7 @@ export default function PreviewPage() {
                 />
               </div>
       
-              <Button className="w-full">Order Business Card</Button>
+              <Button onClick={generate} className="w-full">Order Business Card</Button>
             </CardContent>
           </Card>
         </div>
