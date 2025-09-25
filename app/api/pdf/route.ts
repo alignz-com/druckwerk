@@ -318,7 +318,6 @@ export async function POST(req: Request) {
 
   // 6) Speichern → Buffer
   const bytes = await tplDoc.save();
-  const buffer = Buffer.from(bytes);
 
   // Debug-Preview behalten
   const urlObj = new URL(req.url);
@@ -329,14 +328,16 @@ export async function POST(req: Request) {
       "Content-Disposition": 'inline; filename="preview.pdf"',
     };
     if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
-    return new NextResponse(buffer, { headers });
+
+    // bytes ist ein Uint8Array, das kannst du direkt zurückgeben
+    return new NextResponse(bytes, { headers });
   }
 
   // Upload zu Vercel Blob
   const orderId = Date.now().toString(); // oder aus body nehmen
   const fileName = `orders/order_${orderId}.pdf`;
 
-  const { url: blobUrl } = await put(fileName, new Blob([buffer]), {
+  const { url: blobUrl } = await put(fileName, bytes.buffer, {
     access: "public",
     contentType: "application/pdf",
   });
@@ -347,5 +348,3 @@ export async function POST(req: Request) {
     url: blobUrl,
   });
 }
-
-
