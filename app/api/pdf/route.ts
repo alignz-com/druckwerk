@@ -316,7 +316,7 @@ export async function POST(req: Request) {
   const qy = mm2pt(18.85);
   back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
 
-  // 6) Speichern → Buffer
+  // 6) Speichern → Bytes
   const bytes = await tplDoc.save();
 
   // Debug-Preview behalten
@@ -329,8 +329,9 @@ export async function POST(req: Request) {
     };
     if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
-    // bytes ist ein Uint8Array, das kannst du direkt zurückgeben
-    return new NextResponse(new Blob([bytes]), { headers });
+    // ✅ ArrayBuffer erzwingen
+    const abuf = bytes instanceof Uint8Array ? bytes.buffer.slice(0) : bytes;
+    return new NextResponse(abuf as ArrayBuffer, { headers });
   }
 
   // Upload zu Vercel Blob
