@@ -52,23 +52,17 @@ export default function PreviewPage() {
     URL.revokeObjectURL(href);
   };*/
 
-  const generate = async () => {
-  try {
-    const res = await fetch("/api/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        role,
-        email,
-        phone,
-        mobile,
-        company,
-        url,
-        template: "omicron",
-      }),
-    });
+const generate = async () => {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, role, email, phone, mobile, company, url, template: "omicron" }),
+  });
 
+  // Check Content-Type
+  const contentType = res.headers.get("Content-Type") || "";
+
+  if (contentType.includes("application/json")) {
     const data = await res.json();
 
     if (!res.ok) {
@@ -76,21 +70,13 @@ export default function PreviewPage() {
       return;
     }
 
-    // ✅ Erfolg – PDF liegt in Vercel Blob
-    console.log("✅ Bestellung erhalten:", data);
-
-    // Öffnet PDF in neuem Tab
-    window.open(data.url, "_blank");
-
-    // 👉 Alternative: Als Download triggern
-    // const a = document.createElement("a");
-    // a.href = data.url;
-    // a.download = "card.pdf";
-    // a.click();
-
-  } catch (err) {
-    console.error("❌ Fehler beim Request:", err);
-    alert("Fehler beim Erstellen der Visitenkarte");
+    window.open(data.url, "_blank"); // PDF aus Blob
+  } else {
+    // Debug-Mode: PDF direkt anzeigen
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    window.open(href, "_blank");
+    URL.revokeObjectURL(href);
   }
 };
 
