@@ -37,7 +37,7 @@ export default function PreviewPage() {
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
  const [template, setTemplate] = useState<string>("qrcode");
 
-  const generate = async () => {
+  /*const generate = async () => {
     const res = await fetch("/api/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,7 +50,52 @@ export default function PreviewPage() {
     a.download = "card.pdf";
     a.click();
     URL.revokeObjectURL(href);
-  };
+  };*/
+
+  const generate = async () => {
+  try {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        role,
+        email,
+        phone,
+        mobile,
+        company,
+        url,
+        template: "omicron",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "❌ Fehler bei der Bestellung");
+      return;
+    }
+
+    // ✅ Erfolg – PDF liegt in Vercel Blob
+    console.log("✅ Bestellung erhalten:", data);
+
+    // Öffnet PDF in neuem Tab
+    window.open(data.url, "_blank");
+
+    // 👉 Alternative: Als Download triggern
+    // const a = document.createElement("a");
+    // a.href = data.url;
+    // a.download = "card.pdf";
+    // a.click();
+
+  } catch (err) {
+    console.error("❌ Fehler beim Request:", err);
+    alert("Fehler beim Erstellen der Visitenkarte");
+  }
+};
+
+
+
 
   return (
     <main className="mx-auto max-w-[1200px] p-6 md:p-8 lg:p-10 space-y-6">
