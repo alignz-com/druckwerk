@@ -30,6 +30,8 @@ const DELIVERY_TIMES = [
   { value: "2weeks", label: "2 Weeks" },
 ] as const;
 
+
+
 export default function PreviewPage() {
   // Demo-Defaults
   const [deliveryTime, setDeliveryTime] = useState<string>("1week");
@@ -41,7 +43,8 @@ export default function PreviewPage() {
   const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
   const [url, setUrl] = useState("www.omicronenergy.com");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
- const [template, setTemplate] = useState<string>("qrcode");
+  const [template, setTemplate] = useState<string>("qrcode");
+  const [linkedin, setLinkedin] = useState("");
 
   /*const generate = async () => {
     const res = await fetch("/api/pdf", {
@@ -74,6 +77,7 @@ const generate = async () => {
         template: "omicron",
         quantity,
         deliveryTime,
+        linkedin,
       }),
     });
 
@@ -199,7 +203,10 @@ const generate = async () => {
                 <Label htmlFor="email">E-Mail</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50}/>
               </div>
-      
+              <div className="grid gap-2">
+                <Label htmlFor="linkedin">LinkedIn</Label>
+                <Input id="linkedin" type="url" placeholder="https://www.linkedin.com/in/username" value={linkedin} onChange={(e) => setLinkedin(e.target.value)}  maxLength={100} />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
                 <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)}  maxLength={32}/>
