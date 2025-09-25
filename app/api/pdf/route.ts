@@ -339,6 +339,7 @@ export async function POST(req: Request): Promise<Response> {
     const { url: blobUrl } = await put(fileName, pdfBlob, {
       access: "public",
       contentType: "application/pdf",
+      token: process.env.BLOB_READ_WRITE_TOKEN, // ✅ Token aus Env nutzen
     });
 
     return NextResponse.json({
