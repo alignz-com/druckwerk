@@ -53,16 +53,22 @@ export default function PreviewPage() {
   };*/
 
 const generate = async () => {
-  const res = await fetch("/api/pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, role, email, phone, mobile, company, url, template: "omicron" }),
-  });
+  try {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        role,
+        email,
+        phone,
+        mobile,
+        company,
+        url,
+        template: "omicron",
+      }),
+    });
 
-  // Check Content-Type
-  const contentType = res.headers.get("Content-Type") || "";
-
-  if (contentType.includes("application/json")) {
     const data = await res.json();
 
     if (!res.ok) {
@@ -70,13 +76,12 @@ const generate = async () => {
       return;
     }
 
-    window.open(data.url, "_blank"); // PDF aus Blob
-  } else {
-    // Debug-Mode: PDF direkt anzeigen
-    const blob = await res.blob();
-    const href = URL.createObjectURL(blob);
-    window.open(href, "_blank");
-    URL.revokeObjectURL(href);
+    // ✅ direkt die Blob-URL von Vercel öffnen
+    window.open(data.url, "_blank");
+    // oder: location.href = data.url; // gleiche Seite navigiert zum PDF
+  } catch (err) {
+    console.error("❌ Fehler beim Request:", err);
+    alert("Fehler beim Erstellen der Visitenkarte");
   }
 };
 
