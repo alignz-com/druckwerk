@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Order from "./order"; // 👈 neuer Name
+import Order from "./order"; // dein Formular
 
-const PASSWORD = "omicron"; // 🔑 später als ENV-Variable
+const PASSWORD = "omicron"; // später ENV
 
 export default function ProtectedPage() {
   const [input, setInput] = useState("");
@@ -22,6 +22,11 @@ export default function ProtectedPage() {
     } else {
       alert("❌ Wrong password");
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth");
+    setAuthenticated(false);
   };
 
   if (!authenticated) {
@@ -47,6 +52,18 @@ export default function ProtectedPage() {
     );
   }
 
-  // 🔓 wenn eingeloggt → zeig Order-Formular
-  return <Order />;
+  // 🔓 eingeloggt → Formular + Logout
+  return (
+    <div className="relative">
+      {/* Logout Button rechts oben */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
+      >
+        Logout
+      </button>
+
+      <Order />
+    </div>
+  );
 }
