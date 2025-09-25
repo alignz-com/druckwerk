@@ -315,7 +315,7 @@ export async function POST(req: Request) {
   const qx = mm2pt(52.8);
   const qy = mm2pt(18.85);
   back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
-  
+
   // 6) Speichern → Buffer
   const bytes = await tplDoc.save();
   const buffer = Buffer.from(bytes);
@@ -336,7 +336,7 @@ export async function POST(req: Request) {
   const orderId = Date.now().toString(); // oder aus body nehmen
   const fileName = `orders/order_${orderId}.pdf`;
 
-  const { url } = await put(fileName, buffer, {
+  const { url: blobUrl } = await put(fileName, buffer, {
     access: "public", // oder "private"
     contentType: "application/pdf",
   });
@@ -344,6 +344,6 @@ export async function POST(req: Request) {
   // Antwort an den Client
   return NextResponse.json({
     message: "✅ Bestellung erhalten",
-    url,
+    url: blobUrl,
   });
 }
