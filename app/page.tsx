@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Order from "./order"; // 👈 neuer Name
 
-const PASSWORD = "alignz"; // 🔑 später als ENV-Variable
+const PASSWORD = "omicron"; // 🔑 später als ENV-Variable
 
 export default function ProtectedPage() {
   const [input, setInput] = useState("");
