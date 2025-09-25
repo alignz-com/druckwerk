@@ -77,7 +77,7 @@ const generate = async () => {
     }
 
     // ✅ direkt die Blob-URL von Vercel öffnen
-    window.open(data.url, "_blank");
+    window.open(data.fileUrl, "_blank");
     // oder: location.href = data.url; // gleiche Seite navigiert zum PDF
   } catch (err) {
     console.error("❌ Fehler beim Request:", err);
