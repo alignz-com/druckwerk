@@ -331,7 +331,9 @@ export async function POST(req: Request) {
     };
     if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
-    const debugAbuf = toArrayBuffer(bytes);
+    // ✅ direkt ArrayBuffer erzeugen
+    const debugAbuf = bytes instanceof Uint8Array ? bytes.buffer : bytes;
+
     return new NextResponse(debugAbuf, { headers });
   }
 
@@ -339,17 +341,17 @@ export async function POST(req: Request) {
   const orderId = Date.now().toString();
   const fileName = `orders/order_${orderId}.pdf`;
 
-  const uploadAbuf = toArrayBuffer(bytes);
+  // ✅ auch hier: ArrayBuffer direkt nehmen
+  const uploadAbuf = bytes instanceof Uint8Array ? bytes.buffer : bytes;
   const pdfBlob = new Blob([uploadAbuf], { type: "application/pdf" });
 
   const { url: blobUrl } = await put(fileName, pdfBlob, {
-    access: "public",            // bei Bedarf: "private"
+    access: "public",
     contentType: "application/pdf",
   });
 
-  // Antwort
   return NextResponse.json({
     message: "✅ Bestellung erhalten",
-    url: blobUrl,   // 👉 statt fileUrl jetzt url
+    url: blobUrl,
   });
 }
