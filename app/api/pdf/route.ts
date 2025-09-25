@@ -331,27 +331,21 @@ export async function POST(req: Request) {
     };
     if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
-    // ✅ direkt ArrayBuffer erzeugen
-    const debugAbuf = bytes instanceof Uint8Array ? bytes.buffer : bytes;
+    // ✅ Bytes sicher in ein Blob packen
+    const debugBlob = new Blob([bytes], { type: "application/pdf" });
 
-    return new NextResponse(debugAbuf, { headers });
+    return new NextResponse(debugBlob, { headers });
   }
 
   // Upload zu Vercel Blob
   const orderId = Date.now().toString();
   const fileName = `orders/order_${orderId}.pdf`;
 
-  // ✅ auch hier: ArrayBuffer direkt nehmen
-  const uploadAbuf = bytes instanceof Uint8Array ? bytes.buffer : bytes;
-  const pdfBlob = new Blob([uploadAbuf], { type: "application/pdf" });
+  // ✅ auch hier Blob statt ArrayBuffer direkt
+  const pdfBlob = new Blob([bytes], { type: "application/pdf" });
 
   const { url: blobUrl } = await put(fileName, pdfBlob, {
     access: "public",
     contentType: "application/pdf",
-  });
-
-  return NextResponse.json({
-    message: "✅ Bestellung erhalten",
-    url: blobUrl,
   });
 }
