@@ -347,10 +347,10 @@ export async function POST(req: Request): Promise<Response> {
     });
 
   } catch (err: any) {
-    console.error("❌ Fehler in /api/pdf:", err);
-    return NextResponse.json(
-      { error: "❌ Unerwarteter Fehler bei der PDF-Erstellung" },
-      { status: 500 }
-    );
+    console.error("❌ PDF API Fehler:", err);
+      return NextResponse.json(
+        { error: err?.message || "Unbekannter Fehler" },
+        { status: 500 }
+      );
   }
 }
