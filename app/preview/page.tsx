@@ -20,7 +20,6 @@ import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 const QUANTITIES = [50, 100, 250, 500, 1000];
 const TEMPLATES = [
   { value: "qrcode", label: "QR Code" },
-  { value: "doublesided", label: "Doublesided" },
   { value: "claim", label: "Claim" },
   { value: "omicron-lab", label: "Omicron Lab" },
 ] as const;
