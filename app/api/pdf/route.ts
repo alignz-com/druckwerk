@@ -327,14 +327,14 @@ export async function POST(req: Request): Promise<Response> {
       };
       if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
-      const debugBlob = new Blob([bytes], { type: "application/pdf" });
+      const debugBlob = new Blob([bytes.buffer], { type: "application/pdf" });
       return new NextResponse(debugBlob, { headers });
     }
 
     // Upload zu Vercel Blob
     const orderId = Date.now().toString();
     const fileName = `orders/order_${orderId}.pdf`;
-    const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+    const pdfBlob = new Blob([bytes.buffer], { type: "application/pdf" });
 
     const { url: blobUrl } = await put(fileName, pdfBlob, {
       access: "public",
