@@ -316,39 +316,40 @@ export async function POST(req: Request) {
   const qy = mm2pt(18.85);
   back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
 
-// 6) Speichern → Bytes
-const bytes = await tplDoc.save();
+  // 6) Speichern → Bytes
+  const bytes = await tplDoc.save();
 
-// Debug-Preview behalten
-const urlObj = new URL(req.url);
-const isDebug = urlObj.searchParams.has("debug");
-if (isDebug) {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/pdf",
-    "Content-Disposition": 'inline; filename="preview.pdf"',
-  };
-  if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
+  // Debug-Flag
+  const urlObj = new URL(req.url);
+  const isDebug = urlObj.searchParams.has("debug");
 
-  // ✅ Für Debug-Preview: als Blob zurückgeben
-  const debugBlob = new Blob([bytes], { type: "application/pdf" });
-  return new NextResponse(debugBlob, { headers });
-}
+  // Debug: PDF direkt ausgeben
+  if (isDebug) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'inline; filename="preview.pdf"',
+    };
+    if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
-// Upload zu Vercel Blob
-const orderId = Date.now().toString(); // oder aus body nehmen
-const fileName = `orders/order_${orderId}.pdf`;
+    const debugAbuf = toArrayBuffer(bytes);
+    return new NextResponse(debugAbuf, { headers });
+  }
 
-// ✅ Blob für Upload erstellen
-const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+  // Upload zu Vercel Blob
+  const orderId = Date.now().toString();
+  const fileName = `orders/order_${orderId}.pdf`;
 
-const { url: blobUrl } = await put(fileName, pdfBlob, {
-  access: "public",
-  contentType: "application/pdf",
-});
+  const uploadAbuf = toArrayBuffer(bytes);
+  const pdfBlob = new Blob([uploadAbuf], { type: "application/pdf" });
 
-// Antwort an den Client
-return NextResponse.json({
-  message: "✅ Bestellung erhalten",
-  url: blobUrl,
-});
+  const { url: blobUrl } = await put(fileName, pdfBlob, {
+    access: "public",            // bei Bedarf: "private"
+    contentType: "application/pdf",
+  });
+
+  // Antwort
+  return NextResponse.json({
+    message: "✅ Bestellung erhalten",
+    url: blobUrl,   // 👉 statt fileUrl jetzt url
+  });
 }
