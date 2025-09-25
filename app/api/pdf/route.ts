@@ -190,167 +190,167 @@ async function loadFrutiger(doc: PDFDocument) {
 }
 
 // ---------- Route ----------
-export async function POST(req: Request) {
-  const body = (await req.json()) as Payload;
-  const {
-    name,
-    role = "",
-    email = "",
-    phone = "",
-    mobile = "",
-    company = "",
-    url = "",
-    template = "omicron",
-  } = body;
+export async function POST(req: Request): Promise<Response> {
+  try {
+    const body = (await req.json()) as Payload;
+    const {
+      name,
+      role = "",
+      email = "",
+      phone = "",
+      mobile = "",
+      company = "",
+      url = "",
+      template = "omicron",
+    } = body;
 
-  // 1) Template laden (in place)
-  const tplPath = path.join(process.cwd(), "public", "templates", `${template}.pdf`);
-  if (!existsSync(tplPath)) {
-    return NextResponse.json({ error: `Template not found: ${template}.pdf` }, { status: 400 });
-  }
-  const tplBytes = await readFile(tplPath);
-  const tplDoc = await PDFDocument.load(tplBytes);
-  tplDoc.registerFontkit(fontkit);
-
-  // 2) Fonts
-  const { fonts: Frutiger, report } = await loadFrutiger(tplDoc);
-
-  // 3) Seiten
-  if (tplDoc.getPageCount() < 2) {
-    return NextResponse.json({ error: "Template must have 2 pages (front/back)" }, { status: 400 });
-  }
-  const front = tplDoc.getPage(0);
-  const back = tplDoc.getPage(1);
-  const { height: fh } = front.getSize();
-
-  // 4) Vorderseite – Spalte
-  const L = 24.4;   // mm von links
-  const W = 85;     // mm Spaltenbreite
-  const TOP = 24;   // mm Abstand von oben zur ersten Grundlinie
-
-  const xLeft = mm2pt(L);
-  const colWidth = mm2pt(W);
-  let y = fh - mm2pt(TOP);
-
-  const nameSize = 10;
-  const roleSize = 8;
-  const bodySize = 8;
-  const lineGap = 4;   // mm für Name/Rolle
-  const lineGapBody = 3.5; // mm für Body
-
-  // Name
-  y = drawBlock(front, [name], y, {
-    xLeftPt: xLeft, widthPt: colWidth, size: nameSize, lhMm: lineGap, font: Frutiger.Bold, align: "left",
-  });
-
-  // Rolle
-  if (role) {
-    y = drawBlock(front, [role], y, {
-      xLeftPt: xLeft, widthPt: colWidth, size: roleSize, lhMm: lineGap, font: (Frutiger.LightItalic ?? Frutiger.Light), align: "left",
-    });
-  }
-
-  // Abstand
-  y -= mm2pt(3.25);
-
-  // Kontakte
-  const contactLines: string[] = [];
-  const phoneLine = formatPhones(phone, mobile); // T … | M …
-  if (phoneLine) contactLines.push(phoneLine);
-  if (email)     contactLines.push(email);
-  if (url)       contactLines.push(url);
-  
-  for (const line of contactLines) {
-    const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
-    y = drawBlock(front, lines, y, {
-      xLeftPt: xLeft,
-      widthPt: colWidth,
-      size: bodySize,
-      lhMm: lineGapBody,
-      font: Frutiger.Light,
-      align: "left",
-    });
-  }
-
-  // Abstand zu Firma/Adresse
-  y -= mm2pt(1.9);
-
-  // Firma/Adresse
-  if (company) {
-    const raw = splitLinesMultiline(company).filter(Boolean);
-    const wrapped: string[] = [];
-    for (const l of raw) {
-      if (Frutiger.Light) wrapped.push(...wrapText(l, colWidth, Frutiger.Light, bodySize));
-      else wrapped.push(l);
+    // 1) Template laden
+    const tplPath = path.join(process.cwd(), "public", "templates", `${template}.pdf`);
+    if (!existsSync(tplPath)) {
+      return NextResponse.json({ error: `Template not found: ${template}.pdf` }, { status: 400 });
     }
-    y = drawBlock(front, wrapped, y, {
-      xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGapBody, font: Frutiger.Light, align: "left",
+    const tplBytes = await readFile(tplPath);
+    const tplDoc = await PDFDocument.load(tplBytes);
+    tplDoc.registerFontkit(fontkit);
+
+    // 2) Fonts
+    const { fonts: Frutiger, report } = await loadFrutiger(tplDoc);
+
+    // 3) Seiten
+    if (tplDoc.getPageCount() < 2) {
+      return NextResponse.json({ error: "Template must have 2 pages (front/back)" }, { status: 400 });
+    }
+    const front = tplDoc.getPage(0);
+    const back = tplDoc.getPage(1);
+    const { height: fh } = front.getSize();
+
+    // 4) Vorderseite – Inhalte setzen
+    const L = 24.4;
+    const W = 85;
+    const TOP = 24;
+    const xLeft = mm2pt(L);
+    const colWidth = mm2pt(W);
+    let y = fh - mm2pt(TOP);
+
+    const nameSize = 10;
+    const roleSize = 8;
+    const bodySize = 8;
+    const lineGap = 4;
+    const lineGapBody = 3.5;
+
+    // Name
+    y = drawBlock(front, [name], y, {
+      xLeftPt: xLeft, widthPt: colWidth, size: nameSize, lhMm: lineGap,
+      font: Frutiger.Bold, align: "left",
     });
+
+    // Rolle
+    if (role) {
+      y = drawBlock(front, [role], y, {
+        xLeftPt: xLeft, widthPt: colWidth, size: roleSize, lhMm: lineGap,
+        font: (Frutiger.LightItalic ?? Frutiger.Light), align: "left",
+      });
+    }
+
+    y -= mm2pt(3.25);
+
+    // Kontakte
+    const contactLines: string[] = [];
+    const phoneLine = formatPhones(phone, mobile);
+    if (phoneLine) contactLines.push(phoneLine);
+    if (email) contactLines.push(email);
+    if (url) contactLines.push(url);
+
+    for (const line of contactLines) {
+      const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
+      y = drawBlock(front, lines, y, {
+        xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGapBody,
+        font: Frutiger.Light, align: "left",
+      });
+    }
+
+    y -= mm2pt(1.9);
+
+    // Firma/Adresse
+    if (company) {
+      const raw = splitLinesMultiline(company).filter(Boolean);
+      const wrapped: string[] = [];
+      for (const l of raw) {
+        if (Frutiger.Light) wrapped.push(...wrapText(l, colWidth, Frutiger.Light, bodySize));
+        else wrapped.push(l);
+      }
+      y = drawBlock(front, wrapped, y, {
+        xLeftPt: xLeft, widthPt: colWidth, size: bodySize, lhMm: lineGapBody,
+        font: Frutiger.Light, align: "left",
+      });
+    }
+
+    // 5) Rückseite – QR
+    const orgName = (company || "").split(/\r?\n/)[0] || "";
+    const addrLabel = company || "";
+
+    const vcard = buildVCard3({
+      fullName: name,
+      org: orgName,
+      title: role || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      mobile: mobile || undefined,
+      url: url || undefined,
+      addrLabel,
+    });
+
+    const dataUrl = await QRCode.toDataURL(vcard, {
+      width: 1024,
+      margin: 0,
+      errorCorrectionLevel: "M",
+    });
+    const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
+    const img = await tplDoc.embedPng(pngBytes);
+
+    const qrSize = mm2pt(32);
+    const qx = mm2pt(52.8);
+    const qy = mm2pt(18.85);
+    back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+
+    // 6) Speichern
+    const bytes = await tplDoc.save();
+
+    // Debug-Flag
+    const urlObj = new URL(req.url);
+    const isDebug = urlObj.searchParams.has("debug");
+
+    if (isDebug) {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'inline; filename="preview.pdf"',
+      };
+      if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
+
+      const debugBlob = new Blob([bytes], { type: "application/pdf" });
+      return new NextResponse(debugBlob, { headers });
+    }
+
+    // Upload zu Vercel Blob
+    const orderId = Date.now().toString();
+    const fileName = `orders/order_${orderId}.pdf`;
+    const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+
+    const { url: blobUrl } = await put(fileName, pdfBlob, {
+      access: "public",
+      contentType: "application/pdf",
+    });
+
+    return NextResponse.json({
+      message: "✅ Bestellung erhalten",
+      fileUrl: blobUrl,
+    });
+
+  } catch (err: any) {
+    console.error("❌ Fehler in /api/pdf:", err);
+    return NextResponse.json(
+      { error: "❌ Unerwarteter Fehler bei der PDF-Erstellung" },
+      { status: 500 }
+    );
   }
-
-  // 5) Rückseite – vCard-QR (32 mm)
-  const orgName = (company || "").split(/\r?\n/)[0] || "";
-  const addrLabel = company || "";
-  
-  const vcard = buildVCard3({
-    fullName: name,
-    org: orgName,
-    title: role || undefined,
-    email: email || undefined,
-    phone: phone || undefined,     // keep work
-    mobile: mobile || undefined,   // add mobile
-    url: url || undefined,
-    addrLabel,
-  });
-
-  const dataUrl = await QRCode.toDataURL(vcard, {
-    width: 1024,
-    margin: 0,
-    errorCorrectionLevel: "M",
-  });
-  const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
-  const img = await tplDoc.embedPng(pngBytes);
-
-  const qrSize = mm2pt(32);
-  const qx = mm2pt(52.8);
-  const qy = mm2pt(18.85);
-  back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
-
-  // 6) Speichern → Bytes
-  const bytes = await tplDoc.save();
-
-  // Debug-Flag
-  const urlObj = new URL(req.url);
-  const isDebug = urlObj.searchParams.has("debug");
-
-  // Debug: PDF direkt ausgeben
-  if (isDebug) {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": 'inline; filename="preview.pdf"',
-    };
-    if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
-
-    // ✅ Bytes sicher in ein Blob packen
-    const debugBlob = new Blob([bytes], { type: "application/pdf" });
-
-    return new NextResponse(debugBlob, { headers });
-  }
-
-  // Upload zu Vercel Blob
-  const orderId = Date.now().toString();
-  const fileName = `orders/order_${orderId}.pdf`;
-
-  // ✅ auch hier Blob statt ArrayBuffer direkt
-  const pdfBlob = new Blob([bytes], { type: "application/pdf" });
-
-  const { url: blobUrl } = await put(fileName, pdfBlob, {
-    access: "public",
-    contentType: "application/pdf",
-  });
 }
-// 👇 Fallback – falls irgendwas dazwischen schiefgeht
-return NextResponse.json(
-  { error: "❌ Unerwarteter Fehler bei der PDF-Erstellung" },
-  { status: 500 }
-);
