@@ -336,8 +336,8 @@ export async function POST(req: Request) {
   const orderId = Date.now().toString(); // oder aus body nehmen
   const fileName = `orders/order_${orderId}.pdf`;
 
-  const { url: blobUrl } = await put(fileName, buffer, {
-    access: "public", // oder "private"
+  const { url: blobUrl } = await put(fileName, new Blob([buffer]), {
+    access: "public",
     contentType: "application/pdf",
   });
 
@@ -347,3 +347,5 @@ export async function POST(req: Request) {
     url: blobUrl,
   });
 }
+
+
