@@ -58,7 +58,7 @@ export default function ProtectedPage() {
       {/* Logout Button rechts oben */}
       <button
         onClick={handleLogout}
-        className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
+        className="cursor-pointer absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
       >
         Logout
       </button>
