@@ -24,8 +24,15 @@ const TEMPLATES = [
   { value: "omicron-lab", label: "Omicron Lab" },
 ] as const;
 
+const DELIVERY_TIMES = [
+  { value: "express", label: "Express" },
+  { value: "1week", label: "1 Week" },
+  { value: "2weeks", label: "2 Weeks" },
+] as const;
+
 export default function PreviewPage() {
   // Demo-Defaults
+  const [deliveryTime, setDeliveryTime] = useState<string>("1week");
   const [name, setName] = useState("Martin Eichberger");
   const [role, setRole] = useState("Corporate Communications");
   const [email, setEmail] = useState("martin.eichberger@omicronenergy.com");
@@ -65,6 +72,8 @@ const generate = async () => {
         company,
         url,
         template: "omicron",
+        quantity,
+        deliveryTime,
       }),
     });
 
