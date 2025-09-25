@@ -134,6 +134,28 @@ const generate = async () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Delivery Time */}
+                <div className="grid gap-2">
+                  <Label htmlFor="delivery">Delivery Time</Label>
+                  <Select value={deliveryTime} onValueChange={setDeliveryTime}>
+                    <SelectTrigger id="delivery">
+                      <SelectValue placeholder="Select delivery time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DELIVERY_TIMES.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {deliveryTime === "express" && (
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Express delivery will cause additional costs.
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
