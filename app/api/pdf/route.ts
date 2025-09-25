@@ -330,7 +330,7 @@ export async function POST(req: Request) {
     if (report?.length) headers["X-Font-Debug"] = report.join(" | ").slice(0, 1800);
 
     // bytes ist ein Uint8Array, das kannst du direkt zurückgeben
-    return new NextResponse(bytes, { headers });
+    return new NextResponse(bytes.buffer, { headers });
   }
 
   // Upload zu Vercel Blob
