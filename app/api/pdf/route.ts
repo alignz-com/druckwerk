@@ -349,3 +349,8 @@ export async function POST(req: Request) {
     contentType: "application/pdf",
   });
 }
+// 👇 Fallback – falls irgendwas dazwischen schiefgeht
+return NextResponse.json(
+  { error: "❌ Unerwarteter Fehler bei der PDF-Erstellung" },
+  { status: 500 }
+);
