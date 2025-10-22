@@ -23,7 +23,7 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      // robustes E-Mail/UPN-Extraction:
+      // robust E-Mail/UPN-Extraction
       const raw =
         (user?.email ??
           (profile as any)?.email ??
@@ -32,26 +32,29 @@ const handler = NextAuth({
           "") as string;
 
       const email = raw.toLowerCase();
-      const domain = email.split("@")[1] ?? "";
-
+      const domain = email.includes("@") ? email.split("@")[1] : "";
       const tenantId =
         (profile as any)?.tid?.toLowerCase?.() ||
-        (account as any)?.tenantId?.toLowerCase?.();
+        (account as any)?.tenantId?.toLowerCase?.() ||
+        "";
 
-      // 1) Domain-Whitelist
-      if (allowedDomains.length && !allowedDomains.includes(domain)) return false;
+      // Debug-Ausgabe in Logs (hilft beim nächsten Schritt)
+      console.log("[auth] login attempt", { email, domain, tenantId });
 
-      // 2) Optional zusätzlich Tenant-Whitelist
-      if (allowedTenants.length && (!tenantId || !allowedTenants.includes(tenantId)))
-        return false;
+      const domainOk =
+        allowedDomains.length === 0 || allowedDomains.includes(domain);
 
-      return true;
+      const tenantOk =
+        allowedTenants.length === 0 || (tenantId && allowedTenants.includes(tenantId));
+
+      // **OR-Logik**: Tenant passt ODER Domain passt
+      return domainOk || tenantOk;
     },
 
     async session({ session, token }) {
       if (session?.user) {
         if (token?.email) session.user.email = String(token.email);
-        if (token?.name)  session.user.name  = String(token.name);
+        if (token?.name) session.user.name = String(token.name);
       }
       return session;
     },
