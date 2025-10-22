@@ -43,8 +43,8 @@ export default function Page() {
               className="h-5 w-5"
             >
               <path fill="#f25022" d="M11 11H3V3h8v8z" />
-              <path fill="#00a4ef" d="M21 11h-8V3h8v8z" />
               <path fill="#7fba00" d="M11 21H3v-8h8v8z" />
+              <path fill="#00a4ef" d="M21 11h-8V3h8v8z" />
               <path fill="#ffb900" d="M21 21h-8v-8h8v8z" />
             </svg>
             Sign in with Microsoft
