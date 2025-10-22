@@ -40,7 +40,7 @@ const handler = NextAuth({
 
       // Debug-Ausgabe in Logs (hilft beim nächsten Schritt)
       console.log("[auth] login attempt", { email, domain, tenantId });
-
+      
       const domainOk =
         allowedDomains.length === 0 || allowedDomains.includes(domain);
 

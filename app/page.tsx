@@ -1,68 +1,73 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Order from "./order"; // dein Formular
+import { useEffect } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
+import Order from "./order";
 
-const PASSWORD = "omicron"; // später ENV
+export default function Page() {
+  const { data: session, status } = useSession();
 
-export default function ProtectedPage() {
-  const [input, setInput] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
+  // willst du den Microsoft-Dialog automatisch öffnen?
+  // useEffect(() => {
+  //   if (status === "unauthenticated") signIn("azure-ad");
+  // }, [status]);
 
-  useEffect(() => {
-    if (localStorage.getItem("auth") === "1") {
-      setAuthenticated(true);
-    }
-  }, []);
-
-  const handleLogin = () => {
-    if (input === PASSWORD) {
-      setAuthenticated(true);
-      localStorage.setItem("auth", "1");
-    } else {
-      alert("❌ Wrong password");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("auth");
-    setAuthenticated(false);
-  };
-
-  if (!authenticated) {
+  if (status === "loading") {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="p-6 rounded-lg shadow-md bg-white w-80">
-          <h1 className="text-lg font-semibold mb-4">Login</h1>
-          <input
-            type="password"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Enter password"
-            className="border rounded w-full p-2 mb-4"
-          />
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-pulse text-sm text-gray-500">Lade…</div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md rounded-2xl shadow-sm bg-white p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-9 w-9 rounded-full bg-gray-900 text-white flex items-center justify-center font-semibold">
+              VC
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold leading-tight">Visitenkarten-Tool</h1>
+              <p className="text-xs text-gray-500">Sign in with Microsoft</p>
+            </div>
+          </div>
+
           <button
-            onClick={handleLogin}
-            className="cursor-pointer w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            onClick={() => signIn("azure-ad")}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition"
           >
-            Unlock
+            <svg aria-hidden focusable="false" viewBox="0 0 24 24" className="h-5 w-5">
+              <path fill="#f25022" d="M11 11H3V3h8v8z" />
+              <path fill="#00a4ef" d="M21 11h-8V3h8v8z" />
+              <path fill="#7fba00" d="M11 21H3v-8h8v8z" />
+              <path fill="#ffb900" d="M21 21h-8v-8h8v8z" />
+            </svg>
+            Login with Microsoft
           </button>
+
+          <p className="mt-3 text-xs text-gray-500">
+            Zugriff nur für freigegebene Domains (z. B. <code>alignz.com</code>,{" "}
+            <code>omicronenergy.com</code>).
+          </p>
         </div>
       </div>
     );
   }
 
-  // 🔓 eingeloggt → Formular + Logout
+  // ✅ eingeloggt
   return (
     <div className="relative">
-      {/* Logout Button rechts oben */}
       <button
-        onClick={handleLogout}
+        onClick={() => signOut()}
         className="cursor-pointer absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
       >
         Logout
       </button>
-
+      <div className="absolute top-4 left-4 text-sm text-gray-600">
+        {session?.user?.email}
+      </div>
       <Order />
     </div>
   );
