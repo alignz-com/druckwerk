@@ -1,21 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Order from "./order";
 
 export default function Page() {
   const { data: session, status } = useSession();
 
-  // willst du den Microsoft-Dialog automatisch öffnen?
-  // useEffect(() => {
-  //   if (status === "unauthenticated") signIn("azure-ad");
-  // }, [status]);
-
   if (status === "loading") {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="animate-pulse text-sm text-gray-500">Lade…</div>
+        <div className="animate-pulse text-sm text-gray-500">
+          Loading session…
+        </div>
       </div>
     );
   }
@@ -26,37 +22,43 @@ export default function Page() {
         <div className="w-full max-w-md rounded-2xl shadow-sm bg-white p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-9 w-9 rounded-full bg-gray-900 text-white flex items-center justify-center font-semibold">
-              VC
+              BC
             </div>
             <div>
-              <h1 className="text-lg font-semibold leading-tight">Visitenkarten-Tool</h1>
-              <p className="text-xs text-gray-500">Sign in with Microsoft</p>
+              <h1 className="text-lg font-semibold leading-tight">
+                Business Card Portal
+              </h1>
+              <p className="text-xs text-gray-500">Please sign in to continue</p>
             </div>
           </div>
 
           <button
             onClick={() => signIn("azure-ad")}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition"
+            className="cursor-pointer w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition"
           >
-            <svg aria-hidden focusable="false" viewBox="0 0 24 24" className="h-5 w-5">
+            <svg
+              aria-hidden
+              focusable="false"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+            >
               <path fill="#f25022" d="M11 11H3V3h8v8z" />
               <path fill="#00a4ef" d="M21 11h-8V3h8v8z" />
               <path fill="#7fba00" d="M11 21H3v-8h8v8z" />
               <path fill="#ffb900" d="M21 21h-8v-8h8v8z" />
             </svg>
-            Login with Microsoft
+            Sign in with Microsoft
           </button>
 
-          <p className="mt-3 text-xs text-gray-500">
-            Zugriff nur für freigegebene Domains (z. B. <code>alignz.com</code>,{" "}
-            <code>omicronenergy.com</code>).
+          <p className="mt-3 text-xs text-gray-500 text-center">
+            Access restricted to approved company accounts.
           </p>
         </div>
       </div>
     );
   }
 
-  // ✅ eingeloggt
+  // ✅ logged in
   return (
     <div className="relative">
       <button
