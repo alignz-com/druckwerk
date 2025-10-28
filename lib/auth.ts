@@ -4,8 +4,8 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { UserRole } from "@prisma/client";
 
+import type { AppUserRole } from "@/types/auth";
 import { prisma } from "./prisma";
 
 const allowedDomains = (process.env.ALLOWED_DOMAINS ?? "")
@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        token.role = (user as any).role;
+        token.role = ((user as any).role ?? "USER") as AppUserRole;
         token.brandId = (user as any).brandId ?? null;
       }
       return token;
@@ -109,7 +109,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = typeof token.userId === "string" ? token.userId : undefined;
         if (token?.email) session.user.email = String(token.email);
         if (token?.name) session.user.name = String(token.name);
-        session.user.role = (token?.role as UserRole | undefined) ?? UserRole.USER;
+        const tokenRole = (token?.role as AppUserRole | undefined) ?? "USER";
+        session.user.role = tokenRole;
         session.user.brandId = token?.brandId ? String(token.brandId) : undefined;
       }
       return session;
