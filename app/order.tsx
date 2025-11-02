@@ -101,12 +101,14 @@ const generate = async () => {
 
 
   return (
-    <main className="w-full px-4 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10 space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Business Card – Omicron</h1>
+    <section className="space-y-10">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Business Card – Omicron</h1>
+      </header>
 
-      <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)] 2xl:grid-cols-[460px_minmax(0,1fr)]">
+      <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
         {/* Left column: Order info + Details stacked */}
-        <div className="space-y-6 xl:space-y-8">
+        <div className="space-y-8">
           {/* Order information */}
           <Card className="h-fit">
             <CardHeader className="pb-2">
@@ -247,8 +249,8 @@ const generate = async () => {
             <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="mx-auto w-full max-w-4xl">
+            <CardContent className="pt-0 flex justify-center">
+              <div className="w-full max-w-[1100px]">
                 <BusinessCardFront
                   templateId={template as any}
                   name={name}
@@ -267,8 +269,8 @@ const generate = async () => {
             <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="mx-auto w-full max-w-4xl">
+            <CardContent className="pt-0 flex justify-center">
+              <div className="w-full max-w-[1100px]">
                 <BusinessCardBack
                   templateId={template as any}
                   name={name}
@@ -284,7 +286,8 @@ const generate = async () => {
           </Card>
         </div>
       </div>
-        <Analytics />
-    </main>
+
+      <Analytics />
+    </section>
   );
 }
