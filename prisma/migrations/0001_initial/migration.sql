@@ -31,6 +31,7 @@ CREATE TABLE "accounts" (
     "accessToken" TEXT,
     "expiresAt" INTEGER,
     "tokenType" TEXT,
+    "extExpiresIn" INTEGER,
     "scope" TEXT,
     "idToken" TEXT,
     "sessionState" TEXT,
