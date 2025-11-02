@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,14 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // + add:
 const QUANTITIES = [50, 100, 250, 500, 1000];
@@ -34,6 +43,7 @@ const DELIVERY_TIMES = [
 
 export default function PreviewPage() {
   // Demo-Defaults
+  const router = useRouter();
   const [deliveryTime, setDeliveryTime] = useState<string>("1week");
   const [name, setName] = useState("Martin Eichberger");
   const [role, setRole] = useState("Corporate Communications");
@@ -45,57 +55,51 @@ export default function PreviewPage() {
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
   const [template, setTemplate] = useState<string>("qrcode");
   const [linkedin, setLinkedin] = useState("");
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  /*const generate = async () => {
-    const res = await fetch("/api/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, role, email, phone, mobile, company, url, template: "omicron" }),
-    });
-    const blob = await res.blob();
-    const href = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = "card.pdf";
-    a.click();
-    URL.revokeObjectURL(href);
-  };*/
+  const openConfirm = () => {
+    if (isSubmitting) return;
+    setSubmitError(null);
+    setIsConfirmOpen(true);
+  };
 
-const generate = async () => {
-  try {
-    const res = await fetch("/api/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        role,
-        email,
-        phone,
-        mobile,
-        company,
-        url,
-        template: "omicron",
-        quantity,
-        deliveryTime,
-        linkedin,
-      }),
-    });
+  const confirmOrder = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          role,
+          email,
+          phone,
+          mobile,
+          company,
+          url,
+          template: template,
+          quantity: Number(quantity),
+          deliveryTime,
+          linkedin,
+        }),
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Fehler beim Speichern der Bestellung");
+      }
 
-    if (!res.ok) {
-      alert(data.error || "❌ Fehler bei der Bestellung");
-      return;
+      setIsConfirmOpen(false);
+      router.push("/orders?created=1");
+    } catch (err: any) {
+      setSubmitError(err?.message ?? "Unbekannter Fehler beim Speichern");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // ✅ direkt die Blob-URL von Vercel öffnen
-    window.open(data.fileUrl, "_blank");
-    // oder: location.href = data.url; // gleiche Seite navigiert zum PDF
-  } catch (err) {
-    console.error("❌ Fehler beim Request:", err);
-    alert("Fehler beim Erstellen der Visitenkarte");
-  }
-};
+  };
 
 
 
@@ -238,7 +242,9 @@ const generate = async () => {
                 />
               </div>
       
-              <Button onClick={generate} className="w-full">Order Business Card</Button>
+              <Button onClick={openConfirm} className="w-full">
+                Order Business Card
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -286,6 +292,75 @@ const generate = async () => {
           </Card>
         </div>
       </div>
+
+      <Dialog
+        open={isConfirmOpen}
+        onOpenChange={(open) => {
+          if (isSubmitting) return;
+          setSubmitError(null);
+          setIsConfirmOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Bestellung bestätigen</DialogTitle>
+            <DialogDescription>
+              Bitte überprüfe noch einmal die Vorderseite deiner Visitenkarte. Wenn alle Angaben passen, bestätige die Bestellung.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
+              <div className="mx-auto w-full max-w-[920px]">
+                <BusinessCardFront
+                  templateId={template as any}
+                  name={name}
+                  role={role}
+                  email={email}
+                  phone={phone}
+                  mobile={mobile}
+                  company={company}
+                  url={url}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 sm:grid-cols-2 sm:gap-3">
+              <p><span className="font-semibold text-slate-900">Name:</span> {name}</p>
+              <p><span className="font-semibold text-slate-900">Funktion:</span> {role || "–"}</p>
+              <p><span className="font-semibold text-slate-900">E-Mail:</span> {email}</p>
+              <p><span className="font-semibold text-slate-900">Telefon:</span> {phone || "–"}</p>
+              <p><span className="font-semibold text-slate-900">Mobile:</span> {mobile || "–"}</p>
+              <p><span className="font-semibold text-slate-900">LinkedIn:</span> {linkedin || "–"}</p>
+              <p><span className="font-semibold text-slate-900">Template:</span> {TEMPLATES.find((t) => t.value === template)?.label ?? template}</p>
+              <p><span className="font-semibold text-slate-900">Menge:</span> {quantity}</p>
+              <p className="sm:col-span-2">
+                <span className="font-semibold text-slate-900">Adresse:</span><br />
+                <span className="whitespace-pre-wrap">{company}</span>
+              </p>
+            </div>
+
+            {submitError ? (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {submitError}
+              </p>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsConfirmOpen(false)}
+              disabled={isSubmitting}
+            >
+              Zurück
+            </Button>
+            <Button onClick={confirmOrder} disabled={isSubmitting}>
+              {isSubmitting ? "Bestellung wird gespeichert…" : "Bestellung bestätigen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Analytics />
     </section>
