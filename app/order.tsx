@@ -101,12 +101,12 @@ const generate = async () => {
 
 
   return (
-    <main className="mx-auto max-w-[1200px] p-6 md:p-8 lg:p-10 space-y-6">
-      <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Business Card – Omicron</h1>
+    <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10 space-y-8">
+      <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Business Card – Omicron</h1>
 
-      <div className="grid gap-6 lg:grid-cols-[480px_minmax(0,1fr)]">
+      <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)] 2xl:grid-cols-[460px_minmax(0,1fr)]">
         {/* Left column: Order info + Details stacked */}
-        <div className="space-y-6">
+        <div className="space-y-6 xl:space-y-8">
           {/* Order information */}
           <Card className="h-fit">
             <CardHeader className="pb-2">
@@ -242,13 +242,13 @@ const generate = async () => {
         </div>
       
         {/* Right column: preview stacked */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
+        <div className="space-y-8">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
-              <div className="rounded-lg overflow-hidden">
+            <CardContent className="pt-0">
+              <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:p-6">
                 <BusinessCardFront
                   templateId={template as any}
                   name={name}
@@ -263,12 +263,12 @@ const generate = async () => {
             </CardContent>
           </Card>
       
-          <Card>
-            <CardHeader className="pb-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
-              <div className="rounded-lg overflow-hidden">
+            <CardContent className="pt-0">
+              <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:p-6">
                 <BusinessCardBack
                   templateId={template as any}
                   name={name}
