@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ClipboardList, PlusCircle, ShieldCheck } from "lucide-react";
-
 import { getServerAuthSession } from "@/lib/auth";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 import LogoutButton from "@/components/layout/LogoutButton";
@@ -20,10 +18,10 @@ export default async function AppLayout({ children }: Props) {
 
   const displayName = session.user.name || session.user.email || "Account";
   const menuItems = [
-    { href: "/orders", label: "Orders", Icon: ClipboardList },
-    { href: "/orders/new", label: "New Order", Icon: PlusCircle },
+    { href: "/orders", label: "Orders", icon: "orders" },
+    { href: "/orders/new", label: "New Order", icon: "new-order" },
     ...(session.user.role === "ADMIN"
-      ? [{ href: "/admin/brands", label: "Admin · Brands", Icon: ShieldCheck }]
+      ? [{ href: "/admin/brands", label: "Admin · Brands", icon: "admin-brands" }]
       : []),
   ];
 
