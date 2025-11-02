@@ -101,7 +101,7 @@ const generate = async () => {
 
 
   return (
-    <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10 space-y-8">
+    <main className="w-full px-4 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10 space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Business Card – Omicron</h1>
 
       <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)] 2xl:grid-cols-[460px_minmax(0,1fr)]">
@@ -248,7 +248,7 @@ const generate = async () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:p-6">
+              <div className="mx-auto w-full max-w-4xl">
                 <BusinessCardFront
                   templateId={template as any}
                   name={name}
@@ -268,7 +268,7 @@ const generate = async () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:p-6">
+              <div className="mx-auto w-full max-w-4xl">
                 <BusinessCardBack
                   templateId={template as any}
                   name={name}

@@ -276,7 +276,7 @@ export function BusinessCardFront(props: Props) {
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
         style={{
-          maxWidth: 840,
+          maxWidth: 960,
           height: "auto",
           display: "block",
           aspectRatio: `${CARD_W} / ${CARD_H}`,
@@ -365,7 +365,7 @@ export function BusinessCardFront(props: Props) {
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
         style={{
-          maxWidth: 840,
+          maxWidth: 960,
           height: "auto",
           display: "block",
           aspectRatio: `${CARD_W} / ${CARD_H}`,
@@ -441,7 +441,7 @@ export function BusinessCardBack(props: Props) {
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: 840, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth: 960, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
         <image

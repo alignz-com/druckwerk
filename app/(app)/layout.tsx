@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: Props) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 lg:flex-row lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 py-6 lg:flex-row lg:px-10">
         <aside className="lg:w-64">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
@@ -52,7 +52,6 @@ export default async function AppLayout({ children }: Props) {
             </div>
           </div>
         </aside>
-
         <main className="flex-1">
           <header className="mb-6 lg:hidden">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -72,7 +71,7 @@ export default async function AppLayout({ children }: Props) {
             </div>
           </header>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">{children}</div>
+          {children}
         </main>
       </div>
     </div>
