@@ -1,37 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Analytics } from "@vercel/analytics/next";
+
+import { TemplateDefinition, DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
+import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Analytics } from "@vercel/analytics/next"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// + add:
 const QUANTITIES = [50, 100, 250, 500, 1000];
-const TEMPLATES = [
-  { value: "qrcode", label: "QR Code" },
-  { value: "claim", label: "Claim" },
-  { value: "omicron-lab", label: "Omicron Lab" },
-] as const;
 
 const DELIVERY_TIMES = [
   { value: "express", label: "Express" },
@@ -39,11 +35,18 @@ const DELIVERY_TIMES = [
   { value: "2weeks", label: "2 Weeks" },
 ] as const;
 
+export type OrderFormProps = {
+  templates: TemplateDefinition[];
+};
 
-
-export default function PreviewPage() {
-  // Demo-Defaults
+export default function OrderForm({ templates }: OrderFormProps) {
   const router = useRouter();
+  const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "qrcode");
+  const selectedTemplate = useMemo(() => {
+    return templateOptions.find((tpl) => tpl.key === selectedTemplateKey) ?? templateOptions[0] ?? DEFAULT_TEMPLATE_LIST[0];
+  }, [templateOptions, selectedTemplateKey]);
+
   const [deliveryTime, setDeliveryTime] = useState<string>("1week");
   const [name, setName] = useState("Martin Eichberger");
   const [role, setRole] = useState("Corporate Communications");
@@ -52,20 +55,23 @@ export default function PreviewPage() {
   const [mobile, setMobile] = useState("+43 664 88876851");
   const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
   const [url, setUrl] = useState("www.omicronenergy.com");
-  const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1])); // "100"
-  const [template, setTemplate] = useState<string>("qrcode");
+  const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
+
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmView, setConfirmView] = useState<"front" | "back">("front");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const openConfirm = () => {
     if (isSubmitting) return;
     setSubmitError(null);
+    setConfirmView("front");
     setIsConfirmOpen(true);
   };
 
   const confirmOrder = async () => {
+    if (!selectedTemplate) return;
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -80,7 +86,7 @@ export default function PreviewPage() {
           mobile,
           company,
           url,
-          template: template,
+          template: selectedTemplate.key,
           quantity: Number(quantity),
           deliveryTime,
           linkedin,
@@ -89,20 +95,17 @@ export default function PreviewPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Fehler beim Speichern der Bestellung");
+        throw new Error(data.error || "Failed to submit order");
       }
 
       setIsConfirmOpen(false);
       router.push("/orders?created=1");
     } catch (err: any) {
-      setSubmitError(err?.message ?? "Unbekannter Fehler beim Speichern");
+      setSubmitError(err?.message ?? "Unexpected error while saving order");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-
-
 
   return (
     <section className="space-y-10">
@@ -111,16 +114,13 @@ export default function PreviewPage() {
       </header>
 
       <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
-        {/* Left column: Order info + Details stacked */}
         <div className="space-y-8">
-          {/* Order information */}
           <Card className="h-fit">
             <CardHeader className="pb-2">
               <CardTitle className="text-base md:text-lg">Order information</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
-                {/* Quantity */}
                 <div className="grid gap-2">
                   <Label htmlFor="qty">Quantity</Label>
                   <Select value={quantity} onValueChange={setQuantity}>
@@ -136,25 +136,23 @@ export default function PreviewPage() {
                     </SelectContent>
                   </Select>
                 </div>
-      
-                {/* Template */}
+
                 <div className="grid gap-2">
                   <Label htmlFor="template">Template</Label>
-                  <Select value={template} onValueChange={setTemplate}>
+                  <Select value={selectedTemplateKey} onValueChange={setSelectedTemplateKey}>
                     <SelectTrigger id="template">
                       <SelectValue placeholder="Select template" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TEMPLATES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
+                      {templateOptions.map((tpl) => (
+                        <SelectItem key={tpl.key} value={tpl.key}>
+                          {tpl.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Delivery Time */}
                 <div className="grid gap-2">
                   <Label htmlFor="delivery">Delivery Time</Label>
                   <Select value={deliveryTime} onValueChange={setDeliveryTime}>
@@ -170,16 +168,13 @@ export default function PreviewPage() {
                     </SelectContent>
                   </Select>
                   {deliveryTime === "express" && (
-                    <p className="text-xs text-red-600 mt-1">
-                      ⚠️ Express delivery will cause additional costs.
-                    </p>
+                    <p className="mt-1 text-xs text-red-600">⚠️ Express delivery will cause additional costs.</p>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
-      
-          {/* Details */}
+
           <Card className="h-fit">
             <CardHeader>
               <CardTitle className="text-base md:text-lg">Details</CardTitle>
@@ -189,76 +184,70 @@ export default function PreviewPage() {
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
               </div>
-      
               <div className="grid gap-2">
                 <Label htmlFor="role">Function / Title</Label>
                 <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} maxLength={45} />
               </div>
-      
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19}/>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19} />
               </div>
-      
               <div className="grid gap-2">
                 <Label htmlFor="mobile">Mobile</Label>
-                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19}/>
+                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19} />
               </div>
-      
               <div className="grid gap-2">
                 <Label htmlFor="email">E-Mail</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50}/>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="linkedin">LinkedIn</Label>
-                <Input id="linkedin" type="url" placeholder="https://www.linkedin.com/in/username" value={linkedin} onChange={(e) => setLinkedin(e.target.value)}  maxLength={100} />
+                <Input
+                  id="linkedin"
+                  type="url"
+                  placeholder="https://www.linkedin.com/in/username"
+                  value={linkedin}
+                  onChange={(e) => setLinkedin(e.target.value)}
+                  maxLength={100}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
-                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)}  maxLength={32}/>
+                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
               </div>
-      
               <div className="grid gap-2">
                 <Label htmlFor="company">Company & Address</Label>
                 <Textarea
                   id="company"
                   value={company}
-                  rows={3} // zeigt 3 Zeilen an
+                  rows={3}
                   onChange={(e) => {
                     const maxLines = 3;
                     const maxPerLine = 48;
-
-                    // split input into lines
                     let lines = e.target.value.split("\n");
-
-                    // limit number of lines
                     lines = lines.slice(0, maxLines);
-
-                    // truncate each line to maxPerLine chars
                     lines = lines.map((line) => line.slice(0, maxPerLine));
-
                     setCompany(lines.join("\n"));
                   }}
                 />
               </div>
-      
+
               <Button onClick={openConfirm} className="w-full">
                 Order Business Card
               </Button>
             </CardContent>
           </Card>
         </div>
-      
-        {/* Right column: preview stacked */}
+
         <div className="space-y-8">
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 flex justify-center">
+            <CardContent className="flex justify-center pt-0">
               <div className="w-full max-w-[1100px]">
                 <BusinessCardFront
-                  templateId={template as any}
+                  template={selectedTemplate}
                   name={name}
                   role={role}
                   email={email}
@@ -270,15 +259,15 @@ export default function PreviewPage() {
               </div>
             </CardContent>
           </Card>
-      
+
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 flex justify-center">
+            <CardContent className="flex justify-center pt-0">
               <div className="w-full max-w-[1100px]">
                 <BusinessCardBack
-                  templateId={template as any}
+                  template={selectedTemplate}
                   name={name}
                   role={role}
                   email={email}
@@ -303,41 +292,55 @@ export default function PreviewPage() {
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Bestellung bestätigen</DialogTitle>
-            <DialogDescription>
-              Bitte überprüfe noch einmal die Vorderseite deiner Visitenkarte. Wenn alle Angaben passen, bestätige die Bestellung.
-            </DialogDescription>
+            <DialogTitle>Confirm order</DialogTitle>
+            <DialogDescription>Review the preview before submitting your business card order.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
+            <div className="flex gap-2">
+              <Button
+                variant={confirmView === "front" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setConfirmView("front")}
+                disabled={isSubmitting}
+              >
+                Front
+              </Button>
+              <Button
+                variant={confirmView === "back" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setConfirmView("back")}
+                disabled={isSubmitting}
+              >
+                Back
+              </Button>
+            </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
               <div className="mx-auto w-full max-w-[920px]">
-                <BusinessCardFront
-                  templateId={template as any}
-                  name={name}
-                  role={role}
-                  email={email}
-                  phone={phone}
-                  mobile={mobile}
-                  company={company}
-                  url={url}
-                />
+                {confirmView === "front" ? (
+                  <BusinessCardFront
+                    template={selectedTemplate}
+                    name={name}
+                    role={role}
+                    email={email}
+                    phone={phone}
+                    mobile={mobile}
+                    company={company}
+                    url={url}
+                  />
+                ) : (
+                  <BusinessCardBack
+                    template={selectedTemplate}
+                    name={name}
+                    role={role}
+                    email={email}
+                    phone={phone}
+                    mobile={mobile}
+                    company={company}
+                    url={url}
+                  />
+                )}
               </div>
-            </div>
-
-            <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 sm:grid-cols-2 sm:gap-3">
-              <p><span className="font-semibold text-slate-900">Name:</span> {name}</p>
-              <p><span className="font-semibold text-slate-900">Funktion:</span> {role || "–"}</p>
-              <p><span className="font-semibold text-slate-900">E-Mail:</span> {email}</p>
-              <p><span className="font-semibold text-slate-900">Telefon:</span> {phone || "–"}</p>
-              <p><span className="font-semibold text-slate-900">Mobile:</span> {mobile || "–"}</p>
-              <p><span className="font-semibold text-slate-900">LinkedIn:</span> {linkedin || "–"}</p>
-              <p><span className="font-semibold text-slate-900">Template:</span> {TEMPLATES.find((t) => t.value === template)?.label ?? template}</p>
-              <p><span className="font-semibold text-slate-900">Menge:</span> {quantity}</p>
-              <p className="sm:col-span-2">
-                <span className="font-semibold text-slate-900">Adresse:</span><br />
-                <span className="whitespace-pre-wrap">{company}</span>
-              </p>
             </div>
 
             {submitError ? (
@@ -348,15 +351,11 @@ export default function PreviewPage() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsConfirmOpen(false)}
-              disabled={isSubmitting}
-            >
-              Zurück
+            <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} disabled={isSubmitting}>
+              Back
             </Button>
             <Button onClick={confirmOrder} disabled={isSubmitting}>
-              {isSubmitting ? "Bestellung wird gespeichert…" : "Bestellung bestätigen"}
+              {isSubmitting ? "Saving order…" : "Confirm order"}
             </Button>
           </DialogFooter>
         </DialogContent>

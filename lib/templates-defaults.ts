@@ -1,0 +1,104 @@
+export type TemplateFontStyle = "bold" | "light" | "lightItalic";
+
+export type TemplateTextStyle = {
+  font: TemplateFontStyle;
+  sizePt: number;
+  lineGapMm: number;
+  spacingAfterMm?: number;
+};
+
+export type TemplateConfig = {
+  front: {
+    textFrame: {
+      xMm: number;
+      topMm: number;
+      columnWidthMm: number;
+      name: TemplateTextStyle;
+      role?: TemplateTextStyle;
+      contacts?: TemplateTextStyle;
+      company?: TemplateTextStyle;
+    };
+  };
+  back: {
+    mode: "qr" | "static" | "copyFront";
+    qr?: {
+      xMm: number;
+      yMm: number;
+      sizeMm: number;
+    };
+  };
+};
+
+export type TemplateDefinition = {
+  id?: string;
+  key: string;
+  label: string;
+  description?: string;
+  pdfPath: string;
+  previewFrontPath: string;
+  previewBackPath: string;
+  config: TemplateConfig;
+};
+
+const BASE_TEXT_FRAME = {
+  xMm: 24.4,
+  topMm: 24,
+  columnWidthMm: 85,
+  name: { font: "bold", sizePt: 10, lineGapMm: 4 } satisfies TemplateTextStyle,
+  role: { font: "lightItalic", sizePt: 8, lineGapMm: 4, spacingAfterMm: 3.25 } satisfies TemplateTextStyle,
+  contacts: { font: "light", sizePt: 8, lineGapMm: 3.5, spacingAfterMm: 1.9 } satisfies TemplateTextStyle,
+  company: { font: "light", sizePt: 8, lineGapMm: 3.5 } satisfies TemplateTextStyle,
+};
+
+export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
+  qrcode: {
+    key: "qrcode",
+    label: "QR Code",
+    pdfPath: "templates/omicron.pdf",
+    previewFrontPath: "/templates/omicron-front.png",
+    previewBackPath: "/templates/omicron-back.png",
+    config: {
+      front: {
+        textFrame: BASE_TEXT_FRAME,
+      },
+      back: {
+        mode: "qr",
+        qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+      },
+    },
+  },
+  claim: {
+    key: "claim",
+    label: "Claim",
+    pdfPath: "templates/omicron.pdf",
+    previewFrontPath: "/templates/omicron-front.png",
+    previewBackPath: "/templates/omicron-back.png",
+    config: {
+      front: {
+        textFrame: BASE_TEXT_FRAME,
+      },
+      back: {
+        mode: "qr",
+        qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+      },
+    },
+  },
+  "omicron-lab": {
+    key: "omicron-lab",
+    label: "Omicron Lab",
+    pdfPath: "templates/omicron.pdf",
+    previewFrontPath: "/templates/omicron-lab-front.png",
+    previewBackPath: "/templates/omicron-back.png",
+    config: {
+      front: {
+        textFrame: BASE_TEXT_FRAME,
+      },
+      back: {
+        mode: "qr",
+        qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+      },
+    },
+  },
+};
+
+export const DEFAULT_TEMPLATE_LIST = Object.values(DEFAULT_TEMPLATES);

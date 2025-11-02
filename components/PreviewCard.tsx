@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { formatPhones } from "@/lib/formatPhones";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
-import { TEMPLATE_REGISTRY, type TemplateId } from "@/lib/cardTemplates";
+import type { TemplateDefinition, TemplateTextStyle } from "@/lib/templates-defaults";
 
 function SmoothSvgImage({
   src,
@@ -48,6 +48,7 @@ function SmoothSvgImage({
 }
 
 function FrontTextOverlay({
+  template,
   name,
   role = "",
   email = "",
@@ -56,6 +57,7 @@ function FrontTextOverlay({
   company = "",
   url = "",
 }: {
+  template: TemplateDefinition;
   name: string;
   role?: string;
   email?: string;
@@ -64,36 +66,48 @@ function FrontTextOverlay({
   company?: string;
   url?: string;
 }) {
-  let y = TOP;
-  const nameY = y;
-  y += GAP_NAME;
+  const frame = template.config.front.textFrame;
+  const texts: ReactElement[] = [];
+  let cursor = frame.topMm;
+  let index = 0;
+  const baseX = frame.xMm;
 
-  const roleY = role ? y : y;
-  if (role) y += GAP_NAME;
+  const pushBlock = (lines: string[], style?: TemplateTextStyle) => {
+    if (!style || lines.length === 0) return;
+    const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style);
+    for (const line of lines) {
+      texts.push(
+        <text
+          key={`line-${index}`}
+          x={baseX}
+          y={cursor}
+          fontSize={fontSize}
+          fontWeight={fontWeight}
+          fontStyle={fontStyle}
+        >
+          {line}
+        </text>,
+      );
+      index += 1;
+      cursor += style.lineGapMm;
+    }
+    if (style.spacingAfterMm) {
+      cursor += style.spacingAfterMm;
+    }
+  };
 
-  y += CONTACT_SPACER;
+  pushBlock([name], frame.name);
+  if (role) pushBlock([role], frame.role);
 
-  const contacts: Array<{ text: string; y: number }> = [];
+  const contactLines: string[] = [];
   const phoneLine = formatPhones(phone, mobile);
-  if (phoneLine) {
-    contacts.push({ text: phoneLine, y });
-    y += GAP_CONTACT;
-  }
-  if (email) {
-    contacts.push({ text: email, y });
-    y += GAP_CONTACT;
-  }
-  if (url) {
-    contacts.push({ text: url, y });
-    y += GAP_CONTACT;
-  }
+  if (phoneLine) contactLines.push(phoneLine);
+  if (email) contactLines.push(email);
+  if (url) contactLines.push(url);
+  pushBlock(contactLines, frame.contacts);
 
-  y += COMPANY_SPACER;
-
-  const addr = (company ?? "")
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((text, i) => ({ text, y: y + i * GAP_CONTACT }));
+  const companyLines = (company ?? "").replace(/\r\n/g, "\n").split("\n").filter(Boolean);
+  pushBlock(companyLines, frame.company);
 
   return (
     <g
@@ -101,27 +115,7 @@ function FrontTextOverlay({
       fill="#111"
       dominantBaseline="alphabetic"
     >
-      <text x={LEFT} y={nameY} fontSize={NAME} fontWeight={700}>
-        {name}
-      </text>
-
-      {role && (
-        <text x={LEFT} y={roleY} fontSize={ROLE} fontWeight={300} fontStyle="italic" opacity={0.95}>
-          {role}
-        </text>
-      )}
-
-      {contacts.map((l, i) => (
-        <text key={`c-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
-          {l.text}
-        </text>
-      ))}
-
-      {addr.map((l, i) => (
-        <text key={`a-${i}`} x={LEFT} y={l.y} fontSize={BODY} fontWeight={300}>
-          {l.text}
-        </text>
-      ))}
+      {texts}
     </g>
   );
 }
@@ -135,7 +129,7 @@ export type Props = {
   mobile?: string;
   company?: string; // multiline
   url?: string;
-  templateId?: TemplateId; 
+  template: TemplateDefinition;
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };
@@ -144,41 +138,34 @@ export type Props = {
 const CARD_W = 85;
 const CARD_H = 55;
 
-const LEFT = 22;
-const TOP = 19;
-
-const GAP_NAME = 3;
-const GAP_CONTACT = 2.5;
-const CONTACT_SPACER = 2.5;
-const COMPANY_SPACER = 2.5;
-
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
 
-const FONT_SCALE_NAME = 0.75;
-const FONT_SCALE_ROLE = 0.75;
-const FONT_SCALE_BODY = 0.75;
+const FONT_SCALE = 0.75;
 
-const NAME = ptToMm(10) * FONT_SCALE_NAME;
-const ROLE = ptToMm(8)  * FONT_SCALE_ROLE;
-const BODY = ptToMm(8)  * FONT_SCALE_BODY;
+function svgFontAttributes(style: TemplateTextStyle) {
+  const fontSize = ptToMm(style.sizePt) * FONT_SCALE;
+  let fontWeight = 400;
+  let fontStyle = "normal" as "normal" | "italic";
 
-/* QR — leicht kleiner und etwas nach links/oben für die weiße Box der Rückseite */
-const QR_DEFAULT = {
-  xMm: 45,     // PDF war ~52.8
-  yMm: 15,     // PDF war ~18.85
-  sizeMm: 25,  // PDF war 32
-};
+  switch (style.font) {
+    case "bold":
+      fontWeight = 700;
+      break;
+    case "light":
+      fontWeight = 300;
+      break;
+    case "lightItalic":
+      fontWeight = 300;
+      fontStyle = "italic";
+      break;
+  }
+
+  return { fontSize, fontWeight, fontStyle };
+}
 
 /* ---------- kleine Helfer ---------- */
-const splitLines = (s?: string) =>
-  (s ?? "")
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((l) => l.trimEnd())
-    .filter(Boolean);
-
 function vEscape(s: string) {
   return s
     .replace(/\\/g, "\\\\")
@@ -231,70 +218,28 @@ function buildVCard3(o: {
   return lines.join("\r\n");
 }
 /* ============================== FRONT ============================== */
-export function BusinessCardFront(props: Props) {
-  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = props;
-
-  const tpl =
-  TEMPLATE_REGISTRY[(props.templateId as TemplateId) ?? "qrcode"] ??
-  TEMPLATE_REGISTRY["qrcode"]; // <- fallback
-
-  // y-Positionen (Baseline) in mm – identisch zur PDF-Route
-  let y = TOP;
-  const nameY = y;
-  y += GAP_NAME;
-
-  const roleY = role ? y : y;
-  if (role) y += GAP_NAME;
-
-  y += CONTACT_SPACER;
-
-  const contacts: Array<{ text: string; y: number }> = [];
-  const phoneLine = formatPhones(phone, mobile); // <— mobile kommt aus deinem State
-  if (phoneLine) {
-    contacts.push({ text: phoneLine, y });
-    y += GAP_CONTACT;
-  }
-  if (email) {
-    contacts.push({ text: email, y });
-    y += GAP_CONTACT;
-  }
-  if (url) {
-    contacts.push({ text: url, y });
-    y += GAP_CONTACT;
-  }
-
-  y += COMPANY_SPACER;
-
-  const addr = (company ?? "")
-  .replace(/\r\n/g, "\n")
-  .split("\n")
-  .map((text, i) => ({ text, y: y + i * GAP_CONTACT }));
-
+export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "" }: Props) {
   return (
     <figure className="select-none">
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{
-          maxWidth: 960,
-          height: "auto",
-          display: "block",
-          aspectRatio: `${CARD_W} / ${CARD_H}`,
-        }}
+        style={{ maxWidth: 960, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card front"
       >
-        {/* Hintergrund */}
+        {template.previewFrontPath ? (
+          <SmoothSvgImage
+            src={template.previewFrontPath}
+            x={0}
+            y={0}
+            width={CARD_W}
+            height={CARD_H}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        ) : null}
 
-       <SmoothSvgImage
-          src={tpl.frontPng}
-          x={0}
-          y={0}
-          width={CARD_W}
-          height={CARD_H}
-          preserveAspectRatio="xMidYMid meet"
-        />
-        
         <FrontTextOverlay
+          template={template}
           name={name}
           role={role}
           email={email}
@@ -388,12 +333,17 @@ export function BusinessCardFront(props: Props) {
 }*/
 
 
-export function BusinessCardBack(props: Props) {
-  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "", qrOverride, templateId = "qrcode" } = props;
-
-  const tpl = TEMPLATE_REGISTRY[templateId] ?? TEMPLATE_REGISTRY["qrcode"];
-
-  // vCard only needed if tpl.backMode === "qr"
+export function BusinessCardBack({
+  template,
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  mobile = "",
+  company = "",
+  url = "",
+  qrOverride,
+}: Props) {
   const { org, label } = normalizeAddress(company);
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
 
@@ -409,14 +359,14 @@ export function BusinessCardBack(props: Props) {
         url: url || undefined,
         addrLabel,
       }),
-    [name, role, email, phone, mobile, url, org, addrLabel]
+    [name, role, email, phone, mobile, url, org, addrLabel],
   );
 
   const [qrData, setQrData] = useState<string>("");
 
   useEffect(() => {
     let stop = false;
-    if (tpl.backMode !== "qr") {
+    if (template.config.back.mode !== "qr") {
       setQrData("");
       return;
     }
@@ -428,13 +378,15 @@ export function BusinessCardBack(props: Props) {
         if (!stop) setQrData("");
       }
     })();
-    return () => { stop = true; };
-  }, [vcard, tpl.backMode]);
+    return () => {
+      stop = true;
+    };
+  }, [vcard, template.config.back.mode]);
 
-  // Position
-  const qx = (qrOverride?.xMm ?? tpl.qr?.xMm ?? QR_DEFAULT.xMm);
-  const qy = (qrOverride?.yMm ?? tpl.qr?.yMm ?? QR_DEFAULT.yMm);
-  const qs = (qrOverride?.sizeMm ?? tpl.qr?.sizeMm ?? QR_DEFAULT.sizeMm);
+  const qrConfig = template.config.back.qr;
+  const qx = qrOverride?.xMm ?? qrConfig?.xMm;
+  const qy = qrOverride?.yMm ?? qrConfig?.yMm;
+  const qs = qrOverride?.sizeMm ?? qrConfig?.sizeMm;
 
   return (
     <figure className="select-none">
@@ -444,24 +396,33 @@ export function BusinessCardBack(props: Props) {
         style={{ maxWidth: 960, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
-        <image
-          href={tpl.backPng ?? "/templates/omicron-back.png"}
-          x={0} y={0} width={CARD_W} height={CARD_H} preserveAspectRatio="xMidYMid meet"
-        />
-
-        {tpl.backMode === "qr" && qrData && (
-          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
-        )}
-
-        {tpl.backMode === "sameAsFront" && (
-          // Reuse the *text block* from front: render the same SVG overlay again.
-          // Simplest approach: call a small shared sub-component that draws the text.
-          <FrontTextOverlay
-            name={name} role={role} email={email} phone={phone} mobile={mobile} company={company} url={url}
+        {template.previewBackPath ? (
+          <SmoothSvgImage
+            src={template.previewBackPath}
+            x={0}
+            y={0}
+            width={CARD_W}
+            height={CARD_H}
+            preserveAspectRatio="xMidYMid meet"
           />
-        )}
+        ) : null}
 
-        {/* backMode "claim" is just the background image; nothing else to draw */}
+        {template.config.back.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
+          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
+        ) : null}
+
+        {template.config.back.mode === "copyFront" ? (
+          <FrontTextOverlay
+            template={template}
+            name={name}
+            role={role}
+            email={email}
+            phone={phone}
+            mobile={mobile}
+            company={company}
+            url={url}
+          />
+        ) : null}
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>

@@ -6,8 +6,20 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 import { formatPhones } from "@/lib/formatPhones";
+import type { TemplateTextStyle } from "@/lib/templates-defaults";
+import type { ResolvedTemplate } from "@/lib/templates";
 
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
+
+export type OrderPdfFields = {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  company?: string;
+  url?: string;
+};
 
 function vEscape(s: string) {
   return s
@@ -171,35 +183,40 @@ async function loadFrutiger(doc: PDFDocument) {
   return { fonts, report };
 }
 
-export type OrderPdfInput = {
-  name: string;
-  role?: string;
-  email?: string;
-  phone?: string;
-  mobile?: string;
-  company?: string;
-  url?: string;
-  template?: string;
-};
-
-export async function generateOrderPdf(input: OrderPdfInput) {
-  const {
-    name,
-    role = "",
-    email = "",
-    phone = "",
-    mobile = "",
-    company = "",
-    url = "",
-    template = "omicron",
-  } = input;
-
-  const tplPath = path.join(process.cwd(), "public", "templates", `${template}.pdf`);
-  if (!existsSync(tplPath)) {
-    throw new Error(`Template not found: ${template}.pdf`);
+async function loadTemplatePdfBytes(pdfPath: string) {
+  if (/^https?:/i.test(pdfPath)) {
+    const res = await fetch(pdfPath);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch template PDF (${res.status}): ${pdfPath}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   }
 
-  const tplBytes = await readFile(tplPath);
+  const relative = pdfPath.startsWith("/") ? pdfPath.slice(1) : pdfPath;
+  const localPath = path.join(process.cwd(), "public", relative);
+  if (!existsSync(localPath)) {
+    throw new Error(`Template not found at ${localPath}`);
+  }
+  return readFile(localPath);
+}
+
+function pickFont(style: TemplateTextStyle, fonts: Partial<Record<string, PDFFont>>) {
+  switch (style.font) {
+    case "bold":
+      return fonts.Bold ?? fonts.Light ?? fonts.LightItalic;
+    case "lightItalic":
+      return fonts.LightItalic ?? fonts.Light ?? fonts.Bold;
+    case "light":
+    default:
+      return fonts.Light ?? fonts.LightItalic ?? fonts.Bold;
+  }
+}
+
+export async function generateOrderPdf(fields: OrderPdfFields, template: ResolvedTemplate) {
+  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = fields;
+
+  const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
   tplDoc.registerFontkit(fontkit);
 
@@ -211,42 +228,31 @@ export async function generateOrderPdf(input: OrderPdfInput) {
 
   const front = tplDoc.getPage(0);
   const back = tplDoc.getPage(1);
-  const { height: fh } = front.getSize();
+  const { height: pageHeight } = front.getSize();
 
-  const L = 24.4;
-  const W = 85;
-  const TOP = 24;
-  const xLeft = mm2pt(L);
-  const colWidth = mm2pt(W);
-  let y = fh - mm2pt(TOP);
+  const frame = template.config.front.textFrame;
+  const xLeft = mm2pt(frame.xMm);
+  const colWidth = mm2pt(frame.columnWidthMm);
+  let cursor = pageHeight - mm2pt(frame.topMm);
 
-  const nameSize = 10;
-  const roleSize = 8;
-  const bodySize = 8;
-  const lineGap = 4;
-  const lineGapBody = 3.5;
-
-  y = drawBlock(front, [name], y, {
-    xLeftPt: xLeft,
-    widthPt: colWidth,
-    size: nameSize,
-    lhMm: lineGap,
-    font: Frutiger.Bold,
-    align: "left",
-  });
-
-  if (role) {
-    y = drawBlock(front, [role], y, {
+  const applyBlock = (lines: string[], style?: TemplateTextStyle) => {
+    if (!style || lines.length === 0) return;
+    const fontRef = pickFont(style, Frutiger);
+    cursor = drawBlock(front, lines, cursor, {
       xLeftPt: xLeft,
       widthPt: colWidth,
-      size: roleSize,
-      lhMm: lineGap,
-      font: Frutiger.LightItalic ?? Frutiger.Light,
+      size: style.sizePt,
+      lhMm: style.lineGapMm,
+      font: fontRef,
       align: "left",
     });
-  }
+    if (style.spacingAfterMm) {
+      cursor -= mm2pt(style.spacingAfterMm);
+    }
+  };
 
-  y -= mm2pt(3.25);
+  applyBlock([name], frame.name);
+  if (role) applyBlock([role], frame.role);
 
   const contactLines: string[] = [];
   const phoneLine = formatPhones(phone, mobile);
@@ -254,63 +260,52 @@ export async function generateOrderPdf(input: OrderPdfInput) {
   if (email) contactLines.push(email);
   if (url) contactLines.push(url);
 
-  for (const line of contactLines) {
-    const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
-    y = drawBlock(front, lines, y, {
-      xLeftPt: xLeft,
-      widthPt: colWidth,
-      size: bodySize,
-      lhMm: lineGapBody,
-      font: Frutiger.Light,
-      align: "left",
-    });
+  if (frame.contacts) {
+    const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
+    const contactWrapped = contactsFont
+      ? contactLines.flatMap((line) => wrapText(line, colWidth, contactsFont, frame.contacts!.sizePt))
+      : contactLines;
+    applyBlock(contactWrapped, frame.contacts);
   }
 
-  y -= mm2pt(1.9);
-
-  if (company) {
-    const raw = splitLinesMultiline(company).filter(Boolean);
-    const wrapped: string[] = [];
-    for (const line of raw) {
-      if (Frutiger.Light) wrapped.push(...wrapText(line, colWidth, Frutiger.Light, bodySize));
-      else wrapped.push(line);
-    }
-    y = drawBlock(front, wrapped, y, {
-      xLeftPt: xLeft,
-      widthPt: colWidth,
-      size: bodySize,
-      lhMm: lineGapBody,
-      font: Frutiger.Light,
-      align: "left",
-    });
+  if (frame.company) {
+    const raw = splitLinesMultiline(company || "");
+    const companyFont = pickFont(frame.company, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
+    const wrapped = companyFont
+      ? raw.flatMap((line) => wrapText(line, colWidth, companyFont, frame.company!.sizePt))
+      : raw;
+    applyBlock(wrapped, frame.company);
   }
 
   const orgName = (company || "").split(/\r?\n/)[0] || "";
   const addrLabel = company || "";
 
-  const vcard = buildVCard3({
-    fullName: name,
-    org: orgName,
-    title: role || undefined,
-    email: email || undefined,
-    phone: phone || undefined,
-    mobile: mobile || undefined,
-    url: url || undefined,
-    addrLabel,
-  });
+  if (template.config.back.mode === "qr" && template.config.back.qr) {
+    const vcard = buildVCard3({
+      fullName: name,
+      org: orgName,
+      title: role || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      mobile: mobile || undefined,
+      url: url || undefined,
+      addrLabel,
+    });
 
-  const dataUrl = await QRCode.toDataURL(vcard, {
-    width: 1024,
-    margin: 0,
-    errorCorrectionLevel: "M",
-  });
-  const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
-  const img = await tplDoc.embedPng(pngBytes);
+    const dataUrl = await QRCode.toDataURL(vcard, {
+      width: 1024,
+      margin: 0,
+      errorCorrectionLevel: "M",
+    });
+    const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
+    const img = await tplDoc.embedPng(pngBytes);
 
-  const qrSize = mm2pt(32);
-  const qx = mm2pt(52.8);
-  const qy = mm2pt(18.85);
-  back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+    const qrConfig = template.config.back.qr;
+    const qrSize = mm2pt(qrConfig.sizeMm);
+    const qx = mm2pt(qrConfig.xMm);
+    const qy = mm2pt(qrConfig.yMm);
+    back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+  }
 
   const pdfBytes = await tplDoc.save();
   return { pdfBytes, fontReport: report };

@@ -74,36 +74,39 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-slate-50/60">
-                  <td className="px-4 py-3 font-medium text-slate-900">{order.referenceCode}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt)}</td>
-                  {isAdmin ? (
-                    <td className="px-4 py-3 text-slate-600">{order.requesterEmail}</td>
-                  ) : null}
-                  <td className="px-4 py-3 text-slate-600">
-                    {order.template?.label ?? order.templateId}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{order.quantity}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={order.status === "SUBMITTED" ? "secondary" : "outline"}>{order.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    {order.pdfUrl ? (
-                      <a
-                        href={order.pdfUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        PDF ansehen
-                      </a>
-                    ) : (
-                      <span className="text-slate-400">–</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {orders.map((order) => {
+                const templateKey = typeof order.meta === "object" && order.meta && "templateKey" in order.meta ? (order.meta as any).templateKey : null;
+                return (
+                  <tr key={order.id} className="hover:bg-slate-50/60">
+                    <td className="px-4 py-3 font-medium text-slate-900">{order.referenceCode}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt)}</td>
+                    {isAdmin ? (
+                      <td className="px-4 py-3 text-slate-600">{order.requesterEmail}</td>
+                    ) : null}
+                    <td className="px-4 py-3 text-slate-600">
+                      {order.template?.label ?? templateKey ?? order.templateId ?? "–"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{order.quantity}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant={order.status === "SUBMITTED" ? "secondary" : "outline"}>{order.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      {order.pdfUrl ? (
+                        <a
+                          href={order.pdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          View PDF
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">–</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

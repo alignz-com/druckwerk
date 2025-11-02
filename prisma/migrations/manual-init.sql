@@ -75,6 +75,10 @@ CREATE TABLE "Template" (
     "key" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "description" TEXT,
+    "pdfPath" TEXT NOT NULL,
+    "previewFrontPath" TEXT,
+    "previewBackPath" TEXT,
+    "config" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -87,6 +91,7 @@ CREATE TABLE "BrandTemplate" (
     "brandId" TEXT NOT NULL,
     "templateId" TEXT NOT NULL,
     "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "configOverride" JSONB,
 
     CONSTRAINT "BrandTemplate_pkey" PRIMARY KEY ("id")
 );

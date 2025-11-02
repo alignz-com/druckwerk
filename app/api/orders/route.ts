@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateOrderPdf } from "@/lib/orderPdf";
+import { getTemplateByKey } from "@/lib/templates";
 
 export const runtime = "nodejs";
 
@@ -49,16 +50,20 @@ export async function POST(req: Request) {
 
     const data = parsed.data;
 
-    const { pdfBytes, fontReport } = await generateOrderPdf({
-      name: data.name,
-      role: data.role,
-      email: data.email,
-      phone: data.phone,
-      mobile: data.mobile,
-      company: data.company,
-      url: data.url,
-      template: data.template,
-    });
+    const templateDefinition = await getTemplateByKey(data.template, session.user.brandId ?? null);
+
+    const { pdfBytes, fontReport } = await generateOrderPdf(
+      {
+        name: data.name,
+        role: data.role,
+        email: data.email,
+        phone: data.phone,
+        mobile: data.mobile,
+        company: data.company,
+        url: data.url,
+      },
+      templateDefinition,
+    );
 
     const referenceCode = buildReferenceCode();
     const fileName = `orders/${session.user.id}/${referenceCode}.pdf`;
@@ -74,7 +79,7 @@ export async function POST(req: Request) {
         referenceCode,
         userId: session.user.id,
         brandId: session.user.brandId ?? null,
-        templateId: data.template,
+        templateId: templateDefinition.id ?? null,
         quantity: data.quantity,
         deliveryTime: data.deliveryTime,
         status: "SUBMITTED",
@@ -88,7 +93,10 @@ export async function POST(req: Request) {
         linkedin: data.linkedin || null,
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
-        meta: fontReport?.length ? { fontReport } : undefined,
+        meta: {
+          templateKey: data.template,
+          ...(fontReport?.length ? { fontReport } : {}),
+        },
       },
     });
 

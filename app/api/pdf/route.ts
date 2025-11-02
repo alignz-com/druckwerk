@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
-import { generateOrderPdf, type OrderPdfInput } from "@/lib/orderPdf";
+import { generateOrderPdf, type OrderPdfFields } from "@/lib/orderPdf";
+import { getTemplateByKey } from "@/lib/templates";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const body = (await req.json()) as OrderPdfInput;
+    const body = (await req.json()) as OrderPdfFields & { template?: string };
+    const templateKey = body.template ?? "omicron";
+    const templateDefinition = await getTemplateByKey(templateKey);
 
-    const { pdfBytes, fontReport } = await generateOrderPdf(body);
+    const { template: _ignored, ...fields } = body;
+
+    const { pdfBytes, fontReport } = await generateOrderPdf(fields, templateDefinition);
 
     const urlObj = new URL(req.url);
     if (urlObj.searchParams.has("debug")) {
