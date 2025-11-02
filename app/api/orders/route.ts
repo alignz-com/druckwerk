@@ -88,7 +88,7 @@ export async function POST(req: Request) {
         linkedin: data.linkedin || null,
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
-        meta: fontReport?.length ? { fontReport } : null,
+        meta: fontReport?.length ? { fontReport } : undefined,
       },
     });
 

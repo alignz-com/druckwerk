@@ -226,7 +226,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
   const lineGap = 4;
   const lineGapBody = 3.5;
 
-  y = drawBlock(front, [name], {
+  y = drawBlock(front, [name], y, {
     xLeftPt: xLeft,
     widthPt: colWidth,
     size: nameSize,
@@ -236,7 +236,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
   });
 
   if (role) {
-    y = drawBlock(front, [role], {
+    y = drawBlock(front, [role], y, {
       xLeftPt: xLeft,
       widthPt: colWidth,
       size: roleSize,
@@ -256,7 +256,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
 
   for (const line of contactLines) {
     const lines = Frutiger.Light ? wrapText(line, colWidth, Frutiger.Light, bodySize) : [line];
-    y = drawBlock(front, lines, {
+    y = drawBlock(front, lines, y, {
       xLeftPt: xLeft,
       widthPt: colWidth,
       size: bodySize,
@@ -275,7 +275,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
       if (Frutiger.Light) wrapped.push(...wrapText(line, colWidth, Frutiger.Light, bodySize));
       else wrapped.push(line);
     }
-    y = drawBlock(front, wrapped, {
+    y = drawBlock(front, wrapped, y, {
       xLeftPt: xLeft,
       widthPt: colWidth,
       size: bodySize,
