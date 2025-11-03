@@ -68,6 +68,8 @@ function FrontTextOverlay({
   url?: string;
 }) {
   const frame = template.config.front.textFrame;
+  const previewCfg = template.config.front.preview ?? {};
+  const fontScale = previewCfg.fontScale ?? DEFAULT_FONT_SCALE;
   const texts: ReactElement[] = [];
   let cursor = frame.topMm;
   let index = 0;
@@ -75,7 +77,7 @@ function FrontTextOverlay({
 
   const pushBlock = (lines: string[], style?: TemplateTextStyle) => {
     if (!style || lines.length === 0) return;
-    const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style);
+    const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style, fontScale);
     for (const line of lines) {
       texts.push(
         <text
@@ -138,16 +140,15 @@ export type Props = {
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
 const CARD_W = 85;
 const CARD_H = 55;
-const PREVIEW_MAX_WIDTH = 600; // px
+const DEFAULT_PREVIEW_MAX_WIDTH = 960;
+const DEFAULT_FONT_SCALE = 0.65;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
 
-const FONT_SCALE = 0.6;
-
-function svgFontAttributes(style: TemplateTextStyle) {
-  const fontSize = ptToMm(style.sizePt) * FONT_SCALE;
+function svgFontAttributes(style: TemplateTextStyle, fontScale: number) {
+  const fontSize = ptToMm(style.sizePt) * fontScale;
   let fontWeight = 400;
   let fontStyle = "normal" as "normal" | "italic";
 
@@ -221,12 +222,14 @@ function buildVCard3(o: {
 }
 /* ============================== FRONT ============================== */
 export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "" }: Props) {
+  const previewCfg = template.config.front.preview ?? {};
+  const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   return (
     <figure className="select-none">
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: PREVIEW_MAX_WIDTH, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card front"
       >
         {template.previewFrontPath ? (
@@ -348,6 +351,8 @@ export function BusinessCardBack({
 }: Props) {
   const { org, label } = normalizeAddress(company);
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
+  const previewCfg = template.config.front.preview ?? {};
+  const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
 
   const vcard = useMemo(
     () =>
@@ -395,7 +400,7 @@ export function BusinessCardBack({
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: PREVIEW_MAX_WIDTH, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
         {template.previewBackPath ? (

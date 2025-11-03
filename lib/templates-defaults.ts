@@ -18,6 +18,10 @@ export type TemplateConfig = {
       contacts?: TemplateTextStyle;
       company?: TemplateTextStyle;
     };
+    preview?: {
+      fontScale?: number;
+      maxWidthPx?: number;
+    };
   };
   back: {
     mode: "qr" | "static" | "copyFront";
@@ -50,6 +54,11 @@ const BASE_TEXT_FRAME = {
   company: { font: "light", sizePt: 8, lineGapMm: 3.5 } satisfies TemplateTextStyle,
 };
 
+const DEFAULT_PREVIEW = {
+  fontScale: 0.65,
+  maxWidthPx: 960,
+};
+
 export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
   qrcode: {
     key: "qrcode",
@@ -60,6 +69,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
+        preview: DEFAULT_PREVIEW,
       },
       back: {
         mode: "qr",
@@ -76,6 +86,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
+        preview: DEFAULT_PREVIEW,
       },
       back: {
         mode: "static",
@@ -91,6 +102,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
+        preview: DEFAULT_PREVIEW,
       },
       back: {
         mode: "qr",
