@@ -35,6 +35,10 @@ model User {
   image          String?
   emailVerified  DateTime?
   role           UserRole  @default(USER)
+  jobTitle       String?
+  department     String?
+  mobilePhone    String?
+  businessPhone  String?
   locale         String    @default("en")
   hashedPassword String?
   brandId        String?

@@ -25,7 +25,12 @@ export const authOptions: NextAuthOptions = {
       tenantId: "common",
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      authorization: { params: { prompt: "login" } },
+      authorization: {
+        params: {
+          prompt: "login",
+          scope: "openid profile email offline_access User.Read",
+        },
+      },
     }),
     CredentialsProvider({
       name: "Email",
@@ -91,7 +96,69 @@ export const authOptions: NextAuthOptions = {
       const tenantOk =
         allowedTenants.length === 0 || (tenantId && allowedTenants.includes(tenantId));
 
-      return domainOk || tenantOk;
+      const allowed = domainOk || tenantOk;
+
+      if (!allowed) {
+        return false;
+      }
+
+      if (account.provider === "azure-ad" && account.access_token && user?.id) {
+        try {
+          const graphRes = await fetch(
+            "https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname,jobTitle,department,mobilePhone,businessPhones,mail,userPrincipalName",
+            {
+              headers: {
+                Authorization: `Bearer ${account.access_token}`,
+              },
+            },
+          );
+
+          if (graphRes.ok) {
+            const graphProfile = (await graphRes.json()) as Record<string, any>;
+            const businessPhones = Array.isArray(graphProfile?.businessPhones)
+              ? graphProfile.businessPhones.filter(Boolean)
+              : [];
+
+            const updateData: Record<string, any> = {
+              jobTitle: graphProfile?.jobTitle ?? null,
+              department: graphProfile?.department ?? null,
+              mobilePhone: graphProfile?.mobilePhone ?? null,
+              businessPhone: businessPhones[0] ?? null,
+            };
+
+            if (graphProfile?.displayName) {
+              updateData.name = graphProfile.displayName;
+            }
+
+            const normalizedEmail = graphProfile?.mail || graphProfile?.userPrincipalName;
+            if (normalizedEmail && normalizedEmail.toLowerCase() !== user.email?.toLowerCase()) {
+              updateData.email = normalizedEmail.toLowerCase();
+            }
+
+            await prisma.user.update({
+              where: { id: user.id },
+              data: updateData,
+            });
+
+            if (updateData.name) {
+              user.name = updateData.name;
+            }
+            if (updateData.email) {
+              user.email = updateData.email;
+            }
+            (user as any).jobTitle = updateData.jobTitle;
+            (user as any).department = updateData.department;
+            (user as any).mobilePhone = updateData.mobilePhone;
+            (user as any).businessPhone = updateData.businessPhone;
+          } else {
+            console.error("[auth] graph profile request failed", graphRes.status);
+          }
+        } catch (error) {
+          console.error("[auth] graph profile fetch error", error);
+        }
+      }
+
+      return true;
     },
 
     async jwt({ token, user, trigger, session }) {
@@ -100,6 +167,10 @@ export const authOptions: NextAuthOptions = {
         token.role = ((user as any).role ?? "USER") as AppUserRole;
         token.brandId = (user as any).brandId ?? null;
         token.locale = (user as any).locale ?? "en";
+        token.jobTitle = (user as any).jobTitle ?? null;
+        token.department = (user as any).department ?? null;
+        token.mobilePhone = (user as any).mobilePhone ?? null;
+        token.businessPhone = (user as any).businessPhone ?? null;
       } else if (trigger === "update" && session?.locale) {
         token.locale = session.locale as string;
       }
@@ -116,6 +187,10 @@ export const authOptions: NextAuthOptions = {
         session.user.brandId = token?.brandId ? String(token.brandId) : undefined;
         session.user.locale = typeof token.locale === "string" ? token.locale : "en";
         (session as any).locale = session.user.locale;
+        session.user.jobTitle = token?.jobTitle ? String(token.jobTitle) : null;
+        session.user.department = token?.department ? String(token.department) : null;
+        session.user.mobilePhone = token?.mobilePhone ? String(token.mobilePhone) : null;
+        session.user.businessPhone = token?.businessPhone ? String(token.businessPhone) : null;
       }
       return session;
     },

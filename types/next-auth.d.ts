@@ -8,6 +8,10 @@ declare module "next-auth" {
       id?: string;
       role: AppUserRole;
       brandId?: string | null;
+      jobTitle?: string | null;
+      department?: string | null;
+      mobilePhone?: string | null;
+      businessPhone?: string | null;
       locale?: string;
     };
   }
@@ -15,6 +19,10 @@ declare module "next-auth" {
   interface User {
     role: AppUserRole;
     brandId?: string | null;
+    jobTitle?: string | null;
+    department?: string | null;
+    mobilePhone?: string | null;
+    businessPhone?: string | null;
     locale?: string;
   }
 }
@@ -24,6 +32,10 @@ declare module "next-auth/jwt" {
     userId?: string;
     role?: AppUserRole;
     brandId?: string | null;
+    jobTitle?: string | null;
+    department?: string | null;
+    mobilePhone?: string | null;
+    businessPhone?: string | null;
     locale?: string;
   }
 }

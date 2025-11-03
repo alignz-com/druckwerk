@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
 
 import { DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
@@ -39,6 +40,9 @@ export type OrderFormProps = {
 
 export default function OrderForm({ templates }: OrderFormProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const sessionUser = session?.user;
+  const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
   const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "qrcode");
@@ -47,15 +51,25 @@ export default function OrderForm({ templates }: OrderFormProps) {
   }, [templateOptions, selectedTemplateKey]);
 
   const [deliveryTime, setDeliveryTime] = useState<string>("1week");
-  const [name, setName] = useState("Martin Eichberger");
-  const [role, setRole] = useState("Corporate Communications");
-  const [email, setEmail] = useState("martin.eichberger@omicronenergy.com");
-  const [phone, setPhone] = useState("+43 59495 2099");
-  const [mobile, setMobile] = useState("+43 664 88876851");
-  const [company, setCompany] = useState("OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich");
-  const [url, setUrl] = useState("www.omicronenergy.com");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [company, setCompany] = useState("");
+  const [url, setUrl] = useState("");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
+
+  useEffect(() => {
+    if (!sessionUser || hasPrefilledProfile.current) return;
+    if (sessionUser.name) setName(sessionUser.name);
+    if (sessionUser.jobTitle) setRole(sessionUser.jobTitle);
+    if (sessionUser.email) setEmail(sessionUser.email);
+    if (sessionUser.businessPhone) setPhone(sessionUser.businessPhone);
+    if (sessionUser.mobilePhone) setMobile(sessionUser.mobilePhone);
+    hasPrefilledProfile.current = true;
+  }, [sessionUser]);
 
   const [previewView, setPreviewView] = useState<"front" | "back">("front");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
