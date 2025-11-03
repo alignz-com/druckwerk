@@ -59,6 +59,7 @@ export const messages = {
         url: "URL",
         company: "Company & Address",
       },
+      previewTitle: "Preview",
       buttons: {
         order: "Order Business Card",
       },
@@ -157,6 +158,7 @@ export const messages = {
         url: "URL",
         company: "Firma & Adresse",
       },
+      previewTitle: "Vorschau",
       buttons: {
         order: "Visitenkarte bestellen",
       },

@@ -57,6 +57,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
 
+  const [previewView, setPreviewView] = useState<"front" | "back">("front");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmView, setConfirmView] = useState<"front" | "back">("front");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -243,43 +244,54 @@ export default function OrderForm({ templates }: OrderFormProps) {
           </Card>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6">
           <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.confirm.front}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center pt-0">
-              <div className="w-full max-w-[1100px]">
-                <BusinessCardFront
-                  template={selectedTemplate}
-                  name={name}
-                  role={role}
-                  email={email}
-                  phone={phone}
-                  mobile={mobile}
-                  company={company}
-                  url={url}
-                />
+            <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.previewTitle}</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={previewView === "front" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewView("front")}
+                >
+                  {t.orderForm.confirm.front}
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewView === "back" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewView("back")}
+                >
+                  {t.orderForm.confirm.back}
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.confirm.back}</CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center pt-0">
               <div className="w-full max-w-[1100px]">
-                <BusinessCardBack
-                  template={selectedTemplate}
-                  name={name}
-                  role={role}
-                  email={email}
-                  phone={phone}
-                  mobile={mobile}
-                  company={company}
-                  url={url}
-                />
+                {previewView === "front" ? (
+                  <BusinessCardFront
+                    template={selectedTemplate}
+                    name={name}
+                    role={role}
+                    email={email}
+                    phone={phone}
+                    mobile={mobile}
+                    company={company}
+                    url={url}
+                  />
+                ) : (
+                  <BusinessCardBack
+                    template={selectedTemplate}
+                    name={name}
+                    role={role}
+                    email={email}
+                    phone={phone}
+                    mobile={mobile}
+                    company={company}
+                    url={url}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
