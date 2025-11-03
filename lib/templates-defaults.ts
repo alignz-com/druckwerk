@@ -22,6 +22,7 @@ export type TemplateConfig = {
       fontScale?: number;
       maxWidthPx?: number;
       baselineOffsetMm?: number;
+      lineHeightScale?: number;
     };
   };
   back: {
@@ -47,18 +48,19 @@ export type TemplateDefinition = {
 
 const BASE_TEXT_FRAME = {
   xMm: 24.4,
-  topMm: 23.25,
+  topMm: 24,
   columnWidthMm: 85,
-  name: { font: "bold", sizePt: 10, lineGapMm: 3.8 } satisfies TemplateTextStyle,
-  role: { font: "lightItalic", sizePt: 8, lineGapMm: 3.6, spacingAfterMm: 2.6 } satisfies TemplateTextStyle,
-  contacts: { font: "light", sizePt: 8, lineGapMm: 3.1, spacingAfterMm: 1.4 } satisfies TemplateTextStyle,
-  company: { font: "light", sizePt: 8, lineGapMm: 3.1 } satisfies TemplateTextStyle,
+  name: { font: "bold", sizePt: 10, lineGapMm: 4 } satisfies TemplateTextStyle,
+  role: { font: "lightItalic", sizePt: 8, lineGapMm: 4, spacingAfterMm: 3.25 } satisfies TemplateTextStyle,
+  contacts: { font: "light", sizePt: 8, lineGapMm: 3.5, spacingAfterMm: 1.9 } satisfies TemplateTextStyle,
+  company: { font: "light", sizePt: 8, lineGapMm: 3.5 } satisfies TemplateTextStyle,
 };
 
 const DEFAULT_PREVIEW = {
   fontScale: 0.6,
   maxWidthPx: 960,
   baselineOffsetMm: -1.8,
+  lineHeightScale: 0.85,
 };
 
 export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
