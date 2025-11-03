@@ -433,12 +433,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
           </Card>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-10 lg:self-start">
-          <div className="hidden lg:block">
-            <Button onClick={openConfirm} className="w-full">
-              {t.orderForm.buttons.order}
-            </Button>
-          </div>
+        <div className="space-y-4 lg:sticky lg:top-10 lg:self-start">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.previewTitle}</CardTitle>
@@ -461,7 +456,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex justify-center pt-0 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto">
+            <CardContent className="flex justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px] space-y-6">
                 {previewView === "front" ? (
                   <BusinessCardFront
@@ -491,6 +486,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
               </div>
             </CardContent>
           </Card>
+          <div className="hidden lg:flex lg:justify-end">
+            <Button onClick={openConfirm} className="px-6">
+              {t.orderForm.buttons.order}
+            </Button>
+          </div>
         </div>
       </div>
 
