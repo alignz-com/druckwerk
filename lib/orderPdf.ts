@@ -271,6 +271,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   if (phoneLine) contactLines.push(phoneLine);
   if (email) contactLines.push(email);
   if (url) contactLines.push(url);
+  if (linkedin) contactLines.push(linkedin);
 
   if (frame.contacts) {
     const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;

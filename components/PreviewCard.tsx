@@ -57,6 +57,7 @@ function FrontTextOverlay({
   mobile = "",
   company = "",
   url = "",
+  linkedin = "",
 }: {
   template: ResolvedTemplate;
   name: string;
@@ -108,6 +109,7 @@ function FrontTextOverlay({
   if (phoneLine) contactLines.push(phoneLine);
   if (email) contactLines.push(email);
   if (url) contactLines.push(url);
+  if (linkedin) contactLines.push(linkedin);
   pushBlock(contactLines, frame.contacts);
 
   const companyLines = (company ?? "").replace(/\r\n/g, "\n").split("\n").filter(Boolean);
@@ -372,7 +374,7 @@ export function BusinessCardBack({
         linkedin: linkedin || undefined,
         addrLabel,
       }),
-    [name, role, email, phone, mobile, url, org, addrLabel],
+    [name, role, email, phone, mobile, url, linkedin, org, addrLabel],
   );
 
   const [qrData, setQrData] = useState<string>("");

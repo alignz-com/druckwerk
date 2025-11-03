@@ -468,6 +468,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     mobile={mobile}
                     company={companyBlock}
                     url={url}
+                    linkedin={linkedin}
                   />
                 ) : (
                   <BusinessCardBack
@@ -533,6 +534,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     mobile={mobile}
                     company={companyBlock}
                     url={url}
+                    linkedin={linkedin}
                   />
                 ) : (
                   <BusinessCardBack
