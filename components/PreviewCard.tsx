@@ -141,7 +141,7 @@ export type Props = {
 const CARD_W = 85;
 const CARD_H = 55;
 const DEFAULT_PREVIEW_MAX_WIDTH = 960;
-const DEFAULT_FONT_SCALE = 0.6;
+const DEFAULT_FONT_SCALE = 0.58;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
