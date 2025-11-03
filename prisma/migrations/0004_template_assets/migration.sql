@@ -1,17 +1,18 @@
 ALTER TABLE "Template"
-  ADD COLUMN "pdfPath" TEXT,
-  ADD COLUMN "previewFrontPath" TEXT,
-  ADD COLUMN "previewBackPath" TEXT,
-  ADD COLUMN "config" JSONB;
+  ADD COLUMN IF NOT EXISTS "pdfPath" TEXT,
+  ADD COLUMN IF NOT EXISTS "previewFrontPath" TEXT,
+  ADD COLUMN IF NOT EXISTS "previewBackPath" TEXT,
+  ADD COLUMN IF NOT EXISTS "config" JSONB;
 
 UPDATE "Template"
 SET
   "pdfPath" = COALESCE("pdfPath", 'templates/omicron.pdf'),
-  "config" = COALESCE("config", '{}'::jsonb);
+  "config" = COALESCE("config", '{}'::jsonb)
+WHERE "pdfPath" IS NULL OR "config" IS NULL;
 
 ALTER TABLE "Template"
   ALTER COLUMN "pdfPath" SET NOT NULL,
   ALTER COLUMN "config" SET NOT NULL;
 
 ALTER TABLE "BrandTemplate"
-  ADD COLUMN "configOverride" JSONB;
+  ADD COLUMN IF NOT EXISTS "configOverride" JSONB;
