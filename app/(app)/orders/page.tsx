@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
 
-const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat("de-AT", {
+const formatDate = (date: Date, locale: Locale) =>
+  new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
@@ -21,6 +23,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   if (!session?.user?.id) {
     redirect("/login");
   }
+
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get("locale")?.value;
+  const locale = isLocale(localeCookie) ? localeCookie : "en";
+  const t = getTranslations(locale);
 
   const isAdmin = session.user.role === "ADMIN";
   const orders = await prisma.order.findMany({
@@ -39,38 +46,36 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-          <p className="text-sm text-slate-500">Hier findest du deine zuletzt übermittelten Bestellungen.</p>
+          <h1 className="text-2xl font-semibold text-slate-900">{t.ordersPage.title}</h1>
+          <p className="text-sm text-slate-500">{t.ordersPage.subtitle}</p>
         </div>
         <Button asChild>
-          <Link href="/orders/new">Neue Bestellung</Link>
+          <Link href="/orders/new">{t.ordersPage.buttonNew}</Link>
         </Button>
       </div>
 
       {wasCreated ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Bestellung erfolgreich gespeichert.
+          {t.ordersPage.success}
         </div>
       ) : null}
 
       {orders.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="text-sm text-slate-500">
-            Es sind noch keine Bestellungen vorhanden. Starte mit „Neue Bestellung“.
-          </p>
+          <p className="text-sm text-slate-500">{t.ordersPage.empty}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-4 py-3 font-medium">Referenz</th>
-                <th className="px-4 py-3 font-medium">Erstellt</th>
-                {isAdmin ? <th className="px-4 py-3 font-medium">Benutzer</th> : null}
-                <th className="px-4 py-3 font-medium">Template</th>
-                <th className="px-4 py-3 font-medium">Menge</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">PDF</th>
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.reference}</th>
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.created}</th>
+                {isAdmin ? <th className="px-4 py-3 font-medium">{t.ordersPage.table.user}</th> : null}
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.template}</th>
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.quantity}</th>
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.status}</th>
+                <th className="px-4 py-3 font-medium">{t.ordersPage.table.pdf}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -79,7 +84,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 return (
                   <tr key={order.id} className="hover:bg-slate-50/60">
                     <td className="px-4 py-3 font-medium text-slate-900">{order.referenceCode}</td>
-                    <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt, locale)}</td>
                     {isAdmin ? (
                       <td className="px-4 py-3 text-slate-600">{order.requesterEmail}</td>
                     ) : null}
@@ -88,7 +93,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{order.quantity}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={order.status === "SUBMITTED" ? "secondary" : "outline"}>{order.status}</Badge>
+                      <Badge variant={order.status === "SUBMITTED" ? "secondary" : "outline"}>
+                        {t.statuses[order.status] ?? order.status}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3">
                       {order.pdfUrl ? (
@@ -98,7 +105,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           rel="noreferrer"
                           className="text-primary hover:underline"
                         >
-                          View PDF
+                          {t.ordersPage.table.viewPdf}
                         </a>
                       ) : (
                         <span className="text-slate-400">–</span>

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { formatPhones } from "@/lib/formatPhones";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
-import type { TemplateDefinition, TemplateTextStyle } from "@/lib/templates-defaults";
+import type { TemplateTextStyle } from "@/lib/templates-defaults";
+import type { ResolvedTemplate } from "@/lib/templates";
 
 function SmoothSvgImage({
   src,
@@ -57,7 +58,7 @@ function FrontTextOverlay({
   company = "",
   url = "",
 }: {
-  template: TemplateDefinition;
+  template: ResolvedTemplate;
   name: string;
   role?: string;
   email?: string;
@@ -129,7 +130,7 @@ export type Props = {
   mobile?: string;
   company?: string; // multiline
   url?: string;
-  template: TemplateDefinition;
+  template: ResolvedTemplate;
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
 };

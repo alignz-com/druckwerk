@@ -72,14 +72,13 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     label: "Claim",
     pdfPath: "templates/omicron.pdf",
     previewFrontPath: "/templates/omicron-front.png",
-    previewBackPath: "/templates/omicron-back.png",
+    previewBackPath: "/templates/claim-back.png",
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
       },
       back: {
-        mode: "qr",
-        qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+        mode: "static",
       },
     },
   },

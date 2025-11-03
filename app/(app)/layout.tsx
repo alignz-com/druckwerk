@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+
 import { getServerAuthSession } from "@/lib/auth";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 import LogoutButton from "@/components/layout/LogoutButton";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { getTranslations, isLocale } from "@/lib/i18n/messages";
 
 type Props = {
   children: ReactNode;
@@ -16,14 +20,20 @@ export default async function AppLayout({ children }: Props) {
     redirect("/login");
   }
 
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get("locale")?.value;
+  const locale = isLocale(localeCookie) ? localeCookie : "en";
+  const t = getTranslations(locale);
+
   const displayName = session.user.name || session.user.email || "Account";
   const menuItems = [
-    { href: "/orders", label: "Orders", icon: "orders" },
-    { href: "/orders/new", label: "New Order", icon: "new-order" },
+    { href: "/orders", label: t.nav.orders, icon: "orders" },
+    { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
     ...(session.user.role === "ADMIN"
-      ? [{ href: "/admin/brands", label: "Admin · Brands", icon: "admin-brands" }]
+      ? [{ href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" }]
       : []),
   ];
+  const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -32,30 +42,31 @@ export default async function AppLayout({ children }: Props) {
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
               <Link href="/" className="block">
-                <span className="text-sm font-semibold text-slate-900">Omicron</span>
-                <span className="block text-xs text-slate-500">Business Card Portal</span>
+                <span className="text-sm font-semibold text-slate-900">{t.layout.brandTitle}</span>
+                <span className="block text-xs text-slate-500">{t.layout.brandSubtitle}</span>
               </Link>
             </div>
 
-            <div className="px-4 py-3">
+            <div className="space-y-4 px-4 py-4">
+              <LanguageSwitcher />
               <SidebarNav items={menuItems} />
             </div>
 
             <div className="space-y-2 border-t border-slate-200 px-5 py-4 text-sm text-slate-600">
               <div>
                 <div className="font-semibold text-slate-900">{displayName}</div>
-                {session.user.role ? (
-                  <div className="text-xs uppercase tracking-wide text-slate-400">{session.user.role}</div>
+                {roleLabel ? (
+                  <div className="text-xs uppercase tracking-wide text-slate-400">{roleLabel}</div>
                 ) : null}
               </div>
-              <LogoutButton />
+              <LogoutButton label={t.nav.logout} />
             </div>
           </div>
         </aside>
         <main className="flex-1">
           <header className="mb-6 lg:hidden">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-slate-500">Signed in as</div>
+              <div className="text-sm text-slate-500">{t.layout.signedInAs}</div>
               <div className="text-base font-semibold text-slate-900">{displayName}</div>
               <div className="mt-3 flex gap-3">
                 {menuItems.map((item) => (

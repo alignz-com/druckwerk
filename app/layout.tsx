@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "./SessionProviderWrapper"; // 👈 import
+import { LocaleProvider } from "@/components/providers/locale-provider";
+import { isLocale } from "@/lib/i18n/messages";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,16 +24,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get("locale")?.value;
+  const locale = isLocale(localeCookie) ? localeCookie : "en";
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* ✅ Client-Wrapper benutzen */}
-        <SessionProviderWrapper>{children}</SessionProviderWrapper>
+        <SessionProviderWrapper>
+          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

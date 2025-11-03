@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 
-import { TemplateDefinition, DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
+import { DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
+import type { ResolvedTemplate } from "@/lib/templates";
+import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -29,18 +31,15 @@ import {
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 
-const DELIVERY_TIMES = [
-  { value: "express", label: "Express" },
-  { value: "1week", label: "1 Week" },
-  { value: "2weeks", label: "2 Weeks" },
-] as const;
+const DELIVERY_TIMES = ["express", "1week", "2weeks"] as const;
 
 export type OrderFormProps = {
-  templates: TemplateDefinition[];
+  templates: ResolvedTemplate[];
 };
 
 export default function OrderForm({ templates }: OrderFormProps) {
   const router = useRouter();
+  const t = useTranslations();
   const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "qrcode");
   const selectedTemplate = useMemo(() => {
@@ -95,13 +94,13 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to submit order");
+        throw new Error(data.error || t.orderForm.errors.generic);
       }
 
       setIsConfirmOpen(false);
       router.push("/orders?created=1");
     } catch (err: any) {
-      setSubmitError(err?.message ?? "Unexpected error while saving order");
+      setSubmitError(err?.message ?? t.orderForm.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,22 +109,22 @@ export default function OrderForm({ templates }: OrderFormProps) {
   return (
     <section className="space-y-10">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Business Card – Omicron</h1>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.orderForm.title}</h1>
       </header>
 
       <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
         <div className="space-y-8">
           <Card className="h-fit">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base md:text-lg">Order information</CardTitle>
+              <CardTitle className="text-base md:text-lg">{t.orderForm.infoTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="qty">Quantity</Label>
+                  <Label htmlFor="qty">{t.orderForm.quantity}</Label>
                   <Select value={quantity} onValueChange={setQuantity}>
                     <SelectTrigger id="qty">
-                      <SelectValue placeholder="Select quantity" />
+                      <SelectValue placeholder={t.orderForm.placeholders.quantity} />
                     </SelectTrigger>
                     <SelectContent>
                       {QUANTITIES.map((q) => (
@@ -138,10 +137,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="template">Template</Label>
+                  <Label htmlFor="template">{t.orderForm.template}</Label>
                   <Select value={selectedTemplateKey} onValueChange={setSelectedTemplateKey}>
                     <SelectTrigger id="template">
-                      <SelectValue placeholder="Select template" />
+                      <SelectValue placeholder={t.orderForm.placeholders.template} />
                     </SelectTrigger>
                     <SelectContent>
                       {templateOptions.map((tpl) => (
@@ -154,21 +153,21 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="delivery">Delivery Time</Label>
+                  <Label htmlFor="delivery">{t.orderForm.deliveryTime}</Label>
                   <Select value={deliveryTime} onValueChange={setDeliveryTime}>
                     <SelectTrigger id="delivery">
-                      <SelectValue placeholder="Select delivery time" />
+                      <SelectValue placeholder={t.orderForm.placeholders.deliveryTime} />
                     </SelectTrigger>
                     <SelectContent>
-                      {DELIVERY_TIMES.map((d) => (
-                        <SelectItem key={d.value} value={d.value}>
-                          {d.label}
+                      {DELIVERY_TIMES.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t.orderForm.deliveryTimes[value] ?? value}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {deliveryTime === "express" && (
-                    <p className="mt-1 text-xs text-red-600">⚠️ Express delivery will cause additional costs.</p>
+                    <p className="mt-1 text-xs text-red-600">{t.orderForm.expressNotice}</p>
                   )}
                 </div>
               </div>
@@ -177,46 +176,46 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle className="text-base md:text-lg">Details</CardTitle>
+              <CardTitle className="text-base md:text-lg">{t.orderForm.detailsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{t.orderForm.fields.name}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role">Function / Title</Label>
+                <Label htmlFor="role">{t.orderForm.fields.role}</Label>
                 <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} maxLength={45} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t.orderForm.fields.phone}</Label>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="mobile">Mobile</Label>
+                <Label htmlFor="mobile">{t.orderForm.fields.mobile}</Label>
                 <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">E-Mail</Label>
+                <Label htmlFor="email">{t.orderForm.fields.email}</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="linkedin">LinkedIn</Label>
+                <Label htmlFor="linkedin">{t.orderForm.fields.linkedin}</Label>
                 <Input
                   id="linkedin"
                   type="url"
-                  placeholder="https://www.linkedin.com/in/username"
+                  placeholder={t.orderForm.fields.linkedinPlaceholder}
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}
                   maxLength={100}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="url">URL</Label>
+                <Label htmlFor="url">{t.orderForm.fields.url}</Label>
                 <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company">Company & Address</Label>
+                <Label htmlFor="company">{t.orderForm.fields.company}</Label>
                 <Textarea
                   id="company"
                   value={company}
@@ -233,7 +232,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
               </div>
 
               <Button onClick={openConfirm} className="w-full">
-                Order Business Card
+                {t.orderForm.buttons.order}
               </Button>
             </CardContent>
           </Card>
@@ -242,7 +241,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
         <div className="space-y-8">
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Card Front</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.confirm.front}</CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center pt-0">
               <div className="w-full max-w-[1100px]">
@@ -262,7 +261,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Card Back</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.confirm.back}</CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center pt-0">
               <div className="w-full max-w-[1100px]">
@@ -292,8 +291,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Confirm order</DialogTitle>
-            <DialogDescription>Review the preview before submitting your business card order.</DialogDescription>
+            <DialogTitle>{t.orderForm.confirm.title}</DialogTitle>
+            <DialogDescription>{t.orderForm.confirm.description}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
@@ -304,7 +303,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 onClick={() => setConfirmView("front")}
                 disabled={isSubmitting}
               >
-                Front
+                {t.orderForm.confirm.front}
               </Button>
               <Button
                 variant={confirmView === "back" ? "default" : "ghost"}
@@ -312,7 +311,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 onClick={() => setConfirmView("back")}
                 disabled={isSubmitting}
               >
-                Back
+                {t.orderForm.confirm.back}
               </Button>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
@@ -352,10 +351,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} disabled={isSubmitting}>
-              Back
+              {t.orderForm.confirm.cancel}
             </Button>
             <Button onClick={confirmOrder} disabled={isSubmitting}>
-              {isSubmitting ? "Saving order…" : "Confirm order"}
+              {isSubmitting ? t.orderForm.confirm.submitting : t.orderForm.confirm.submit}
             </Button>
           </DialogFooter>
         </DialogContent>
