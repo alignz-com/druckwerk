@@ -23,7 +23,18 @@ const requestSchema = z.object({
   linkedin: z.string().optional().default(""),
   template: z.string().optional().default("omicron"),
   quantity: z.number().int().positive(),
-  deliveryTime: z.string().min(1),
+  deliveryTime: z.enum(["express", "standard"]),
+  customerReference: z.string().optional().default(""),
+  address: z
+    .object({
+      companyName: z.string().optional().default(""),
+      street: z.string().optional().default(""),
+      postalCode: z.string().optional().default(""),
+      city: z.string().optional().default(""),
+      countryCode: z.string().optional().default(""),
+      addressExtra: z.string().optional().default(""),
+    })
+    .optional(),
 });
 
 function buildReferenceCode() {
@@ -61,6 +72,7 @@ export async function POST(req: Request) {
         mobile: data.mobile,
         company: data.company,
         url: data.url,
+        linkedin: data.linkedin,
       },
       templateDefinition,
     );
@@ -95,6 +107,8 @@ export async function POST(req: Request) {
         blobId: upload.pathname ?? upload.url,
         meta: {
           templateKey: data.template,
+          ...(data.customerReference ? { customerReference: data.customerReference } : {}),
+          ...(data.address ? { address: data.address } : {}),
           ...(fontReport?.length ? { fontReport } : {}),
         },
       },

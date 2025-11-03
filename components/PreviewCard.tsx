@@ -66,6 +66,7 @@ function FrontTextOverlay({
   mobile?: string;
   company?: string;
   url?: string;
+  linkedin?: string;
 }) {
   const frame = template.config.front.textFrame;
   const previewCfg = template.config.front.preview ?? {};
@@ -132,6 +133,7 @@ export type Props = {
   mobile?: string;
   company?: string; // multiline
   url?: string;
+  linkedin?: string;
   template: ResolvedTemplate;
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
@@ -193,9 +195,10 @@ function buildVCard3(o: {
   phone?: string;   // Festnetz/Work
   mobile?: string;  // Mobile
   url?: string;
+  linkedin?: string;
   addrLabel?: string;
 }) {
-  const { fullName, org, title, email, phone, mobile, url, addrLabel } = o;
+  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel } = o;
 
   // N + FN zuerst!
   const { given, family } = splitName(fullName);
@@ -211,7 +214,8 @@ function buildVCard3(o: {
   if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url)    lines.push(`URL:${vEscape(url)}`);
+  if (url)    lines.push(`URL;TYPE=WORK:${vEscape(url)}`);
+  if (linkedin) lines.push(`URL;TYPE=PROFILE:${vEscape(linkedin)}`);
   if (addrLabel) {
   // ADR: PO Box ; Extended ; Street ; City ; Region ; Postal ; Country
   const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
@@ -347,6 +351,7 @@ export function BusinessCardBack({
   mobile = "",
   company = "",
   url = "",
+  linkedin,
   qrOverride,
 }: Props) {
   const { org, label } = normalizeAddress(company);
@@ -364,6 +369,7 @@ export function BusinessCardBack({
         phone: phone || undefined,
         mobile: mobile || undefined,
         url: url || undefined,
+        linkedin: linkedin || undefined,
         addrLabel,
       }),
     [name, role, email, phone, mobile, url, org, addrLabel],
@@ -429,6 +435,7 @@ export function BusinessCardBack({
             mobile={mobile}
             company={company}
             url={url}
+            linkedin={linkedin}
           />
         ) : null}
       </svg>

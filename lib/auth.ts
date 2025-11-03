@@ -137,7 +137,14 @@ export const authOptions: NextAuthOptions = {
                 updateData.email = normalized;
               }
               updateData.url = buildWebsiteFromEmail(normalized);
-            } else {
+            }
+
+            const graphWebsite = (graphProfile?.webSite ?? graphProfile?.website)?.toString?.().trim();
+            if (graphWebsite) {
+              updateData.url = graphWebsite;
+            }
+
+            if (!updateData.url) {
               updateData.url = buildWebsiteFromEmail(email);
             }
 

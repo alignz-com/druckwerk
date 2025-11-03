@@ -19,6 +19,7 @@ export type OrderPdfFields = {
   mobile?: string;
   company?: string;
   url?: string;
+  linkedin?: string;
 };
 
 function vEscape(s: string) {
@@ -47,9 +48,10 @@ function buildVCard3(opts: {
   phone?: string;
   mobile?: string;
   url?: string;
+  linkedin?: string;
   addrLabel?: string;
 }) {
-  const { fullName, org, title, email, phone, mobile, url, addrLabel } = opts;
+  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel } = opts;
   const { given, family } = splitName(fullName);
   const lines: string[] = [
     "BEGIN:VCARD",
@@ -63,7 +65,8 @@ function buildVCard3(opts: {
   if (phone) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL:${vEscape(url)}`);
+  if (url) lines.push(`URL;TYPE=WORK:${vEscape(url)}`);
+  if (linkedin) lines.push(`URL;TYPE=PROFILE:${vEscape(linkedin)}`);
 
   if (addrLabel) {
     const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
@@ -214,7 +217,16 @@ function pickFont(style: TemplateTextStyle, fonts: Partial<Record<string, PDFFon
 }
 
 export async function generateOrderPdf(fields: OrderPdfFields, template: ResolvedTemplate) {
-  const { name, role = "", email = "", phone = "", mobile = "", company = "", url = "" } = fields;
+  const {
+    name,
+    role = "",
+    email = "",
+    phone = "",
+    mobile = "",
+    company = "",
+    url = "",
+    linkedin = "",
+  } = fields;
 
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
@@ -289,6 +301,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       phone: phone || undefined,
       mobile: mobile || undefined,
       url: url || undefined,
+      linkedin: linkedin || undefined,
       addrLabel,
     });
 

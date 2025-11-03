@@ -4,16 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
+import { Info } from "lucide-react";
 
 import { DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
 import { normalizeAddress } from "@/lib/normalizeAddress";
+import { COUNTRY_CODES, findCountryCodeByName, getCountryLabel } from "@/lib/countries";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -32,10 +35,46 @@ import {
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 
-const DELIVERY_TIMES = ["express", "1week", "2weeks"] as const;
+const DELIVERY_OPTIONS = {
+  express: { businessDays: 5 },
+  standard: { businessDays: 15 },
+} as const;
+type DeliveryOption = keyof typeof DELIVERY_OPTIONS;
 
 const DEFAULT_COMPANY_ADDRESS = "OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich";
 const DEFAULT_ADDRESS_PARTS = normalizeAddress(DEFAULT_COMPANY_ADDRESS);
+const DEFAULT_COUNTRY_CODE = findCountryCodeByName(DEFAULT_ADDRESS_PARTS.country) ?? "AT";
+
+function addBusinessDays(start: Date, days: number) {
+  const date = new Date(start);
+  let remaining = days;
+  while (remaining > 0) {
+    date.setDate(date.getDate() + 1);
+    const weekDay = date.getDay();
+    if (weekDay !== 0 && weekDay !== 6) {
+      remaining -= 1;
+    }
+  }
+  return date;
+}
+
+function formatDeliveryDate(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function buildWebsiteFromEmail(email?: string | null) {
+  if (!email || !email.includes("@")) return "";
+  let domain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+  if (!domain) return "";
+  if (domain.endsWith(".")) domain = domain.slice(0, -1);
+  if (domain.startsWith("www.")) domain = domain.slice(4);
+  return domain ? `www.${domain}` : "";
+}
 
 export type OrderFormProps = {
   templates: ResolvedTemplate[];
@@ -45,6 +84,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const sessionUser = session?.user;
+  const localeShort: "en" | "de" = sessionUser?.locale === "de" ? "de" : "en";
+  const deliveryLocale = localeShort === "de" ? "de-AT" : "en-GB";
   const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
   const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
@@ -53,7 +94,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
     return templateOptions.find((tpl) => tpl.key === selectedTemplateKey) ?? templateOptions[0] ?? DEFAULT_TEMPLATE_LIST[0];
   }, [templateOptions, selectedTemplateKey]);
 
-  const [deliveryTime, setDeliveryTime] = useState<string>("1week");
+  const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
@@ -63,11 +104,18 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [street, setStreet] = useState(DEFAULT_ADDRESS_PARTS.street ?? "");
   const [postalCode, setPostalCode] = useState(DEFAULT_ADDRESS_PARTS.postalCode ?? "");
   const [city, setCity] = useState(DEFAULT_ADDRESS_PARTS.city ?? "");
-  const [country, setCountry] = useState(DEFAULT_ADDRESS_PARTS.country ?? "");
+  const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
   const [addressExtra, setAddressExtra] = useState("");
   const [url, setUrl] = useState("");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
+  const [customerReference, setCustomerReference] = useState("");
+
+  const countryOptions = useMemo(() => {
+    return COUNTRY_CODES.map((code) => ({ code, label: getCountryLabel(localeShort, code) })).sort((a, b) =>
+      a.label.localeCompare(b.label, localeShort === "de" ? "de" : "en"),
+    );
+  }, [localeShort]);
 
   const companyBlock = useMemo(() => {
     const lines: string[] = [];
@@ -76,7 +124,9 @@ export default function OrderForm({ templates }: OrderFormProps) {
     if (street) segments.push(street);
     const postalCity = [postalCode, city].filter(Boolean).join(" ").trim();
     if (postalCity) segments.push(postalCity);
-    if (country) segments.push(country);
+    if (countryCode) {
+      segments.push(getCountryLabel(localeShort, countryCode));
+    }
     if (segments.length > 0) {
       lines.push(segments.join(" | "));
     }
@@ -84,7 +134,14 @@ export default function OrderForm({ templates }: OrderFormProps) {
       lines.push(addressExtra);
     }
     return lines.join("\n");
-  }, [companyName, street, postalCode, city, country, addressExtra]);
+  }, [companyName, street, postalCode, city, countryCode, addressExtra, localeShort]);
+
+  const estimatedDeliveryDate = useMemo(() => {
+    const option = DELIVERY_OPTIONS[deliveryTime];
+    if (!option) return null;
+    const target = addBusinessDays(new Date(), option.businessDays);
+    return formatDeliveryDate(target, deliveryLocale);
+  }, [deliveryTime, deliveryLocale]);
 
   useEffect(() => {
     if (!sessionUser || hasPrefilledProfile.current) return;
@@ -96,6 +153,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
     if (sessionUser.url) setUrl((prev) => prev || sessionUser.url || "");
     hasPrefilledProfile.current = true;
   }, [sessionUser]);
+
+  useEffect(() => {
+    if (!email) return;
+    setUrl((prev) => (prev ? prev : buildWebsiteFromEmail(email)));
+  }, [email]);
 
   const [previewView, setPreviewView] = useState<"front" | "back">("front");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -126,10 +188,19 @@ export default function OrderForm({ templates }: OrderFormProps) {
           mobile,
           company: companyBlock,
           url,
+          linkedin,
           template: selectedTemplate.key,
           quantity: Number(quantity),
           deliveryTime,
-          linkedin,
+          customerReference,
+          address: {
+            companyName,
+            street,
+            postalCode,
+            city,
+            countryCode,
+            addressExtra,
+          },
         }),
       });
 
@@ -203,12 +274,15 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
                 <div className="grid gap-2">
                   <Label htmlFor="delivery">{t.orderForm.deliveryTime}</Label>
-                  <Select value={deliveryTime} onValueChange={setDeliveryTime}>
+                  <Select
+                    value={deliveryTime}
+                    onValueChange={(value) => setDeliveryTime(value as DeliveryOption)}
+                  >
                     <SelectTrigger id="delivery">
                       <SelectValue placeholder={t.orderForm.placeholders.deliveryTime} />
                     </SelectTrigger>
                     <SelectContent>
-                      {DELIVERY_TIMES.map((value) => (
+                      {(Object.keys(DELIVERY_OPTIONS) as DeliveryOption[]).map((value) => (
                         <SelectItem key={value} value={value}>
                           {t.orderForm.deliveryTimes[value] ?? value}
                         </SelectItem>
@@ -218,6 +292,23 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   {deliveryTime === "express" && (
                     <p className="mt-1 text-xs text-red-600">{t.orderForm.expressNotice}</p>
                   )}
+                  {estimatedDeliveryDate ? (
+                    <p className="text-xs text-slate-500">
+                      {t.orderForm.estimatedDelivery}: {estimatedDeliveryDate}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="customerReference">{t.orderForm.fields.customerReference}</Label>
+                  <Textarea
+                    id="customerReference"
+                    value={customerReference}
+                    onChange={(e) => setCustomerReference(e.target.value)}
+                    rows={2}
+                    maxLength={200}
+                    placeholder={t.orderForm.placeholders.customerReference ?? ""}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -249,7 +340,14 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="linkedin">{t.orderForm.fields.linkedin}</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="linkedin" className="mb-0">
+                    {t.orderForm.fields.linkedin}
+                  </Label>
+                  <span className="inline-flex" title={t.orderForm.hints.linkedin} aria-hidden="true">
+                    <Info className="h-4 w-4 text-slate-400" />
+                  </span>
+                </div>
                 <Input
                   id="linkedin"
                   type="url"
@@ -257,14 +355,18 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}
                   maxLength={100}
+                  aria-describedby="linkedin-hint"
                 />
+                <p id="linkedin-hint" className="text-xs text-slate-500">
+                  {t.orderForm.hints.linkedin}
+                </p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="url">{t.orderForm.fields.url}</Label>
                 <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="companyName">{t.orderForm.fields.companyName}</Label>
                   <Input
                     id="companyName"
@@ -273,7 +375,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     maxLength={64}
                   />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="street">{t.orderForm.fields.street}</Label>
                   <Input
                     id="street"
@@ -300,16 +402,22 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     maxLength={48}
                   />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="country">{t.orderForm.fields.country}</Label>
-                  <Input
-                    id="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    maxLength={48}
-                  />
+                  <Select value={countryCode} onValueChange={setCountryCode}>
+                    <SelectTrigger id="country">
+                      <SelectValue placeholder={t.orderForm.placeholders.country} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {countryOptions.map(({ code, label }) => (
+                        <SelectItem key={code} value={code}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="addressExtra">{t.orderForm.fields.addressExtra}</Label>
                   <Input
                     id="addressExtra"
@@ -371,6 +479,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     mobile={mobile}
                     company={companyBlock}
                     url={url}
+                    linkedin={linkedin}
                   />
                 )}
               </div>
@@ -435,6 +544,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     mobile={mobile}
                     company={companyBlock}
                     url={url}
+                    linkedin={linkedin}
                   />
                 )}
               </div>

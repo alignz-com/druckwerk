@@ -37,17 +37,19 @@ export const messages = {
       template: "Template",
       deliveryTime: "Delivery Time",
       deliveryTimes: {
-        express: "Express",
-        "1week": "1 Week",
-        "2weeks": "2 Weeks",
+        express: "1 Week (Express)",
+        standard: "3 Weeks (Standard)",
       } as Record<string, string>,
       expressNotice: "⚠️ Express delivery will cause additional costs.",
+      estimatedDelivery: "Estimated delivery",
       detailsTitle: "Details",
       placeholders: {
         quantity: "Select quantity",
         template: "Select template",
         deliveryTime: "Select delivery time",
         addressExtra: "Care of, building, etc.",
+        country: "Select country",
+        customerReference: "Customer reference",
       },
       fields: {
         name: "Name",
@@ -64,6 +66,10 @@ export const messages = {
         city: "City",
         country: "Country",
         addressExtra: "Additional address line",
+        customerReference: "Customer reference",
+      },
+      hints: {
+        linkedin: "LinkedIn URL won’t be printed, but is available via the QR code.",
       },
       previewTitle: "Preview",
       buttons: {
@@ -142,17 +148,19 @@ export const messages = {
       template: "Vorlage",
       deliveryTime: "Lieferzeit",
       deliveryTimes: {
-        express: "Express",
-        "1week": "1 Woche",
-        "2weeks": "2 Wochen",
+        express: "1 Woche (Express)",
+        standard: "3 Wochen (Standard)",
       },
       expressNotice: "⚠️ Expressversand verursacht zusätzliche Kosten.",
+      estimatedDelivery: "Voraussichtliche Lieferung",
       detailsTitle: "Details",
       placeholders: {
         quantity: "Menge auswählen",
         template: "Vorlage auswählen",
         deliveryTime: "Lieferzeit auswählen",
         addressExtra: "c/o, Gebäude, Zusatz",
+        country: "Land auswählen",
+        customerReference: "Kundenreferenz",
       },
       fields: {
         name: "Name",
@@ -169,6 +177,10 @@ export const messages = {
         city: "Ort",
         country: "Land",
         addressExtra: "Zusätzliche Adresszeile",
+        customerReference: "Kundenreferenz",
+      },
+      hints: {
+        linkedin: "Die LinkedIn-URL wird nicht aufgedruckt, ist aber über den QR-Code abrufbar.",
       },
       previewTitle: "Vorschau",
       buttons: {
