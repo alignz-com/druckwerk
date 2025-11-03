@@ -62,7 +62,7 @@ export default async function AppLayout({ children }: Props) {
               </Link>
             </div>
 
-            <div className="px-4 py-4">
+            <div className="px-4 py-4 hidden lg:block">
               <SidebarNav items={menuItems} />
             </div>
 

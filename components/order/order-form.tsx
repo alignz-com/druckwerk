@@ -232,7 +232,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
         </Button>
       </header>
 
-      <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
+      <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] lg:items-start">
         <div className="space-y-8">
           <Card className="h-fit">
             <CardHeader className="pb-2">
@@ -433,7 +433,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
           </Card>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-24">
+        <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.previewTitle}</CardTitle>
@@ -456,8 +456,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex justify-center pt-0">
-              <div className="w-full max-w-[1100px]">
+            <CardContent className="flex justify-center pt-0 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
+              <div className="w-full max-w-[1100px] space-y-6">
                 {previewView === "front" ? (
                   <BusinessCardFront
                     template={selectedTemplate}
