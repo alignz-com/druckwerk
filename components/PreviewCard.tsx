@@ -71,7 +71,7 @@ function FrontTextOverlay({
   const previewCfg = template.config.front.preview ?? {};
   const fontScale = previewCfg.fontScale ?? DEFAULT_FONT_SCALE;
   const texts: ReactElement[] = [];
-  const startY = frame.topMm;
+  const startY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
   const baseX = frame.xMm;
   let index = 0;
   const pushBlock = (lines: string[], style?: TemplateTextStyle) => {

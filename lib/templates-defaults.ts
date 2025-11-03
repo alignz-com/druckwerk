@@ -21,6 +21,7 @@ export type TemplateConfig = {
     preview?: {
       fontScale?: number;
       maxWidthPx?: number;
+      baselineOffsetMm?: number;
     };
   };
   back: {
@@ -57,6 +58,7 @@ const BASE_TEXT_FRAME = {
 const DEFAULT_PREVIEW = {
   fontScale: 0.65,
   maxWidthPx: 960,
+  baselineOffsetMm: -1.5,
 };
 
 export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
