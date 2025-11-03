@@ -71,20 +71,19 @@ function FrontTextOverlay({
   const previewCfg = template.config.front.preview ?? {};
   const fontScale = previewCfg.fontScale ?? DEFAULT_FONT_SCALE;
   const texts: ReactElement[] = [];
-  const startY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
   const baseX = frame.xMm;
-  let index = 0;
+  const startY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
+  let cursorY = startY;
   const pushBlock = (lines: string[], style?: TemplateTextStyle) => {
     if (!style || lines.length === 0) return;
     const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style, fontScale);
     const lineSpacing = style.lineGapMm;
     for (const line of lines) {
-      const y = startY + index * lineSpacing;
       texts.push(
         <text
-          key={`line-${index}`}
+          key={`line-${cursorY.toFixed(2)}`}
           x={baseX}
-          y={y}
+          y={cursorY}
           fontSize={fontSize}
           fontWeight={fontWeight}
           fontStyle={fontStyle}
@@ -92,10 +91,10 @@ function FrontTextOverlay({
           {line}
         </text>,
       );
-      index += 1;
+      cursorY += lineSpacing;
     }
     if (style.spacingAfterMm) {
-      index += Math.ceil(style.spacingAfterMm / lineSpacing);
+      cursorY += style.spacingAfterMm;
     }
   };
 
