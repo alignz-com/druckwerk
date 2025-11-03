@@ -1,8 +1,40 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 export default function SignInCard() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCredentialsSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
+    setIsSubmitting(true);
+    const result = await signIn("email", {
+      email,
+      password,
+      redirect: false,
+      callbackUrl: "/orders/new",
+    });
+
+    if (result?.error) {
+      setError("Login not possible with these credentials");
+      setIsSubmitting(false);
+      return;
+    }
+
+    router.push("/orders/new");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-16">
       <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -16,9 +48,10 @@ export default function SignInCard() {
           </div>
         </div>
 
-        <button
+        <Button
           onClick={() => signIn("azure-ad", { callbackUrl: "/orders/new" })}
-          className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          variant="outline"
+          className="mb-6 flex w-full items-center justify-center gap-2"
         >
           <svg aria-hidden focusable="false" viewBox="0 0 24 24" className="h-5 w-5">
             <path fill="#f25022" d="M11 11H3V3h8v8z" />
@@ -27,9 +60,50 @@ export default function SignInCard() {
             <path fill="#ffb900" d="M21 21h-8v-8h8v8z" />
           </svg>
           Sign in with Microsoft
-        </button>
+        </Button>
 
-        <p className="text-center text-xs text-slate-500">
+        <div className="relative mb-6 text-center text-xs uppercase tracking-wide text-slate-400">
+          <span className="bg-white px-2">or</span>
+          <span className="absolute inset-x-0 top-1/2 block h-px bg-slate-200" aria-hidden />
+        </div>
+
+        <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-xs font-medium text-slate-600">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-xs font-medium text-slate-600">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+
+          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in…" : "Sign in"}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-slate-500">
           Printer accounts can use their email login once configured by an administrator.
         </p>
       </div>

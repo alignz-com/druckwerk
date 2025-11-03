@@ -26,7 +26,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get("locale")?.value;
-  const locale = isLocale(localeCookie) ? localeCookie : "en";
+  const userLocale = session.user.locale;
+  const locale = isLocale(localeCookie)
+    ? localeCookie
+    : isLocale(userLocale)
+      ? userLocale
+      : "en";
   const t = getTranslations(locale);
 
   const isAdmin = session.user.role === "ADMIN";

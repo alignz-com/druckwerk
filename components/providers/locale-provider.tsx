@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useSession } from "next-auth/react";
 
-import { messages, type Locale } from "@/lib/i18n/messages";
+import { locales, messages, type Locale } from "@/lib/i18n/messages";
 
 type LocaleContextValue = {
   locale: Locale;
@@ -19,10 +20,18 @@ type LocaleProviderProps = {
 
 export function LocaleProvider({ initialLocale, children }: LocaleProviderProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
+  const { data: session } = useSession();
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  useEffect(() => {
+    const sessionLocale = session?.user?.locale;
+    if (sessionLocale && locales.includes(sessionLocale as Locale) && sessionLocale !== locale) {
+      setLocale(sessionLocale as Locale);
+    }
+  }, [session?.user?.locale, locale]);
 
   const value = useMemo(() => ({ locale, setLocale }), [locale]);
 

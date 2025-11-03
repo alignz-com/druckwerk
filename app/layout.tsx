@@ -5,6 +5,7 @@ import "./globals.css";
 import SessionProviderWrapper from "./SessionProviderWrapper"; // 👈 import
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { isLocale } from "@/lib/i18n/messages";
+import { getServerAuthSession } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,13 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get("locale")?.value;
-  const locale = isLocale(localeCookie) ? localeCookie : "en";
+  const session = await getServerAuthSession();
+  const userLocale = session?.user?.locale;
+  const locale = isLocale(localeCookie)
+    ? localeCookie
+    : isLocale(userLocale)
+      ? userLocale
+      : "en";
 
   return (
     <html lang={locale}>

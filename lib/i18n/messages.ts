@@ -25,7 +25,8 @@ export const messages = {
       de: "German",
     },
     orderForm: {
-      title: "Business Card – Omicron",
+      title: "New Order",
+      subtitle: "Configure your business card details before submitting.",
       infoTitle: "Order information",
       quantity: "Quantity",
       template: "Template",
@@ -117,7 +118,8 @@ export const messages = {
       de: "Deutsch",
     },
     orderForm: {
-      title: "Visitenkarte – Omicron",
+      title: "Neue Bestellung",
+      subtitle: "Konfiguriere die Visitenkarte, bevor du sie bestätigst.",
       infoTitle: "Bestellinformationen",
       quantity: "Menge",
       template: "Vorlage",

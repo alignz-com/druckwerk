@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
@@ -22,7 +23,12 @@ export default async function AppLayout({ children }: Props) {
 
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get("locale")?.value;
-  const locale = isLocale(localeCookie) ? localeCookie : "en";
+  const userLocale = session.user.locale;
+  const locale = isLocale(localeCookie)
+    ? localeCookie
+    : isLocale(userLocale)
+      ? userLocale
+      : "en";
   const t = getTranslations(locale);
 
   const displayName = session.user.name || session.user.email || "Account";
@@ -41,9 +47,19 @@ export default async function AppLayout({ children }: Props) {
         <aside className="lg:w-64">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
-              <Link href="/" className="block">
-                <span className="text-sm font-semibold text-slate-900">{t.layout.brandTitle}</span>
-                <span className="block text-xs text-slate-500">{t.layout.brandSubtitle}</span>
+              <Link href="/" className="flex items-center gap-3">
+                <Image
+                  src="/logo.svg"
+                  alt={t.layout.brandTitle}
+                  width={40}
+                  height={40}
+                  priority
+                  className="rounded-lg"
+                />
+                <div className="leading-tight">
+                  <span className="block text-sm font-semibold text-slate-900">{t.layout.brandTitle}</span>
+                  <span className="block text-xs text-slate-500">{t.layout.brandSubtitle}</span>
+                </div>
               </Link>
             </div>
 

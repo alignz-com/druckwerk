@@ -35,6 +35,7 @@ model User {
   image          String?
   emailVerified  DateTime?
   role           UserRole  @default(USER)
+  locale         String    @default("en")
   hashedPassword String?
   brandId        String?
   brand          Brand?    @relation(fields: [brandId], references: [id])

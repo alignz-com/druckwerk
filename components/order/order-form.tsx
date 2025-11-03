@@ -108,8 +108,16 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
   return (
     <section className="space-y-10">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.orderForm.title}</h1>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.orderForm.title}</h1>
+          {t.orderForm.subtitle ? (
+            <p className="mt-1 text-sm text-slate-500">{t.orderForm.subtitle}</p>
+          ) : null}
+        </div>
+        <Button onClick={openConfirm} className="self-start sm:self-auto">
+          {t.orderForm.buttons.order}
+        </Button>
       </header>
 
       <div className="grid gap-10 2xl:gap-12 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
@@ -231,9 +239,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 />
               </div>
 
-              <Button onClick={openConfirm} className="w-full">
-                {t.orderForm.buttons.order}
-              </Button>
             </CardContent>
           </Card>
         </div>

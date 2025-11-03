@@ -95,11 +95,14 @@ export const authOptions: NextAuthOptions = {
       return domainOk || tenantOk;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.userId = user.id;
         token.role = ((user as any).role ?? "USER") as AppUserRole;
         token.brandId = (user as any).brandId ?? null;
+        token.locale = (user as any).locale ?? "en";
+      } else if (trigger === "update" && session?.locale) {
+        token.locale = session.locale as string;
       }
       return token;
     },
@@ -112,6 +115,8 @@ export const authOptions: NextAuthOptions = {
         const tokenRole = (token?.role as AppUserRole | undefined) ?? "USER";
         session.user.role = tokenRole;
         session.user.brandId = token?.brandId ? String(token.brandId) : undefined;
+        session.user.locale = typeof token.locale === "string" ? token.locale : "en";
+        (session as any).locale = session.user.locale;
       }
       return session;
     },

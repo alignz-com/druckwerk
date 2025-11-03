@@ -8,12 +8,14 @@ declare module "next-auth" {
       id?: string;
       role: AppUserRole;
       brandId?: string | null;
+      locale?: string;
     };
   }
 
   interface User {
     role: AppUserRole;
     brandId?: string | null;
+    locale?: string;
   }
 }
 
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     userId?: string;
     role?: AppUserRole;
     brandId?: string | null;
+    locale?: string;
   }
 }
