@@ -13,6 +13,7 @@ declare module "next-auth" {
       mobilePhone?: string | null;
       businessPhone?: string | null;
       locale?: string;
+      url?: string | null;
     };
   }
 
@@ -24,6 +25,7 @@ declare module "next-auth" {
     mobilePhone?: string | null;
     businessPhone?: string | null;
     locale?: string;
+    url?: string | null;
   }
 }
 
@@ -37,5 +39,6 @@ declare module "next-auth/jwt" {
     mobilePhone?: string | null;
     businessPhone?: string | null;
     locale?: string;
+    url?: string | null;
   }
 }

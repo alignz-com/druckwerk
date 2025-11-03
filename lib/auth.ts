@@ -74,14 +74,14 @@ export const authOptions: NextAuthOptions = {
         return Boolean(user);
       }
 
-      const raw =
+      const rawEmail =
         (user?.email ??
           (profile as any)?.email ??
           (profile as any)?.preferred_username ??
           (profile as any)?.upn ??
           "") as string;
 
-      const email = raw.toLowerCase();
+      const email = rawEmail.toLowerCase();
       const domain = email.includes("@") ? email.split("@")[1] : "";
       const tenantId =
         (profile as any)?.tid?.toLowerCase?.() ||
@@ -105,7 +105,7 @@ export const authOptions: NextAuthOptions = {
       if (account.provider === "azure-ad" && account.access_token && user?.id) {
         try {
           const graphRes = await fetch(
-            "https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname,jobTitle,department,mobilePhone,businessPhones,mail,userPrincipalName",
+            "https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname,jobTitle,department,mobilePhone,businessPhones,mail,userPrincipalName,officeLocation,webSite",
             {
               headers: {
                 Authorization: `Bearer ${account.access_token}`,
@@ -131,8 +131,14 @@ export const authOptions: NextAuthOptions = {
             }
 
             const normalizedEmail = graphProfile?.mail || graphProfile?.userPrincipalName;
-            if (normalizedEmail && normalizedEmail.toLowerCase() !== user.email?.toLowerCase()) {
-              updateData.email = normalizedEmail.toLowerCase();
+            if (normalizedEmail) {
+              const normalized = normalizedEmail.toLowerCase();
+              if (normalized !== user.email?.toLowerCase()) {
+                updateData.email = normalized;
+              }
+              updateData.url = buildWebsiteFromEmail(normalized);
+            } else {
+              updateData.url = buildWebsiteFromEmail(email);
             }
 
             await prisma.user.update({
@@ -150,6 +156,7 @@ export const authOptions: NextAuthOptions = {
             (user as any).department = updateData.department;
             (user as any).mobilePhone = updateData.mobilePhone;
             (user as any).businessPhone = updateData.businessPhone;
+            (user as any).url = updateData.url ?? (user as any).url ?? buildWebsiteFromEmail(email);
           } else {
             console.error("[auth] graph profile request failed", graphRes.status);
           }
@@ -171,6 +178,8 @@ export const authOptions: NextAuthOptions = {
         token.department = (user as any).department ?? null;
         token.mobilePhone = (user as any).mobilePhone ?? null;
         token.businessPhone = (user as any).businessPhone ?? null;
+        const baseEmail = (user as any).email ?? undefined;
+        token.url = (user as any).url ?? buildWebsiteFromEmail(baseEmail ? String(baseEmail) : undefined);
       } else if (trigger === "update" && session?.locale) {
         token.locale = session.locale as string;
       }
@@ -191,6 +200,7 @@ export const authOptions: NextAuthOptions = {
         session.user.department = token?.department ? String(token.department) : null;
         session.user.mobilePhone = token?.mobilePhone ? String(token.mobilePhone) : null;
         session.user.businessPhone = token?.businessPhone ? String(token.businessPhone) : null;
+        session.user.url = token?.url ? String(token.url) : session.user.url ?? buildWebsiteFromEmail(session.user.email ?? null);
       }
       return session;
     },
@@ -198,3 +208,16 @@ export const authOptions: NextAuthOptions = {
 };
 
 export const getServerAuthSession = () => getServerSession(authOptions);
+
+
+function buildWebsiteFromEmail(email: string | null | undefined) {
+  if (!email) return null;
+  const atIndex = email.indexOf("@");
+  if (atIndex === -1) return null;
+  let domain = email.slice(atIndex + 1).trim().toLowerCase();
+  if (!domain) return null;
+  if (domain.endsWith(".")) domain = domain.slice(0, -1);
+  if (!domain) return null;
+  if (domain.startsWith("www.")) domain = domain.slice(4);
+  return domain ? `www.${domain}` : null;
+}

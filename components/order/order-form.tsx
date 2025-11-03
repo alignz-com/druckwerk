@@ -93,6 +93,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
     if (sessionUser.email) setEmail(sessionUser.email);
     if (sessionUser.businessPhone) setPhone(sessionUser.businessPhone);
     if (sessionUser.mobilePhone) setMobile(sessionUser.mobilePhone);
+    if (sessionUser.url) setUrl((prev) => prev || sessionUser.url || "");
     hasPrefilledProfile.current = true;
   }, [sessionUser]);
 
