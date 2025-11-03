@@ -51,8 +51,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{t.ordersPage.title}</h1>
-          <p className="text-sm text-slate-500">{t.ordersPage.subtitle}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t.ordersPage.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t.ordersPage.subtitle}</p>
         </div>
         <Button asChild>
           <Link href="/orders/new">{t.ordersPage.buttonNew}</Link>

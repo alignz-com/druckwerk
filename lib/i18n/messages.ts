@@ -18,6 +18,11 @@ export const messages = {
         ADMIN: "Admin",
         PRINTER: "Printer",
       } as Record<string, string>,
+      settings: {
+        open: "Open user settings",
+        title: "User settings",
+        description: "Update your personal preferences.",
+      },
     },
     language: {
       label: "Language",
@@ -110,6 +115,11 @@ export const messages = {
         USER: "Benutzer",
         ADMIN: "Admin",
         PRINTER: "Druckerei",
+      },
+      settings: {
+        open: "Benutzereinstellungen öffnen",
+        title: "Benutzereinstellungen",
+        description: "Passe deine persönlichen Einstellungen an.",
       },
     },
     language: {

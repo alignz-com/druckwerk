@@ -7,7 +7,8 @@ import { cookies } from "next/headers";
 import { getServerAuthSession } from "@/lib/auth";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 import LogoutButton from "@/components/layout/LogoutButton";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import UserSettingsDialog from "@/components/UserSettingsDialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 
 type Props = {
@@ -32,6 +33,14 @@ export default async function AppLayout({ children }: Props) {
   const t = getTranslations(locale);
 
   const displayName = session.user.name || session.user.email || "Account";
+  const initials = displayName
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "BC";
   const menuItems = [
     { href: "/orders", label: t.nav.orders, icon: "orders" },
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
@@ -47,33 +56,30 @@ export default async function AppLayout({ children }: Props) {
         <aside className="lg:w-64">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
-              <Link href="/" className="flex items-center gap-3">
-                <Image
-                  src="/logo.svg"
-                  alt={t.layout.brandTitle}
-                  width={40}
-                  height={40}
-                  priority
-                  className="rounded-lg"
-                />
-                <div className="leading-tight">
-                  <span className="block text-sm font-semibold text-slate-900">{t.layout.brandTitle}</span>
-                  <span className="block text-xs text-slate-500">{t.layout.brandSubtitle}</span>
-                </div>
+              <Link href="/" className="flex items-center justify-center">
+                <Image src="/logo.svg" alt={t.layout.brandTitle} width={120} height={40} priority />
+                <span className="sr-only">{t.layout.brandTitle}</span>
               </Link>
             </div>
 
-            <div className="space-y-4 px-4 py-4">
-              <LanguageSwitcher />
+            <div className="px-4 py-4">
               <SidebarNav items={menuItems} />
             </div>
 
-            <div className="space-y-2 border-t border-slate-200 px-5 py-4 text-sm text-slate-600">
-              <div>
-                <div className="font-semibold text-slate-900">{displayName}</div>
-                {roleLabel ? (
-                  <div className="text-xs uppercase tracking-wide text-slate-400">{roleLabel}</div>
-                ) : null}
+            <div className="space-y-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-10 bg-slate-200">
+                    <AvatarFallback className="font-semibold text-slate-700">{initials || "BC"}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-semibold text-slate-900">{displayName}</div>
+                    {roleLabel ? (
+                      <div className="text-xs uppercase tracking-wide text-slate-400">{roleLabel}</div>
+                    ) : null}
+                  </div>
+                </div>
+                <UserSettingsDialog />
               </div>
               <LogoutButton label={t.nav.logout} />
             </div>
