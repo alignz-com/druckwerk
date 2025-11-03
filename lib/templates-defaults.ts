@@ -32,6 +32,13 @@ export type TemplateConfig = {
       yMm: number;
       sizeMm: number;
     };
+    preview?: {
+      qr?: {
+        xMm?: number;
+        yMm?: number;
+        sizeMm?: number;
+      };
+    };
   };
 };
 
@@ -78,6 +85,9 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
       back: {
         mode: "qr",
         qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+        preview: {
+          qr: { xMm: 42.9, yMm: 13.9, sizeMm: 31.6 },
+        },
       },
     },
   },
@@ -111,6 +121,9 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
       back: {
         mode: "qr",
         qr: { xMm: 52.8, yMm: 18.85, sizeMm: 32 },
+        preview: {
+          qr: { xMm: 42.9, yMm: 13.9, sizeMm: 31.6 },
+        },
       },
     },
   },

@@ -391,9 +391,10 @@ export function BusinessCardBack({
   }, [vcard, template.config.back.mode]);
 
   const qrConfig = template.config.back.qr;
-  const qx = qrOverride?.xMm ?? qrConfig?.xMm;
-  const qy = qrOverride?.yMm ?? qrConfig?.yMm;
-  const qs = qrOverride?.sizeMm ?? qrConfig?.sizeMm;
+  const previewQrOverride = template.config.back.preview?.qr;
+  const qx = qrOverride?.xMm ?? previewQrOverride?.xMm ?? qrConfig?.xMm;
+  const qy = qrOverride?.yMm ?? previewQrOverride?.yMm ?? qrConfig?.yMm;
+  const qs = qrOverride?.sizeMm ?? previewQrOverride?.sizeMm ?? qrConfig?.sizeMm;
 
   return (
     <figure className="select-none">
