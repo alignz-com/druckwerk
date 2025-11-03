@@ -57,10 +57,10 @@ const BASE_TEXT_FRAME = {
 };
 
 const DEFAULT_PREVIEW = {
-  fontScale: 0.58,
+  fontScale: 0.6,
   maxWidthPx: 960,
-  baselineOffsetMm: -2.8,
-  lineHeightScale: 0.82,
+  baselineOffsetMm: 0,
+  lineHeightScale: 1,
 };
 
 export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {

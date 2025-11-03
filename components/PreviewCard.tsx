@@ -73,8 +73,7 @@ function FrontTextOverlay({
   const lineHeightScale = previewCfg.lineHeightScale ?? 1;
   const texts: ReactElement[] = [];
   const baseX = frame.xMm;
-  const startY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
-  let cursorY = startY;
+  let cursorY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
   const pushBlock = (lines: string[], style?: TemplateTextStyle) => {
     if (!style || lines.length === 0) return;
     const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style, fontScale);
@@ -141,7 +140,7 @@ export type Props = {
 const CARD_W = 85;
 const CARD_H = 55;
 const DEFAULT_PREVIEW_MAX_WIDTH = 960;
-const DEFAULT_FONT_SCALE = 0.58;
+const DEFAULT_FONT_SCALE = 0.6;
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
