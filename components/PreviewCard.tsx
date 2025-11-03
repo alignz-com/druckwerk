@@ -138,12 +138,13 @@ export type Props = {
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
 const CARD_W = 85;
 const CARD_H = 55;
+const PREVIEW_MAX_WIDTH = 600; // px
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
 
-const FONT_SCALE = 0.75;
+const FONT_SCALE = 0.6;
 
 function svgFontAttributes(style: TemplateTextStyle) {
   const fontSize = ptToMm(style.sizePt) * FONT_SCALE;
@@ -225,7 +226,7 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: 960, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth: PREVIEW_MAX_WIDTH, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card front"
       >
         {template.previewFrontPath ? (
@@ -394,7 +395,7 @@ export function BusinessCardBack({
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth: 960, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth: PREVIEW_MAX_WIDTH, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
         {template.previewBackPath ? (
