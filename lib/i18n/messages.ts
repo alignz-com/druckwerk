@@ -47,6 +47,7 @@ export const messages = {
         quantity: "Select quantity",
         template: "Select template",
         deliveryTime: "Select delivery time",
+        addressExtra: "Care of, building, etc.",
       },
       fields: {
         name: "Name",
@@ -57,7 +58,12 @@ export const messages = {
         linkedin: "LinkedIn",
         linkedinPlaceholder: "https://www.linkedin.com/in/username",
         url: "URL",
-        company: "Company & Address",
+        companyName: "Company / Organisation",
+        street: "Street & Number",
+        postalCode: "Postal Code",
+        city: "City",
+        country: "Country",
+        addressExtra: "Additional address line",
       },
       previewTitle: "Preview",
       buttons: {
@@ -146,6 +152,7 @@ export const messages = {
         quantity: "Menge auswählen",
         template: "Vorlage auswählen",
         deliveryTime: "Lieferzeit auswählen",
+        addressExtra: "c/o, Gebäude, Zusatz",
       },
       fields: {
         name: "Name",
@@ -156,7 +163,12 @@ export const messages = {
         linkedin: "LinkedIn",
         linkedinPlaceholder: "https://www.linkedin.com/in/username",
         url: "URL",
-        company: "Firma & Adresse",
+        companyName: "Firma / Organisation",
+        street: "Straße & Hausnummer",
+        postalCode: "Postleitzahl",
+        city: "Ort",
+        country: "Land",
+        addressExtra: "Zusätzliche Adresszeile",
       },
       previewTitle: "Vorschau",
       buttons: {

@@ -7,12 +7,12 @@ import { Analytics } from "@vercel/analytics/next";
 
 import { DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
+import { normalizeAddress } from "@/lib/normalizeAddress";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,9 @@ import {
 const QUANTITIES = [50, 100, 250, 500, 1000];
 
 const DELIVERY_TIMES = ["express", "1week", "2weeks"] as const;
+
+const DEFAULT_COMPANY_ADDRESS = "OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich";
+const DEFAULT_ADDRESS_PARTS = normalizeAddress(DEFAULT_COMPANY_ADDRESS);
 
 export type OrderFormProps = {
   templates: ResolvedTemplate[];
@@ -56,10 +59,32 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [mobile, setMobile] = useState("");
-  const [company, setCompany] = useState("");
+  const [companyName, setCompanyName] = useState(DEFAULT_ADDRESS_PARTS.org ?? DEFAULT_ADDRESS_PARTS.lines[0] ?? "");
+  const [street, setStreet] = useState(DEFAULT_ADDRESS_PARTS.street ?? "");
+  const [postalCode, setPostalCode] = useState(DEFAULT_ADDRESS_PARTS.postalCode ?? "");
+  const [city, setCity] = useState(DEFAULT_ADDRESS_PARTS.city ?? "");
+  const [country, setCountry] = useState(DEFAULT_ADDRESS_PARTS.country ?? "");
+  const [addressExtra, setAddressExtra] = useState("");
   const [url, setUrl] = useState("");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
+
+  const companyBlock = useMemo(() => {
+    const lines: string[] = [];
+    if (companyName) lines.push(companyName);
+    const segments: string[] = [];
+    if (street) segments.push(street);
+    const postalCity = [postalCode, city].filter(Boolean).join(" ").trim();
+    if (postalCity) segments.push(postalCity);
+    if (country) segments.push(country);
+    if (segments.length > 0) {
+      lines.push(segments.join(" | "));
+    }
+    if (addressExtra) {
+      lines.push(addressExtra);
+    }
+    return lines.join("\n");
+  }, [companyName, street, postalCode, city, country, addressExtra]);
 
   useEffect(() => {
     if (!sessionUser || hasPrefilledProfile.current) return;
@@ -98,7 +123,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
           email,
           phone,
           mobile,
-          company,
+          company: companyBlock,
           url,
           template: selectedTemplate.key,
           quantity: Number(quantity),
@@ -237,21 +262,62 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 <Label htmlFor="url">{t.orderForm.fields.url}</Label>
                 <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="company">{t.orderForm.fields.company}</Label>
-                <Textarea
-                  id="company"
-                  value={company}
-                  rows={3}
-                  onChange={(e) => {
-                    const maxLines = 3;
-                    const maxPerLine = 48;
-                    let lines = e.target.value.split("\n");
-                    lines = lines.slice(0, maxLines);
-                    lines = lines.map((line) => line.slice(0, maxPerLine));
-                    setCompany(lines.join("\n"));
-                  }}
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="companyName">{t.orderForm.fields.companyName}</Label>
+                  <Input
+                    id="companyName"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    maxLength={64}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="street">{t.orderForm.fields.street}</Label>
+                  <Input
+                    id="street"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    maxLength={64}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="postalCode">{t.orderForm.fields.postalCode}</Label>
+                  <Input
+                    id="postalCode"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    maxLength={10}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="city">{t.orderForm.fields.city}</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    maxLength={48}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="country">{t.orderForm.fields.country}</Label>
+                  <Input
+                    id="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    maxLength={48}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="addressExtra">{t.orderForm.fields.addressExtra}</Label>
+                  <Input
+                    id="addressExtra"
+                    value={addressExtra}
+                    onChange={(e) => setAddressExtra(e.target.value)}
+                    maxLength={64}
+                    placeholder={t.orderForm.placeholders.addressExtra ?? ""}
+                  />
+                </div>
               </div>
 
             </CardContent>
@@ -291,7 +357,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     email={email}
                     phone={phone}
                     mobile={mobile}
-                    company={company}
+                    company={companyBlock}
                     url={url}
                   />
                 ) : (
@@ -302,7 +368,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     email={email}
                     phone={phone}
                     mobile={mobile}
-                    company={company}
+                    company={companyBlock}
                     url={url}
                   />
                 )}
@@ -355,7 +421,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     email={email}
                     phone={phone}
                     mobile={mobile}
-                    company={company}
+                    company={companyBlock}
                     url={url}
                   />
                 ) : (
@@ -366,7 +432,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     email={email}
                     phone={phone}
                     mobile={mobile}
-                    company={company}
+                    company={companyBlock}
                     url={url}
                   />
                 )}
