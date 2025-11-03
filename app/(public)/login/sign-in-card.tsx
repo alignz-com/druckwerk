@@ -19,7 +19,7 @@ export default function SignInCard() {
     if (isSubmitting) return;
     setError(null);
     setIsSubmitting(true);
-    const result = await signIn("email", {
+    const result = await signIn("credentials", {
       email,
       password,
       redirect: false,

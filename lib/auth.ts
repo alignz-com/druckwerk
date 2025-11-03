@@ -28,7 +28,6 @@ export const authOptions: NextAuthOptions = {
       authorization: { params: { prompt: "login" } },
     }),
     CredentialsProvider({
-      id: "email",
       name: "Email",
       credentials: {
         email: { label: "Email", type: "email" },
