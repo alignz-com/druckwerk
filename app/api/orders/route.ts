@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCountryLabel } from "@/lib/countries";
 import { generateOrderPdf } from "@/lib/orderPdf";
 import { getTemplateByKey } from "@/lib/templates";
 
@@ -60,7 +61,13 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
-
+    const localeShort = session.user.locale === "de" ? "de" : "en";
+    const addressMeta = data.address
+      ? {
+          ...data.address,
+          country: data.address.countryCode ? getCountryLabel(localeShort, data.address.countryCode) : undefined,
+        }
+      : undefined;
     const templateDefinition = await getTemplateByKey(data.template, session.user.brandId ?? null);
 
     const { pdfBytes, fontReport } = await generateOrderPdf(
@@ -73,6 +80,7 @@ export async function POST(req: Request) {
         company: data.company,
         url: data.url,
         linkedin: data.linkedin,
+        address: addressMeta,
       },
       templateDefinition,
     );
@@ -108,7 +116,7 @@ export async function POST(req: Request) {
         meta: {
           templateKey: data.template,
           ...(data.customerReference ? { customerReference: data.customerReference } : {}),
-          ...(data.address ? { address: data.address } : {}),
+          ...(addressMeta ? { address: addressMeta } : {}),
           ...(fontReport?.length ? { fontReport } : {}),
         },
       },

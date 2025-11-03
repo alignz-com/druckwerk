@@ -6,6 +6,8 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 import { formatPhones } from "@/lib/formatPhones";
+import { normalizeAddress } from "@/lib/normalizeAddress";
+import { getCountryLabel } from "@/lib/countries";
 import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
 
@@ -20,6 +22,15 @@ export type OrderPdfFields = {
   company?: string;
   url?: string;
   linkedin?: string;
+  address?: {
+    companyName?: string;
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    countryCode?: string;
+    addressExtra?: string;
+  };
 };
 
 function vEscape(s: string) {
@@ -50,8 +61,15 @@ function buildVCard3(opts: {
   url?: string;
   linkedin?: string;
   addrLabel?: string;
+  address?: {
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    addressExtra?: string;
+  };
 }) {
-  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel } = opts;
+  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel, address } = opts;
   const { given, family } = splitName(fullName);
   const lines: string[] = [
     "BEGIN:VCARD",
@@ -65,10 +83,24 @@ function buildVCard3(opts: {
   if (phone) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL;TYPE=WORK:${vEscape(url)}`);
-  if (linkedin) lines.push(`URL;TYPE=PROFILE:${vEscape(linkedin)}`);
+  if (url) lines.push(`URL;TYPE=Work:${vEscape(url)}`);
+  if (linkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(linkedin)}`);
 
-  if (addrLabel) {
+  const structuredLabelLines: string[] = [];
+  if (address?.street) structuredLabelLines.push(address.street);
+  const postalCity = [address?.postalCode, address?.city].filter(Boolean).join(" " ).trim();
+  if (postalCity) structuredLabelLines.push(postalCity);
+  if (address?.country) structuredLabelLines.push(address.country);
+  if (address?.addressExtra) structuredLabelLines.push(address.addressExtra);
+  const resolvedLabel = structuredLabelLines.length > 0 ? structuredLabelLines.join("\n") : addrLabel ?? "";
+  if (structuredLabelLines.length > 0 || addrLabel) {
+    const streetLine = vEscape(address?.street ?? "");
+    const cityLine = vEscape(address?.city ?? "");
+    const postalLine = vEscape(address?.postalCode ?? "");
+    const countryLine = vEscape(address?.country ?? "");
+    const extraLine = vEscape(address?.addressExtra ?? "");
+    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(resolvedLabel)}":;${extraLine};${streetLine};${cityLine};;${postalLine};${countryLine}`);
+  } else if (addrLabel) {
     const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
     lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
   }
@@ -226,7 +258,29 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     company = "",
     url = "",
     linkedin = "",
+    address,
   } = fields;
+
+  const resolvedAddress = (() => {
+    if (address) {
+      const countryName = address.country ?? (address.countryCode ? getCountryLabel("en", address.countryCode) : undefined);
+      return {
+        street: address.street ?? undefined,
+        postalCode: address.postalCode ?? undefined,
+        city: address.city ?? undefined,
+        country: countryName ?? undefined,
+        addressExtra: address.addressExtra ?? undefined,
+      };
+    }
+    const parsed = normalizeAddress(company);
+    return {
+      street: parsed.street ?? undefined,
+      postalCode: parsed.postalCode ?? undefined,
+      city: parsed.city ?? undefined,
+      country: parsed.country ?? undefined,
+      addressExtra: undefined,
+    };
+  })();
 
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
@@ -290,7 +344,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     applyBlock(wrapped, frame.company);
   }
 
-  const orgName = (company || "").split(/\r?\n/)[0] || "";
+  const orgName = address?.companyName || (company || "").split(/\r?\n/)[0] || "";
   const addrLabel = company || "";
 
   if (template.config.back.mode === "qr" && template.config.back.qr) {
@@ -304,6 +358,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       url: url || undefined,
       linkedin: linkedin || undefined,
       addrLabel,
+      address: resolvedAddress,
     });
 
     const dataUrl = await QRCode.toDataURL(vcard, {

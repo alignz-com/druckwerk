@@ -199,8 +199,15 @@ function buildVCard3(o: {
   url?: string;
   linkedin?: string;
   addrLabel?: string;
+  address?: {
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    addressExtra?: string;
+  };
 }) {
-  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel } = o;
+  const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel, address } = o;
 
   // N + FN zuerst!
   const { given, family } = splitName(fullName);
@@ -216,18 +223,34 @@ function buildVCard3(o: {
   if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url)    lines.push(`URL;TYPE=WORK:${vEscape(url)}`);
-  if (linkedin) lines.push(`URL;TYPE=PROFILE:${vEscape(linkedin)}`);
-  if (addrLabel) {
-  // ADR: PO Box ; Extended ; Street ; City ; Region ; Postal ; Country
-  const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
-  lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
-}
+  if (url)    lines.push(`URL;TYPE=Work:${vEscape(url)}`);
+  if (linkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(linkedin)}`);
+
+  const structuredLabelLines: string[] = [];
+  if (address?.street) structuredLabelLines.push(address.street);
+  const postalCity = [address?.postalCode, address?.city].filter(Boolean).join(" " ).trim();
+  if (postalCity) structuredLabelLines.push(postalCity);
+  if (address?.country) structuredLabelLines.push(address.country);
+  if (address?.addressExtra) structuredLabelLines.push(address.addressExtra);
+  const resolvedLabel = structuredLabelLines.length > 0 ? structuredLabelLines.join("\n") : addrLabel ?? "";
+
+  if (structuredLabelLines.length > 0 || addrLabel) {
+    const streetLine = vEscape(address?.street ?? "");
+    const cityLine = vEscape(address?.city ?? "");
+    const postalLine = vEscape(address?.postalCode ?? "");
+    const countryLine = vEscape(address?.country ?? "");
+    const extraLine = vEscape(address?.addressExtra ?? "");
+    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(resolvedLabel)}":;${extraLine};${streetLine};${cityLine};;${postalLine};${countryLine}`);
+  } else if (addrLabel) {
+    const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
+    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
+  }
+
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
 /* ============================== FRONT ============================== */
-export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "" }: Props) {
+export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "", linkedin }: Props) {
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   return (
@@ -258,6 +281,7 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
           mobile={mobile}
           company={company}
           url={url}
+          linkedin={linkedin}
         />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
@@ -356,8 +380,10 @@ export function BusinessCardBack({
   linkedin,
   qrOverride,
 }: Props) {
-  const { org, label } = normalizeAddress(company);
+  const normalized = normalizeAddress(company);
+  const { org, label, street: addrStreet, postalCode: addrPostal, city: addrCity, country: addrCountry, lines: addrLines } = normalized;
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
+  const addressExtra = addrLines && addrLines.length > 3 ? addrLines.slice(3).join(" ") : undefined;
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
 
@@ -373,8 +399,15 @@ export function BusinessCardBack({
         url: url || undefined,
         linkedin: linkedin || undefined,
         addrLabel,
+        address: {
+          street: addrStreet ?? undefined,
+          postalCode: addrPostal ?? undefined,
+          city: addrCity ?? undefined,
+          country: addrCountry ?? undefined,
+          addressExtra,
+        },
       }),
-    [name, role, email, phone, mobile, url, linkedin, org, addrLabel],
+    [name, role, email, phone, mobile, url, linkedin, org, addrLabel, addrStreet, addrPostal, addrCity, addrCountry, addressExtra],
   );
 
   const [qrData, setQrData] = useState<string>("");

@@ -41,8 +41,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     include: {
       template: true,
       brand: true,
+      user: { select: { name: true, email: true } },
     },
-    take: 50,
   });
 
   const wasCreated = searchParams?.created === "1";
@@ -91,7 +91,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     <td className="px-4 py-3 font-medium text-slate-900">{order.referenceCode}</td>
                     <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt, locale)}</td>
                     {isAdmin ? (
-                      <td className="px-4 py-3 text-slate-600">{order.requesterEmail}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {order.user?.name ?? order.requesterEmail}
+                        <span className="block text-xs text-slate-400">{order.user?.email ?? order.requesterEmail}</span>
+                      </td>
                     ) : null}
                     <td className="px-4 py-3 text-slate-600">
                       {order.template?.label ?? templateKey ?? order.templateId ?? "–"}
