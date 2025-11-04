@@ -63,7 +63,7 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
                 "relative flex items-center text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                 collapsed
                   ? "h-11 w-11 justify-center rounded-full p-0"
-                  : "gap-3 rounded-xl px-3 py-2",
+                  : "gap-3 justify-start rounded-xl px-3 py-2",
                 active
                   ? "bg-slate-900 text-white shadow"
                   : "text-slate-600 hover:bg-slate-100",
@@ -80,11 +80,9 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
                     aria-label={collapsed ? label : undefined}
                   >
                     {IconComponent ? (
-                      <IconComponent
-                        className={cn("size-5 shrink-0", collapsed && "size-5")}
-                      />
+                      <IconComponent className="size-5 shrink-0" />
                     ) : null}
-                    <span className={cn("truncate", collapsed && "sr-only")}>{label}</span>
+                    {!collapsed ? <span className="truncate">{label}</span> : null}
                   </Link>
                   {collapsed ? (
                     <span

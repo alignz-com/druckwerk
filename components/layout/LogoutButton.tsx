@@ -16,10 +16,10 @@ export default function LogoutButton({ label = "Logout", iconOnly = false }: Pro
       type="button"
       onClick={() => signOut({ callbackUrl: "/login" })}
       className={cn(
-        "flex items-center justify-center gap-2 border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-100",
+        "flex items-center justify-center border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-100",
         iconOnly
           ? "h-11 w-11 rounded-full bg-white"
-          : "w-full rounded-xl px-3 py-2",
+          : "w-full gap-2 rounded-xl px-3 py-2",
       )}
       aria-label={label}
     >
