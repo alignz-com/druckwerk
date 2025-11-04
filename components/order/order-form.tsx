@@ -12,6 +12,7 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import { COUNTRY_CODES, findCountryCodeByName, getCountryLabel } from "@/lib/countries";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import FlipCard from "@/components/FlipCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -457,32 +458,39 @@ export default function OrderForm({ templates }: OrderFormProps) {
               </div>
             </CardHeader>
             <CardContent className="flex justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
-              <div className="w-full max-w-[1100px] space-y-6">
-                {previewView === "front" ? (
-                  <BusinessCardFront
-                    template={selectedTemplate}
-                    name={name}
-                    role={role}
-                    email={email}
-                    phone={phone}
-                    mobile={mobile}
-                    company={companyBlock}
-                    url={url}
-                    linkedin={linkedin}
+              <div className="w-full max-w-[1100px]">
+                <div className="relative aspect-[85/55] w-full">
+                  <FlipCard
+                    activeSide={previewView}
+                    front={
+                      <BusinessCardFront
+                        template={selectedTemplate}
+                        name={name}
+                        role={role}
+                        email={email}
+                        phone={phone}
+                        mobile={mobile}
+                        company={companyBlock}
+                        url={url}
+                        linkedin={linkedin}
+                      />
+                    }
+                    back={
+                      <BusinessCardBack
+                        template={selectedTemplate}
+                        name={name}
+                        role={role}
+                        email={email}
+                        phone={phone}
+                        mobile={mobile}
+                        company={companyBlock}
+                        url={url}
+                        linkedin={linkedin}
+                      />
+                    }
+                    className="h-full w-full"
                   />
-                ) : (
-                  <BusinessCardBack
-                    template={selectedTemplate}
-                    name={name}
-                    role={role}
-                    email={email}
-                    phone={phone}
-                    mobile={mobile}
-                    company={companyBlock}
-                    url={url}
-                    linkedin={linkedin}
-                  />
-                )}
+                </div>
               </div>
             </CardContent>
           </Card>

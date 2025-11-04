@@ -254,11 +254,12 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   return (
-    <figure className="select-none">
+    <figure className="select-none h-full w-full">
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        height="100%"
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card front"
       >
         {template.previewFrontPath ? (
@@ -340,10 +341,11 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
   const qs = qrOverride?.sizeMm ?? QR_DEFAULT.sizeMm;
 
   return (
-    <figure className="select-none">
+    <figure className="select-none h-full w-full">
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
+        height="100%"
         style={{
           maxWidth: 960,
           height: "auto",
@@ -438,11 +440,12 @@ export function BusinessCardBack({
   const qs = qrOverride?.sizeMm ?? previewQrOverride?.sizeMm ?? qrConfig?.sizeMm;
 
   return (
-    <figure className="select-none">
+    <figure className="select-none h-full w-full">
       <svg
         viewBox={`0 0 ${CARD_W} ${CARD_H}`}
         width="100%"
-        style={{ maxWidth, height: "auto", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        height="100%"
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
         {template.previewBackPath ? (
