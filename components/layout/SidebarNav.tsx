@@ -62,7 +62,7 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
               const linkClasses = cn(
                 "relative flex items-center text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                 collapsed
-                  ? "h-11 w-11 justify-center rounded-full p-0"
+                  ? "mx-auto h-11 w-11 justify-center rounded-full p-0"
                   : "gap-3 justify-start rounded-xl px-3 py-2",
                 active
                   ? "bg-slate-900 text-white shadow"
