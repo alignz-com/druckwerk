@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AdminFontFamily, AdminTemplateSummary } from "@/lib/admin/templates-data";
+import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { TemplateAssetType } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import TemplateDetailContent from "./TemplateDetailContent";
-import FontVariantUploader from "./FontVariantUploader";
+import { useTranslations } from "@/components/providers/locale-provider";
 
 type Props = {
   templates: AdminTemplateSummary[];
-  fontFamilies: AdminFontFamily[];
 };
 
 const MANAGED_TYPES: TemplateAssetType[] = [
@@ -29,9 +28,10 @@ const MANAGED_TYPES: TemplateAssetType[] = [
   TemplateAssetType.CONFIG,
 ];
 
-export default function AdminTemplatesClient({ templates, fontFamilies }: Props) {
+export default function AdminTemplatesClient({ templates }: Props) {
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const router = useRouter();
+  const t = useTranslations("admin.templates");
 
   const activeTemplate = useMemo(
     () => templates.find((template) => template.id === activeTemplateId) ?? null,
@@ -41,31 +41,31 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
   const templateTable = (
     <Card>
       <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-        <CardTitle className="text-lg">Templates</CardTitle>
-        <CardDescription>
-          Übersicht über alle verfügbaren Vorlagen. Öffne die Detailansicht, um Assets zu verwalten oder neue Versionen
-          hochzuladen.
-        </CardDescription>
+        <CardTitle className="text-lg">{t("title")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto px-0 py-0">
         {templates.length === 0 ? (
-          <div className="px-6 py-8 text-sm text-slate-500">
-            Noch keine Templates angelegt. Lade deine erste Vorlage über die Detailansicht hoch.
-          </div>
+          <div className="px-6 py-8 text-sm text-slate-500">{t("table.empty")}</div>
         ) : (
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-6 py-3 text-left font-semibold">Template</th>
-                <th className="px-6 py-3 text-left font-semibold">Brands</th>
-                <th className="px-6 py-3 text-left font-semibold">Asset-Status</th>
-                <th className="px-6 py-3 text-left font-semibold">Aktualisiert</th>
-                <th className="px-6 py-3 text-right font-semibold">Aktionen</th>
+                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.template")}</th>
+                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.brands")}</th>
+                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.assetStatus")}</th>
+                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.updated")}</th>
+                <th className="px-6 py-3 text-right font-semibold">{t("table.headers.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-600">
               {templates.map((template) => {
-                const assetStatus = computeAssetStatus(template);
+                const assetStatus = computeAssetStatus(
+                  template,
+                  (type) => t(`assetTypes.${type}` as any),
+                  (count, list) => t("assetStatus.missingPlural", { count, list }),
+                  t("assetStatus.allPresent"),
+                );
                 return (
                   <tr key={template.id} className="hover:bg-slate-50/60">
                     <td className="px-6 py-4">
@@ -82,7 +82,7 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-amber-600">Nicht zugewiesen</span>
+                        <span className="text-xs text-amber-600">{t("table.unassigned")}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-xs">
@@ -97,7 +97,7 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
                         onClick={() => setActiveTemplateId(template.id)}
                         className="bg-slate-900 text-white hover:bg-slate-800"
                       >
-                        Verwalten
+                        {t("table.manage")}
                       </Button>
                     </td>
                   </tr>
@@ -110,76 +110,20 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
     </Card>
   );
 
-  const fontLibrary = (
-    <Card>
-      <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-        <CardTitle className="text-lg">Font Bibliothek</CardTitle>
-        <CardDescription>
-          Hinterlegte Schriftfamilien für PDF-Rendering und Preview. Ergänze Variationen über den Uploader.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 py-6">
-        {fontFamilies.length > 0 ? (
-          <div className="space-y-4">
-            {fontFamilies.map((family) => (
-              <div key={family.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-900">{family.name}</h4>
-                    <p className="text-xs text-slate-500">Slug: {family.slug}</p>
-                  </div>
-                </div>
-                {family.variants.length > 0 ? (
-                  <ul className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                    {family.variants.map((variant) => (
-                      <li key={variant.id} className="rounded-full bg-slate-100 px-3 py-1">
-                        {variant.weight} / {variant.style.toLowerCase()} / {variant.format}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-xs text-slate-500">Noch keine Varianten vorhanden.</p>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">Noch keine Fonts hochgeladen.</p>
-        )}
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-inner">
-          <h3 className="text-sm font-semibold text-slate-900">Neue Font-Variante hochladen</h3>
-          <p className="text-xs text-slate-500">
-            Unterstützt TTF, OTF, WOFF und WOFF2. Fonts werden im privaten Supabase Storage abgelegt.
-          </p>
-          <FontVariantUploader
-            families={fontFamilies.map((family) => ({ id: family.id, name: family.name, slug: family.slug }))}
-            className="mt-4"
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Vorlagen &amp; Fonts</h1>
-        <p className="text-sm text-slate-500">
-          Pflege hier die Design-Grundlagen. Änderungen wirken sich auf neue Bestellungen aus – bestehende Aufträge bleiben
-          unverändert.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("title")}</h1>
+        <p className="text-sm text-slate-500">{t("description")}</p>
       </header>
-
       {templateTable}
-      {fontLibrary}
 
       <Dialog open={Boolean(activeTemplate)} onOpenChange={(open) => (!open ? setActiveTemplateId(null) : null)}>
         <DialogContent className="max-w-4xl">
           {activeTemplate ? (
             <>
               <DialogHeader className="sr-only">
-                <DialogTitle>Template verwalten</DialogTitle>
+                <DialogTitle>{t("title")}</DialogTitle>
                 <DialogDescription>{activeTemplate.label}</DialogDescription>
               </DialogHeader>
               <TemplateDetailContent
@@ -188,7 +132,7 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
                   const response = await fetch(`/api/admin/templates/${templateId}`, { method: "DELETE" });
                   if (!response.ok) {
                     const payload = await response.json().catch(() => ({}));
-                    throw new Error(payload?.error ?? "Löschen fehlgeschlagen");
+                    throw new Error(payload?.error ?? t("detail.deleteFailed"));
                   }
                   setActiveTemplateId(null);
                   router.refresh();
@@ -202,7 +146,12 @@ export default function AdminTemplatesClient({ templates, fontFamilies }: Props)
   );
 }
 
-function computeAssetStatus(template: AdminTemplateSummary) {
+function computeAssetStatus(
+  template: AdminTemplateSummary,
+  getLabel: (type: TemplateAssetType) => string,
+  missingMessage: (count: number, list: string) => string,
+  allPresentMessage: string,
+) {
   const latestByType = new Map<TemplateAssetType, boolean>();
   for (const type of MANAGED_TYPES) {
     latestByType.set(type, false);
@@ -217,22 +166,15 @@ function computeAssetStatus(template: AdminTemplateSummary) {
     .map(([type]) => type);
 
   if (missing.length === 0) {
-    return { missing: 0, message: "Alle Pflicht-Assets vorhanden" };
+    return { missing: 0, message: allPresentMessage };
   }
 
+  const list = missing.map((type) => getLabel(type)).join(", ");
   return {
     missing: missing.length,
-    message: `${missing.length} fehlend (${missing.map((type) => ASSET_TYPE_LABELS[type] ?? type).join(", ")})`,
+    message: missingMessage(missing.length, list),
   };
 }
-
-const ASSET_TYPE_LABELS: Record<TemplateAssetType, string> = {
-  [TemplateAssetType.PDF]: "PDF",
-  [TemplateAssetType.PREVIEW_FRONT]: "Preview Front",
-  [TemplateAssetType.PREVIEW_BACK]: "Preview Back",
-  [TemplateAssetType.CONFIG]: "Config",
-  [TemplateAssetType.OTHER]: "Weitere",
-};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-AT", {

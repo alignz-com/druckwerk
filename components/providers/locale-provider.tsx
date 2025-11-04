@@ -46,7 +46,33 @@ export function useLocale(): LocaleContextValue {
   return ctx;
 }
 
-export function useTranslations() {
+type TranslationParams = Record<string, string | number>;
+
+function resolvePath(source: any, path: string) {
+  return path.split(".").reduce((current, segment) => {
+    if (current && Object.prototype.hasOwnProperty.call(current, segment)) {
+      return current[segment];
+    }
+    return undefined;
+  }, source);
+}
+
+function interpolate(value: string, params?: TranslationParams) {
+  if (!params) return value;
+  return value.replace(/\{([^}]+)\}/g, (_, token: string) => {
+    const replacement = params[token];
+    return replacement !== undefined ? String(replacement) : `{${token}}`;
+  });
+}
+
+export function useTranslations(namespace?: string) {
   const { locale } = useLocale();
-  return messages[locale];
+  return (key: string, params?: TranslationParams) => {
+    const fullPath = namespace ? `${namespace}.${key}` : key;
+    const raw = resolvePath(messages[locale], fullPath);
+    if (typeof raw !== "string") {
+      throw new Error(`Missing translation for key: ${fullPath}`);
+    }
+    return interpolate(raw, params);
+  };
 }

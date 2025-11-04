@@ -49,6 +49,7 @@ export default async function AppLayout({ children }: Props) {
     session.user.role === "ADMIN"
       ? [
           { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
+          { href: "/admin/fonts", label: t.nav.adminFonts, icon: "admin-fonts" },
           { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
         ]
       : [];

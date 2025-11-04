@@ -9,11 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-const STYLE_OPTIONS = [
-  { value: "normal", label: "Normal" },
-  { value: "italic", label: "Kursiv" },
-];
+import { useTranslations } from "@/components/providers/locale-provider";
 
 const FORMAT_OPTIONS = [
   { value: "ttf", label: "TTF" },
@@ -29,6 +25,7 @@ type Props = {
 
 export default function FontVariantUploader({ families, className }: Props) {
   const router = useRouter();
+  const t = useTranslations("admin.fonts");
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>(families[0]?.id ?? "new");
   const [familyName, setFamilyName] = useState("");
   const [familySlug, setFamilySlug] = useState("");
@@ -42,18 +39,23 @@ export default function FontVariantUploader({ families, className }: Props) {
 
   const isNewFamily = selectedFamilyId === "new";
 
+  const styleOptions = [
+    { value: "normal", label: t("labels.styleNormal") },
+    { value: "italic", label: t("labels.styleItalic") },
+  ];
+
   const submit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
     setError(null);
     setMessage(null);
 
     if (!file) {
-      setError("Bitte eine Font-Datei auswählen.");
+      setError(t("errors.selectFile"));
       return;
     }
 
     if (isNewFamily && !familyName.trim()) {
-      setError("Bitte einen Font-Namen angeben.");
+      setError(t("errors.nameRequired"));
       return;
     }
 
@@ -86,17 +88,18 @@ export default function FontVariantUploader({ families, className }: Props) {
       const familyNameResult = payload?.family?.name ?? familyName;
       const variant = payload?.variant;
 
+      const styleLabel = variant?.style === "ITALIC" ? t("labels.styleItalic") : t("labels.styleNormal");
       setMessage(
         variant
-          ? `Font "${familyNameResult}" (Weight ${variant.weight}, ${variant.style}) erfolgreich hochgeladen.`
-          : "Font erfolgreich hochgeladen.",
+          ? t("uploadSuccess", { name: familyNameResult, weight: variant.weight, style: styleLabel })
+          : t("uploadSuccessDefault"),
       );
       startTransition(() => {
         router.refresh();
       });
       setFile(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
+      setError(err instanceof Error ? err.message : t("errors.uploadFailed"));
     }
   };
 
@@ -104,10 +107,10 @@ export default function FontVariantUploader({ families, className }: Props) {
     <form onSubmit={submit} className={cn("space-y-4", className)}>
       <div className="grid gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="font-family">Font Familie</Label>
+          <Label htmlFor="font-family">{t("labels.family")}</Label>
           <Select value={selectedFamilyId} onValueChange={setSelectedFamilyId}>
             <SelectTrigger id="font-family">
-              <SelectValue placeholder="Bitte wählen" />
+              <SelectValue placeholder={t("placeholders.family")} />
             </SelectTrigger>
             <SelectContent>
               {families.map((family) => (
@@ -115,27 +118,27 @@ export default function FontVariantUploader({ families, className }: Props) {
                   {family.name}
                 </SelectItem>
               ))}
-              <SelectItem value="new">Neue Familie anlegen…</SelectItem>
+              <SelectItem value="new">{t("labels.newFamily")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {isNewFamily ? (
           <div className="grid gap-1.5">
-            <Label htmlFor="font-family-name">Name der Font-Familie</Label>
+            <Label htmlFor="font-family-name">{t("labels.familyName")}</Label>
             <Input
               id="font-family-name"
               value={familyName}
               onChange={(event) => setFamilyName(event.target.value)}
               placeholder="Frutiger LT Pro"
             />
-            <p className="text-xs text-slate-500">Der Name erscheint in der Übersicht.</p>
+            <p className="text-xs text-slate-500">{t("hints.familyName")}</p>
           </div>
         ) : null}
 
         {isNewFamily ? (
           <div className="grid gap-1.5">
-            <Label htmlFor="font-family-slug">Slug (optional)</Label>
+            <Label htmlFor="font-family-slug">{t("labels.familySlug")}</Label>
             <Input
               id="font-family-slug"
               value={familySlug}
@@ -147,7 +150,7 @@ export default function FontVariantUploader({ families, className }: Props) {
 
         <div className="grid gap-1.5 md:grid-cols-3 md:gap-3">
           <div className="grid gap-1.5">
-            <Label htmlFor="font-weight">Weight</Label>
+            <Label htmlFor="font-weight">{t("labels.weight")}</Label>
             <Input
               id="font-weight"
               type="number"
@@ -159,13 +162,13 @@ export default function FontVariantUploader({ families, className }: Props) {
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="font-style">Stil</Label>
+            <Label htmlFor="font-style">{t("labels.style")}</Label>
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger id="font-style">
-                <SelectValue placeholder="Stil wählen" />
+                <SelectValue placeholder={t("placeholders.style")} />
               </SelectTrigger>
               <SelectContent>
-                {STYLE_OPTIONS.map((option) => (
+                {styleOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -174,10 +177,10 @@ export default function FontVariantUploader({ families, className }: Props) {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="font-format">Format</Label>
+            <Label htmlFor="font-format">{t("labels.format")}</Label>
             <Select value={format} onValueChange={setFormat}>
               <SelectTrigger id="font-format">
-                <SelectValue placeholder="Format wählen" />
+                <SelectValue placeholder={t("placeholders.format")} />
               </SelectTrigger>
               <SelectContent>
                 {FORMAT_OPTIONS.map((option) => (
@@ -191,7 +194,7 @@ export default function FontVariantUploader({ families, className }: Props) {
         </div>
 
         <div className="grid gap-1.5">
-          <Label htmlFor="font-file">Font-Datei</Label>
+          <Label htmlFor="font-file">{t("labels.file")}</Label>
           <Input id="font-file" type="file" required onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
         </div>
       </div>
@@ -200,7 +203,7 @@ export default function FontVariantUploader({ families, className }: Props) {
       {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
 
       <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-        {isPending ? "Wird hochgeladen…" : "Font hinzufügen"}
+        {isPending ? t("buttons.submitting") : t("buttons.submit")}
       </Button>
     </form>
   );

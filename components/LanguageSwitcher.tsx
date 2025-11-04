@@ -35,7 +35,7 @@ export default function LanguageSwitcher({ onChanged }: Props) {
         body: JSON.stringify({ locale: value }),
       });
       if (!res.ok) {
-        throw new Error("Failed to persist language");
+        throw new Error(t("language.saveError"));
       }
       await update?.({ locale: value });
       startTransition(() => {
@@ -43,7 +43,7 @@ export default function LanguageSwitcher({ onChanged }: Props) {
       });
       onChanged?.();
     } catch (err: any) {
-      setError(err?.message ?? "Failed to save language preference");
+      setError(err?.message ?? t("language.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -51,14 +51,14 @@ export default function LanguageSwitcher({ onChanged }: Props) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-slate-500">{t.language.label}</p>
+      <p className="text-xs font-medium text-slate-500">{t("language.label")}</p>
       <Select value={locale} onValueChange={handleChange} disabled={isPending || isSaving}>
         <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="en">{t.language.en}</SelectItem>
-          <SelectItem value="de">{t.language.de}</SelectItem>
+          <SelectItem value="en">{t("language.en")}</SelectItem>
+          <SelectItem value="de">{t("language.de")}</SelectItem>
         </SelectContent>
       </Select>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}

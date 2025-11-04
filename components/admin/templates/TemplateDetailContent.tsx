@@ -8,15 +8,8 @@ import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "@/components/providers/locale-provider";
 import TemplateAssetUploader from "./TemplateAssetUploader";
-
-const ASSET_TYPE_LABELS: Record<TemplateAssetType, string> = {
-  [TemplateAssetType.PDF]: "PDF Master",
-  [TemplateAssetType.PREVIEW_FRONT]: "Preview Front",
-  [TemplateAssetType.PREVIEW_BACK]: "Preview Back",
-  [TemplateAssetType.CONFIG]: "Config JSON",
-  [TemplateAssetType.OTHER]: "Weitere Assets",
-};
 
 const MANAGED_TYPES: TemplateAssetType[] = [
   TemplateAssetType.PDF,
@@ -32,23 +25,21 @@ type Props = {
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const latestAssets = new Map<TemplateAssetType, typeof template.assets[number] | undefined>();
+  const t = useTranslations("admin.templates");
 
+  const latestAssets = new Map<TemplateAssetType, (typeof template.assets)[number] | undefined>();
   for (const type of MANAGED_TYPES) {
-    latestAssets.set(
-      type,
-      template.assets.find((asset) => asset.type === type),
-    );
+    latestAssets.set(type, template.assets.find((asset) => asset.type === type));
   }
 
   const handleDelete = async () => {
     if (!onDelete) return;
-    if (!confirm(`Template "${template.label}" wirklich löschen?`)) return;
+    if (!confirm(t("detail.deleteConfirm", { template: template.label }))) return;
     try {
       setIsDeleting(true);
       await onDelete(template.id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen.";
+      const message = error instanceof Error ? error.message : t("detail.deleteFailed");
       alert(message);
     } finally {
       setIsDeleting(false);
@@ -57,43 +48,29 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-slate-900">
-            {template.label} <span className="text-sm font-normal text-slate-500">({template.key})</span>
-          </h2>
-          <p className="text-sm text-slate-500">{template.description || "Keine Beschreibung hinterlegt."}</p>
-          <dl className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
-            <div>
-              <dt className="font-medium uppercase tracking-wide text-slate-400">Layout-Version</dt>
-              <dd>{template.layoutVersion ?? "–"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium uppercase tracking-wide text-slate-400">Print DPI</dt>
-              <dd>{template.printDpi ?? "–"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium uppercase tracking-wide text-slate-400">Zuletzt geändert</dt>
-              <dd>{formatDate(template.updatedAt)}</dd>
-            </div>
-          </dl>
-        </div>
-        {onDelete ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="self-start"
-            disabled={isDeleting}
-            onClick={handleDelete}
-          >
-            <Trash2 className="size-4" />
-            Template löschen
-          </Button>
-        ) : null}
+      <div className="space-y-2 border-b border-slate-200 pb-4">
+        <h2 className="text-xl font-semibold text-slate-900">
+          {template.label} <span className="text-sm font-normal text-slate-500">({template.key})</span>
+        </h2>
+        <p className="text-sm text-slate-500">{template.description || t("detail.noDescription")}</p>
+        <dl className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
+          <div>
+            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.layoutVersion")}</dt>
+            <dd>{template.layoutVersion ?? "–"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.printDpi")}</dt>
+            <dd>{template.printDpi ?? "–"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.updatedAt")}</dt>
+            <dd>{formatDate(template.updatedAt)}</dd>
+          </div>
+        </dl>
       </div>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900">Zugewiesene Brands</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{t("detail.assignedBrands")}</h3>
         {template.brandAssignments.length > 0 ? (
           <ul className="flex flex-wrap gap-2 text-xs text-slate-600">
             {template.brandAssignments.map((assignment) => (
@@ -105,29 +82,36 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         ) : (
           <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-500">
             <AlertCircle className="size-4 text-amber-500" />
-            Noch keinem Brand zugewiesen.
+            {t("detail.notAssigned")}
           </div>
         )}
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900">Assets Übersicht</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{t("detail.assetsHeading")}</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {MANAGED_TYPES.map((type) => {
             const asset = latestAssets.get(type);
             const missing = !asset;
+            const label = t(`assetTypes.${type}` as any);
             return (
               <Card key={type} className={missing ? "border-dashed border-amber-500 bg-amber-50/40 text-amber-700" : ""}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">{ASSET_TYPE_LABELS[type]}</CardTitle>
+                  <CardTitle className="text-sm font-semibold">{label}</CardTitle>
                   <CardDescription>
-                    {missing ? "Noch kein Asset vorhanden." : `Version v${asset?.version ?? 1} • ${formatDate(asset!.updatedAt)}`}
+                    {missing
+                      ? t("detail.missingAsset")
+                      : t("detail.assetMeta", { version: asset?.version ?? 1, updated: formatDate(asset!.updatedAt) })}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between">
                   <div className="flex flex-col text-xs text-slate-500">
-                    <span>Datei: {asset?.fileName ?? "–"}</span>
-                    <span>Größe: {formatBytes(asset?.sizeBytes ?? null)}</span>
+                    <span>
+                      {t("detail.fileLabel")}: {asset?.fileName ?? "–"}
+                    </span>
+                    <span>
+                      {t("detail.sizeLabel")}: {formatBytes(asset?.sizeBytes ?? null)}
+                    </span>
                   </div>
                   {missing ? <FileWarning className="size-5 text-amber-500" /> : null}
                 </CardContent>
@@ -141,18 +125,18 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-2 text-left font-semibold">Version</th>
-                  <th className="px-4 py-2 text-left font-semibold">Typ</th>
-                  <th className="px-4 py-2 text-left font-semibold">Datei</th>
-                  <th className="px-4 py-2 text-left font-semibold">Größe</th>
-                  <th className="px-4 py-2 text-left font-semibold">Geändert</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("detail.tableHeaders.version")}</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("detail.tableHeaders.type")}</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("detail.tableHeaders.file")}</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("detail.tableHeaders.size")}</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("detail.tableHeaders.updated")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-600">
                 {template.assets.map((asset) => (
                   <tr key={asset.id}>
                     <td className="px-4 py-2 font-medium text-slate-900">v{asset.version}</td>
-                    <td className="px-4 py-2">{ASSET_TYPE_LABELS[asset.type] ?? asset.type}</td>
+                    <td className="px-4 py-2">{t(`assetTypes.${asset.type}` as any)}</td>
                     <td className="px-4 py-2">{asset.fileName ?? "–"}</td>
                     <td className="px-4 py-2">{formatBytes(asset.sizeBytes)}</td>
                     <td className="px-4 py-2">{formatDate(asset.updatedAt)}</td>
@@ -164,16 +148,18 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         ) : null}
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-          <Label className="text-sm font-semibold text-slate-900">Neues Asset hochladen</Label>
-          <p className="text-xs text-slate-500">
-            Bitte identische Maße für PDF und Preview verwenden. Versionen ermöglichen Rollback der Produktion.
-          </p>
-          <TemplateAssetUploader templateKey={template.key} suggestedVersion={nextAssetVersion(template)} className="mt-4" />
+          <Label className="text-sm font-semibold text-slate-900">{t("detail.uploadTitle")}</Label>
+          <p className="text-xs text-slate-500">{t("detail.uploadHint")}</p>
+          <TemplateAssetUploader
+            templateKey={template.key}
+            suggestedVersion={nextAssetVersion(template)}
+            className="mt-4"
+          />
         </div>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900">Fonts</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{t("detail.fontsHeading")}</h3>
         {template.fonts.length > 0 ? (
           <ul className="flex flex-wrap gap-2 text-xs text-slate-600">
             {template.fonts.map((font) => (
@@ -183,9 +169,18 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-slate-500">Keine Fonts verknüpft.</p>
+          <p className="text-xs text-slate-500">{t("detail.fontsEmpty")}</p>
         )}
       </section>
+
+      {onDelete ? (
+        <div className="flex justify-end border-t border-slate-200 pt-4">
+          <Button variant="destructive" disabled={isDeleting} onClick={handleDelete} className="gap-2">
+            <Trash2 className="size-4" />
+            {t("detail.deleteButton")}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

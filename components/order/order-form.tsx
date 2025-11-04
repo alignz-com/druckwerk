@@ -89,6 +89,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const deliveryLocale = localeShort === "de" ? "de-AT" : "en-GB";
   const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
+  const tOrder = useTranslations("orderForm");
   const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "qrcode");
   const selectedTemplate = useMemo(() => {
@@ -207,13 +208,13 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || t.orderForm.errors.generic);
+      throw new Error(data.error || tOrder("errors.generic"));
       }
 
       setIsConfirmOpen(false);
       router.push("/orders?created=1");
     } catch (err: any) {
-      setSubmitError(err?.message ?? t.orderForm.errors.generic);
+      setSubmitError(err?.message ?? tOrder("errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -223,13 +224,13 @@ export default function OrderForm({ templates }: OrderFormProps) {
     <section className="space-y-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.orderForm.title}</h1>
-          {t.orderForm.subtitle ? (
-            <p className="mt-1 text-sm text-slate-500">{t.orderForm.subtitle}</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{tOrder("title")}</h1>
+          {tOrder("subtitle") ? (
+            <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
           ) : null}
         </div>
         <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden">
-          {t.orderForm.buttons.order}
+          {tOrder("buttons.order")}
         </Button>
       </header>
 
@@ -237,15 +238,15 @@ export default function OrderForm({ templates }: OrderFormProps) {
         <div className="space-y-8">
           <Card className="h-fit">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base md:text-lg">{t.orderForm.infoTitle}</CardTitle>
+              <CardTitle className="text-base md:text-lg">{tOrder("infoTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="qty">{t.orderForm.quantity}</Label>
+                  <Label htmlFor="qty">{tOrder("quantity")}</Label>
                   <Select value={quantity} onValueChange={setQuantity}>
                     <SelectTrigger id="qty">
-                      <SelectValue placeholder={t.orderForm.placeholders.quantity} />
+                      <SelectValue placeholder={tOrder("placeholders.quantity")} />
                     </SelectTrigger>
                     <SelectContent>
                       {QUANTITIES.map((q) => (
@@ -258,10 +259,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="template">{t.orderForm.template}</Label>
+                  <Label htmlFor="template">{tOrder("template")}</Label>
                   <Select value={selectedTemplateKey} onValueChange={setSelectedTemplateKey}>
                     <SelectTrigger id="template">
-                      <SelectValue placeholder={t.orderForm.placeholders.template} />
+                      <SelectValue placeholder={tOrder("placeholders.template")} />
                     </SelectTrigger>
                     <SelectContent>
                       {templateOptions.map((tpl) => (
@@ -274,41 +275,41 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="delivery">{t.orderForm.deliveryTime}</Label>
+                  <Label htmlFor="delivery">{tOrder("deliveryTime")}</Label>
                   <Select
                     value={deliveryTime}
                     onValueChange={(value) => setDeliveryTime(value as DeliveryOption)}
                   >
                     <SelectTrigger id="delivery">
-                      <SelectValue placeholder={t.orderForm.placeholders.deliveryTime} />
+                      <SelectValue placeholder={tOrder("placeholders.deliveryTime")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(Object.keys(DELIVERY_OPTIONS) as DeliveryOption[]).map((value) => (
                         <SelectItem key={value} value={value}>
-                          {t.orderForm.deliveryTimes[value] ?? value}
+                          {tOrder(`deliveryTimes.${value}`) ?? value}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {deliveryTime === "express" && (
-                    <p className="mt-1 text-xs text-red-600">{t.orderForm.expressNotice}</p>
+                    <p className="mt-1 text-xs text-red-600">{tOrder("expressNotice")}</p>
                   )}
                   {estimatedDeliveryDate ? (
                     <p className="text-xs text-slate-500">
-                      {t.orderForm.estimatedDelivery}: {estimatedDeliveryDate}
+                    {tOrder("estimatedDelivery")}: {estimatedDeliveryDate}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="customerReference">{t.orderForm.fields.customerReference}</Label>
+                  <Label htmlFor="customerReference">{tOrder("fields.customerReference")}</Label>
                   <Textarea
                     id="customerReference"
                     value={customerReference}
                     onChange={(e) => setCustomerReference(e.target.value)}
                     rows={2}
                     maxLength={200}
-                    placeholder={t.orderForm.placeholders.customerReference ?? ""}
+                    placeholder={tOrder("placeholders.customerReference") ?? ""}
                   />
                 </div>
               </div>
@@ -317,58 +318,58 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle className="text-base md:text-lg">{t.orderForm.detailsTitle}</CardTitle>
+              <CardTitle className="text-base md:text-lg">{tOrder("detailsTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">{t.orderForm.fields.name}</Label>
+                <Label htmlFor="name">{tOrder("fields.name")}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role">{t.orderForm.fields.role}</Label>
+                <Label htmlFor="role">{tOrder("fields.role")}</Label>
                 <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} maxLength={45} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">{t.orderForm.fields.phone}</Label>
+                <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="mobile">{t.orderForm.fields.mobile}</Label>
+                <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
                 <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">{t.orderForm.fields.email}</Label>
+                <Label htmlFor="email">{tOrder("fields.email")}</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50} />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="linkedin" className="mb-0">
-                    {t.orderForm.fields.linkedin}
+                    {tOrder("fields.linkedin")}
                   </Label>
-                  <span className="inline-flex" title={t.orderForm.hints.linkedin} aria-hidden="true">
+                  <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
                     <Info className="h-4 w-4 text-slate-400" />
                   </span>
                 </div>
                 <Input
                   id="linkedin"
                   type="url"
-                  placeholder={t.orderForm.fields.linkedinPlaceholder}
+                  placeholder={tOrder("fields.linkedinPlaceholder")}
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}
                   maxLength={100}
                   aria-describedby="linkedin-hint"
                 />
                 <p id="linkedin-hint" className="text-xs text-slate-500">
-                  {t.orderForm.hints.linkedin}
+                  {tOrder("hints.linkedin")}
                 </p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="url">{t.orderForm.fields.url}</Label>
+                <Label htmlFor="url">{tOrder("fields.url")}</Label>
                 <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="companyName">{t.orderForm.fields.companyName}</Label>
+                  <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
                   <Input
                     id="companyName"
                     value={companyName}
@@ -377,7 +378,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="street">{t.orderForm.fields.street}</Label>
+                  <Label htmlFor="street">{tOrder("fields.street")}</Label>
                   <Input
                     id="street"
                     value={street}
@@ -386,7 +387,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="postalCode">{t.orderForm.fields.postalCode}</Label>
+                  <Label htmlFor="postalCode">{tOrder("fields.postalCode")}</Label>
                   <Input
                     id="postalCode"
                     value={postalCode}
@@ -395,7 +396,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="city">{t.orderForm.fields.city}</Label>
+                  <Label htmlFor="city">{tOrder("fields.city")}</Label>
                   <Input
                     id="city"
                     value={city}
@@ -404,10 +405,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="country">{t.orderForm.fields.country}</Label>
+                  <Label htmlFor="country">{tOrder("fields.country")}</Label>
                   <Select value={countryCode} onValueChange={setCountryCode}>
                     <SelectTrigger id="country">
-                      <SelectValue placeholder={t.orderForm.placeholders.country} />
+                      <SelectValue placeholder={tOrder("placeholders.country")} />
                     </SelectTrigger>
                     <SelectContent className="max-h-64">
                       {countryOptions.map(({ code, label }) => (
@@ -419,13 +420,13 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   </Select>
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="addressExtra">{t.orderForm.fields.addressExtra}</Label>
+                  <Label htmlFor="addressExtra">{tOrder("fields.addressExtra")}</Label>
                   <Input
                     id="addressExtra"
                     value={addressExtra}
                     onChange={(e) => setAddressExtra(e.target.value)}
                     maxLength={64}
-                    placeholder={t.orderForm.placeholders.addressExtra ?? ""}
+                    placeholder={tOrder("placeholders.addressExtra") ?? ""}
                   />
                 </div>
               </div>
@@ -437,7 +438,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
         <div className="space-y-4 lg:sticky lg:top-10 lg:self-start">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{t.orderForm.previewTitle}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -445,7 +446,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   size="sm"
                   onClick={() => setPreviewView("front")}
                 >
-                  {t.orderForm.confirm.front}
+                  {tOrder("confirm.front")}
                 </Button>
                 <Button
                   type="button"
@@ -453,7 +454,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   size="sm"
                   onClick={() => setPreviewView("back")}
                 >
-                  {t.orderForm.confirm.back}
+                  {tOrder("confirm.back")}
                 </Button>
               </div>
             </CardHeader>
@@ -496,7 +497,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
           </Card>
           <div className="hidden lg:flex lg:justify-end">
             <Button onClick={openConfirm} className="px-6">
-              {t.orderForm.buttons.order}
+              {tOrder("buttons.order")}
             </Button>
           </div>
         </div>
@@ -512,8 +513,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{t.orderForm.confirm.title}</DialogTitle>
-            <DialogDescription>{t.orderForm.confirm.description}</DialogDescription>
+            <DialogTitle>{tOrder("confirm.title")}</DialogTitle>
+            <DialogDescription>{tOrder("confirm.description")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
@@ -524,7 +525,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 onClick={() => setConfirmView("front")}
                 disabled={isSubmitting}
               >
-                {t.orderForm.confirm.front}
+                {tOrder("confirm.front")}
               </Button>
               <Button
                 variant={confirmView === "back" ? "default" : "ghost"}
@@ -532,7 +533,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 onClick={() => setConfirmView("back")}
                 disabled={isSubmitting}
               >
-                {t.orderForm.confirm.back}
+                {tOrder("confirm.back")}
               </Button>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
@@ -581,10 +582,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} disabled={isSubmitting}>
-              {t.orderForm.confirm.cancel}
+              {tOrder("confirm.cancel")}
             </Button>
             <Button onClick={confirmOrder} disabled={isSubmitting}>
-              {isSubmitting ? t.orderForm.confirm.submitting : t.orderForm.confirm.submit}
+              {isSubmitting ? tOrder("confirm.submitting") : tOrder("confirm.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
