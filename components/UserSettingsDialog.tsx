@@ -38,7 +38,10 @@ export default function UserSettingsDialog({ showTooltip = false, tooltip }: Pro
           <Button
             variant="ghost"
             size="icon"
-            className="h-11 w-11 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+            className={cn(
+              "h-11 w-11 rounded-full text-slate-600 hover:bg-slate-100",
+              showTooltip ? "bg-white" : "bg-slate-50",
+            )}
             aria-label={label}
             title={showTooltip ? undefined : label}
           >

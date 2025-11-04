@@ -34,7 +34,7 @@ type Props = {
 export function SidebarNav({ groups, className, collapsed = false }: Props) {
   const pathname = usePathname();
   const groupSpacing = collapsed ? "space-y-2" : "space-y-3";
-  const itemsGap = collapsed ? "gap-1.5" : "gap-2.5";
+  const itemsGap = collapsed ? "gap-1.5" : "gap-3";
 
   return (
     <nav className={cn("flex flex-col gap-4", className)}>

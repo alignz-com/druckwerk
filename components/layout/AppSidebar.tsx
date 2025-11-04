@@ -88,7 +88,7 @@ export function AppSidebar({
         <div
           className={cn(
             "flex items-center border-b border-slate-200 px-5 py-4",
-            collapsed ? "justify-center" : "justify-start",
+            "justify-center",
             collapsed && "px-3",
           )}
         >
@@ -96,7 +96,7 @@ export function AppSidebar({
             href="/"
             className={cn(
               "flex items-center rounded-xl",
-              collapsed ? "justify-center" : "justify-start",
+              "justify-center",
             )}
           >
             <Image
@@ -133,7 +133,7 @@ export function AppSidebar({
               variant="ghost"
               size="icon"
               className={cn(
-                "rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100",
+                "rounded-full text-slate-600 hover:bg-slate-100",
                 collapsed ? "h-11 w-11 bg-white" : "h-9 w-9 bg-white",
               )}
               onClick={toggleCollapsed}
