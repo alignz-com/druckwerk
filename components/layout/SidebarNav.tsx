@@ -35,12 +35,12 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
   const pathname = usePathname();
 
   return (
-    <nav className={cn("flex flex-col gap-5", className)}>
+    <nav className={cn("flex flex-col gap-4", className)}>
       {groups.map((group, idx) => (
         <div
           key={group.title ?? `group-${idx}`}
           className={cn(
-            "space-y-2",
+            "space-y-1.5",
             idx > 0 && "border-t border-slate-200 pt-3",
             idx > 0 && !collapsed && "mt-3",
           )}

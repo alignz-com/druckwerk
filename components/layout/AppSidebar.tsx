@@ -79,8 +79,8 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "hidden lg:flex flex-1 flex-col px-4 py-4",
-            collapsed ? "items-center justify-center gap-6 px-2 py-6" : "gap-6",
+            "hidden lg:block px-4 py-4",
+            collapsed && "px-2 py-5",
           )}
         >
           <SidebarNav
@@ -88,7 +88,12 @@ export function AppSidebar({
             collapsed={collapsed}
             className={collapsed ? "items-center" : undefined}
           />
-          <div className={collapsed ? "" : "mt-auto pt-2"}>
+          <div
+            className={cn(
+              "mt-4 flex justify-end",
+              collapsed && "mt-5 justify-center",
+            )}
+          >
             <Button
               type="button"
               variant="ghost"
@@ -113,7 +118,7 @@ export function AppSidebar({
         <div
           className={cn(
             "border-t border-slate-200 text-sm text-slate-600",
-            collapsed ? "px-3 py-4" : "px-5 py-4",
+            collapsed ? "px-3 py-4 mt-auto" : "px-5 py-4 mt-auto",
           )}
         >
           <div
