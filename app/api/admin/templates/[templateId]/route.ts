@@ -9,13 +9,10 @@ import { deleteObject } from "@/lib/storage";
 
 const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
 
-type Params = {
-  params: {
-    templateId: string;
-  };
-};
+type RouteParams = { templateId: string };
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+  const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
