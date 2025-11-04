@@ -21,6 +21,10 @@ export const messages = {
         ADMIN: "Admin",
         PRINTER: "Printer",
       } as Record<string, string>,
+      sidebar: {
+        collapse: "Collapse sidebar",
+        expand: "Expand sidebar",
+      },
       settings: {
         open: "Open user settings",
         title: "User settings",
@@ -299,6 +303,10 @@ export const messages = {
         USER: "Benutzer",
         ADMIN: "Admin",
         PRINTER: "Druckerei",
+      },
+      sidebar: {
+        collapse: "Seitenleiste einklappen",
+        expand: "Seitenleiste ausklappen",
       },
       settings: {
         open: "Benutzereinstellungen öffnen",
