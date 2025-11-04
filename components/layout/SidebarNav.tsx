@@ -78,6 +78,7 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
                     href={href}
                     className={linkClasses}
                     aria-label={collapsed ? label : undefined}
+                    title={label}
                   >
                     {IconComponent ? (
                       <IconComponent className="size-5 shrink-0" />
