@@ -34,7 +34,7 @@ export function AppSidebar({
   collapseLabel,
   expandLabel,
 }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const toggleCollapsed = () => setCollapsed((prev) => !prev);
   const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
@@ -51,8 +51,8 @@ export function AppSidebar({
     >
       <div
         className={cn(
-          "flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm",
-          "lg:sticky lg:top-10 lg:max-h-[calc(100vh-5rem)]",
+          "flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm",
+          "lg:sticky lg:top-10",
         )}
       >
         <div
