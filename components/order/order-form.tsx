@@ -540,6 +540,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 <div className="relative mx-auto aspect-[85/55] w-full max-w-[600px]">
                   <FlipCard
                     activeSide={confirmView}
+                    className="h-full w-full"
                     front={
                       <BusinessCardFront
                         template={selectedTemplate}
