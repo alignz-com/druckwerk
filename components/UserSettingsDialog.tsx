@@ -27,6 +27,7 @@ export default function UserSettingsDialog() {
           size="icon"
           className="h-11 w-11 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
           aria-label={t("layout.settings.open")}
+          title={t("layout.settings.open")}
         >
           <Settings2 className="h-4 w-4" />
         </Button>

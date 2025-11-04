@@ -22,6 +22,7 @@ export default function LogoutButton({ label = "Logout", iconOnly = false }: Pro
           : "w-full gap-2 rounded-xl px-3 py-2",
       )}
       aria-label={label}
+      title={label}
     >
       <LogOut className="size-4" />
       <span className={cn(iconOnly && "sr-only")}>{label}</span>

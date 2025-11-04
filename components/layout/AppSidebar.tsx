@@ -133,7 +133,10 @@ export function AppSidebar({
                 collapsed && "flex-col gap-2",
               )}
             >
-              <Avatar className="size-10 bg-slate-200">
+              <Avatar
+                className="size-10 bg-slate-200"
+                title={displayName}
+              >
                 <AvatarFallback className="font-semibold text-slate-700">
                   {initials || "BC"}
                 </AvatarFallback>
