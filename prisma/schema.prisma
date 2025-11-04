@@ -113,11 +113,33 @@ model Brand {
   id        String          @id @default(cuid())
   name      String
   slug      String          @unique
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
   users     User[]
   orders    Order[]
   templates BrandTemplate[]
+  addresses BrandAddress[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+}
+
+model BrandAddress {
+  id           String   @id @default(cuid())
+  brandId      String
+  label        String?
+  company      String?
+  street       String?
+  addressExtra String?
+  postalCode   String?
+  city         String?
+  countryCode  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
 }
 
 model Template {

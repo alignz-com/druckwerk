@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { getServerAuthSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getAdminBrands } from "@/lib/admin/brands-data";
+import { brandSchema, ensureUniqueSlug, slugify, BrandPayload } from "./util";
+
+export async function GET() {
+  const session = await getServerAuthSession();
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const brands = await getAdminBrands();
+  return NextResponse.json({ brands });
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getServerAuthSession();
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let payload: BrandPayload;
+  try {
+    const json = await req.json();
+    payload = brandSchema.parse(json);
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const baseSlug = slugify(payload.slug ?? payload.name);
+  const uniqueSlug = await ensureUniqueSlug(baseSlug);
+
+  const brand = await prisma.brand.create({
+    data: {
+      name: payload.name,
+      slug: uniqueSlug,
+      contactName: payload.contactName ?? null,
+      contactEmail: payload.contactEmail ?? null,
+      contactPhone: payload.contactPhone ?? null,
+      addresses: payload.addresses
+        ? {
+            create: payload.addresses.map((addr) => ({
+              label: addr.label ?? null,
+              company: addr.company ?? null,
+              street: addr.street ?? null,
+              addressExtra: addr.addressExtra ?? null,
+              postalCode: addr.postalCode ?? null,
+              city: addr.city ?? null,
+              countryCode: addr.countryCode ?? null,
+            })),
+          }
+        : undefined,
+    },
+    include: {
+      addresses: true,
+      templates: true,
+      orders: { select: { id: true } },
+    },
+  });
+
+  return NextResponse.json({ brandId: brand.id }, { status: 201 });
+}
