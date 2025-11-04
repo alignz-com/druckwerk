@@ -112,20 +112,20 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "hidden lg:flex flex-col gap-6 px-4 py-4",
-            collapsed && "items-center gap-6 px-0 py-5",
+            "hidden lg:block px-4 py-4",
+            collapsed && "px-0 py-5",
           )}
         >
           <SidebarNav
             groups={navGroups}
             collapsed={collapsed}
-            className={collapsed ? "items-center gap-6" : undefined}
+            className={collapsed ? "items-center" : undefined}
           />
           <SidebarTooltip
             label={collapsed ? expandLabel : collapseLabel}
             className={cn(
-              "mt-4 justify-end",
-              collapsed && "mt-5 justify-center",
+              "mt-6 justify-end",
+              collapsed && "justify-center",
             )}
           >
             <Button
@@ -155,7 +155,7 @@ export function AppSidebar({
           )}
         >
           {collapsed ? (
-            <div className="flex flex-col items-center gap-5 text-center">
+            <div className="flex flex-col items-center gap-4 text-center">
               <SidebarTooltip label={displayName} className="justify-center">
                 <Avatar className="size-10 bg-slate-200">
                   <AvatarFallback className="font-semibold text-slate-700">
