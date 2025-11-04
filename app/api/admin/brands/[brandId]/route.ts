@@ -9,27 +9,38 @@ const brandUpdateSchema = brandSchema.extend({
   name: brandSchema.shape.name.optional(),
 });
 
-export async function GET(_req: NextRequest, { params }: { params: { brandId: string } }) {
+type RouteParams = { brandId: string };
+
+async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+  const params = await Promise.resolve(context.params);
+  if (!params?.brandId) {
+    throw new Error("Missing route parameter: brandId");
+  }
+  return params;
+}
+
+export async function GET(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const { brandId } = await resolveParams(context);
   const brands = await getAdminBrands();
-  const brand = brands.find((item) => item.id === params.brandId);
+  const brand = brands.find((item) => item.id === brandId);
   if (!brand) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json({ brand });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { brandId: string } }) {
+export async function PATCH(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const brandId = params.brandId;
+  const { brandId } = await resolveParams(context);
   const existingBrand = await prisma.brand.findUnique({ where: { id: brandId } });
   if (!existingBrand) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -112,13 +123,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { brandId: s
   return NextResponse.json({ success: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { brandId: string } }) {
+export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const brandId = params.brandId;
+  const { brandId } = await resolveParams(context);
   const brand = await prisma.brand.findUnique({
     where: { id: brandId },
     include: {
