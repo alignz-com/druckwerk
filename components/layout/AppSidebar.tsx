@@ -68,8 +68,8 @@ export function AppSidebar({
 
   const toggleCollapsed = () => setCollapsed((prev) => !prev);
   const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
-  const logoWidth = collapsed ? 48 : 120;
-  const logoHeight = collapsed ? 48 : 40;
+  const logoWidth = collapsed ? 35 : 180;
+  const logoHeight = collapsed ? 35 : 48;
 
   return (
     <aside
@@ -88,13 +88,16 @@ export function AppSidebar({
         <div
           className={cn(
             "flex items-center border-b border-slate-200 px-5 py-4",
-            "justify-center",
+            collapsed ? "justify-center" : "justify-start",
             collapsed && "px-3",
           )}
         >
           <Link
             href="/"
-            className="flex items-center justify-center rounded-xl"
+            className={cn(
+              "flex items-center rounded-xl",
+              collapsed ? "justify-center" : "justify-start",
+            )}
           >
             <Image
               src={logoSrc}
