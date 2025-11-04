@@ -8,6 +8,7 @@ export const messages = {
       newOrder: "New Order",
       adminBrands: "Admin · Brands",
       adminTemplates: "Admin · Templates",
+      adminGroup: "Administration",
       logout: "Logout",
     },
     layout: {
@@ -120,6 +121,7 @@ export const messages = {
       newOrder: "Neue Bestellung",
       adminBrands: "Admin · Marken",
       adminTemplates: "Admin · Vorlagen",
+      adminGroup: "Administration",
       logout: "Abmelden",
     },
     layout: {

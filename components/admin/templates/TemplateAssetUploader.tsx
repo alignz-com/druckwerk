@@ -14,6 +14,7 @@ type TemplateAssetUploaderProps = {
   templateKey: string;
   suggestedVersion: number;
   className?: string;
+  onUploaded?: () => void;
 };
 
 const assetTypeOptions: { value: string; label: string }[] = [
@@ -23,7 +24,12 @@ const assetTypeOptions: { value: string; label: string }[] = [
   { value: "config", label: "Config JSON" },
 ];
 
-export default function TemplateAssetUploader({ templateKey, suggestedVersion, className }: TemplateAssetUploaderProps) {
+export default function TemplateAssetUploader({
+  templateKey,
+  suggestedVersion,
+  className,
+  onUploaded,
+}: TemplateAssetUploaderProps) {
   const router = useRouter();
   const [assetType, setAssetType] = useState<string>("pdf");
   const [version, setVersion] = useState<string>(String(suggestedVersion));
@@ -73,6 +79,7 @@ export default function TemplateAssetUploader({ templateKey, suggestedVersion, c
       startTransition(() => {
         router.refresh();
       });
+      onUploaded?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
     }

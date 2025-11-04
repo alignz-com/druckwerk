@@ -38,6 +38,7 @@ export type AdminTemplateSummary = {
   updatedAt: string;
   assets: AdminTemplateAsset[];
   fonts: AdminTemplateFontLink[];
+  brandAssignments: AdminTemplateBrandAssignment[];
 };
 
 export type AdminFontVariant = {
@@ -51,6 +52,14 @@ export type AdminFontVariant = {
   checksum: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type AdminTemplateBrandAssignment = {
+  id: string;
+  brandId: string;
+  brandName: string;
+  brandSlug: string;
+  assignedAt: string;
 };
 
 export type AdminFontFamily = {
@@ -83,6 +92,12 @@ export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[
             },
           },
         },
+      },
+      assignments: {
+        include: {
+          brand: true,
+        },
+        orderBy: [{ assignedAt: "desc" }],
       },
     },
   });
@@ -126,6 +141,15 @@ export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[
           fileName: variant.fileName,
         };
       }),
+    brandAssignments: template.assignments
+      .filter((assignment) => Boolean(assignment.brand))
+      .map((assignment) => ({
+        id: assignment.id,
+        brandId: assignment.brandId,
+        brandName: assignment.brand!.name,
+        brandSlug: assignment.brand!.slug,
+        assignedAt: assignment.assignedAt.toISOString(),
+      })),
   }));
 }
 

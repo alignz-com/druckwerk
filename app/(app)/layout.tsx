@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { getServerAuthSession } from "@/lib/auth";
-import { SidebarNav } from "@/components/layout/SidebarNav";
+import { SidebarNav, type NavGroup } from "@/components/layout/SidebarNav";
 import LogoutButton from "@/components/layout/LogoutButton";
 import UserSettingsDialog from "@/components/UserSettingsDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -41,16 +41,22 @@ export default async function AppLayout({ children }: Props) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("") || "BC";
-  const menuItems = [
+  const primaryNav = [
     { href: "/orders", label: t.nav.orders, icon: "orders" },
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
-    ...(session.user.role === "ADMIN"
+  ];
+  const adminNav =
+    session.user.role === "ADMIN"
       ? [
           { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
           { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
         ]
-      : []),
-  ];
+      : [];
+
+  const navGroups: NavGroup[] = [{ items: primaryNav }];
+  if (adminNav.length > 0) {
+    navGroups.push({ title: t.nav.adminGroup, items: adminNav });
+  }
   const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
 
   return (
@@ -66,7 +72,7 @@ export default async function AppLayout({ children }: Props) {
             </div>
 
             <div className="px-4 py-4 hidden lg:block">
-              <SidebarNav items={menuItems} />
+              <SidebarNav groups={navGroups} />
             </div>
 
             <div className="space-y-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600">
@@ -93,15 +99,22 @@ export default async function AppLayout({ children }: Props) {
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-slate-500">{t.layout.signedInAs}</div>
               <div className="text-base font-semibold text-slate-900">{displayName}</div>
-              <div className="mt-3 flex gap-3">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {item.label}
-                  </Link>
+              <div className="mt-4 space-y-4">
+                {navGroups.map((group, idx) => (
+                  <div key={group.title ?? `mobile-group-${idx}`} className="space-y-2">
+                    {group.title ? <div className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.title}</div> : null}
+                    <div className="flex flex-col gap-2">
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
