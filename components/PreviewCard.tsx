@@ -171,47 +171,16 @@ function FrontTextOverlay({
     [preparedLines],
   );
 
-  const [activeLines, setActiveLines] = useState<FrontLine[]>(preparedLines);
-  const [previousLines, setPreviousLines] = useState<FrontLine[] | null>(null);
-  const [previousKey, setPreviousKey] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "init" | "show">("idle");
-
-  const activeRef = useRef(activeLines);
-  const signatureRef = useRef(signature);
+  const [phase, setPhase] = useState<"init" | "show">("show");
+  const previousSignature = useRef(signature);
 
   useEffect(() => {
-    activeRef.current = activeLines;
-  }, [activeLines]);
-
-  useEffect(() => {
-    if (signatureRef.current === signature) {
-      if (activeRef.current !== preparedLines) {
-        setActiveLines(preparedLines);
-        activeRef.current = preparedLines;
-      }
-      return;
-    }
-
-    const prev = activeRef.current;
-    setPreviousLines(prev);
-    setPreviousKey(signatureRef.current);
-    setActiveLines(preparedLines);
-    activeRef.current = preparedLines;
-    signatureRef.current = signature;
-
+    if (previousSignature.current === signature) return;
+    previousSignature.current = signature;
     setPhase("init");
     const raf = requestAnimationFrame(() => setPhase("show"));
-    const timeout = window.setTimeout(() => {
-      setPreviousLines(null);
-      setPreviousKey(null);
-      setPhase("idle");
-    }, 220);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(timeout);
-    };
-  }, [preparedLines, signature]);
+    return () => cancelAnimationFrame(raf);
+  }, [signature]);
 
   const renderLines = (linesToRender: FrontLine[]) =>
     linesToRender.map((line) => (
@@ -228,20 +197,12 @@ function FrontTextOverlay({
       </text>
     ));
 
-  const currentOpacity = phase === "init" ? "opacity-0" : "opacity-100";
-  const previousOpacity = phase === "show" ? "opacity-0" : "opacity-100";
+  const opacityClass = phase === "init" ? "opacity-0" : "opacity-100";
 
   return (
-    <>
-      {previousLines ? (
-        <g key={`previous-${previousKey ?? "static"}`} className={`transition-opacity duration-200 ${previousOpacity}`}>
-          {renderLines(previousLines)}
-        </g>
-      ) : null}
-      <g key={`active-${signature}`} className={`transition-opacity duration-200 ${currentOpacity}`}>
-        {renderLines(activeLines)}
-      </g>
-    </>
+    <g key={`active-${signature}`} className={`transition-opacity duration-200 ${opacityClass}`}>
+      {renderLines(preparedLines)}
+    </g>
   );
 }
 
