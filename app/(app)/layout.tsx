@@ -45,7 +45,10 @@ export default async function AppLayout({ children }: Props) {
     { href: "/orders", label: t.nav.orders, icon: "orders" },
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
     ...(session.user.role === "ADMIN"
-      ? [{ href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" }]
+      ? [
+          { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
+          { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
+        ]
       : []),
   ];
   const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
