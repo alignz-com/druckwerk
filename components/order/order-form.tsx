@@ -537,31 +537,37 @@ export default function OrderForm({ templates }: OrderFormProps) {
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
               <div className="mx-auto w-full max-w-[920px]">
-                {confirmView === "front" ? (
-                  <BusinessCardFront
-                    template={selectedTemplate}
-                    name={name}
-                    role={role}
-                    email={email}
-                    phone={phone}
-                    mobile={mobile}
-                    company={companyBlock}
-                    url={url}
-                    linkedin={linkedin}
+                <div className="relative mx-auto aspect-[85/55] w-full max-w-[600px]">
+                  <FlipCard
+                    activeSide={confirmView}
+                    front={
+                      <BusinessCardFront
+                        template={selectedTemplate}
+                        name={name}
+                        role={role}
+                        email={email}
+                        phone={phone}
+                        mobile={mobile}
+                        company={companyBlock}
+                        url={url}
+                        linkedin={linkedin}
+                      />
+                    }
+                    back={
+                      <BusinessCardBack
+                        template={selectedTemplate}
+                        name={name}
+                        role={role}
+                        email={email}
+                        phone={phone}
+                        mobile={mobile}
+                        company={companyBlock}
+                        url={url}
+                        linkedin={linkedin}
+                      />
+                    }
                   />
-                ) : (
-                  <BusinessCardBack
-                    template={selectedTemplate}
-                    name={name}
-                    role={role}
-                    email={email}
-                    phone={phone}
-                    mobile={mobile}
-                    company={companyBlock}
-                    url={url}
-                    linkedin={linkedin}
-                  />
-                )}
+                </div>
               </div>
             </div>
 
