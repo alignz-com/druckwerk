@@ -37,7 +37,14 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
   return (
     <nav className={cn("flex flex-col gap-5", className)}>
       {groups.map((group, idx) => (
-        <div key={group.title ?? `group-${idx}`} className="space-y-2">
+        <div
+          key={group.title ?? `group-${idx}`}
+          className={cn(
+            "space-y-2",
+            idx > 0 && "border-t border-slate-200 pt-3",
+            idx > 0 && !collapsed && "mt-3",
+          )}
+        >
           {group.title ? (
             <div
               className={cn(
@@ -52,21 +59,47 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
             {group.items.map(({ href, label, icon }) => {
               const active = pathname === href;
               const IconComponent = icon ? ICONS[icon] : undefined;
+              const linkClasses = cn(
+                "relative flex items-center text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                collapsed
+                  ? "h-11 w-11 justify-center rounded-full p-0"
+                  : "gap-3 rounded-xl px-3 py-2",
+                active
+                  ? "bg-slate-900 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-100",
+              );
 
               return (
-                <Link
+                <div
                   key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center rounded-xl py-2 text-sm transition",
-                    collapsed ? "justify-center px-2" : "gap-3 px-3",
-                    active ? "bg-slate-900 text-white shadow" : "text-slate-600 hover:bg-slate-100",
-                  )}
-                  title={collapsed ? label : undefined}
+                  className="group relative"
                 >
-                  {IconComponent ? <IconComponent className="size-5 shrink-0" /> : null}
-                  <span className={cn("truncate", collapsed && "sr-only")}>{label}</span>
-                </Link>
+                  <Link
+                    href={href}
+                    className={linkClasses}
+                    aria-label={collapsed ? label : undefined}
+                  >
+                    {IconComponent ? (
+                      <IconComponent
+                        className={cn("size-5 shrink-0", collapsed && "size-5")}
+                      />
+                    ) : null}
+                    <span className={cn("truncate", collapsed && "sr-only")}>{label}</span>
+                  </Link>
+                  {collapsed ? (
+                    <span
+                      role="tooltip"
+                      aria-hidden="true"
+                      className={cn(
+                        "pointer-events-none absolute left-full top-1/2 z-10 ml-3 -translate-y-1/2 translate-x-2 transform rounded-xl bg-slate-900 px-3 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition",
+                        "group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-100",
+                        "group-focus-within:translate-x-0 group-focus-within:opacity-100",
+                      )}
+                    >
+                      {label}
+                    </span>
+                  ) : null}
+                </div>
               );
             })}
           </div>

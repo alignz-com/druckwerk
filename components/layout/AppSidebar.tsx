@@ -37,6 +37,9 @@ export function AppSidebar({
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleCollapsed = () => setCollapsed((prev) => !prev);
+  const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
+  const logoWidth = collapsed ? 48 : 120;
+  const logoHeight = collapsed ? 48 : 40;
 
   return (
     <aside
@@ -61,15 +64,15 @@ export function AppSidebar({
           <Link
             href="/"
             className={cn(
-              "flex items-center justify-center",
+              "flex items-center justify-center rounded-xl",
               collapsed ? "px-1" : "w-full",
             )}
           >
             <Image
-              src="/logo.svg"
+              src={logoSrc}
               alt={brandTitle}
-              width={collapsed ? 36 : 120}
-              height={40}
+              width={logoWidth}
+              height={logoHeight}
               priority
             />
             <span className="sr-only">{brandTitle}</span>
@@ -100,14 +103,14 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "space-y-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600",
-            collapsed && "items-center px-3 text-xs",
+            "border-t border-slate-200 px-5 py-4 text-sm text-slate-600 space-y-3",
+            collapsed && "flex flex-col items-center gap-3 space-y-0 px-3 py-4 text-xs",
           )}
         >
           <div
             className={cn(
               "flex items-center justify-between gap-3",
-              collapsed && "flex-col gap-3",
+              collapsed ? "w-full flex-col gap-3" : undefined,
             )}
           >
             <div
