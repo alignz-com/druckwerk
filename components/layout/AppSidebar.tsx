@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -22,7 +22,36 @@ type Props = {
   logoutLabel: string;
   collapseLabel: string;
   expandLabel: string;
+  settingsLabel: string;
 };
+
+type SidebarTooltipProps = {
+  label: string;
+  children: ReactNode;
+  show?: boolean;
+  className?: string;
+};
+
+function SidebarTooltip({ label, children, show = true, className }: SidebarTooltipProps) {
+  return (
+    <div className={cn("group relative flex", className)}>
+      {children}
+      {show ? (
+        <span
+          role="tooltip"
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute left-full top-1/2 z-10 ml-3 -translate-y-1/2 translate-x-2 transform rounded-xl bg-slate-900 px-3 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition",
+            "group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-100",
+            "group-focus-within:translate-x-0 group-focus-within:opacity-100",
+          )}
+        >
+          {label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 export function AppSidebar({
   navGroups,
@@ -33,6 +62,7 @@ export function AppSidebar({
   logoutLabel,
   collapseLabel,
   expandLabel,
+  settingsLabel,
 }: Props) {
   const [collapsed, setCollapsed] = useState(true);
 
@@ -88,9 +118,10 @@ export function AppSidebar({
             collapsed={collapsed}
             className={collapsed ? "items-center" : undefined}
           />
-          <div
+          <SidebarTooltip
+            label={collapsed ? expandLabel : collapseLabel}
             className={cn(
-              "mt-4 flex justify-end",
+              "mt-4 justify-end",
               collapsed && "mt-5 justify-center",
             )}
           >
@@ -104,7 +135,6 @@ export function AppSidebar({
               )}
               onClick={toggleCollapsed}
               aria-label={collapsed ? expandLabel : collapseLabel}
-              title={collapsed ? expandLabel : collapseLabel}
             >
               {collapsed ? (
                 <ChevronsRight className="h-4 w-4" />
@@ -112,7 +142,7 @@ export function AppSidebar({
                 <ChevronsLeft className="h-4 w-4" />
               )}
             </Button>
-          </div>
+          </SidebarTooltip>
         </div>
 
         <div
@@ -121,42 +151,51 @@ export function AppSidebar({
             collapsed ? "px-3 py-4 mt-auto" : "px-5 py-4 mt-auto",
           )}
         >
-          <div
-            className={cn(
-              "flex items-center gap-3",
-              collapsed ? "flex-col text-center" : "justify-between",
-            )}
-          >
-            <div
-              className={cn(
-                "flex items-center gap-3",
-                collapsed && "flex-col gap-2",
-              )}
-            >
-              <Avatar
-                className="size-10 bg-slate-200"
-                title={displayName}
-              >
-                <AvatarFallback className="font-semibold text-slate-700">
-                  {initials || "BC"}
-                </AvatarFallback>
-              </Avatar>
-              {!collapsed ? (
-                <div className="text-sm">
-                  <div className="font-semibold text-slate-900">{displayName}</div>
-                  {roleLabel ? (
-                    <div className="text-xs uppercase tracking-wide text-slate-400">
-                      {roleLabel}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-3 text-center">
+              <SidebarTooltip label={displayName} className="justify-center">
+                <Avatar className="size-10 bg-slate-200">
+                  <AvatarFallback className="font-semibold text-slate-700">
+                    {initials || "BC"}
+                  </AvatarFallback>
+                </Avatar>
+              </SidebarTooltip>
+              <div className="flex justify-center">
+                <UserSettingsDialog showTooltip tooltip={settingsLabel} />
+              </div>
+              <SidebarTooltip label={logoutLabel} className="justify-center">
+                <LogoutButton label={logoutLabel} iconOnly />
+              </SidebarTooltip>
             </div>
-            <UserSettingsDialog />
-          </div>
-          <div className={cn("mt-4", collapsed && "flex justify-center")}>
-            <LogoutButton label={logoutLabel} iconOnly={collapsed} />
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <SidebarTooltip label={displayName} show={false}>
+                    <Avatar className="size-10 bg-slate-200">
+                      <AvatarFallback className="font-semibold text-slate-700">
+                        {initials || "BC"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </SidebarTooltip>
+                  <div className="text-sm">
+                    <div className="font-semibold text-slate-900">{displayName}</div>
+                    {roleLabel ? (
+                      <div className="text-xs uppercase tracking-wide text-slate-400">
+                        {roleLabel}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <UserSettingsDialog showTooltip tooltip={settingsLabel} />
+                </div>
+              </div>
+              <SidebarTooltip label={logoutLabel} show={false} className="mt-4 w-full">
+                <LogoutButton label={logoutLabel} />
+              </SidebarTooltip>
+            </>
+          )}
         </div>
       </div>
     </aside>

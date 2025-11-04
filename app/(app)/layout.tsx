@@ -58,6 +58,7 @@ export default async function AppLayout({ children }: Props) {
   const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
   const collapseLabel = t.layout.sidebar.collapse;
   const expandLabel = t.layout.sidebar.expand;
+  const settingsLabel = t.layout.settings.open;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -71,6 +72,7 @@ export default async function AppLayout({ children }: Props) {
           logoutLabel={t.nav.logout}
           collapseLabel={collapseLabel}
           expandLabel={expandLabel}
+          settingsLabel={settingsLabel}
         />
         <main className="flex-1 lg:pl-6">
           <header className="mb-6 block lg:hidden">
