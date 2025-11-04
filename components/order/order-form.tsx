@@ -457,7 +457,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
+            <CardContent className="flex items-center justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px]">
                 <div className="relative aspect-[85/55] w-full">
                   <FlipCard
