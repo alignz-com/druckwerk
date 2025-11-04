@@ -79,8 +79,8 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "hidden lg:flex flex-1 px-4 py-4",
-            collapsed && "flex-col items-center justify-center px-2 py-6",
+            "hidden lg:flex flex-col px-4 py-4",
+            collapsed && "flex-1 items-center justify-center px-2 py-6",
           )}
         >
           <SidebarNav
@@ -98,61 +98,73 @@ export function AppSidebar({
               : "space-y-3",
           )}
         >
-          <div
-            className={cn(
-              "flex w-full items-center justify-between gap-3",
-              collapsed && "flex-col gap-3",
-            )}
-          >
-            <div
-              className={cn(
-                "flex items-center gap-3",
-                collapsed && "flex-col gap-2 text-center",
-              )}
-            >
-              <Avatar className="size-10 bg-slate-200">
-                <AvatarFallback className="font-semibold text-slate-700">
-                  {initials || "BC"}
-                </AvatarFallback>
-              </Avatar>
-              {!collapsed ? (
-                <div className="text-sm">
-                  <div className="font-semibold text-slate-900">{displayName}</div>
-                  {roleLabel ? (
-                    <div className="text-xs uppercase tracking-wide text-slate-400">
-                      {roleLabel}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <div
-              className={cn(
-                "flex items-center gap-2",
-                collapsed && "flex-col gap-2",
-              )}
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                onClick={toggleCollapsed}
-                aria-label={collapsed ? expandLabel : collapseLabel}
-                title={collapsed ? expandLabel : collapseLabel}
-              >
-                {collapsed ? (
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <Avatar className="size-10 bg-slate-200">
+                  <AvatarFallback className="font-semibold text-slate-700">
+                    {initials || "BC"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-xs font-semibold text-slate-900">{displayName}</div>
+                {roleLabel ? (
+                  <div className="text-[10px] uppercase tracking-wide text-slate-400">
+                    {roleLabel}
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                  onClick={toggleCollapsed}
+                  aria-label={expandLabel}
+                  title={expandLabel}
+                >
                   <ChevronsRight className="h-4 w-4" />
-                ) : (
-                  <ChevronsLeft className="h-4 w-4" />
-                )}
-              </Button>
-              <UserSettingsDialog />
+                </Button>
+                <UserSettingsDialog />
+              </div>
+              <LogoutButton label={logoutLabel} iconOnly />
             </div>
-          </div>
-          <div className={collapsed ? "flex justify-center" : undefined}>
-            <LogoutButton label={logoutLabel} iconOnly={collapsed} />
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-10 bg-slate-200">
+                    <AvatarFallback className="font-semibold text-slate-700">
+                      {initials || "BC"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-sm">
+                    <div className="font-semibold text-slate-900">{displayName}</div>
+                    {roleLabel ? (
+                      <div className="text-xs uppercase tracking-wide text-slate-400">
+                        {roleLabel}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                    onClick={toggleCollapsed}
+                    aria-label={collapseLabel}
+                    title={collapseLabel}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <UserSettingsDialog />
+                </div>
+              </div>
+              <LogoutButton label={logoutLabel} />
+            </>
+          )}
         </div>
       </div>
     </aside>
