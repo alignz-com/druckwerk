@@ -68,8 +68,8 @@ export function AppSidebar({
 
   const toggleCollapsed = () => setCollapsed((prev) => !prev);
   const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
-  const logoWidth = collapsed ? 35 : 180;
-  const logoHeight = collapsed ? 35 : 48;
+  const logoWidth = collapsed ? 45 : 180;
+  const logoHeight = collapsed ? 45 : 48;
 
   return (
     <aside
@@ -112,14 +112,14 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "hidden lg:block px-4 py-4",
-            collapsed && "px-2 py-5",
+            "hidden lg:flex flex-col gap-6 px-4 py-4",
+            collapsed && "items-center gap-6 px-0 py-5",
           )}
         >
           <SidebarNav
             groups={navGroups}
             collapsed={collapsed}
-            className={collapsed ? "items-center" : undefined}
+            className={collapsed ? "items-center gap-6" : undefined}
           />
           <SidebarTooltip
             label={collapsed ? expandLabel : collapseLabel}
@@ -155,7 +155,7 @@ export function AppSidebar({
           )}
         >
           {collapsed ? (
-            <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex flex-col items-center gap-5 text-center">
               <SidebarTooltip label={displayName} className="justify-center">
                 <Avatar className="size-10 bg-slate-200">
                   <AvatarFallback className="font-semibold text-slate-700">
@@ -172,7 +172,7 @@ export function AppSidebar({
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <SidebarTooltip label={displayName} show={false}>
                     <Avatar className="size-10 bg-slate-200">
