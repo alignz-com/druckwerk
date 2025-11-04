@@ -9,8 +9,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DATABASE_DIRECT_URL")
 }
 
@@ -26,6 +26,26 @@ enum OrderStatus {
   IN_PRODUCTION
   COMPLETED
   CANCELLED
+}
+
+enum TemplateAssetType {
+  PDF
+  PREVIEW_FRONT
+  PREVIEW_BACK
+  CONFIG
+  OTHER
+}
+
+enum FontStyle {
+  NORMAL
+  ITALIC
+}
+
+enum FontFormat {
+  TTF
+  OTF
+  WOFF
+  WOFF2
 }
 
 model User {
@@ -101,25 +121,29 @@ model Brand {
 }
 
 model Template {
-  id          String          @id @default(cuid())
-  key         String          @unique
-  label       String
-  description String?
-  pdfPath     String
+  id               String          @id @default(cuid())
+  key              String          @unique
+  label            String
+  description      String?
+  pdfPath          String
   previewFrontPath String?
   previewBackPath  String?
-  config      Json
-  orders      Order[]
-  assignments BrandTemplate[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  config           Json
+  layoutVersion    Int?
+  printDpi         Int?
+  orders           Order[]
+  assignments      BrandTemplate[]
+  assets           TemplateAsset[]
+  fonts            TemplateFont[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model BrandTemplate {
-  id         String   @id @default(cuid())
-  brandId    String
-  templateId String
-  assignedAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  brandId        String
+  templateId     String
+  assignedAt     DateTime @default(now())
   configOverride Json?
 
   brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
@@ -156,4 +180,73 @@ model Order {
 
   @@index([brandId])
   @@index([templateId])
+}
+
+model TemplateAsset {
+  id         String            @id @default(cuid())
+  templateId String
+  type       TemplateAssetType
+  storageKey String
+  mimeType   String
+  fileName   String?
+  checksum   String?
+  version    Int               @default(1)
+  sizeBytes  Int?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([templateId, type])
+}
+
+model FontFamily {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  defaultWeight Int?          @default(400)
+  defaultStyle  FontStyle?    @default(NORMAL)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  variants      FontVariant[]
+
+  @@unique([name])
+}
+
+model FontVariant {
+  id             String     @id @default(cuid())
+  fontFamilyId   String
+  weight         Int        @default(400)
+  style          FontStyle  @default(NORMAL)
+  format         FontFormat
+  storageKey     String
+  fileName       String?
+  postscriptName String?
+  checksum       String?
+  sizeBytes      Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  fontFamily FontFamily     @relation(fields: [fontFamilyId], references: [id], onDelete: Cascade)
+  templates  TemplateFont[]
+
+  @@unique([fontFamilyId, weight, style, format])
+  @@index([fontFamilyId])
+}
+
+model TemplateFont {
+  id            String   @id @default(cuid())
+  templateId    String
+  fontVariantId String
+  usage         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  template    Template    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fontVariant FontVariant @relation(fields: [fontVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fontVariantId])
+  @@index([fontVariantId])
 }
