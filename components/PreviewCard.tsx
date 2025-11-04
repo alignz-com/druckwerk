@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatPhones } from "@/lib/formatPhones";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
@@ -48,7 +48,17 @@ function SmoothSvgImage({
   );
 }
 
-function FrontTextOverlay({
+type FrontLine = {
+  key: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  fontWeight: number;
+  fontStyle: "normal" | "italic";
+};
+
+function collectFrontLines({
   template,
   name,
   role = "",
@@ -68,32 +78,30 @@ function FrontTextOverlay({
   company?: string;
   url?: string;
   linkedin?: string;
-}) {
+}): FrontLine[] {
   const frame = template.config.front.textFrame;
   const previewCfg = template.config.front.preview ?? {};
   const fontScale = previewCfg.fontScale ?? DEFAULT_FONT_SCALE;
   const lineHeightScale = previewCfg.lineHeightScale ?? 1;
-  const texts: ReactElement[] = [];
+  const linesOut: FrontLine[] = [];
   const baseX = frame.xMm;
   const startY = frame.topMm + (previewCfg.baselineOffsetMm ?? 0);
   let cursorY = startY;
+
   const pushBlock = (lines: string[], style?: TemplateTextStyle) => {
     if (!style || lines.length === 0) return;
     const { fontSize, fontWeight, fontStyle } = svgFontAttributes(style, fontScale);
     const lineSpacing = style.lineGapMm * lineHeightScale;
     for (const line of lines) {
-      texts.push(
-        <text
-          key={`line-${cursorY.toFixed(2)}`}
-          x={baseX}
-          y={cursorY}
-          fontSize={fontSize}
-          fontWeight={fontWeight}
-          fontStyle={fontStyle}
-        >
-          {line}
-        </text>,
-      );
+      linesOut.push({
+        key: `line-${cursorY.toFixed(2)}-${line}`,
+        text: line,
+        x: baseX,
+        y: cursorY,
+        fontSize,
+        fontWeight,
+        fontStyle,
+      });
       cursorY += lineSpacing;
     }
     if (style.spacingAfterMm) {
@@ -115,14 +123,125 @@ function FrontTextOverlay({
   const companyLines = (company ?? "").replace(/\r\n/g, "\n").split("\n").filter(Boolean);
   pushBlock(companyLines, frame.company);
 
+  return linesOut;
+}
+
+function FrontTextOverlay({
+  template,
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  mobile = "",
+  company = "",
+  url = "",
+  linkedin = "",
+}: {
+  template: ResolvedTemplate;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  company?: string;
+  url?: string;
+  linkedin?: string;
+}) {
+  const preparedLines = useMemo(
+    () =>
+      collectFrontLines({
+        template,
+        name,
+        role,
+        email,
+        phone,
+        mobile,
+        company,
+        url,
+        linkedin,
+      }),
+    [template, name, role, email, phone, mobile, company, url, linkedin],
+  );
+
+  const signature = useMemo(
+    () =>
+      preparedLines
+        .map((line) => `${line.text}|${line.y.toFixed(3)}|${line.fontSize.toFixed(3)}|${line.fontWeight}|${line.fontStyle}`)
+        .join("||"),
+    [preparedLines],
+  );
+
+  const [activeLines, setActiveLines] = useState<FrontLine[]>(preparedLines);
+  const [previousLines, setPreviousLines] = useState<FrontLine[] | null>(null);
+  const [previousKey, setPreviousKey] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "init" | "show">("idle");
+
+  const activeRef = useRef(activeLines);
+  const signatureRef = useRef(signature);
+
+  useEffect(() => {
+    activeRef.current = activeLines;
+  }, [activeLines]);
+
+  useEffect(() => {
+    if (signatureRef.current === signature) {
+      if (activeRef.current !== preparedLines) {
+        setActiveLines(preparedLines);
+        activeRef.current = preparedLines;
+      }
+      return;
+    }
+
+    const prev = activeRef.current;
+    setPreviousLines(prev);
+    setPreviousKey(signatureRef.current);
+    setActiveLines(preparedLines);
+    activeRef.current = preparedLines;
+    signatureRef.current = signature;
+
+    setPhase("init");
+    const raf = requestAnimationFrame(() => setPhase("show"));
+    const timeout = window.setTimeout(() => {
+      setPreviousLines(null);
+      setPreviousKey(null);
+      setPhase("idle");
+    }, 220);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timeout);
+    };
+  }, [preparedLines, signature]);
+
+  const renderLines = (linesToRender: FrontLine[]) =>
+    linesToRender.map((line) => (
+      <text
+        key={line.key}
+        x={line.x}
+        y={line.y}
+        fontSize={line.fontSize}
+        fontWeight={line.fontWeight}
+        fontStyle={line.fontStyle}
+        fill="#1f2937"
+      >
+        {line.text}
+      </text>
+    ));
+
+  const currentOpacity = phase === "init" ? "opacity-0" : "opacity-100";
+  const previousOpacity = phase === "show" ? "opacity-0" : "opacity-100";
+
   return (
-    <g
-      fontFamily={`"Frutiger LT Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial`}
-      fill="#111"
-      dominantBaseline="alphabetic"
-    >
-      {texts}
-    </g>
+    <>
+      {previousLines ? (
+        <g key={`previous-${previousKey ?? "static"}`} className={`transition-opacity duration-200 ${previousOpacity}`}>
+          {renderLines(previousLines)}
+        </g>
+      ) : null}
+      <g key={`active-${signature}`} className={`transition-opacity duration-200 ${currentOpacity}`}>
+        {renderLines(activeLines)}
+      </g>
+    </>
   );
 }
 
@@ -273,17 +392,19 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
           />
         ) : null}
 
-        <FrontTextOverlay
-          template={template}
-          name={name}
-          role={role}
-          email={email}
-          phone={phone}
-          mobile={mobile}
-          company={company}
-          url={url}
-          linkedin={linkedin}
-        />
+        <g className="[&>g]:opacity-100">
+          <FrontTextOverlay
+            template={template}
+            name={name}
+            role={role}
+            email={email}
+            phone={phone}
+            mobile={mobile}
+            company={company}
+            url={url}
+            linkedin={linkedin}
+          />
+        </g>
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
