@@ -187,9 +187,7 @@ export function AppSidebar({
                     ) : null}
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <UserSettingsDialog showTooltip tooltip={settingsLabel} />
-                </div>
+                <UserSettingsDialog tooltip={settingsLabel} />
               </div>
               <SidebarTooltip label={logoutLabel} show={false} className="mt-4 w-full">
                 <LogoutButton label={logoutLabel} />

@@ -33,6 +33,8 @@ type Props = {
 
 export function SidebarNav({ groups, className, collapsed = false }: Props) {
   const pathname = usePathname();
+  const groupSpacing = collapsed ? "space-y-2" : "space-y-3";
+  const itemsGap = collapsed ? "gap-1.5" : "gap-2.5";
 
   return (
     <nav className={cn("flex flex-col gap-4", className)}>
@@ -40,9 +42,10 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
         <div
           key={group.title ?? `group-${idx}`}
           className={cn(
-            "space-y-1.5",
+            groupSpacing,
             idx > 0 && "border-t border-slate-200 pt-3",
-            idx > 0 && !collapsed && "mt-3",
+            idx > 0 && !collapsed && "mt-4",
+            idx > 0 && collapsed && "mt-3",
           )}
         >
           {group.title ? (
@@ -55,7 +58,7 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
               {group.title}
             </div>
           ) : null}
-          <div className="flex flex-col gap-1">
+          <div className={cn("flex flex-col", itemsGap)}>
             {group.items.map(({ href, label, icon }) => {
               const active = pathname === href;
               const IconComponent = icon ? ICONS[icon] : undefined;
