@@ -23,12 +23,14 @@ const STYLE_OPTIONS = [
   { value: "ITALIC", key: "labels.styleItalic" },
 ];
 
+const UNSET_STYLE_VALUE = "__unset_style__";
+
 export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
   const t = useTranslations("admin.fonts");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [defaultWeight, setDefaultWeight] = useState("");
-  const [defaultStyle, setDefaultStyle] = useState<string>("");
+  const [defaultStyle, setDefaultStyle] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
     setName("");
     setSlug("");
     setDefaultWeight("");
-    setDefaultStyle("");
+    setDefaultStyle(null);
     setNotes("");
     setIsSubmitting(false);
     setError(null);
@@ -57,7 +59,7 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
       name: name.trim(),
       slug: slug.trim() || undefined,
       defaultWeight: defaultWeight.trim() ? Number(defaultWeight.trim()) : null,
-      defaultStyle: defaultStyle || null,
+      defaultStyle: defaultStyle ?? null,
       notes: notes.trim() ? notes.trim() : null,
     };
 
@@ -134,12 +136,15 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="font-create-style">{t("create.fields.defaultStyle")}</Label>
-                <Select value={defaultStyle} onValueChange={setDefaultStyle}>
+                <Select
+                  value={defaultStyle ?? UNSET_STYLE_VALUE}
+                  onValueChange={(value) => setDefaultStyle(value === UNSET_STYLE_VALUE ? null : value)}
+                >
                   <SelectTrigger id="font-create-style">
                     <SelectValue placeholder={t("create.placeholders.defaultStyle")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t("create.unset")}</SelectItem>
+                    <SelectItem value={UNSET_STYLE_VALUE}>{t("create.unset")}</SelectItem>
                     {STYLE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {t(option.key as any)}

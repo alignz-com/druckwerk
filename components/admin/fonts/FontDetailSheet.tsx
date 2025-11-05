@@ -35,11 +35,13 @@ const STYLE_OPTIONS = [
   { value: "ITALIC", key: "labels.styleItalic" },
 ];
 
+const UNSET_STYLE_VALUE = "__unset_style__";
+
 type FormState = {
   name: string;
   slug: string;
   defaultWeight: string;
-  defaultStyle: string;
+  defaultStyle: string | null;
   notes: string;
 };
 
@@ -47,7 +49,7 @@ const emptyForm: FormState = {
   name: "",
   slug: "",
   defaultWeight: "",
-  defaultStyle: "",
+  defaultStyle: null,
   notes: "",
 };
 
@@ -68,7 +70,7 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
         name: family.name ?? "",
         slug: family.slug ?? "",
         defaultWeight: family.defaultWeight ? String(family.defaultWeight) : "",
-        defaultStyle: family.defaultStyle ?? "",
+        defaultStyle: family.defaultStyle ?? null,
         notes: family.notes ?? "",
       });
     } else {
@@ -108,7 +110,7 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
       name: form.name.trim(),
       slug: form.slug.trim() || undefined,
       defaultWeight: form.defaultWeight.trim() ? Number(form.defaultWeight.trim()) : null,
-      defaultStyle: form.defaultStyle || null,
+      defaultStyle: form.defaultStyle ?? null,
       notes: form.notes.trim() ? form.notes.trim() : null,
     };
 
@@ -246,14 +248,19 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="font-detail-style">{t("detail.fields.defaultStyle")}</Label>
-                    <Select value={form.defaultStyle} onValueChange={(value) => handleFieldChange("defaultStyle", value)}>
-                      <SelectTrigger id="font-detail-style">
-                        <SelectValue placeholder={t("detail.placeholders.defaultStyle")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">{t("create.unset")}</SelectItem>
-                        {STYLE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                  <Select
+                    value={form.defaultStyle ?? UNSET_STYLE_VALUE}
+                    onValueChange={(value) =>
+                      handleFieldChange("defaultStyle", value === UNSET_STYLE_VALUE ? null : value)
+                    }
+                  >
+                    <SelectTrigger id="font-detail-style">
+                      <SelectValue placeholder={t("detail.placeholders.defaultStyle")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={UNSET_STYLE_VALUE}>{t("create.unset")}</SelectItem>
+                      {STYLE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
                             {t(option.key as any)}
                           </SelectItem>
                         ))}
