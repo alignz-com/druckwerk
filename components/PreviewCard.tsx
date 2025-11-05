@@ -508,6 +508,9 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
             strokeWidth={0.2}
             vectorEffect="non-scaling-stroke"
           />
+          <text x={10} y={15} fontSize={ptToMm(10)} fill="#000">
+            {name}
+          </text>
           <FrontTextOverlay
             template={template}
             name={name}
