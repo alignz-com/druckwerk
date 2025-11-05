@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatPhones } from "@/lib/formatPhones";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import QRCode from "qrcode";
@@ -9,15 +9,23 @@ import type { ResolvedTemplate } from "@/lib/templates";
 
 function SmoothSvgImage({
   src,
-  x, y, width, height,
+  x,
+  y,
+  width,
+  height,
   preserveAspectRatio = "xMidYMid meet",
+  onError,
 }: {
   src: string;
-  x: number; y: number; width: number; height: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   preserveAspectRatio?: string;
+  onError?: () => void;
 }) {
-  const [displaySrc, setDisplaySrc] = useState(src);      // what SVG currently shows
-  const [entering, setEntering] = useState(false);        // drives opacity transition
+  const [displaySrc, setDisplaySrc] = useState(src); // what SVG currently shows
+  const [entering, setEntering] = useState(false); // drives opacity transition
 
   useEffect(() => {
     if (!src) return;
@@ -41,9 +49,13 @@ function SmoothSvgImage({
   return (
     <image
       href={displaySrc}
-      x={x} y={y} width={width} height={height}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
       preserveAspectRatio={preserveAspectRatio as any}
       className={`transition-opacity duration-300 ${entering ? "opacity-0" : "opacity-100"}`}
+      onError={onError ? () => onError() : undefined}
     />
   );
 }
@@ -226,9 +238,106 @@ const CARD_W = 85;
 const CARD_H = 55;
 const DEFAULT_PREVIEW_MAX_WIDTH = 960;
 const DEFAULT_FONT_SCALE = 0.58;
+const SIGNED_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const SIGNED_URL_FALLBACK_TTL_MS = 60 * 60 * 1000;
 
-function getTemplateAssetUrl(template: ResolvedTemplate, type: string) {
-  return template.assets?.find((asset) => asset.type === type)?.publicUrl ?? null;
+type AssetState = {
+  storageKey: string | null;
+  url: string | null;
+  expiresAt: number | null;
+};
+
+function normalizeExpiresAt(iso?: string) {
+  if (!iso) return null;
+  const parsed = Date.parse(iso);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function useTemplateAssetSource(template: ResolvedTemplate, assetType: string, fallback?: string | null) {
+  const fallbackUrl = fallback ?? null;
+  const asset = useMemo(
+    () => template.assets?.find((item) => item.type === assetType),
+    [template.assets, assetType],
+  );
+
+  const [state, setState] = useState<AssetState>(() => ({
+    storageKey: asset?.storageKey ?? null,
+    url: asset?.publicUrl ?? fallbackUrl,
+    expiresAt: normalizeExpiresAt(asset?.expiresAt),
+  }));
+
+  useEffect(() => {
+    const nextState: AssetState = {
+      storageKey: asset?.storageKey ?? null,
+      url: asset?.publicUrl ?? fallbackUrl,
+      expiresAt: normalizeExpiresAt(asset?.expiresAt),
+    };
+
+    setState((prev) =>
+      prev.storageKey === nextState.storageKey && prev.url === nextState.url && prev.expiresAt === nextState.expiresAt
+        ? prev
+        : nextState,
+    );
+  }, [asset?.storageKey, asset?.publicUrl, asset?.expiresAt, fallbackUrl]);
+
+  const refreshingRef = useRef(false);
+  const { storageKey, url, expiresAt } = state;
+
+  const refreshSignedUrl = useCallback(async () => {
+    if (!storageKey || refreshingRef.current) return;
+    refreshingRef.current = true;
+    try {
+      const res = await fetch("/api/templates/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storageKeys: [storageKey] }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to refresh asset ${storageKey}: ${res.status}`);
+      }
+
+      const data = (await res.json()) as {
+        urls?: Array<{ storageKey: string; url: string | null; expiresAt?: string }>;
+      };
+      const updated = data.urls?.find((entry) => entry.storageKey === storageKey);
+      if (updated?.url) {
+        const nextExpiresAt =
+          normalizeExpiresAt(updated.expiresAt) ?? Date.now() + SIGNED_URL_FALLBACK_TTL_MS;
+        setState({
+          storageKey,
+          url: updated.url,
+          expiresAt: nextExpiresAt,
+        });
+      }
+    } catch (error) {
+      console.error("[preview] Failed to refresh template asset URL", error);
+    } finally {
+      refreshingRef.current = false;
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey || !expiresAt) return;
+
+    const refreshAt = expiresAt - SIGNED_URL_REFRESH_BUFFER_MS;
+    const delay = refreshAt - Date.now();
+    if (delay <= 0) {
+      refreshSignedUrl();
+      return;
+    }
+    const timeout = window.setTimeout(refreshSignedUrl, delay);
+    return () => window.clearTimeout(timeout);
+  }, [storageKey, expiresAt, refreshSignedUrl]);
+
+  const handleError = useCallback(() => {
+    void refreshSignedUrl();
+  }, [refreshSignedUrl]);
+
+  return {
+    url: url ?? fallbackUrl ?? null,
+    onError: storageKey ? handleError : undefined,
+  };
 }
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
@@ -337,7 +446,11 @@ function buildVCard3(o: {
 export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "", linkedin }: Props) {
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
-  const frontBackground = template.previewFrontPath || getTemplateAssetUrl(template, "PREVIEW_FRONT");
+  const { url: frontBackground, onError: handleFrontAssetError } = useTemplateAssetSource(
+    template,
+    "PREVIEW_FRONT",
+    template.previewFrontPath,
+  );
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -356,6 +469,7 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
             width={CARD_W}
             height={CARD_H}
             preserveAspectRatio="xMidYMid meet"
+            onError={handleFrontAssetError}
           />
         ) : null}
 
@@ -477,7 +591,11 @@ export function BusinessCardBack({
   const addressExtra = addrLines && addrLines.length > 3 ? addrLines.slice(3).join(" ") : undefined;
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
-  const backBackground = template.previewBackPath || getTemplateAssetUrl(template, "PREVIEW_BACK");
+  const { url: backBackground, onError: handleBackAssetError } = useTemplateAssetSource(
+    template,
+    "PREVIEW_BACK",
+    template.previewBackPath,
+  );
 
   const vcard = useMemo(
     () =>
@@ -547,6 +665,7 @@ export function BusinessCardBack({
             width={CARD_W}
             height={CARD_H}
             preserveAspectRatio="xMidYMid meet"
+            onError={handleBackAssetError}
           />
         ) : null}
 

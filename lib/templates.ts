@@ -55,6 +55,8 @@ function encodeStoragePath(path: string) {
 }
 
 const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
+const SIGNED_URL_TTL_SECONDS = 3600;
+const SIGNED_URL_TTL_MS = SIGNED_URL_TTL_SECONDS * 1000;
 
 function buildTemplateAssetPublicUrl(storageKey: string | null | undefined) {
   if (!storageKey) return null;
@@ -69,8 +71,10 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     tpl.assets.map(async (asset) => {
       const directUrl = buildTemplateAssetPublicUrl(asset.storageKey);
       let signedUrl: string | null = null;
+      let expiresAt: string | undefined;
       try {
-        signedUrl = await getSignedUrl(TEMPLATE_BUCKET, asset.storageKey, 3600);
+        signedUrl = await getSignedUrl(TEMPLATE_BUCKET, asset.storageKey, SIGNED_URL_TTL_SECONDS);
+        expiresAt = new Date(Date.now() + SIGNED_URL_TTL_MS).toISOString();
       } catch (error) {
         console.warn(`[templates] Failed to sign asset ${asset.storageKey}`, error);
       }
@@ -80,6 +84,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
         publicUrl: signedUrl ?? directUrl ?? null,
         version: asset.version,
         updatedAt: asset.updatedAt.toISOString(),
+        expiresAt,
       };
     }),
   );

@@ -60,6 +60,7 @@ export type TemplateAssetSummary = {
   publicUrl: string | null;
   version: number;
   updatedAt: string;
+  expiresAt?: string;
 };
 
 const BASE_TEXT_FRAME = {
