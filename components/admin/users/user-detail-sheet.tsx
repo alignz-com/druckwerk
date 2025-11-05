@@ -24,16 +24,18 @@ type Props = {
   onUserUpdated: (user: AdminUserSummary) => void;
 };
 
+const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
+
 export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUserUpdated }: Props) {
   const t = useTranslations("admin.users");
-  const [selectedBrandId, setSelectedBrandId] = useState<string>("");
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      setSelectedBrandId(user.brandId ?? "");
+      setSelectedBrandId(user.brandId ?? null);
     }
     setError(null);
     setSuccess(null);
@@ -49,7 +51,7 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
       const response = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandId: selectedBrandId || null }),
+        body: JSON.stringify({ brandId: selectedBrandId }),
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -110,12 +112,15 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="user-brand-select">{t("detail.assignment.brandLabel")}</Label>
-                  <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                  <Select
+                    value={selectedBrandId ?? UNASSIGNED_BRAND_VALUE}
+                    onValueChange={(value) => setSelectedBrandId(value === UNASSIGNED_BRAND_VALUE ? null : value)}
+                  >
                     <SelectTrigger id="user-brand-select" className="w-full">
                       <SelectValue placeholder={t("detail.assignment.placeholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{t("detail.assignment.unassigned")}</SelectItem>
+                      <SelectItem value={UNASSIGNED_BRAND_VALUE}>{t("detail.assignment.unassigned")}</SelectItem>
                       {brandOptions.map((brand) => (
                         <SelectItem key={brand.id} value={brand.id}>
                           {brand.name}

@@ -29,13 +29,15 @@ const ROLE_OPTIONS: Array<{ value: AdminUserSummary["role"]; label: string }> = 
   { value: "PRINTER", label: "Printer" },
 ];
 
+const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
+
 export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }: Props) {
   const t = useTranslations("admin.users");
   const rolesT = useTranslations("layout.roles");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<AdminUserSummary["role"]>("USER");
-  const [brandId, setBrandId] = useState<string>("");
+  const [brandId, setBrandId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
     setEmail("");
     setName("");
     setRole("USER");
-    setBrandId("");
+    setBrandId(null);
     setIsSubmitting(false);
     setError(null);
     setSuccess(null);
@@ -60,7 +62,7 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
       email: email.trim(),
       name: name.trim() || undefined,
       role,
-      brandId: brandId || null,
+      brandId,
     };
 
     try {
@@ -137,12 +139,15 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
             </div>
             <div className="space-y-2">
               <Label htmlFor="user-create-brand">{t("create.fields.brand")}</Label>
-              <Select value={brandId} onValueChange={setBrandId}>
+              <Select
+                value={brandId ?? UNASSIGNED_BRAND_VALUE}
+                onValueChange={(value) => setBrandId(value === UNASSIGNED_BRAND_VALUE ? null : value)}
+              >
                 <SelectTrigger id="user-create-brand" className="w-full">
                   <SelectValue placeholder={t("create.placeholders.brand")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t("create.unassigned")}</SelectItem>
+                  <SelectItem value={UNASSIGNED_BRAND_VALUE}>{t("create.unassigned")}</SelectItem>
                   {brandOptions.map((brand) => (
                     <SelectItem key={brand.id} value={brand.id}>
                       {brand.name}
