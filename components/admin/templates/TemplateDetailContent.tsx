@@ -8,6 +8,7 @@ import { AlertCircle, FileWarning, Trash2 } from "lucide-react";
 import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
@@ -26,13 +27,19 @@ type Props = {
 };
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
-  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const t = useTranslations("admin.templates");
-  const [configDraft, setConfigDraft] = useState(() => stringifyConfig(template.config));
-  const [configError, setConfigError] = useState<string | null>(null);
-  const [configMessage, setConfigMessage] = useState<string | null>(null);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formState, setFormState] = useState(() => ({
+    label: template.label ?? "",
+    description: template.description ?? "",
+    layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
+    printDpi: template.printDpi ? String(template.printDpi) : "",
+    config: stringifyConfig(template.config),
+  }));
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   const latestAssets = new Map<TemplateAssetType, (typeof template.assets)[number] | undefined>();
   for (const type of MANAGED_TYPES) {
@@ -40,16 +47,85 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   }
 
   useEffect(() => {
-    setConfigDraft(stringifyConfig(template.config));
-    setConfigError(null);
-    setConfigMessage(null);
-  }, [template.config]);
+    setFormState({
+      label: template.label ?? "",
+      description: template.description ?? "",
+      layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
+      printDpi: template.printDpi ? String(template.printDpi) : "",
+      config: stringifyConfig(template.config),
+    });
+    setFormError(null);
+    setFormSuccess(null);
+  }, [template]);
 
-  useEffect(() => {
-    if (!configMessage) return;
-    const timeout = setTimeout(() => setConfigMessage(null), 3000);
-    return () => clearTimeout(timeout);
-  }, [configMessage]);
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
+
+    const label = formState.label.trim();
+    if (!label) {
+      setFormError(t("detail.errors.labelRequired"));
+      return;
+    }
+
+    const description = formState.description.trim();
+    const layoutVersionValue = formState.layoutVersion.trim();
+    const printDpiValue = formState.printDpi.trim();
+
+    let parsedConfig: unknown;
+    try {
+      parsedConfig = JSON.parse(formState.config);
+    } catch {
+      setFormError(t("detail.configInvalid"));
+      return;
+    }
+
+    let layoutVersion: number | null = null;
+    if (layoutVersionValue) {
+      const parsed = Number.parseInt(layoutVersionValue, 10);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        setFormError(t("detail.errors.layoutVersionInvalid"));
+        return;
+      }
+      layoutVersion = parsed;
+    }
+
+    let printDpi: number | null = null;
+    if (printDpiValue) {
+      const parsed = Number.parseInt(printDpiValue, 10);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        setFormError(t("detail.errors.printDpiInvalid"));
+        return;
+      }
+      printDpi = parsed;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/admin/templates/${template.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label,
+          description,
+          layoutVersion,
+          printDpi,
+          config: parsedConfig,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error ?? t("detail.saveFailed"));
+      }
+      setFormSuccess(t("detail.saveSuccess"));
+      router.refresh();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : t("detail.saveFailed"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -65,57 +141,101 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
-  const handleConfigSave = async () => {
-    setConfigError(null);
-    setConfigMessage(null);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(configDraft);
-    } catch {
-      setConfigError(t("detail.configInvalid"));
-      return;
-    }
-    setIsSavingConfig(true);
-    try {
-      const response = await fetch(`/api/admin/templates/${template.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config: parsed }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error ?? t("detail.configSaveFailed"));
-      }
-      setConfigMessage(t("detail.configSaved"));
-      router.refresh();
-    } catch (error) {
-      setConfigError(error instanceof Error ? error.message : t("detail.configSaveFailed"));
-    } finally {
-      setIsSavingConfig(false);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-2 border-b border-slate-200 pb-4">
-        <h2 className="text-xl font-semibold text-slate-900">
-          {template.label} <span className="text-sm font-normal text-slate-500">({template.key})</span>
-        </h2>
-        <p className="text-sm text-slate-500">{template.description || t("detail.noDescription")}</p>
-        <dl className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
-          <div>
-            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.layoutVersion")}</dt>
-            <dd>{template.layoutVersion ?? "–"}</dd>
+    <div className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="template-key">{t("create.fields.key")}</Label>
+            <Input id="template-key" value={template.key} disabled />
           </div>
-          <div>
-            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.printDpi")}</dt>
-            <dd>{template.printDpi ?? "–"}</dd>
+          <div className="space-y-2">
+            <Label htmlFor="template-label">{t("create.fields.label")}</Label>
+            <Input
+              id="template-label"
+              value={formState.label}
+              onChange={(event) => {
+                setFormState((current) => ({ ...current, label: event.target.value }));
+                setFormSuccess(null);
+              }}
+            />
           </div>
-          <div>
-            <dt className="font-medium uppercase tracking-wide text-slate-400">{t("detail.updatedAt")}</dt>
-            <dd>{formatDate(template.updatedAt)}</dd>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="template-description">{t("create.fields.description")}</Label>
+            <Textarea
+              id="template-description"
+              value={formState.description}
+              onChange={(event) => {
+                setFormState((current) => ({ ...current, description: event.target.value }));
+                setFormSuccess(null);
+              }}
+              rows={3}
+              placeholder={t("create.placeholders.description")}
+            />
           </div>
-        </dl>
+          <div className="space-y-2">
+            <Label htmlFor="template-layout-version">{t("create.fields.layoutVersion")}</Label>
+            <Input
+              id="template-layout-version"
+              type="number"
+              min={0}
+              value={formState.layoutVersion}
+              onChange={(event) => {
+                setFormState((current) => ({ ...current, layoutVersion: event.target.value }));
+                setFormSuccess(null);
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
+            <Input
+              id="template-print-dpi"
+              type="number"
+              min={0}
+              value={formState.printDpi}
+              onChange={(event) => {
+                setFormState((current) => ({ ...current, printDpi: event.target.value }));
+                setFormSuccess(null);
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="template-config">{t("create.fields.config")}</Label>
+          <Textarea
+            id="template-config"
+            value={formState.config}
+            onChange={(event) => {
+              setFormState((current) => ({ ...current, config: event.target.value }));
+              setFormSuccess(null);
+            }}
+            rows={12}
+            className="font-mono text-xs"
+          />
+          <p className="text-xs text-slate-500">{t("create.hints.config")}</p>
+        </div>
+
+        {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+        {formSuccess ? <p className="text-sm text-emerald-600">{formSuccess}</p> : null}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? t("detail.saving") : t("detail.saveButton")}
+          </Button>
+        </div>
+      </form>
+
+      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/80 p-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-slate-900">{t("detail.uploadTitle")}</h3>
+          <p className="text-xs text-slate-500">{t("detail.uploadHint")}</p>
+        </div>
+        <TemplateAssetUploader
+          templateKey={template.key}
+          suggestedVersion={nextAssetVersion(template)}
+          className="mt-4"
+        />
       </div>
 
       <section className="space-y-3">
@@ -134,31 +254,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             {t("detail.notAssigned")}
           </div>
         )}
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{t("detail.configHeading")}</h3>
-            <p className="text-xs text-slate-500">{t("detail.configDescription")}</p>
-          </div>
-          <div className="flex flex-col items-start gap-1 sm:items-end">
-            {configMessage ? <span className="text-xs text-emerald-600">{configMessage}</span> : null}
-            <Button size="sm" variant="secondary" onClick={handleConfigSave} disabled={isSavingConfig}>
-              {isSavingConfig ? t("detail.configSaving") : t("detail.configSave")}
-            </Button>
-          </div>
-        </div>
-        <Textarea
-          value={configDraft}
-          onChange={(event) => {
-            setConfigDraft(event.target.value);
-            if (configError) setConfigError(null);
-          }}
-          rows={12}
-          className="font-mono text-xs"
-        />
-        {configError ? <p className="text-xs text-red-600">{configError}</p> : null}
       </section>
 
       <section className="space-y-3">
@@ -220,16 +315,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             </table>
           </div>
         ) : null}
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-          <Label className="text-sm font-semibold text-slate-900">{t("detail.uploadTitle")}</Label>
-          <p className="text-xs text-slate-500">{t("detail.uploadHint")}</p>
-          <TemplateAssetUploader
-            templateKey={template.key}
-            suggestedVersion={nextAssetVersion(template)}
-            className="mt-4"
-          />
-        </div>
       </section>
 
       <section className="space-y-3">
