@@ -42,6 +42,7 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
         className={cn(minWidthClassName, className)}
         disabled={disabled || loading}
         aria-busy={loading}
+        data-loading={loading ? "true" : undefined}
         {...props}
       >
         {content}
