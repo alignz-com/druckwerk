@@ -5,7 +5,6 @@ import { cookies } from "next/headers";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
 
@@ -87,37 +86,29 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         </div>
       ) : null}
 
-      <Card className="border-slate-200 shadow-none">
-        <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-          <CardTitle className="text-lg">{t.ordersPage.table.title}</CardTitle>
-          <CardDescription>{t.ordersPage.table.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <OrdersTable
-            data={tableData}
-            showUserColumn={isAdmin}
-            labels={{
-              reference: t.ordersPage.table.reference,
-              created: t.ordersPage.table.created,
-              user: t.ordersPage.table.user,
-              template: t.ordersPage.table.template,
-              quantity: t.ordersPage.table.quantity,
-              status: t.ordersPage.table.status,
-              pdf: t.ordersPage.table.pdf,
-              viewPdf: t.ordersPage.table.viewPdf,
-            }}
-            searchPlaceholder={t.ordersPage.table.searchPlaceholder}
-            emptyState={t.ordersPage.table.empty}
-            noResults={t.ordersPage.table.noResults}
-            pagination={{
-              labelTemplate: t.ordersPage.table.pagination.label,
-              previous: t.ordersPage.table.pagination.previous,
-              next: t.ordersPage.table.pagination.next,
-              reset: t.ordersPage.table.pagination.reset,
-            }}
-          />
-        </CardContent>
-      </Card>
+      <OrdersTable
+        data={tableData}
+        showUserColumn={isAdmin}
+        labels={{
+          reference: t.ordersPage.table.reference,
+          created: t.ordersPage.table.created,
+          user: t.ordersPage.table.user,
+          template: t.ordersPage.table.template,
+          quantity: t.ordersPage.table.quantity,
+          status: t.ordersPage.table.status,
+          pdf: t.ordersPage.table.pdf,
+          viewPdf: t.ordersPage.table.viewPdf,
+        }}
+        searchPlaceholder={t.ordersPage.table.searchPlaceholder}
+        emptyState={t.ordersPage.table.empty}
+        noResults={t.ordersPage.table.noResults}
+        pagination={{
+          labelTemplate: t.ordersPage.table.pagination.label,
+          previous: t.ordersPage.table.pagination.previous,
+          next: t.ordersPage.table.pagination.next,
+          reset: t.ordersPage.table.pagination.reset,
+        }}
+      />
     </div>
   );
 }

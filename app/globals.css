@@ -3,60 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@font-face {
-  font-family: "Gill Sans Nova";
-  src: local("Gill Sans Nova Book"), local("GillSansNova-Book"),
-       url("/fonts/gillsansnova-book.woff2") format("woff2"),
-       url("/fonts/gillsansnova-book.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Gill Sans Nova";
-  src: local("Gill Sans Nova Book Italic"), local("GillSansNova-BookItalic"),
-       url("/fonts/gillsansnova-bookitalic.woff2") format("woff2"),
-       url("/fonts/gillsansnova-bookitalic.woff") format("woff");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Gill Sans Nova";
-  src: local("Gill Sans Nova Bold"), local("GillSansNova-Bold"),
-       url("/fonts/gillsansnova-bold.woff2") format("woff2"),
-       url("/fonts/gillsansnova-bold.woff") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Gill Sans Nova";
-  src: local("Gill Sans Nova Bold Italic"), local("GillSansNova-BoldItalic"),
-       url("/fonts/gillsansnova-bolditalic.woff2") format("woff2"),
-       url("/fonts/gillsansnova-bolditalic.woff") format("woff");
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-
 /* Tailwind v4: Design-Tokens im CSS definieren */
 @theme {
-  --font-gill-sans-nova: "Gill Sans Nova", "Gill Sans", "Gill Sans MT",
-                         Calibri, "Trebuchet MS", ui-sans-serif, system-ui,
-                         -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-                         Arial, "Noto Sans";
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-gill-sans-nova);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

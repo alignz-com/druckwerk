@@ -25,6 +25,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
+    "geist": "^1.5.1",
     "lucide-react": "^0.542.0",
     "next": "15.5.0",
     "next-auth": "^4.24.12",
@@ -46,8 +47,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
-    "tw-animate-css": "^1.3.7",
     "tsx": "^4.7.0",
+    "tw-animate-css": "^1.3.7",
     "typescript": "^5"
   }
 }

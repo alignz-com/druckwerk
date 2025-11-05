@@ -31,25 +31,19 @@ export default function AdminBrandsClient({ brands }: Props) {
         </Button>
       </header>
 
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-slate-900">{t("table.title")}</h2>
-          <p className="text-sm text-slate-500">{t("table.description")}</p>
-        </div>
-        <BrandsTable
-          columns={columns}
-          data={brands}
-          searchPlaceholder={t("table.searchPlaceholder")}
-          emptyState={t("table.empty")}
-          noResults={t("table.noResults")}
-          paginationLabel={({ from, to, total }) =>
-            t("table.pagination.label", { from, to, total })
-          }
-          previousLabel={t("table.pagination.previous")}
-          nextLabel={t("table.pagination.next")}
-          resetLabel={t("table.pagination.reset")}
-        />
-      </section>
+      <BrandsTable
+        columns={columns}
+        data={brands}
+        searchPlaceholder={t("table.searchPlaceholder")}
+        emptyState={t("table.empty")}
+        noResults={t("table.noResults")}
+        paginationLabel={({ from, to, total }) =>
+          t("table.pagination.label", { from, to, total })
+        }
+        previousLabel={t("table.pagination.previous")}
+        nextLabel={t("table.pagination.next")}
+        resetLabel={t("table.pagination.reset")}
+      />
     </div>
   );
 }
