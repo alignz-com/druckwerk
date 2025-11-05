@@ -497,6 +497,17 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
             strokeWidth={0.4}
             vectorEffect="non-scaling-stroke"
           />
+          <rect x={10} y={10} width={65} height={5} fill="#ff00ff" fillOpacity={0.35} />
+          <rect
+            x={10}
+            y={10}
+            width={65}
+            height={5}
+            fill="none"
+            stroke="#ff00ff"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
           <FrontTextOverlay
             template={template}
             name={name}
