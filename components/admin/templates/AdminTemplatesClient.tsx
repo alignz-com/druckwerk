@@ -6,14 +6,7 @@ import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { TemplateAssetType } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TemplateDetailContent from "./TemplateDetailContent";
 import { useTranslations } from "@/components/providers/locale-provider";
 
@@ -39,15 +32,11 @@ export default function AdminTemplatesClient({ templates }: Props) {
   );
 
   const templateTable = (
-    <Card>
-      <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-        <CardTitle className="text-lg">{t("title")}</CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto px-0 py-0">
-        {templates.length === 0 ? (
-          <div className="px-6 py-8 text-sm text-slate-500">{t("table.empty")}</div>
-        ) : (
+    <div className="space-y-0">
+      {templates.length === 0 ? (
+        <div className="px-6 py-8 text-sm text-slate-500">{t("table.empty")}</div>
+      ) : (
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -105,9 +94,9 @@ export default function AdminTemplatesClient({ templates }: Props) {
               })}
             </tbody>
           </table>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 
   return (

@@ -134,15 +134,14 @@ export function BrandsTable({
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <Table>
-          <TableHeader className="bg-slate-50/60">
-            <TableRow className="border-slate-200">
-              {columns.map((column) => {
-                const columnState = {
-                  id: column.id,
-                  getCanSort: () => Boolean(column.enableSorting),
-                  getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
+      <Table className="min-w-[720px]">
+        <TableHeader className="bg-slate-50/60">
+          <TableRow className="border-slate-200">
+            {columns.map((column) => {
+              const columnState = {
+                id: column.id,
+                getCanSort: () => Boolean(column.enableSorting),
+                getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
                   toggleSorting: (desc?: boolean) => {
                     if (!column.enableSorting) return;
                     setSort((current) => {
@@ -162,36 +161,34 @@ export function BrandsTable({
                     });
                   },
                 };
-
                 return (
                   <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
                     <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
                   </TableHead>
                 );
               })}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pageData.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
+                {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pageData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
-                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
-                </TableCell>
+          ) : (
+            pageData.map((brand) => (
+              <TableRow key={brand.id} className="border-slate-200">
+                {columns.map((column) => (
+                  <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                    {column.renderCell(brand)}
+                  </TableCell>
+                ))}
               </TableRow>
-            ) : (
-              pageData.map((brand) => (
-                <TableRow key={brand.id} className="border-slate-200">
-                  {columns.map((column) => (
-                    <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                      {column.renderCell(brand)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>

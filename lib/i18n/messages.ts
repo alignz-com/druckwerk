@@ -103,6 +103,8 @@ export const messages = {
       empty: "No orders yet. Start with “New Order”.",
       buttonNew: "New Order",
       table: {
+        title: "Order list",
+        description: "Search, sort, and review your order history.",
         reference: "Reference",
         created: "Created",
         user: "User",
@@ -111,6 +113,15 @@ export const messages = {
         status: "Status",
         pdf: "PDF",
         viewPdf: "View PDF",
+        searchPlaceholder: "Search orders…",
+        empty: "No orders yet. Start with “New Order”.",
+        noResults: "No orders match your filters.",
+        pagination: {
+          label: "Showing {from}–{to} of {total}",
+          previous: "Previous",
+          next: "Next",
+          reset: "Reset sorting",
+        },
       },
     },
     statuses: {
@@ -425,6 +436,8 @@ export const messages = {
       empty: "Noch keine Bestellungen vorhanden. Starte mit „Neue Bestellung“.",
       buttonNew: "Neue Bestellung",
       table: {
+        title: "Bestellübersicht",
+        description: "Durchsuche, filtere und sortiere deine Aufträge.",
         reference: "Referenz",
         created: "Erstellt",
         user: "Benutzer",
@@ -433,6 +446,15 @@ export const messages = {
         status: "Status",
         pdf: "PDF",
         viewPdf: "PDF ansehen",
+        searchPlaceholder: "Bestellungen durchsuchen…",
+        empty: "Noch keine Bestellungen vorhanden. Starte mit „Neue Bestellung“.",
+        noResults: "Keine Bestellungen passen zu deinen Filtern.",
+        pagination: {
+          label: "Zeige {from}–{to} von {total}",
+          previous: "Zurück",
+          next: "Weiter",
+          reset: "Sortierung zurücksetzen",
+        },
       },
     },
     statuses: {
