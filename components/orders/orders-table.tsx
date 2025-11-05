@@ -58,7 +58,7 @@ type OrdersTableProps = {
     next: string;
     reset: string;
   };
-  selectionLabel?: (count: number) => string;
+  selectionLabelTemplate?: string;
   renderActions?: (selectedIds: string[]) => ReactNode;
 };
 
@@ -70,7 +70,7 @@ export function OrdersTable({
   emptyState,
   noResults,
   pagination,
-  selectionLabel,
+  selectionLabelTemplate,
   renderActions,
 }: OrdersTableProps) {
   const [search, setSearch] = useState("");
@@ -226,6 +226,10 @@ export function OrdersTable({
   const selectedCount = selected.size;
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
   const somePageSelected = !allPageSelected && pageIds.some((id) => selected.has(id));
+  const selectedLabel =
+    selectedCount > 0 && selectionLabelTemplate
+      ? selectionLabelTemplate.replace("{count}", String(selectedCount))
+      : null;
 
   const togglePageSelection = (checked: boolean) => {
     setSelected((current) => {
@@ -284,8 +288,8 @@ export function OrdersTable({
               {pagination.reset}
             </Button>
           ) : null}
-          {selectedCount > 0 && selectionLabel ? (
-            <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
+          {selectedLabel ? (
+            <div className="text-sm text-slate-500">{selectedLabel}</div>
           ) : null}
           {renderActions ? renderActions(Array.from(selected)) : null}
         </div>
