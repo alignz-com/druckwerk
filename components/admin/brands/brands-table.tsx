@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  dataTableContainerClass,
+  dataTableFooterClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles";
 
 import { DataTableColumnHeader } from "./data-table-column-header";
 import type { BrandColumn } from "./columns";
@@ -206,10 +212,10 @@ export function BrandsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-slate-200">
+      <div className={dataTableContainerClass}>
         <Table className="min-w-[720px]">
-          <TableHeader className="bg-slate-50/60">
-            <TableRow className="border-slate-200">
+          <TableHeader className={dataTableHeaderClass}>
+            <TableRow className={dataTableRowClass}>
               <TableHead className="w-12 px-4">
                 <Checkbox
                   aria-label="Select all rows"
@@ -258,7 +264,7 @@ export function BrandsTable({
               </TableRow>
             ) : (
               pageData.map((brand) => (
-                <TableRow key={brand.id} className="border-slate-200">
+                <TableRow key={brand.id} className={dataTableRowClass}>
                   <TableCell className="w-12 px-4">
                     <Checkbox
                       aria-label={`Select ${brand.name}`}
@@ -278,7 +284,7 @@ export function BrandsTable({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <div className={dataTableFooterClass}>
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
         <div className="flex items-center gap-2">
           <Button

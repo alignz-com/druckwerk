@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
+import {
+  dataTableContainerClass,
+  dataTableFooterClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles";
 
 const PAGE_SIZE = 10;
 
@@ -208,10 +214,10 @@ export function TemplatesTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className={dataTableContainerClass}>
         <Table className="min-w-[720px]">
-          <TableHeader className="bg-slate-50/60">
-            <TableRow className="border-slate-200">
+          <TableHeader className={dataTableHeaderClass}>
+            <TableRow className={dataTableRowClass}>
               <TableHead className="w-12 px-4">
                 <Checkbox
                   aria-label="Select all templates"
@@ -310,7 +316,7 @@ export function TemplatesTable({
               </TableRow>
             ) : (
               pageData.map((row) => (
-                <TableRow key={row.id} className="border-slate-200">
+                <TableRow key={row.id} className={dataTableRowClass}>
                   <TableCell className="w-12 px-4">
                     <Checkbox
                       aria-label={`Select ${row.label}`}
@@ -361,7 +367,7 @@ export function TemplatesTable({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <div className={dataTableFooterClass}>
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
         <div className="flex items-center gap-2">
           <Button
