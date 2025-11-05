@@ -103,6 +103,8 @@ export const messages = {
       empty: "No orders yet. Start with “New Order”.",
       buttonNew: "New Order",
       table: {
+        title: "Order list",
+        description: "Search, sort, and review your order history.",
         reference: "Reference",
         created: "Created",
         user: "User",
@@ -111,6 +113,16 @@ export const messages = {
         status: "Status",
         pdf: "PDF",
         viewPdf: "View PDF",
+        searchPlaceholder: "Search orders…",
+        empty: "No orders yet. Start with “New Order”.",
+        noResults: "No orders match your filters.",
+        selection: "{count} selected",
+        pagination: {
+          label: "Showing {from}–{to} of {total}",
+          previous: "Previous",
+          next: "Next",
+          reset: "Reset sorting",
+        },
       },
     },
     statuses: {
@@ -133,8 +145,22 @@ export const messages = {
             actions: "Actions",
           },
           empty: "No templates yet. Upload your first template via the detail dialog.",
+          searchPlaceholder: "Search templates…",
+          noResults: "No templates match your filters.",
           unassigned: "Not assigned",
           manage: "Manage",
+          pagination: {
+            label: "Showing {from}–{to} of {total}",
+            previous: "Previous",
+            next: "Next",
+            reset: "Reset sorting",
+          },
+          bulkDelete: {
+            action: "Delete selected",
+            selection: "{count} selected",
+            success: "Deleted {count} templates.",
+            error: "Failed to delete selected templates.",
+          },
         },
         assetTypes: {
           PDF: "PDF",
@@ -259,6 +285,12 @@ export const messages = {
             previous: "Previous",
             next: "Next",
             reset: "Reset sorting",
+          },
+          bulkDelete: {
+            action: "Delete selected",
+            selection: "{count} selected",
+            success: "Deleted {count} brands.",
+            error: "Failed to delete selected brands.",
           },
         },
         dialog: {
@@ -425,6 +457,8 @@ export const messages = {
       empty: "Noch keine Bestellungen vorhanden. Starte mit „Neue Bestellung“.",
       buttonNew: "Neue Bestellung",
       table: {
+        title: "Bestellübersicht",
+        description: "Durchsuche, filtere und sortiere deine Aufträge.",
         reference: "Referenz",
         created: "Erstellt",
         user: "Benutzer",
@@ -433,6 +467,16 @@ export const messages = {
         status: "Status",
         pdf: "PDF",
         viewPdf: "PDF ansehen",
+        searchPlaceholder: "Bestellungen durchsuchen…",
+        empty: "Noch keine Bestellungen vorhanden. Starte mit „Neue Bestellung“.",
+        noResults: "Keine Bestellungen passen zu deinen Filtern.",
+        selection: "{count} ausgewählt",
+        pagination: {
+          label: "Zeige {from}–{to} von {total}",
+          previous: "Zurück",
+          next: "Weiter",
+          reset: "Sortierung zurücksetzen",
+        },
       },
     },
     statuses: {
@@ -455,8 +499,22 @@ export const messages = {
             actions: "Aktionen",
           },
           empty: "Noch keine Vorlagen angelegt. Lade die erste Vorlage über den Dialog hoch.",
+          searchPlaceholder: "Vorlagen durchsuchen…",
+          noResults: "Keine Vorlagen passen zu deinen Filtern.",
           unassigned: "Nicht zugewiesen",
           manage: "Verwalten",
+          pagination: {
+            label: "Zeige {from}–{to} von {total}",
+            previous: "Zurück",
+            next: "Weiter",
+            reset: "Sortierung zurücksetzen",
+          },
+          bulkDelete: {
+            action: "Auswahl löschen",
+            selection: "{count} ausgewählt",
+            success: "{count} Vorlagen gelöscht.",
+            error: "Ausgewählte Vorlagen konnten nicht gelöscht werden.",
+          },
         },
         assetTypes: {
           PDF: "PDF",
@@ -581,6 +639,12 @@ export const messages = {
             previous: "Zurück",
             next: "Weiter",
             reset: "Sortierung zurücksetzen",
+          },
+          bulkDelete: {
+            action: "Auswahl löschen",
+            selection: "{count} ausgewählt",
+            success: "{count} Marken gelöscht.",
+            error: "Ausgewählte Marken konnten nicht gelöscht werden.",
           },
         },
         dialog: {

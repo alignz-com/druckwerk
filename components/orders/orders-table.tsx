@@ -1,52 +1,78 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
-import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import { DataTableColumnHeader } from "./data-table-column-header";
-import type { BrandColumn } from "./columns";
+import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
 
 const PAGE_SIZE = 10;
 
-type PaginationFormatter = (args: { from: number; to: number; total: number }) => string;
+export type OrdersTableRow = {
+  id: string;
+  referenceCode: string;
+  createdAtLabel: string;
+  createdAtValue: number;
+  userName: string | null;
+  userEmail: string | null;
+  templateLabel: string;
+  quantity: number;
+  status: string;
+  statusLabel: string;
+  pdfUrl: string | null;
+};
 
-type BrandsTableProps = {
-  columns: BrandColumn<AdminBrandSummary>[];
-  data: AdminBrandSummary[];
+type OrdersTableColumn = {
+  id: string;
+  title: string;
+  align?: "left" | "right";
+  enableSorting?: boolean;
+  sortAccessor?: (row: OrdersTableRow) => string | number;
+  renderCell: (row: OrdersTableRow) => ReactNode;
+};
+
+type OrdersTableProps = {
+  data: OrdersTableRow[];
+  showUserColumn: boolean;
+  labels: {
+    reference: string;
+    created: string;
+    user: string;
+    template: string;
+    quantity: string;
+    status: string;
+    pdf: string;
+    viewPdf: string;
+  };
   searchPlaceholder: string;
   emptyState: string;
   noResults: string;
-  paginationLabel: PaginationFormatter;
-  previousLabel: string;
-  nextLabel: string;
-  resetLabel: string;
-  deleteLabel: string;
-  selectionLabel: (count: number) => string;
-  onDeleteSelected?: (ids: string[]) => Promise<void>;
-  isDeleting?: boolean;
+  pagination: {
+    labelTemplate: string;
+    previous: string;
+    next: string;
+    reset: string;
+  };
+  selectionLabel?: (count: number) => string;
+  renderActions?: (selectedIds: string[]) => ReactNode;
 };
 
-export function BrandsTable({
-  columns,
+export function OrdersTable({
   data,
+  showUserColumn,
+  labels,
   searchPlaceholder,
   emptyState,
   noResults,
-  paginationLabel,
-  previousLabel,
-  nextLabel,
-  resetLabel,
-  deleteLabel,
+  pagination,
   selectionLabel,
-  onDeleteSelected,
-  isDeleting = false,
-}: BrandsTableProps) {
+  renderActions,
+}: OrdersTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
@@ -54,18 +80,90 @@ export function BrandsTable({
 
   const normalizedSearch = search.trim().toLowerCase();
 
+  const columns = useMemo<OrdersTableColumn[]>(() => {
+    const baseColumns: OrdersTableColumn[] = [
+      {
+        id: "reference",
+        title: labels.reference,
+        enableSorting: true,
+        sortAccessor: (row) => row.referenceCode.toLowerCase(),
+        renderCell: (row) => <span className="font-medium text-slate-900">{row.referenceCode}</span>,
+      },
+      {
+        id: "created",
+        title: labels.created,
+        enableSorting: true,
+        sortAccessor: (row) => row.createdAtValue,
+        renderCell: (row) => <span className="text-slate-600">{row.createdAtLabel}</span>,
+      },
+      {
+        id: "template",
+        title: labels.template,
+        enableSorting: true,
+        sortAccessor: (row) => row.templateLabel.toLowerCase(),
+        renderCell: (row) => <span className="text-slate-600">{row.templateLabel}</span>,
+      },
+      {
+        id: "quantity",
+        title: labels.quantity,
+        align: "right",
+        enableSorting: true,
+        sortAccessor: (row) => row.quantity,
+        renderCell: (row) => <span className="text-slate-600">{row.quantity}</span>,
+      },
+      {
+        id: "status",
+        title: labels.status,
+        enableSorting: true,
+        sortAccessor: (row) => row.statusLabel.toLowerCase(),
+        renderCell: (row) => (
+          <Badge variant={row.status === "SUBMITTED" ? "secondary" : "outline"}>{row.statusLabel}</Badge>
+        ),
+      },
+      {
+        id: "pdf",
+        title: labels.pdf,
+        renderCell: (row) =>
+          row.pdfUrl ? (
+            <a href={row.pdfUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              {labels.viewPdf}
+            </a>
+          ) : (
+            <span className="text-slate-400">–</span>
+          ),
+      },
+    ];
+
+    if (showUserColumn) {
+      baseColumns.splice(2, 0, {
+        id: "user",
+        title: labels.user,
+        enableSorting: true,
+        sortAccessor: (row) => `${row.userName ?? ""} ${row.userEmail ?? ""}`.trim().toLowerCase(),
+        renderCell: (row) => (
+          <div className="text-slate-600">
+            {row.userName ?? row.userEmail ?? "–"}
+            {row.userEmail ? <span className="block text-xs text-slate-400">{row.userEmail}</span> : null}
+          </div>
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [labels, showUserColumn]);
+
   const filteredData = useMemo(() => {
     if (!normalizedSearch) {
       return data;
     }
 
-    return data.filter((brand) => {
+    return data.filter((order) => {
       const haystack = [
-        brand.name,
-        brand.slug,
-        brand.contactName ?? "",
-        brand.contactEmail ?? "",
-        brand.contactPhone ?? "",
+        order.referenceCode,
+        order.templateLabel,
+        order.statusLabel,
+        order.userName ?? "",
+        order.userEmail ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -84,7 +182,7 @@ export function BrandsTable({
       return filteredData;
     }
 
-    const accessor = column.sortAccessor ?? ((row: AdminBrandSummary) => {
+    const accessor = column.sortAccessor ?? ((row: OrdersTableRow) => {
       const value = (row as unknown as Record<string, unknown>)[column.id];
       if (typeof value === "number") return value;
       return typeof value === "string" ? value.toLowerCase() : 0;
@@ -155,12 +253,6 @@ export function BrandsTable({
     });
   };
 
-  const handleDeleteSelected = async () => {
-    if (!onDeleteSelected || selected.size === 0) return;
-    await onDeleteSelected(Array.from(selected));
-    setSelected(new Set());
-  };
-
   useEffect(() => {
     const ids = new Set(data.map((item) => item.id));
     setSelected((current) => {
@@ -189,20 +281,13 @@ export function BrandsTable({
         <div className="flex items-center justify-end gap-2">
           {sort ? (
             <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
-              {resetLabel}
+              {pagination.reset}
             </Button>
           ) : null}
-          {selectedCount > 0 ? (
+          {selectedCount > 0 && selectionLabel ? (
             <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
           ) : null}
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={selectedCount === 0 || !onDeleteSelected || isDeleting}
-            onClick={handleDeleteSelected}
-          >
-            {isDeleting ? `${deleteLabel}…` : deleteLabel}
-          </Button>
+          {renderActions ? renderActions(Array.from(selected)) : null}
         </div>
       </div>
 
@@ -223,30 +308,31 @@ export function BrandsTable({
                   getCanSort: () => Boolean(column.enableSorting),
                   getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
                   toggleSorting: (desc?: boolean) => {
-                    if (!column.enableSorting) return;
-                    setSort((current) => {
-                      if (!current || current.id !== column.id) {
-                        return { id: column.id, direction: desc ? "desc" : "asc" };
-                      }
-
-                      if (current.direction === "asc") {
-                        return desc ? { id: column.id, direction: "desc" } : current;
-                      }
-
-                      if (current.direction === "desc") {
-                        return desc ? current : null;
-                      }
-
+                  if (!column.enableSorting) return;
+                  setSort((current) => {
+                    if (!current || current.id !== column.id) {
                       return { id: column.id, direction: desc ? "desc" : "asc" };
-                    });
-                  },
-                };
-                return (
-                  <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                    <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
-                  </TableHead>
-                );
-              })}
+                    }
+
+                    if (current.direction === "asc") {
+                      return desc ? { id: column.id, direction: "desc" } : current;
+                    }
+
+                    if (current.direction === "desc") {
+                      return desc ? current : null;
+                    }
+
+                    return { id: column.id, direction: desc ? "desc" : "asc" };
+                  });
+                },
+              };
+
+              return (
+                <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                  <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
+                </TableHead>
+              );
+            })}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -257,18 +343,18 @@ export function BrandsTable({
                 </TableCell>
               </TableRow>
             ) : (
-              pageData.map((brand) => (
-                <TableRow key={brand.id} className="border-slate-200">
+              pageData.map((order) => (
+                <TableRow key={order.id} className="border-slate-200">
                   <TableCell className="w-12 px-4">
                     <Checkbox
-                      aria-label={`Select ${brand.name}`}
-                      checked={selected.has(brand.id)}
-                      onCheckedChange={(value) => toggleRowSelection(brand.id, value === true)}
+                      aria-label={`Select ${order.referenceCode}`}
+                      checked={selected.has(order.id)}
+                      onCheckedChange={(value) => toggleRowSelection(order.id, value === true)}
                     />
                   </TableCell>
                   {columns.map((column) => (
                     <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                      {column.renderCell(brand)}
+                      {column.renderCell(order)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -279,7 +365,12 @@ export function BrandsTable({
       </div>
 
       <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-        <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
+        <div>
+          {pagination.labelTemplate
+            .replace("{from}", String(from))
+            .replace("{to}", String(to))
+            .replace("{total}", String(sortedData.length))}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -289,7 +380,7 @@ export function BrandsTable({
             className="h-9"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
-            {previousLabel}
+            {pagination.previous}
           </Button>
           <Button
             variant="outline"
@@ -298,7 +389,7 @@ export function BrandsTable({
             disabled={page >= totalPages - 1 || sortedData.length === 0}
             className="h-9"
           >
-            {nextLabel}
+            {pagination.next}
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
