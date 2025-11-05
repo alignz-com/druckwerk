@@ -56,8 +56,6 @@ export default async function AppLayout({ children }: Props) {
     navGroups.push({ title: t.nav.adminGroup, items: adminNav });
   }
   const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
-  const collapseLabel = t.layout.sidebar.collapse;
-  const expandLabel = t.layout.sidebar.expand;
   const settingsLabel = t.layout.settings.open;
 
   return (
@@ -70,8 +68,6 @@ export default async function AppLayout({ children }: Props) {
           roleLabel={roleLabel}
           brandTitle={t.layout.brandTitle}
           logoutLabel={t.nav.logout}
-          collapseLabel={collapseLabel}
-          expandLabel={expandLabel}
           settingsLabel={settingsLabel}
         />
         <main className="flex-1 lg:pl-6">
