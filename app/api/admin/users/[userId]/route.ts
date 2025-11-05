@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getAdminUsers } from "@/lib/admin/users-data";
+import { mapAdminUser } from "@/lib/admin/users-data";
 
 type RouteParams = { userId: string };
 
@@ -49,8 +49,10 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     },
   });
 
-  const users = await getAdminUsers();
-  const updated = users.find((item) => item.id === userId);
+  const updated = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { brand: { select: { id: true, name: true } } },
+  });
 
-  return NextResponse.json({ user: updated });
+  return NextResponse.json({ user: updated ? mapAdminUser(updated as any) : null });
 }

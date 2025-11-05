@@ -4,9 +4,12 @@ import { useMemo, useState } from "react";
 
 import type { AdminUserSummary } from "@/lib/admin/users-data";
 import { useTranslations } from "@/components/providers/locale-provider";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { UsersTable } from "./users-table";
 import { UserDetailSheet } from "./user-detail-sheet";
+import { UserCreateSheet } from "./user-create-sheet";
 
 type BrandOption = {
   id: string;
@@ -19,18 +22,29 @@ type Props = {
   brands: BrandOption[];
 };
 
+type SheetState = { mode: "view"; userId: string } | { mode: "create" } | null;
+
 export default function AdminUsersClient({ users, brands }: Props) {
   const t = useTranslations("admin.users");
+  const roleT = useTranslations("layout.roles");
   const [entries, setEntries] = useState(users);
-  const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [sheetState, setSheetState] = useState<SheetState>(null);
 
-  const activeUser = useMemo(() => entries.find((user) => user.id === activeUserId) ?? null, [entries, activeUserId]);
+  const activeUser = useMemo(() => {
+    if (sheetState?.mode !== "view") return null;
+    return entries.find((user) => user.id === sheetState.userId) ?? null;
+  }, [sheetState, entries]);
 
   const handleBrandUpdate = (updatedUser: AdminUserSummary) => {
     setEntries((current) =>
       current.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
     );
-    setActiveUserId(updatedUser.id);
+    setSheetState({ mode: "view", userId: updatedUser.id });
+  };
+
+  const handleUserCreated = (createdUser: AdminUserSummary) => {
+    setEntries((current) => [createdUser, ...current]);
+    setSheetState({ mode: "view", userId: createdUser.id });
   };
 
   const tableData = useMemo(
@@ -40,6 +54,7 @@ export default function AdminUsersClient({ users, brands }: Props) {
         displayName: user.name || user.email,
         email: user.email,
         role: user.role,
+        roleLabel: roleT(user.role as any) ?? user.role,
         brandName: user.brandName,
         brandId: user.brandId,
         createdAtValue: new Date(user.createdAt).getTime(),
@@ -49,9 +64,15 @@ export default function AdminUsersClient({ users, brands }: Props) {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
-        <p className="text-sm text-slate-500">{t("description")}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
+          <p className="text-sm text-slate-500">{t("description")}</p>
+        </div>
+        <Button onClick={() => setSheetState({ mode: "create" })} className="inline-flex items-center gap-2 self-start sm:self-auto">
+          <Plus className="size-4" />
+          {t("actions.new")}
+        </Button>
       </header>
 
       <UsersTable
@@ -71,15 +92,22 @@ export default function AdminUsersClient({ users, brands }: Props) {
           brand: t("table.headers.brand"),
           actions: t("table.headers.actions"),
         }}
-        onManage={(id) => setActiveUserId(id)}
+        onManage={(id) => setSheetState({ mode: "view", userId: id })}
       />
 
       <UserDetailSheet
         user={activeUser}
         brandOptions={brands}
-        open={Boolean(activeUser)}
-        onOpenChange={(open) => (!open ? setActiveUserId(null) : null)}
+        open={sheetState?.mode === "view" && Boolean(activeUser)}
+        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
         onUserUpdated={handleBrandUpdate}
+      />
+
+      <UserCreateSheet
+        open={sheetState?.mode === "create"}
+        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
+        brandOptions={brands}
+        onCreated={handleUserCreated}
       />
     </div>
   );

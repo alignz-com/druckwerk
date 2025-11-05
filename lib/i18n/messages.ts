@@ -137,6 +137,9 @@ export const messages = {
       users: {
         title: "Users",
         description: "Manage user access and brand assignments.",
+        actions: {
+          new: "New user",
+        },
         table: {
           headers: {
             user: "User",
@@ -179,6 +182,29 @@ export const messages = {
             brandLabel: "Brand",
             placeholder: "Select a brand…",
             unassigned: "Unassigned",
+          },
+        },
+        create: {
+          title: "Add user",
+          description: "Create a user record and optionally preassign a brand.",
+          fields: {
+            email: "Email",
+            name: "Name",
+            role: "Role",
+            brand: "Brand",
+          },
+          placeholders: {
+            email: "user@example.com",
+            name: "Optional name",
+            role: "Select a role…",
+            brand: "Select a brand…",
+          },
+          unassigned: "Unassigned",
+          submit: "Create user",
+          submitting: "Creating…",
+          success: "User created.",
+          errors: {
+            failed: "Failed to create user.",
           },
         },
       },
@@ -638,6 +664,9 @@ export const messages = {
       users: {
         title: "Benutzer",
         description: "Verwalte Benutzerzugänge und Marken-Zuweisungen.",
+        actions: {
+          new: "Neuen Benutzer",
+        },
         table: {
           headers: {
             user: "Benutzer",
@@ -676,10 +705,33 @@ export const messages = {
           },
           assignment: {
             title: "Marke zuweisen",
-            description: "Verknüpfe den Benutzer mit einer Marke, um die verfügbaren Templates zu steuern.",
+            description: "Verknüpfe den Benutzer mit einer Marke, damit die passenden Templates bereitstehen.",
             brandLabel: "Marke",
             placeholder: "Marke auswählen…",
             unassigned: "Nicht zugewiesen",
+          },
+        },
+        create: {
+          title: "Benutzer hinzufügen",
+          description: "Lege einen Benutzer an und weise bei Bedarf sofort eine Marke zu.",
+          fields: {
+            email: "E-Mail",
+            name: "Name",
+            role: "Rolle",
+            brand: "Marke",
+          },
+          placeholders: {
+            email: "benutzer@example.com",
+            name: "Optionaler Name",
+            role: "Rolle auswählen…",
+            brand: "Marke auswählen…",
+          },
+          unassigned: "Nicht zugewiesen",
+          submit: "Benutzer anlegen",
+          submitting: "Wird angelegt…",
+          success: "Benutzer wurde erstellt.",
+          errors: {
+            failed: "Benutzer konnte nicht erstellt werden.",
           },
         },
       },

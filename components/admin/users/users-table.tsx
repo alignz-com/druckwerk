@@ -19,6 +19,7 @@ type TableRowData = {
   displayName: string;
   email: string;
   role: string;
+  roleLabel: string;
   brandName: string | null;
   brandId: string | null;
   createdAtValue: number;
@@ -248,7 +249,7 @@ export function UsersTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">{row.email}</TableCell>
-                  <TableCell className="text-sm uppercase tracking-wide text-slate-500">{row.role}</TableCell>
+                  <TableCell className="text-sm uppercase tracking-wide text-slate-500">{row.roleLabel}</TableCell>
                   <TableCell className="text-sm text-slate-600">{row.brandName ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" onClick={() => onManage?.(row.id)}>
