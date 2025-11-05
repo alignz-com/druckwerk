@@ -56,10 +56,11 @@ export async function POST(req: NextRequest) {
     printDpi = parsed;
   }
 
-  let config: Prisma.JsonValue = {};
+  let config: Prisma.InputJsonValue | Prisma.JsonNullValueInput = {};
   if (typeof configRaw === "string") {
     try {
-      config = JSON.parse(configRaw);
+      const parsed = JSON.parse(configRaw);
+      config = parsed === null ? Prisma.JsonNull : (parsed as Prisma.InputJsonValue);
     } catch {
       return NextResponse.json({ error: "config must be valid JSON" }, { status: 400 });
     }
