@@ -1,7 +1,7 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminUserSummary } from "@/lib/admin/users-data";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 type BrandOption = {
   id: string;
@@ -42,8 +43,9 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
     setSuccess(null);
   }, [user]);
 
-  const handleSave = async () => {
+  const handleSave = async (event?: MouseEvent<HTMLButtonElement>) => {
     if (!user) return;
+    event?.currentTarget.blur();
     setIsSaving(true);
     setError(null);
     setSuccess(null);
@@ -136,19 +138,17 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
             </div>
             <div className="flex justify-between border-t border-slate-200 px-6 py-4">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 {t("detail.close")}
               </Button>
-              <Button onClick={handleSave} disabled={isSaving} className="min-w-[180px]">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    {t("detail.saving")}
-                  </>
-                ) : (
-                  t("detail.saveButton")
-                )}
-              </Button>
+              <LoadingButton
+                onClick={handleSave}
+                loading={isSaving}
+                loadingText={t("detail.saving")}
+                minWidthClassName="min-w-[180px]"
+              >
+                {t("detail.saveButton")}
+              </LoadingButton>
             </div>
           </>
         ) : null}
