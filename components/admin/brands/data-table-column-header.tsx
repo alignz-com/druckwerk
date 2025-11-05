@@ -23,8 +23,12 @@ export function DataTableColumnHeader<TData>({ column, title, align = "left" }: 
 
   if (!canSort) {
     return (
-      <span className={cn("text-xs font-semibold uppercase tracking-wide text-slate-500", align === "right" && "text-right")}
-        >
+      <span
+        className={cn(
+          "text-xs font-semibold uppercase tracking-wide text-slate-500",
+          align === "right" && "text-right",
+        )}
+      >
         {title}
       </span>
     );
@@ -37,7 +41,7 @@ export function DataTableColumnHeader<TData>({ column, title, align = "left" }: 
       variant="ghost"
       size="sm"
       className={cn(
-        "-ml-2 h-8 px-2 text-xs font-semibold uppercase tracking-wide text-slate-600",
+        "-ml-2 h-8 px-2 text-xs font-semibold uppercase tracking-wide text-slate-500",
         align === "right" && "ml-auto flex-row-reverse",
         "hover:bg-transparent hover:text-slate-900",
       )}

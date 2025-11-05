@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,6 +58,8 @@ type OrdersTableProps = {
     next: string;
     reset: string;
   };
+  selectionLabel?: (count: number) => string;
+  renderActions?: (selectedIds: string[]) => ReactNode;
 };
 
 export function OrdersTable({
@@ -67,10 +70,13 @@ export function OrdersTable({
   emptyState,
   noResults,
   pagination,
+  selectionLabel,
+  renderActions,
 }: OrdersTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -216,6 +222,49 @@ export function OrdersTable({
 
   const from = sortedData.length === 0 ? 0 : page * PAGE_SIZE + 1;
   const to = sortedData.length === 0 ? 0 : Math.min(sortedData.length, (page + 1) * PAGE_SIZE);
+  const pageIds = useMemo(() => pageData.map((row) => row.id), [pageData]);
+  const selectedCount = selected.size;
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const somePageSelected = !allPageSelected && pageIds.some((id) => selected.has(id));
+
+  const togglePageSelection = (checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const id of pageIds) {
+        if (checked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleRowSelection = (id: string, checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const ids = new Set(data.map((item) => item.id));
+    setSelected((current) => {
+      const next = new Set<string>();
+      for (const id of current) {
+        if (ids.has(id)) {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  }, [data]);
 
   return (
     <div className="space-y-4">
@@ -229,22 +278,36 @@ export function OrdersTable({
             className="pl-9"
           />
         </div>
-        {sort ? (
-          <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
-            {pagination.reset}
-          </Button>
-        ) : null}
+        <div className="flex items-center justify-end gap-2">
+          {sort ? (
+            <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
+              {pagination.reset}
+            </Button>
+          ) : null}
+          {selectedCount > 0 && selectionLabel ? (
+            <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
+          ) : null}
+          {renderActions ? renderActions(Array.from(selected)) : null}
+        </div>
       </div>
 
-      <Table className="min-w-[720px]">
-        <TableHeader className="bg-slate-50/60">
-          <TableRow className="border-slate-200">
-            {columns.map((column) => {
-              const columnState = {
-                id: column.id,
-                getCanSort: () => Boolean(column.enableSorting),
-                getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
-                toggleSorting: (desc?: boolean) => {
+      <div className="overflow-x-auto rounded-md border border-slate-200">
+        <Table className="min-w-[720px]">
+          <TableHeader className="bg-slate-50/60">
+            <TableRow className="border-slate-200">
+              <TableHead className="w-12 px-4">
+                <Checkbox
+                  aria-label="Select all rows"
+                  checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                  onCheckedChange={(value) => togglePageSelection(value === true)}
+                />
+              </TableHead>
+              {columns.map((column) => {
+                const columnState = {
+                  id: column.id,
+                  getCanSort: () => Boolean(column.enableSorting),
+                  getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
+                  toggleSorting: (desc?: boolean) => {
                   if (!column.enableSorting) return;
                   setSort((current) => {
                     if (!current || current.id !== column.id) {
@@ -270,28 +333,36 @@ export function OrdersTable({
                 </TableHead>
               );
             })}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pageData.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
-                {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
-              </TableCell>
             </TableRow>
-          ) : (
-            pageData.map((order) => (
-              <TableRow key={order.id} className="border-slate-200">
-                {columns.map((column) => (
-                  <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                    {column.renderCell(order)}
-                  </TableCell>
-                ))}
+          </TableHeader>
+          <TableBody>
+            {pageData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} className="py-12 text-center text-sm text-slate-500">
+                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              pageData.map((order) => (
+                <TableRow key={order.id} className="border-slate-200">
+                  <TableCell className="w-12 px-4">
+                    <Checkbox
+                      aria-label={`Select ${order.referenceCode}`}
+                      checked={selected.has(order.id)}
+                      onCheckedChange={(value) => toggleRowSelection(order.id, value === true)}
+                    />
+                  </TableCell>
+                  {columns.map((column) => (
+                    <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                      {column.renderCell(order)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <div>

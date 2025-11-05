@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -25,6 +26,10 @@ type BrandsTableProps = {
   previousLabel: string;
   nextLabel: string;
   resetLabel: string;
+  deleteLabel: string;
+  selectionLabel: (count: number) => string;
+  onDeleteSelected?: (ids: string[]) => Promise<void>;
+  isDeleting?: boolean;
 };
 
 export function BrandsTable({
@@ -37,10 +42,15 @@ export function BrandsTable({
   previousLabel,
   nextLabel,
   resetLabel,
+  deleteLabel,
+  selectionLabel,
+  onDeleteSelected,
+  isDeleting = false,
 }: BrandsTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -114,6 +124,55 @@ export function BrandsTable({
 
   const from = sortedData.length === 0 ? 0 : page * PAGE_SIZE + 1;
   const to = sortedData.length === 0 ? 0 : Math.min(sortedData.length, (page + 1) * PAGE_SIZE);
+  const pageIds = useMemo(() => pageData.map((row) => row.id), [pageData]);
+  const selectedCount = selected.size;
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const somePageSelected = !allPageSelected && pageIds.some((id) => selected.has(id));
+
+  const togglePageSelection = (checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const id of pageIds) {
+        if (checked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleRowSelection = (id: string, checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!onDeleteSelected || selected.size === 0) return;
+    await onDeleteSelected(Array.from(selected));
+    setSelected(new Set());
+  };
+
+  useEffect(() => {
+    const ids = new Set(data.map((item) => item.id));
+    setSelected((current) => {
+      const next = new Set<string>();
+      for (const id of current) {
+        if (ids.has(id)) {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  }, [data]);
 
   return (
     <div className="space-y-4">
@@ -127,21 +186,42 @@ export function BrandsTable({
             className="pl-9"
           />
         </div>
-        {sort ? (
-          <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
-            {resetLabel}
+        <div className="flex items-center justify-end gap-2">
+          {sort ? (
+            <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
+              {resetLabel}
+            </Button>
+          ) : null}
+          {selectedCount > 0 ? (
+            <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
+          ) : null}
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={selectedCount === 0 || !onDeleteSelected || isDeleting}
+            onClick={handleDeleteSelected}
+          >
+            {isDeleting ? `${deleteLabel}…` : deleteLabel}
           </Button>
-        ) : null}
+        </div>
       </div>
 
-      <Table className="min-w-[720px]">
-        <TableHeader className="bg-slate-50/60">
-          <TableRow className="border-slate-200">
-            {columns.map((column) => {
-              const columnState = {
-                id: column.id,
-                getCanSort: () => Boolean(column.enableSorting),
-                getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
+      <div className="overflow-x-auto rounded-md border border-slate-200">
+        <Table className="min-w-[720px]">
+          <TableHeader className="bg-slate-50/60">
+            <TableRow className="border-slate-200">
+              <TableHead className="w-12 px-4">
+                <Checkbox
+                  aria-label="Select all rows"
+                  checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                  onCheckedChange={(value) => togglePageSelection(value === true)}
+                />
+              </TableHead>
+              {columns.map((column) => {
+                const columnState = {
+                  id: column.id,
+                  getCanSort: () => Boolean(column.enableSorting),
+                  getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
                   toggleSorting: (desc?: boolean) => {
                     if (!column.enableSorting) return;
                     setSort((current) => {
@@ -176,19 +256,35 @@ export function BrandsTable({
                 {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
               </TableCell>
             </TableRow>
-          ) : (
-            pageData.map((brand) => (
-              <TableRow key={brand.id} className="border-slate-200">
-                {columns.map((column) => (
-                  <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                    {column.renderCell(brand)}
-                  </TableCell>
-                ))}
+          </TableHeader>
+          <TableBody>
+            {pageData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} className="py-12 text-center text-sm text-slate-500">
+                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              pageData.map((brand) => (
+                <TableRow key={brand.id} className="border-slate-200">
+                  <TableCell className="w-12 px-4">
+                    <Checkbox
+                      aria-label={`Select ${brand.name}`}
+                      checked={selected.has(brand.id)}
+                      onCheckedChange={(value) => toggleRowSelection(brand.id, value === true)}
+                    />
+                  </TableCell>
+                  {columns.map((column) => (
+                    <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                      {column.renderCell(brand)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>

@@ -108,6 +108,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           next: t.ordersPage.table.pagination.next,
           reset: t.ordersPage.table.pagination.reset,
         }}
+        selectionLabel={(count) =>
+          t.ordersPage.table.selection.replace("{count}", String(count))
+        }
       />
     </div>
   );
