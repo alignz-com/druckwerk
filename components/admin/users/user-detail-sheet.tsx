@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -138,8 +139,15 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 {t("detail.close")}
               </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? t("detail.saving") : t("detail.saveButton")}
+              <Button onClick={handleSave} disabled={isSaving} className="min-w-[180px]">
+                {isSaving ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    {t("detail.saving")}
+                  </>
+                ) : (
+                  t("detail.saveButton")
+                )}
               </Button>
             </div>
           </>
