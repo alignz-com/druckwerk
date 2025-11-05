@@ -28,12 +28,12 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
     ref,
   ) => {
     const content = loading ? (
-      <span className="flex items-center gap-2 text-inherit">
-        {spinner ?? <Loader2 className="size-4 animate-spin text-inherit" aria-hidden="true" />}
-        <span className="text-inherit">{loadingText ?? children}</span>
+      <span className="flex items-center gap-2">
+        {spinner ?? <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+        <span>{loadingText ?? children}</span>
       </span>
     ) : (
-      <span className="flex items-center gap-2 text-inherit">{children}</span>
+      <span className="flex items-center gap-2">{children}</span>
     );
 
     return (
