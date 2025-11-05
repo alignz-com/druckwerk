@@ -7,8 +7,11 @@ import { TemplateAssetType } from "@prisma/client";
 
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import TemplateDetailContent from "./TemplateDetailContent";
 import { TemplatesTable } from "./templates-table";
+import TemplateCreateForm from "./TemplateCreateForm";
 
 type Props = {
   templates: AdminTemplateSummary[];
@@ -21,8 +24,13 @@ const MANAGED_TYPES: TemplateAssetType[] = [
   TemplateAssetType.CONFIG,
 ];
 
+type SheetState =
+  | { mode: "view"; templateId: string }
+  | { mode: "create" }
+  | null;
+
 export default function AdminTemplatesClient({ templates }: Props) {
-  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [sheetState, setSheetState] = useState<SheetState>(null);
   const [entries, setEntries] = useState<AdminTemplateSummary[]>(templates);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -33,10 +41,10 @@ export default function AdminTemplatesClient({ templates }: Props) {
     setEntries(templates);
   }, [templates]);
 
-  const activeTemplate = useMemo(
-    () => entries.find((template) => template.id === activeTemplateId) ?? null,
-    [activeTemplateId, entries],
-  );
+  const activeTemplate = useMemo(() => {
+    if (sheetState?.mode !== "view") return null;
+    return entries.find((template) => template.id === sheetState.templateId) ?? null;
+  }, [sheetState, entries]);
 
   const tableRows = useMemo(() => {
     return entries.map((template) => {
@@ -77,6 +85,9 @@ export default function AdminTemplatesClient({ templates }: Props) {
       }
 
       setEntries((current) => current.filter((template) => !ids.includes(template.id)));
+      setSheetState((current) =>
+        current?.mode === "view" && ids.includes(current.templateId) ? null : current,
+      );
       setFeedback({ type: "success", message: t("table.bulkDelete.success", { count: ids.length }) });
       router.refresh();
       return true;
@@ -89,13 +100,30 @@ export default function AdminTemplatesClient({ templates }: Props) {
     }
   };
 
+  const handleTemplateCreated = (template: AdminTemplateSummary) => {
+    setEntries((current) => {
+      const next = [...current, template];
+      return next.sort((a, b) => a.label.localeCompare(b.label));
+    });
+    setSheetState({ mode: "view", templateId: template.id });
+    setFeedback({ type: "success", message: t("create.success", { label: template.label }) });
+    router.refresh();
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
+          <p className="text-sm text-slate-500">{t("description")}</p>
         </div>
+        <Button
+          onClick={() => setSheetState({ mode: "create" })}
+          className="inline-flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Plus className="size-4" />
+          {t("actions.add")}
+        </Button>
       </header>
 
       {feedback ? (
@@ -130,14 +158,14 @@ export default function AdminTemplatesClient({ templates }: Props) {
           actions: t("table.headers.actions"),
         }}
         unassignedLabel={t("table.unassigned")}
-        onManage={(id) => setActiveTemplateId(id)}
+        onManage={(id) => setSheetState({ mode: "view", templateId: id })}
         onDeleteSelected={deleteTemplates}
         isDeleting={isDeleting}
       />
 
-      <Sheet open={Boolean(activeTemplate)} onOpenChange={(open) => (!open ? setActiveTemplateId(null) : null)}>
+      <Sheet open={Boolean(sheetState)} onOpenChange={(open) => (!open ? setSheetState(null) : null)}>
         <SheetContent className="flex h-full max-w-4xl flex-col p-0">
-          {activeTemplate ? (
+          {sheetState?.mode === "view" && activeTemplate ? (
             <>
               <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
                 <SheetTitle>{activeTemplate.label}</SheetTitle>
@@ -153,8 +181,22 @@ export default function AdminTemplatesClient({ templates }: Props) {
                     if (!success) {
                       throw new Error(t("detail.deleteFailed"));
                     }
-                    setActiveTemplateId(null);
+                    setSheetState(null);
                   }}
+                />
+              </div>
+            </>
+          ) : null}
+          {sheetState?.mode === "create" ? (
+            <>
+              <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                <SheetTitle>{t("create.title")}</SheetTitle>
+                <SheetDescription>{t("create.description")}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <TemplateCreateForm
+                  onCreated={(template) => handleTemplateCreated(template)}
+                  onCancel={() => setSheetState(null)}
                 />
               </div>
             </>

@@ -136,6 +136,51 @@ export const messages = {
       templates: {
         title: "Templates",
         description: "Maintain the design assets used for new orders.",
+        actions: {
+          add: "New template",
+        },
+        create: {
+          title: "Create template",
+          description: "Set up metadata for a new business card template. Upload design assets once the entry exists.",
+          success: "Template \"{label}\" created.",
+          fields: {
+            key: "Key",
+            label: "Label",
+            description: "Description",
+            pdfPath: "PDF path",
+            previewFrontPath: "Front preview path",
+            previewBackPath: "Back preview path",
+            layoutVersion: "Layout version",
+            printDpi: "Print DPI",
+            config: "Config (JSON)",
+          },
+          hints: {
+            key: "Lowercase letters, digits, dashes, underscores, or dots.",
+            pdfPath: "Supports Supabase storage paths or absolute URLs.",
+            config: "Provide the JSON layout configuration used for rendering.",
+          },
+          placeholders: {
+            label: "Template name",
+            description: "Optional description shown in the admin UI.",
+          },
+          actions: {
+            cancel: "Cancel",
+            submit: "Create template",
+            submitting: "Creating…",
+          },
+          errors: {
+            keyRequired: "Key is required.",
+            keyInvalid: "Key may only contain letters, numbers, dots, dashes, or underscores.",
+            labelRequired: "Label is required.",
+            pdfPathRequired: "PDF path is required.",
+            previewFrontPathRequired: "Front preview path is required.",
+            previewBackPathRequired: "Back preview path is required.",
+            layoutVersionInvalid: "Layout version must be a non-negative number.",
+            printDpiInvalid: "Print DPI must be a non-negative number.",
+            configInvalid: "Config must be valid JSON.",
+            requestFailed: "Template could not be created.",
+          },
+        },
         table: {
           headers: {
             template: "Template",
@@ -490,6 +535,51 @@ export const messages = {
       templates: {
         title: "Vorlagen",
         description: "Verwalte hier die Design-Assets für neue Bestellungen.",
+        actions: {
+          add: "Neue Vorlage",
+        },
+        create: {
+          title: "Vorlage erstellen",
+          description: "Lege Metadaten für eine neue Visitenkartenvorlage fest. Lade die Assets anschließend hoch.",
+          success: "Vorlage „{label}“ erstellt.",
+          fields: {
+            key: "Schlüssel",
+            label: "Bezeichnung",
+            description: "Beschreibung",
+            pdfPath: "PDF-Pfad",
+            previewFrontPath: "Vorschau (Vorderseite)",
+            previewBackPath: "Vorschau (Rückseite)",
+            layoutVersion: "Layout-Version",
+            printDpi: "Druck-DPI",
+            config: "Konfiguration (JSON)",
+          },
+          hints: {
+            key: "Kleinbuchstaben, Ziffern, Bindestriche, Unterstriche oder Punkte.",
+            pdfPath: "Unterstützt Supabase-Speicherpfade oder absolute URLs.",
+            config: "JSON-Konfiguration für das Layout hinterlegen.",
+          },
+          placeholders: {
+            label: "Name der Vorlage",
+            description: "Optionale Beschreibung für die Admin-Oberfläche.",
+          },
+          actions: {
+            cancel: "Abbrechen",
+            submit: "Vorlage erstellen",
+            submitting: "Wird erstellt…",
+          },
+          errors: {
+            keyRequired: "Schlüssel ist erforderlich.",
+            keyInvalid: "Schlüssel darf nur Buchstaben, Zahlen, Punkte, Bindestriche oder Unterstriche enthalten.",
+            labelRequired: "Bezeichnung ist erforderlich.",
+            pdfPathRequired: "PDF-Pfad ist erforderlich.",
+            previewFrontPathRequired: "Pfad zur Vorderseiten-Vorschau ist erforderlich.",
+            previewBackPathRequired: "Pfad zur Rückseiten-Vorschau ist erforderlich.",
+            layoutVersionInvalid: "Layout-Version muss eine nichtnegative Zahl sein.",
+            printDpiInvalid: "Druck-DPI muss eine nichtnegative Zahl sein.",
+            configInvalid: "Konfiguration muss gültiges JSON sein.",
+            requestFailed: "Vorlage konnte nicht erstellt werden.",
+          },
+        },
         table: {
           headers: {
             template: "Vorlage",

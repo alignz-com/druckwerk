@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { FontFormat, FontStyle, TemplateAssetType } from "@prisma/client";
+import type { FontFormat, FontStyle, TemplateAssetType, Prisma } from "@prisma/client";
 
 export type AdminTemplateAsset = {
   id: string;
@@ -74,35 +74,28 @@ export type AdminFontFamily = {
   variants: AdminFontVariant[];
 };
 
-export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[]> {
-  const templates = await prisma.template.findMany({
-    orderBy: [{ label: "asc" }, { createdAt: "asc" }],
-    include: {
-      assets: {
-        orderBy: [
-          { version: "desc" },
-          { updatedAt: "desc" },
-        ],
-      },
-      fonts: {
-        include: {
-          fontVariant: {
-            include: {
-              fontFamily: true,
-            },
-          },
-        },
-      },
-      assignments: {
-        include: {
-          brand: true,
-        },
-        orderBy: [{ assignedAt: "desc" }],
-      },
-    },
-  });
+type TemplateWithRelations = Prisma.TemplateGetPayload<{
+  include: {
+    assets: true;
+    fonts: {
+      include: {
+        fontVariant: {
+          include: {
+            fontFamily: true;
+          };
+        };
+      };
+    };
+    assignments: {
+      include: {
+        brand: true;
+      };
+    };
+  };
+}>;
 
-  return templates.map((template) => ({
+export function mapTemplateToAdminSummary(template: TemplateWithRelations): AdminTemplateSummary {
+  return {
     id: template.id,
     key: template.key,
     label: template.label,
@@ -150,7 +143,38 @@ export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[
         brandSlug: assignment.brand!.slug,
         assignedAt: assignment.assignedAt.toISOString(),
       })),
-  }));
+  };
+}
+
+export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[]> {
+  const templates = await prisma.template.findMany({
+    orderBy: [{ label: "asc" }, { createdAt: "asc" }],
+    include: {
+      assets: {
+        orderBy: [
+          { version: "desc" },
+          { updatedAt: "desc" },
+        ],
+      },
+      fonts: {
+        include: {
+          fontVariant: {
+            include: {
+              fontFamily: true,
+            },
+          },
+        },
+      },
+      assignments: {
+        include: {
+          brand: true,
+        },
+        orderBy: [{ assignedAt: "desc" }],
+      },
+    },
+  });
+
+  return templates.map((template) => mapTemplateToAdminSummary(template));
 }
 
 export async function getAdminFontFamilies(): Promise<AdminFontFamily[]> {
