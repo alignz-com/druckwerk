@@ -46,10 +46,6 @@ const templateInclude = {
 };
 
 type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateInclude }>;
-type BrandTemplateWithTemplateKey = Prisma.BrandTemplateGetPayload<{
-  include: { template: { select: { key: true } } };
-}>;
-
 function encodeStoragePath(path: string) {
   return path
     .split("/")
@@ -97,47 +93,30 @@ function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefin
 
 export async function listTemplatesForBrand(brandId?: string | null): Promise<ResolvedTemplate[]> {
   try {
-    const templateById = new Map<string, ResolvedTemplate>();
-    const templateByKey = new Map<string, ResolvedTemplate>();
+    if (brandId) {
+      const assignments = await prisma.brandTemplate.findMany({
+        where: { brandId },
+        include: { template: { include: templateInclude } },
+      });
 
-    const [dbTemplates, brandAssignments] = await Promise.all([
-      prisma.template.findMany({ include: templateInclude }),
-      brandId
-        ? prisma.brandTemplate.findMany({
-            where: { brandId },
-            include: { template: { select: { key: true } } },
-          })
-        : Promise.resolve([] as BrandTemplateWithTemplateKey[]),
-    ]);
-
-    for (const tpl of dbTemplates) {
-      const fallback = DEFAULT_TEMPLATES[tpl.key];
-      const resolved = resolveTemplateFromDb(tpl, fallback);
-      templateById.set(tpl.id, resolved);
-      templateByKey.set(tpl.key, resolved);
-    }
-
-    if (brandAssignments.length > 0) {
-      const assigned = new Map<string, ResolvedTemplate>();
-
-      for (const assignment of brandAssignments) {
-        const base =
-          templateById.get(assignment.templateId) ??
-          (assignment.template?.key ? templateByKey.get(assignment.template.key) : undefined);
-        if (!base) continue;
+      const resolvedAssignments = new Map<string, ResolvedTemplate>();
+      for (const assignment of assignments) {
+        const tpl = assignment.template;
+        if (!tpl) continue;
+        const resolved = resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key]);
         const merged: ResolvedTemplate = {
-          ...base,
-          config: mergeConfigs(base.config, assignment.configOverride ?? undefined),
+          ...resolved,
+          config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
         };
-        assigned.set(merged.key, merged);
+        resolvedAssignments.set(merged.key, merged);
       }
 
-      if (assigned.size > 0) {
-        return sortTemplates(assigned.values());
-      }
+      return sortTemplates(resolvedAssignments.values());
     }
 
-    return sortTemplates(templateByKey.values());
+    const dbTemplates = await prisma.template.findMany({ include: templateInclude });
+    const resolvedTemplates = dbTemplates.map((tpl) => resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key]));
+    return sortTemplates(resolvedTemplates);
   } catch (error) {
     console.warn("[templates] Failed to load templates", error);
     return [];
@@ -145,9 +124,34 @@ export async function listTemplatesForBrand(brandId?: string | null): Promise<Re
 }
 
 export async function getTemplateByKey(key: string, brandId?: string | null): Promise<ResolvedTemplate> {
-  const templates = await listTemplatesForBrand(brandId);
-  const template = templates.find((t) => t.key === key);
-  if (template) return template;
+  if (brandId) {
+    const assignment = await prisma.brandTemplate.findFirst({
+      where: {
+        brandId,
+        template: { key },
+      },
+      include: { template: { include: templateInclude } },
+    });
+
+    if (assignment?.template) {
+      const resolved = resolveTemplateFromDb(assignment.template, DEFAULT_TEMPLATES[key]);
+      return {
+        ...resolved,
+        config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
+      };
+    }
+
+    throw new Error(`Template ${key} is not assigned to brand ${brandId}`);
+  }
+
+  const tpl = await prisma.template.findUnique({
+    where: { key },
+    include: templateInclude,
+  });
+
+  if (tpl) {
+    return resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[key]);
+  }
 
   const fallback = DEFAULT_TEMPLATES[key];
   if (fallback) return clone(fallback);
