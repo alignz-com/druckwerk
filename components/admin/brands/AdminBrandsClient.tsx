@@ -52,10 +52,10 @@ export default function AdminBrandsClient({ brands }: Props) {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">{t("title")}</h1>
-          <p className="text-sm text-slate-500">{t("description")}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
         </div>
         <Button asChild className="self-start sm:self-auto">
           <Link href="/admin/brands/new">{t("actions.newBrand")}</Link>

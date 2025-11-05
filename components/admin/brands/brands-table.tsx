@@ -247,6 +247,14 @@ export function BrandsTable({
                   </TableHead>
                 );
               })}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pageData.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
+                {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+              </TableCell>
             </TableRow>
           </TableHeader>
           <TableBody>
