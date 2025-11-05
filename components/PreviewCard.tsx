@@ -451,6 +451,20 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
     "PREVIEW_FRONT",
     template.previewFrontPath,
   );
+  const outline = useMemo(() => {
+    if (!template.previewFrontPath) return null;
+    const imageWidthPx = 1178;
+    const imageHeightPx = 824;
+    const paddingPx = 87;
+    const offsetX = (paddingPx * CARD_W) / imageWidthPx;
+    const offsetY = (paddingPx * CARD_H) / imageHeightPx;
+    return {
+      offsetX,
+      offsetY,
+      width: CARD_W - 2 * offsetX,
+      height: CARD_H - 2 * offsetY,
+    };
+  }, [template.previewFrontPath]);
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -473,7 +487,27 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
           />
         ) : null}
 
-        <g className="[&>g]:opacity-100">
+        {outline ? (
+          <rect
+            x={outline.offsetX}
+            y={outline.offsetY}
+            width={outline.width}
+            height={outline.height}
+            fill="none"
+            stroke="red"
+            strokeWidth={0.4}
+            vectorEffect="non-scaling-stroke"
+          />
+        ) : null}
+
+        <g
+          className="[&>g]:opacity-100"
+          transform={
+            outline
+              ? `translate(${outline.offsetX}, ${outline.offsetY}) scale(${outline.width / CARD_W}, ${outline.height / CARD_H})`
+              : undefined
+          }
+        >
           <FrontTextOverlay
             template={template}
             name={name}
