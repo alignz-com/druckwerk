@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition, TemplateAssetSummary } from "./templates-defaults";
+import { getSignedUrl } from "./storage";
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -53,41 +54,48 @@ function encodeStoragePath(path: string) {
     .join("/");
 }
 
+const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
+
 function buildTemplateAssetPublicUrl(storageKey: string | null | undefined) {
   if (!storageKey) return null;
   const baseUrl = process.env.SUPABASE_URL;
   if (!baseUrl) return null;
-  const bucket = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
-  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodeStoragePath(storageKey)}`;
+  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(TEMPLATE_BUCKET)}/${encodeStoragePath(storageKey)}`;
 }
 
-function findAssetUrl(assets: TemplateWithAssets["assets"], type: TemplateAssetType) {
-  const asset = assets.find((item) => item.type === type);
-  if (!asset) return null;
-  return buildTemplateAssetPublicUrl(asset.storageKey);
-}
-
-function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): ResolvedTemplate {
+async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): Promise<ResolvedTemplate> {
   const baseConfig = fallback?.config ?? ((tpl.config ?? {}) as TemplateConfig);
-  const pdfUrl = findAssetUrl(tpl.assets, TemplateAssetType.PDF);
-  const previewFrontUrl = findAssetUrl(tpl.assets, TemplateAssetType.PREVIEW_FRONT);
-  const previewBackUrl = findAssetUrl(tpl.assets, TemplateAssetType.PREVIEW_BACK);
-  const assets: TemplateAssetSummary[] = tpl.assets.map((asset) => ({
-    type: asset.type,
-    storageKey: asset.storageKey,
-    publicUrl: buildTemplateAssetPublicUrl(asset.storageKey),
-    version: asset.version,
-    updatedAt: asset.updatedAt.toISOString(),
-  }));
+  const assets: TemplateAssetSummary[] = await Promise.all(
+    tpl.assets.map(async (asset) => {
+      const directUrl = buildTemplateAssetPublicUrl(asset.storageKey);
+      let signedUrl: string | null = null;
+      try {
+        signedUrl = await getSignedUrl(TEMPLATE_BUCKET, asset.storageKey, 3600);
+      } catch (error) {
+        console.warn(`[templates] Failed to sign asset ${asset.storageKey}`, error);
+      }
+      return {
+        type: asset.type,
+        storageKey: asset.storageKey,
+        publicUrl: signedUrl ?? directUrl ?? null,
+        version: asset.version,
+        updatedAt: asset.updatedAt.toISOString(),
+      };
+    }),
+  );
+
+  const pdfAsset = assets.find((asset) => asset.type === TemplateAssetType.PDF);
+  const previewFrontAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_FRONT);
+  const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
     key: tpl.key,
     label: tpl.label ?? fallback?.label ?? tpl.key,
     description: tpl.description ?? fallback?.description,
-    pdfPath: pdfUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",
-    previewFrontPath: previewFrontUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
-    previewBackPath: previewBackUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",
+    pdfPath: pdfAsset?.publicUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",
+    previewFrontPath: previewFrontAsset?.publicUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
+    previewBackPath: previewBackAsset?.publicUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",
     config: mergeConfigs(baseConfig, tpl.config ?? undefined),
     assets,
   };
@@ -107,23 +115,34 @@ export async function listTemplatesForBrand(brandId?: string | null): Promise<Re
         include: { template: { include: templateInclude } },
       });
 
-      const resolvedAssignments = new Map<string, ResolvedTemplate>();
-      for (const assignment of assignments) {
-        const tpl = assignment.template;
-        if (!tpl) continue;
-        const resolved = resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key]);
-        const merged: ResolvedTemplate = {
-          ...resolved,
-          config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
-        };
-        resolvedAssignments.set(merged.key, merged);
+      const resolvedAssignments = await Promise.all(
+        assignments.map(async (assignment) => {
+          const tpl = assignment.template;
+          if (!tpl) return null;
+          const resolved = await resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key]);
+          return {
+            key: resolved.key,
+            template: {
+              ...resolved,
+              config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
+            },
+          };
+        }),
+      );
+
+      const filtered = resolvedAssignments.filter((item): item is { key: string; template: ResolvedTemplate } => Boolean(item));
+      const map = new Map<string, ResolvedTemplate>();
+      for (const entry of filtered) {
+        map.set(entry.key, entry.template);
       }
 
-      return sortTemplates(resolvedAssignments.values());
+      return sortTemplates(map.values());
     }
 
     const dbTemplates = await prisma.template.findMany({ include: templateInclude });
-    const resolvedTemplates = dbTemplates.map((tpl) => resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key]));
+    const resolvedTemplates = await Promise.all(
+      dbTemplates.map((tpl) => resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[tpl.key])),
+    );
     return sortTemplates(resolvedTemplates);
   } catch (error) {
     console.warn("[templates] Failed to load templates", error);
@@ -142,7 +161,7 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
     });
 
     if (assignment?.template) {
-      const resolved = resolveTemplateFromDb(assignment.template, DEFAULT_TEMPLATES[key]);
+      const resolved = await resolveTemplateFromDb(assignment.template, DEFAULT_TEMPLATES[key]);
       return {
         ...resolved,
         config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
