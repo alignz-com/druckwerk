@@ -12,8 +12,6 @@ import { DataTableColumnHeader } from "@/components/admin/brands/data-table-colu
 
 const PAGE_SIZE = 10;
 
-type PaginationFormatter = (args: { from: number; to: number; total: number }) => string;
-
 export type OrdersTableRow = {
   id: string;
   referenceCode: string;
@@ -53,10 +51,12 @@ type OrdersTableProps = {
   searchPlaceholder: string;
   emptyState: string;
   noResults: string;
-  paginationLabel: PaginationFormatter;
-  previousLabel: string;
-  nextLabel: string;
-  resetLabel: string;
+  pagination: {
+    labelTemplate: string;
+    previous: string;
+    next: string;
+    reset: string;
+  };
 };
 
 export function OrdersTable({
@@ -66,10 +66,7 @@ export function OrdersTable({
   searchPlaceholder,
   emptyState,
   noResults,
-  paginationLabel,
-  previousLabel,
-  nextLabel,
-  resetLabel,
+  pagination,
 }: OrdersTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
@@ -234,7 +231,7 @@ export function OrdersTable({
         </div>
         {sort ? (
           <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
-            {resetLabel}
+            {pagination.reset}
           </Button>
         ) : null}
       </div>
@@ -297,7 +294,12 @@ export function OrdersTable({
       </Table>
 
       <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-        <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
+        <div>
+          {pagination.labelTemplate
+            .replace("{from}", String(from))
+            .replace("{to}", String(to))
+            .replace("{total}", String(sortedData.length))}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -307,7 +309,7 @@ export function OrdersTable({
             className="h-9"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
-            {previousLabel}
+            {pagination.previous}
           </Button>
           <Button
             variant="outline"
@@ -316,7 +318,7 @@ export function OrdersTable({
             disabled={page >= totalPages - 1 || sortedData.length === 0}
             className="h-9"
           >
-            {nextLabel}
+            {pagination.next}
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>

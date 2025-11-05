@@ -69,12 +69,6 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     };
   });
 
-  const paginationLabel = ({ from, to, total }: { from: number; to: number; total: number }) =>
-    t.ordersPage.table.pagination.label
-      .replace("{from}", String(from))
-      .replace("{to}", String(to))
-      .replace("{total}", String(total));
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -115,10 +109,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
             searchPlaceholder={t.ordersPage.table.searchPlaceholder}
             emptyState={t.ordersPage.table.empty}
             noResults={t.ordersPage.table.noResults}
-            paginationLabel={paginationLabel}
-            previousLabel={t.ordersPage.table.pagination.previous}
-            nextLabel={t.ordersPage.table.pagination.next}
-            resetLabel={t.ordersPage.table.pagination.reset}
+            pagination={{
+              labelTemplate: t.ordersPage.table.pagination.label,
+              previous: t.ordersPage.table.pagination.previous,
+              next: t.ordersPage.table.pagination.next,
+              reset: t.ordersPage.table.pagination.reset,
+            }}
           />
         </CardContent>
       </Card>
