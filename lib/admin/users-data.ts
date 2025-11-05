@@ -1,0 +1,32 @@
+import { prisma } from "@/lib/prisma";
+
+export type AdminUserSummary = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  brandId: string | null;
+  brandName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getAdminUsers(): Promise<AdminUserSummary[]> {
+  const users = await prisma.user.findMany({
+    orderBy: [{ createdAt: "desc" }],
+    include: {
+      brand: true,
+    },
+  });
+
+  return users.map((user) => ({
+    id: user.id,
+    email: user.email,
+    name: user.name ?? null,
+    role: user.role,
+    brandId: user.brandId ?? null,
+    brandName: user.brand?.name ?? null,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
+  }));
+}

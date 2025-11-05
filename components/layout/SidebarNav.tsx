@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Layers, PlusCircle, ShieldCheck, Type, type LucideIcon } from "lucide-react";
+import { ClipboardList, Layers, PlusCircle, ShieldCheck, Type, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const ICONS: Record<string, LucideIcon> = {
   orders: ClipboardList,
   "new-order": PlusCircle,
   "admin-brands": ShieldCheck,
+  "admin-users": Users,
   "admin-templates": Layers,
   "admin-fonts": Type,
 };
