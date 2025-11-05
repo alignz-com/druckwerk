@@ -241,6 +241,19 @@ const DEFAULT_FONT_SCALE = 0.58;
 const SIGNED_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const SIGNED_URL_FALLBACK_TTL_MS = 60 * 60 * 1000;
 
+const CARD_PIXEL_WIDTH = 1004;
+const CARD_PIXEL_HEIGHT = 650;
+const IMAGE_PIXEL_WIDTH = 1178;
+const IMAGE_PIXEL_HEIGHT = 824;
+const IMAGE_PADDING_PX = (IMAGE_PIXEL_WIDTH - CARD_PIXEL_WIDTH) / 2; // assuming symmetrical padding
+
+const PX_TO_MM_X = CARD_W / CARD_PIXEL_WIDTH;
+const PX_TO_MM_Y = CARD_H / CARD_PIXEL_HEIGHT;
+const CANVAS_W = IMAGE_PIXEL_WIDTH * PX_TO_MM_X;
+const CANVAS_H = IMAGE_PIXEL_HEIGHT * PX_TO_MM_Y;
+const CANVAS_OFFSET_X = IMAGE_PADDING_PX * PX_TO_MM_X;
+const CANVAS_OFFSET_Y = IMAGE_PADDING_PX * PX_TO_MM_Y;
+
 type AssetState = {
   storageKey: string | null;
   url: string | null;
@@ -451,28 +464,14 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
     "PREVIEW_FRONT",
     template.previewFrontPath,
   );
-  const outline = useMemo(() => {
-    if (!template.previewFrontPath) return null;
-    const imageWidthPx = 1178;
-    const imageHeightPx = 824;
-    const paddingPx = 87;
-    const offsetX = (paddingPx * CARD_W) / imageWidthPx;
-    const offsetY = (paddingPx * CARD_H) / imageHeightPx;
-    return {
-      offsetX,
-      offsetY,
-      width: CARD_W - 2 * offsetX,
-      height: CARD_H - 2 * offsetY,
-    };
-  }, [template.previewFrontPath]);
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
         className="block"
-        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
         aria-label="Business card front"
       >
         {frontBackground ? (
@@ -480,34 +479,24 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
             src={frontBackground}
             x={0}
             y={0}
-            width={CARD_W}
-            height={CARD_H}
+            width={CANVAS_W}
+            height={CANVAS_H}
             preserveAspectRatio="xMidYMid meet"
             onError={handleFrontAssetError}
           />
         ) : null}
 
-        {outline ? (
+        <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`} className="[&>g]:opacity-100">
           <rect
-            x={outline.offsetX}
-            y={outline.offsetY}
-            width={outline.width}
-            height={outline.height}
+            x={0}
+            y={0}
+            width={CARD_W}
+            height={CARD_H}
             fill="none"
             stroke="red"
             strokeWidth={0.4}
             vectorEffect="non-scaling-stroke"
           />
-        ) : null}
-
-        <g
-          className="[&>g]:opacity-100"
-          transform={
-            outline
-              ? `translate(${outline.offsetX}, ${outline.offsetY}) scale(${outline.width / CARD_W}, ${outline.height / CARD_H})`
-              : undefined
-          }
-        >
           <FrontTextOverlay
             template={template}
             name={name}
@@ -685,10 +674,10 @@ export function BusinessCardBack({
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
         className="block"
-        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
         aria-label="Business card back"
       >
         {backBackground ? (
@@ -696,30 +685,43 @@ export function BusinessCardBack({
             src={backBackground}
             x={0}
             y={0}
-            width={CARD_W}
-            height={CARD_H}
+            width={CANVAS_W}
+            height={CANVAS_H}
             preserveAspectRatio="xMidYMid meet"
             onError={handleBackAssetError}
           />
         ) : null}
 
-        {template.config.back.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
-          <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
-        ) : null}
-
-        {template.config.back.mode === "copyFront" ? (
-          <FrontTextOverlay
-            template={template}
-            name={name}
-            role={role}
-            email={email}
-            phone={phone}
-            mobile={mobile}
-            company={company}
-            url={url}
-            linkedin={linkedin}
+        <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`}>
+          <rect
+            x={0}
+            y={0}
+            width={CARD_W}
+            height={CARD_H}
+            fill="none"
+            stroke="red"
+            strokeWidth={0.4}
+            vectorEffect="non-scaling-stroke"
           />
-        ) : null}
+
+          {template.config.back.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
+            <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
+          ) : null}
+
+          {template.config.back.mode === "copyFront" ? (
+            <FrontTextOverlay
+              template={template}
+              name={name}
+              role={role}
+              email={email}
+              phone={phone}
+              mobile={mobile}
+              company={company}
+              url={url}
+              linkedin={linkedin}
+            />
+          ) : null}
+        </g>
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>
