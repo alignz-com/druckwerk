@@ -20,7 +20,7 @@ export type BrandColumn<TData> = {
   sortAccessor?: (row: TData) => string | number;
 };
 
-export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSummary>[] {
+export function createBrandColumns(t: TranslationFn, onManage?: (id: string) => void): BrandColumn<AdminBrandSummary>[] {
   return [
     {
       id: "name",
@@ -82,8 +82,13 @@ export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSumm
       enableSorting: false,
       renderCell: (row) => (
         <div className="flex justify-end">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/brands/${row.id}`}>{t("actions.manage")}</Link>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => (onManage ? onManage(row.id) : undefined)}
+            asChild={!onManage}
+          >
+            {onManage ? <span>{t("actions.manage")}</span> : <Link href={`/admin/brands/${row.id}`}>{t("actions.manage")}</Link>}
           </Button>
         </div>
       ),

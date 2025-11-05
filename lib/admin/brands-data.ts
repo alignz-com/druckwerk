@@ -23,6 +23,7 @@ export type AdminBrandSummary = {
   templateCount: number;
   orderCount: number;
   addresses: AdminBrandAddress[];
+  domains: { id: string; domain: string }[];
   createdAt: string;
   updatedAt: string;
 };
@@ -32,6 +33,9 @@ const brandInclude = {
   orders: { select: { id: true } },
   addresses: {
     orderBy: [{ createdAt: "asc" as const }],
+  },
+  domains: {
+    orderBy: [{ domain: "asc" as const }],
   },
 };
 
@@ -47,6 +51,12 @@ type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
     postalCode: string | null;
     city: string | null;
     countryCode: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+  domains: {
+    id: string;
+    domain: string;
     createdAt: Date;
     updatedAt: Date;
   }[];
@@ -74,6 +84,9 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
       createdAt: address.createdAt.toISOString(),
       updatedAt: address.updatedAt.toISOString(),
     })),
+    domains: brand.domains
+      .map((domain) => ({ id: domain.id, domain: domain.domain }))
+      .sort((a, b) => a.domain.localeCompare(b.domain)),
     createdAt: brand.createdAt.toISOString(),
     updatedAt: brand.updatedAt.toISOString(),
   };

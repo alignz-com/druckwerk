@@ -120,6 +120,7 @@ model Brand {
   orders    Order[]
   templates BrandTemplate[]
   addresses BrandAddress[]
+  domains   BrandDomain[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
@@ -140,6 +141,19 @@ model BrandAddress {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@index([brandId])
+}
+
+model BrandDomain {
+  id        String   @id @default(cuid())
+  brandId   String
+  domain    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, domain])
+  @@index([domain])
 }
 
 model Template {

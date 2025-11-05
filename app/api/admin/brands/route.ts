@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getAdminBrands } from "@/lib/admin/brands-data";
+import { getAdminBrands, getAdminBrand } from "@/lib/admin/brands-data";
 import { brandSchema, ensureUniqueSlug, slugify, BrandPayload } from "./util";
 
 export async function GET() {
@@ -53,12 +53,9 @@ export async function POST(req: NextRequest) {
           }
         : undefined,
     },
-    include: {
-      addresses: true,
-      templates: true,
-      orders: { select: { id: true } },
-    },
   });
 
-  return NextResponse.json({ brandId: brand.id }, { status: 201 });
+  const summary = await getAdminBrand(brand.id);
+
+  return NextResponse.json({ brandId: brand.id, brand: summary }, { status: 201 });
 }

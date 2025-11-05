@@ -119,7 +119,9 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  const brand = await getAdminBrand(brandId);
+
+  return NextResponse.json({ brand });
 }
 
 export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
