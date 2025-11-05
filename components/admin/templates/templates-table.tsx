@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
 
 const PAGE_SIZE = 10;
@@ -178,195 +177,191 @@ export function TemplatesTable({
   }, [page, totalPages]);
 
   return (
-    <Card className="border-slate-200 shadow-sm">
-      <CardHeader className="space-y-4 pb-0">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={searchPlaceholder}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {sort ? (
-              <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
-                {resetLabel}
-              </Button>
-            ) : null}
-            {selectedCount > 0 ? (
-              <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
-            ) : null}
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={selectedCount === 0 || !onDeleteSelected || isDeleting}
-              onClick={handleDeleteSelected}
-            >
-              {isDeleting ? `${deleteLabel}…` : deleteLabel}
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={searchPlaceholder}
+            className="pl-9"
+          />
         </div>
-      </CardHeader>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {sort ? (
+            <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
+              {resetLabel}
+            </Button>
+          ) : null}
+          {selectedCount > 0 ? (
+            <div className="text-sm text-slate-500">{selectionLabel(selectedCount)}</div>
+          ) : null}
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={selectedCount === 0 || !onDeleteSelected || isDeleting}
+            onClick={handleDeleteSelected}
+          >
+            {isDeleting ? `${deleteLabel}…` : deleteLabel}
+          </Button>
+        </div>
+      </div>
 
-      <CardContent className="px-0">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[720px]">
-            <TableHeader className="bg-slate-50/60">
-              <TableRow className="border-slate-200">
-                <TableHead className="w-12 px-4">
-                  <Checkbox
-                    aria-label="Select all templates"
-                    checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
-                    onCheckedChange={(value) => togglePageSelection(value === true)}
-                  />
-                </TableHead>
-                <TableHead>
-                  <DataTableColumnHeader
-                    column={{
-                      id: "label",
-                      getCanSort: () => true,
-                      getIsSorted: () => (sort?.id === "label" ? sort.direction : false),
-                      toggleSorting: (desc) =>
-                        setSort((current) => {
-                          if (!current || current.id !== "label") {
-                            return { id: "label", direction: desc ? "desc" : "asc" };
-                          }
-                          if (current.direction === "asc") {
-                            return desc ? { id: "label", direction: "desc" } : current;
-                          }
-                          if (current.direction === "desc") {
-                            return desc ? current : null;
-                          }
+      <div className="overflow-x-auto">
+        <Table className="min-w-[720px]">
+          <TableHeader className="bg-slate-50/60">
+            <TableRow className="border-slate-200">
+              <TableHead className="w-12 px-4">
+                <Checkbox
+                  aria-label="Select all templates"
+                  checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                  onCheckedChange={(value) => togglePageSelection(value === true)}
+                />
+              </TableHead>
+              <TableHead>
+                <DataTableColumnHeader
+                  column={{
+                    id: "label",
+                    getCanSort: () => true,
+                    getIsSorted: () => (sort?.id === "label" ? sort.direction : false),
+                    toggleSorting: (desc) =>
+                      setSort((current) => {
+                        if (!current || current.id !== "label") {
                           return { id: "label", direction: desc ? "desc" : "asc" };
-                        }),
-                    }}
-                    title={columns.template}
-                  />
-                </TableHead>
-                <TableHead>
-                  <DataTableColumnHeader
-                    column={{
-                      id: "brands",
-                      getCanSort: () => true,
-                      getIsSorted: () => (sort?.id === "brands" ? sort.direction : false),
-                      toggleSorting: (desc) =>
-                        setSort((current) => {
-                          if (!current || current.id !== "brands") {
-                            return { id: "brands", direction: desc ? "desc" : "asc" };
-                          }
-                          if (current.direction === "asc") {
-                            return desc ? { id: "brands", direction: "desc" } : current;
-                          }
-                          if (current.direction === "desc") {
-                            return desc ? current : null;
-                          }
+                        }
+                        if (current.direction === "asc") {
+                          return desc ? { id: "label", direction: "desc" } : current;
+                        }
+                        if (current.direction === "desc") {
+                          return desc ? current : null;
+                        }
+                        return { id: "label", direction: desc ? "desc" : "asc" };
+                      }),
+                  }}
+                  title={columns.template}
+                />
+              </TableHead>
+              <TableHead>
+                <DataTableColumnHeader
+                  column={{
+                    id: "brands",
+                    getCanSort: () => true,
+                    getIsSorted: () => (sort?.id === "brands" ? sort.direction : false),
+                    toggleSorting: (desc) =>
+                      setSort((current) => {
+                        if (!current || current.id !== "brands") {
                           return { id: "brands", direction: desc ? "desc" : "asc" };
-                        }),
-                    }}
-                    title={columns.brands}
-                  />
-                </TableHead>
-                <TableHead>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {columns.assetStatus}
-                  </span>
-                </TableHead>
-                <TableHead className="text-right">
-                  <DataTableColumnHeader
-                    column={{
-                      id: "updated",
-                      getCanSort: () => true,
-                      getIsSorted: () => (sort?.id === "updated" ? sort.direction : false),
-                      toggleSorting: (desc) =>
-                        setSort((current) => {
-                          if (!current || current.id !== "updated") {
-                            return { id: "updated", direction: desc ? "desc" : "asc" };
-                          }
-                          if (current.direction === "asc") {
-                            return desc ? { id: "updated", direction: "desc" } : current;
-                          }
-                          if (current.direction === "desc") {
-                            return desc ? current : null;
-                          }
+                        }
+                        if (current.direction === "asc") {
+                          return desc ? { id: "brands", direction: "desc" } : current;
+                        }
+                        if (current.direction === "desc") {
+                          return desc ? current : null;
+                        }
+                        return { id: "brands", direction: desc ? "desc" : "asc" };
+                      }),
+                  }}
+                  title={columns.brands}
+                />
+              </TableHead>
+              <TableHead>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {columns.assetStatus}
+                </span>
+              </TableHead>
+              <TableHead className="text-right">
+                <DataTableColumnHeader
+                  column={{
+                    id: "updated",
+                    getCanSort: () => true,
+                    getIsSorted: () => (sort?.id === "updated" ? sort.direction : false),
+                    toggleSorting: (desc) =>
+                      setSort((current) => {
+                        if (!current || current.id !== "updated") {
                           return { id: "updated", direction: desc ? "desc" : "asc" };
-                        }),
-                    }}
-                    title={columns.updated}
-                    align="right"
-                  />
-                </TableHead>
-                <TableHead className="text-right">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {columns.actions}
-                  </span>
-                </TableHead>
+                        }
+                        if (current.direction === "asc") {
+                          return desc ? { id: "updated", direction: "desc" } : current;
+                        }
+                        if (current.direction === "desc") {
+                          return desc ? current : null;
+                        }
+                        return { id: "updated", direction: desc ? "desc" : "asc" };
+                      }),
+                  }}
+                  title={columns.updated}
+                  align="right"
+                />
+              </TableHead>
+              <TableHead className="text-right">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {columns.actions}
+                </span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pageData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
+                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
-                    {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+            ) : (
+              pageData.map((row) => (
+                <TableRow key={row.id} className="border-slate-200">
+                  <TableCell className="w-12 px-4">
+                    <Checkbox
+                      aria-label={`Select ${row.label}`}
+                      checked={selected.has(row.id)}
+                      onCheckedChange={(value) => toggleRowSelection(row.id, value === true)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-semibold text-slate-900">{row.label}</div>
+                      <div className="text-xs text-slate-500">{row.key}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {row.brandNames.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {row.brandNames.map((name) => (
+                          <Badge key={name} variant="outline">
+                            {name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-amber-600">{unassignedLabel}</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={
+                        row.assetStatus.tone === "warning"
+                          ? "text-xs font-medium text-amber-600"
+                          : "text-xs font-medium text-emerald-600"
+                      }
+                    >
+                      {row.assetStatus.message}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right text-xs text-slate-500">{row.updatedAtLabel}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => onManage?.(row.id)}>
+                      {manageLabel}
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ) : (
-                pageData.map((row) => (
-                  <TableRow key={row.id} className="border-slate-200">
-                    <TableCell className="w-12 px-4">
-                      <Checkbox
-                        aria-label={`Select ${row.label}`}
-                        checked={selected.has(row.id)}
-                        onCheckedChange={(value) => toggleRowSelection(row.id, value === true)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-semibold text-slate-900">{row.label}</div>
-                        <div className="text-xs text-slate-500">{row.key}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {row.brandNames.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {row.brandNames.map((name) => (
-                            <Badge key={name} variant="outline">
-                              {name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-amber-600">{unassignedLabel}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={
-                          row.assetStatus.tone === "warning"
-                            ? "text-xs font-medium text-amber-600"
-                            : "text-xs font-medium text-emerald-600"
-                        }
-                      >
-                        {row.assetStatus.message}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-slate-500">{row.updatedAtLabel}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => onManage?.(row.id)}>
-                        {manageLabel}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      <CardFooter className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
         <div className="flex items-center gap-2">
           <Button
@@ -388,7 +383,7 @@ export function TemplatesTable({
             {nextLabel}
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
