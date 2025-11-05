@@ -31,9 +31,9 @@ const brandInclude = {
   templates: true,
   orders: { select: { id: true } },
   addresses: {
-    orderBy: [{ createdAt: "asc" }],
+    orderBy: [{ createdAt: "asc" as const }],
   },
-} as const;
+};
 
 type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
   templates: { id: string }[];
