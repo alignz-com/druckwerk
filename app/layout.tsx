@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { fontMono, fontSans } from "@/lib/fonts";
 
 export const metadata: Metadata = {
-  title: "Omicron – Business Card Order",
+  title: "Druckwerk - Druckerei Thurnher",
   description: "Order and preview business cards online",
   icons: {
     icon: "/favicon.ico",
