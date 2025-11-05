@@ -51,6 +51,15 @@ export type TemplateDefinition = {
   previewFrontPath: string;
   previewBackPath: string;
   config: TemplateConfig;
+  assets?: TemplateAssetSummary[];
+};
+
+export type TemplateAssetSummary = {
+  type: string;
+  storageKey: string;
+  publicUrl: string | null;
+  version: number;
+  updatedAt: string;
 };
 
 const BASE_TEXT_FRAME = {
@@ -90,6 +99,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
         },
       },
     },
+    assets: [],
   },
   claim: {
     key: "claim",
@@ -106,6 +116,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
         mode: "static",
       },
     },
+    assets: [],
   },
   "omicron-lab": {
     key: "omicron-lab",
@@ -126,6 +137,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
         },
       },
     },
+    assets: [],
   },
 };
 

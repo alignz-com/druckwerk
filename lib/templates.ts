@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
-import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition } from "./templates-defaults";
+import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition, TemplateAssetSummary } from "./templates-defaults";
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -72,6 +72,13 @@ function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefin
   const pdfUrl = findAssetUrl(tpl.assets, TemplateAssetType.PDF);
   const previewFrontUrl = findAssetUrl(tpl.assets, TemplateAssetType.PREVIEW_FRONT);
   const previewBackUrl = findAssetUrl(tpl.assets, TemplateAssetType.PREVIEW_BACK);
+  const assets: TemplateAssetSummary[] = tpl.assets.map((asset) => ({
+    type: asset.type,
+    storageKey: asset.storageKey,
+    publicUrl: buildTemplateAssetPublicUrl(asset.storageKey),
+    version: asset.version,
+    updatedAt: asset.updatedAt.toISOString(),
+  }));
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
@@ -82,6 +89,7 @@ function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefin
     previewFrontPath: previewFrontUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
     previewBackPath: previewBackUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",
     config: mergeConfigs(baseConfig, tpl.config ?? undefined),
+    assets,
   };
 
   if (!resolved.pdfPath) {

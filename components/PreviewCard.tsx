@@ -227,6 +227,10 @@ const CARD_H = 55;
 const DEFAULT_PREVIEW_MAX_WIDTH = 960;
 const DEFAULT_FONT_SCALE = 0.58;
 
+function getTemplateAssetUrl(template: ResolvedTemplate, type: string) {
+  return template.assets?.find((asset) => asset.type === type)?.publicUrl ?? null;
+}
+
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
@@ -333,6 +337,7 @@ function buildVCard3(o: {
 export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "", linkedin }: Props) {
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
+  const frontBackground = template.previewFrontPath || getTemplateAssetUrl(template, "PREVIEW_FRONT");
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -343,9 +348,9 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
         style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card front"
       >
-        {template.previewFrontPath ? (
+        {frontBackground ? (
           <SmoothSvgImage
-            src={template.previewFrontPath}
+            src={frontBackground}
             x={0}
             y={0}
             width={CARD_W}
@@ -472,6 +477,7 @@ export function BusinessCardBack({
   const addressExtra = addrLines && addrLines.length > 3 ? addrLines.slice(3).join(" ") : undefined;
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
+  const backBackground = template.previewBackPath || getTemplateAssetUrl(template, "PREVIEW_BACK");
 
   const vcard = useMemo(
     () =>
@@ -533,9 +539,9 @@ export function BusinessCardBack({
         style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${CARD_W} / ${CARD_H}` }}
         aria-label="Business card back"
       >
-        {template.previewBackPath ? (
+        {backBackground ? (
           <SmoothSvgImage
-            src={template.previewBackPath}
+            src={backBackground}
             x={0}
             y={0}
             width={CARD_W}
