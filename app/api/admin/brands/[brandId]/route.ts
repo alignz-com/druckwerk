@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { brandSchema, ensureUniqueSlug, slugify } from "../util";
-import { getAdminBrands } from "@/lib/admin/brands-data";
+import { getAdminBrand } from "@/lib/admin/brands-data";
 
 const brandUpdateSchema = brandSchema.extend({
   name: brandSchema.shape.name.optional(),
@@ -26,8 +26,7 @@ export async function GET(_req: NextRequest, context: { params: RouteParams | Pr
   }
 
   const { brandId } = await resolveParams(context);
-  const brands = await getAdminBrands();
-  const brand = brands.find((item) => item.id === brandId);
+  const brand = await getAdminBrand(brandId);
   if (!brand) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

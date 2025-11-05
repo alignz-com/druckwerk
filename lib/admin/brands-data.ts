@@ -27,19 +27,33 @@ export type AdminBrandSummary = {
   updatedAt: string;
 };
 
-export async function getAdminBrands(): Promise<AdminBrandSummary[]> {
-  const brands = await prisma.brand.findMany({
-    orderBy: [{ name: "asc" }],
-    include: {
-      templates: true,
-      orders: { select: { id: true } },
-      addresses: {
-        orderBy: [{ createdAt: "asc" }],
-      },
-    },
-  });
+const brandInclude = {
+  templates: true,
+  orders: { select: { id: true } },
+  addresses: {
+    orderBy: [{ createdAt: "asc" }],
+  },
+} as const;
 
-  return brands.map((brand) => ({
+type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
+  templates: { id: string }[];
+  orders: { id: string }[];
+  addresses: {
+    id: string;
+    label: string | null;
+    company: string | null;
+    street: string | null;
+    addressExtra: string | null;
+    postalCode: string | null;
+    city: string | null;
+    countryCode: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+};
+
+function mapBrand(brand: RawBrand): AdminBrandSummary {
+  return {
     id: brand.id,
     name: brand.name,
     slug: brand.slug,
@@ -62,5 +76,27 @@ export async function getAdminBrands(): Promise<AdminBrandSummary[]> {
     })),
     createdAt: brand.createdAt.toISOString(),
     updatedAt: brand.updatedAt.toISOString(),
-  }));
+  };
+}
+
+export async function getAdminBrands(): Promise<AdminBrandSummary[]> {
+  const brands = await prisma.brand.findMany({
+    orderBy: [{ name: "asc" }],
+    include: brandInclude,
+  });
+
+  return brands.map((brand) => mapBrand(brand as RawBrand));
+}
+
+export async function getAdminBrand(brandId: string): Promise<AdminBrandSummary | null> {
+  const brand = await prisma.brand.findUnique({
+    where: { id: brandId },
+    include: brandInclude,
+  });
+
+  if (!brand) {
+    return null;
+  }
+
+  return mapBrand(brand as RawBrand);
 }

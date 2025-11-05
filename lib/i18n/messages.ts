@@ -244,6 +244,8 @@ export const messages = {
           title: "Overview",
           description: "Each brand can have multiple addresses and template assignments.",
           empty: "No brands yet. Create your first brand to continue.",
+          noResults: "No brands match your filters.",
+          searchPlaceholder: "Search brands…",
           headers: {
             brand: "Brand",
             contact: "Contact",
@@ -252,11 +254,48 @@ export const messages = {
             actions: "Actions",
           },
           noContact: "No contact",
+          pagination: {
+            label: "Showing {from}–{to} of {total}",
+            previous: "Previous",
+            next: "Next",
+            reset: "Reset sorting",
+          },
         },
         dialog: {
           createTitle: "Create brand",
           editTitle: "Edit {name}",
           description: "Maintain brand details and available addresses.",
+        },
+        detail: {
+          back: "Back to brands",
+          sections: {
+            general: {
+              title: "Brand details",
+              description: "Update core information used throughout the admin portal.",
+            },
+            addresses: {
+              title: "Addresses",
+              description: "Configure reusable shipping and billing destinations.",
+            },
+            metadata: {
+              title: "Metadata",
+              description: "Timestamps and health indicators for this brand.",
+            },
+            danger: {
+              title: "Danger zone",
+              description: "Deleting a brand removes all of its addresses permanently.",
+              helper: "This action cannot be undone.",
+            },
+          },
+          stats: {
+            templates: "Templates",
+            orders: "Orders",
+            addresses: "Addresses",
+          },
+          metadata: {
+            createdAt: "Created",
+            updatedAt: "Updated",
+          },
         },
         form: {
           name: "Name",
@@ -527,6 +566,8 @@ export const messages = {
           title: "Übersicht",
           description: "Jede Marke kann mehrere Adressen und Template-Zuweisungen besitzen.",
           empty: "Noch keine Marken vorhanden. Erstelle eine neue Marke.",
+          noResults: "Keine Marken entsprechen deinen Filtern.",
+          searchPlaceholder: "Marken durchsuchen…",
           headers: {
             brand: "Marke",
             contact: "Kontakt",
@@ -535,11 +576,48 @@ export const messages = {
             actions: "Aktionen",
           },
           noContact: "Kein Kontakt",
+          pagination: {
+            label: "Zeige {from}–{to} von {total}",
+            previous: "Zurück",
+            next: "Weiter",
+            reset: "Sortierung zurücksetzen",
+          },
         },
         dialog: {
           createTitle: "Marke erstellen",
           editTitle: "{name} bearbeiten",
           description: "Pflege Markendaten und verfügbare Adressen.",
+        },
+        detail: {
+          back: "Zur Übersicht",
+          sections: {
+            general: {
+              title: "Markendetails",
+              description: "Aktualisiere die wichtigsten Informationen dieser Marke.",
+            },
+            addresses: {
+              title: "Adressen",
+              description: "Verwalte wiederverwendbare Liefer- und Rechnungsadressen.",
+            },
+            metadata: {
+              title: "Metadaten",
+              description: "Zeitstempel und Kennzahlen dieser Marke.",
+            },
+            danger: {
+              title: "Gefahrenbereich",
+              description: "Das Löschen entfernt sämtliche Adressen der Marke dauerhaft.",
+              helper: "Dieser Vorgang kann nicht rückgängig gemacht werden.",
+            },
+          },
+          stats: {
+            templates: "Templates",
+            orders: "Bestellungen",
+            addresses: "Adressen",
+          },
+          metadata: {
+            createdAt: "Erstellt",
+            updatedAt: "Aktualisiert",
+          },
         },
         form: {
           name: "Name",
