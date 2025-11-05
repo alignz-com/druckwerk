@@ -110,7 +110,14 @@ export async function getSignedUrl(bucket: string, key: string, expiresInSeconds
     throw new Error(`Failed to sign ${bucket}/${key}: ${res.status} ${text}`);
   }
   const data = (await res.json()) as { signedURL: string };
-  return `${SUPABASE_URL}${data.signedURL}`;
+  let path = data.signedURL ?? "";
+  if (!path.startsWith("/")) {
+    path = `/${path}`;
+  }
+  if (!path.startsWith("/storage/v1/")) {
+    path = `/storage/v1${path}`;
+  }
+  return `${SUPABASE_URL}${path}`;
 }
 
 export async function extractPdfMetadata(buffer: Uint8Array): Promise<PdfMetadata> {
