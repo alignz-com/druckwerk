@@ -1,23 +1,55 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
-import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import { DataTableColumnHeader } from "./data-table-column-header";
-import type { BrandColumn } from "./columns";
+import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
 
 const PAGE_SIZE = 10;
 
 type PaginationFormatter = (args: { from: number; to: number; total: number }) => string;
 
-type BrandsTableProps = {
-  columns: BrandColumn<AdminBrandSummary>[];
-  data: AdminBrandSummary[];
+export type OrdersTableRow = {
+  id: string;
+  referenceCode: string;
+  createdAtLabel: string;
+  createdAtValue: number;
+  userName: string | null;
+  userEmail: string | null;
+  templateLabel: string;
+  quantity: number;
+  status: string;
+  statusLabel: string;
+  pdfUrl: string | null;
+};
+
+type OrdersTableColumn = {
+  id: string;
+  title: string;
+  align?: "left" | "right";
+  enableSorting?: boolean;
+  sortAccessor?: (row: OrdersTableRow) => string | number;
+  renderCell: (row: OrdersTableRow) => ReactNode;
+};
+
+type OrdersTableProps = {
+  data: OrdersTableRow[];
+  showUserColumn: boolean;
+  labels: {
+    reference: string;
+    created: string;
+    user: string;
+    template: string;
+    quantity: string;
+    status: string;
+    pdf: string;
+    viewPdf: string;
+  };
   searchPlaceholder: string;
   emptyState: string;
   noResults: string;
@@ -27,9 +59,10 @@ type BrandsTableProps = {
   resetLabel: string;
 };
 
-export function BrandsTable({
-  columns,
+export function OrdersTable({
   data,
+  showUserColumn,
+  labels,
   searchPlaceholder,
   emptyState,
   noResults,
@@ -37,25 +70,97 @@ export function BrandsTable({
   previousLabel,
   nextLabel,
   resetLabel,
-}: BrandsTableProps) {
+}: OrdersTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
 
   const normalizedSearch = search.trim().toLowerCase();
 
+  const columns = useMemo<OrdersTableColumn[]>(() => {
+    const baseColumns: OrdersTableColumn[] = [
+      {
+        id: "reference",
+        title: labels.reference,
+        enableSorting: true,
+        sortAccessor: (row) => row.referenceCode.toLowerCase(),
+        renderCell: (row) => <span className="font-medium text-slate-900">{row.referenceCode}</span>,
+      },
+      {
+        id: "created",
+        title: labels.created,
+        enableSorting: true,
+        sortAccessor: (row) => row.createdAtValue,
+        renderCell: (row) => <span className="text-slate-600">{row.createdAtLabel}</span>,
+      },
+      {
+        id: "template",
+        title: labels.template,
+        enableSorting: true,
+        sortAccessor: (row) => row.templateLabel.toLowerCase(),
+        renderCell: (row) => <span className="text-slate-600">{row.templateLabel}</span>,
+      },
+      {
+        id: "quantity",
+        title: labels.quantity,
+        align: "right",
+        enableSorting: true,
+        sortAccessor: (row) => row.quantity,
+        renderCell: (row) => <span className="text-slate-600">{row.quantity}</span>,
+      },
+      {
+        id: "status",
+        title: labels.status,
+        enableSorting: true,
+        sortAccessor: (row) => row.statusLabel.toLowerCase(),
+        renderCell: (row) => (
+          <Badge variant={row.status === "SUBMITTED" ? "secondary" : "outline"}>{row.statusLabel}</Badge>
+        ),
+      },
+      {
+        id: "pdf",
+        title: labels.pdf,
+        renderCell: (row) =>
+          row.pdfUrl ? (
+            <a href={row.pdfUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              {labels.viewPdf}
+            </a>
+          ) : (
+            <span className="text-slate-400">–</span>
+          ),
+      },
+    ];
+
+    if (showUserColumn) {
+      baseColumns.splice(2, 0, {
+        id: "user",
+        title: labels.user,
+        enableSorting: true,
+        sortAccessor: (row) => `${row.userName ?? ""} ${row.userEmail ?? ""}`.trim().toLowerCase(),
+        renderCell: (row) => (
+          <div className="text-slate-600">
+            {row.userName ?? row.userEmail ?? "–"}
+            {row.userEmail ? <span className="block text-xs text-slate-400">{row.userEmail}</span> : null}
+          </div>
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [labels, showUserColumn]);
+
   const filteredData = useMemo(() => {
     if (!normalizedSearch) {
       return data;
     }
 
-    return data.filter((brand) => {
+    return data.filter((order) => {
       const haystack = [
-        brand.name,
-        brand.slug,
-        brand.contactName ?? "",
-        brand.contactEmail ?? "",
-        brand.contactPhone ?? "",
+        order.referenceCode,
+        order.templateLabel,
+        order.statusLabel,
+        order.userName ?? "",
+        order.userEmail ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -74,7 +179,7 @@ export function BrandsTable({
       return filteredData;
     }
 
-    const accessor = column.sortAccessor ?? ((row: AdminBrandSummary) => {
+    const accessor = column.sortAccessor ?? ((row: OrdersTableRow) => {
       const value = (row as unknown as Record<string, unknown>)[column.id];
       if (typeof value === "number") return value;
       return typeof value === "string" ? value.toLowerCase() : 0;
@@ -142,31 +247,32 @@ export function BrandsTable({
                 id: column.id,
                 getCanSort: () => Boolean(column.enableSorting),
                 getIsSorted: () => (sort?.id === column.id ? sort.direction : false),
-                  toggleSorting: (desc?: boolean) => {
-                    if (!column.enableSorting) return;
-                    setSort((current) => {
-                      if (!current || current.id !== column.id) {
-                        return { id: column.id, direction: desc ? "desc" : "asc" };
-                      }
-
-                      if (current.direction === "asc") {
-                        return desc ? { id: column.id, direction: "desc" } : current;
-                      }
-
-                      if (current.direction === "desc") {
-                        return desc ? current : null;
-                      }
-
+                toggleSorting: (desc?: boolean) => {
+                  if (!column.enableSorting) return;
+                  setSort((current) => {
+                    if (!current || current.id !== column.id) {
                       return { id: column.id, direction: desc ? "desc" : "asc" };
-                    });
-                  },
-                };
-                return (
-                  <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                    <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
-                  </TableHead>
-                );
-              })}
+                    }
+
+                    if (current.direction === "asc") {
+                      return desc ? { id: column.id, direction: "desc" } : current;
+                    }
+
+                    if (current.direction === "desc") {
+                      return desc ? current : null;
+                    }
+
+                    return { id: column.id, direction: desc ? "desc" : "asc" };
+                  });
+                },
+              };
+
+              return (
+                <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                  <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
+                </TableHead>
+              );
+            })}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -177,11 +283,11 @@ export function BrandsTable({
               </TableCell>
             </TableRow>
           ) : (
-            pageData.map((brand) => (
-              <TableRow key={brand.id} className="border-slate-200">
+            pageData.map((order) => (
+              <TableRow key={order.id} className="border-slate-200">
                 {columns.map((column) => (
                   <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
-                    {column.renderCell(brand)}
+                    {column.renderCell(order)}
                   </TableCell>
                 ))}
               </TableRow>
