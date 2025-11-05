@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
 import { Info } from "lucide-react";
 
-import { DEFAULT_TEMPLATE_LIST } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
 import { normalizeAddress } from "@/lib/normalizeAddress";
 import { COUNTRY_CODES, findCountryCodeByName, getCountryLabel } from "@/lib/countries";
@@ -90,10 +89,22 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
   const tOrder = useTranslations("orderForm");
-  const templateOptions = templates.length > 0 ? templates : DEFAULT_TEMPLATE_LIST;
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "qrcode");
-  const selectedTemplate = useMemo(() => {
-    return templateOptions.find((tpl) => tpl.key === selectedTemplateKey) ?? templateOptions[0] ?? DEFAULT_TEMPLATE_LIST[0];
+  const templateOptions = templates;
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "");
+  const selectedTemplate = useMemo<ResolvedTemplate | null>(() => {
+    if (templateOptions.length === 0) return null;
+    return templateOptions.find((tpl) => tpl.key === selectedTemplateKey) ?? templateOptions[0]!;
+  }, [templateOptions, selectedTemplateKey]);
+
+  useEffect(() => {
+    if (templateOptions.length === 0) {
+      if (selectedTemplateKey) setSelectedTemplateKey("");
+      return;
+    }
+    const exists = templateOptions.some((tpl) => tpl.key === selectedTemplateKey);
+    if (!exists) {
+      setSelectedTemplateKey(templateOptions[0]!.key);
+    }
   }, [templateOptions, selectedTemplateKey]);
 
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
@@ -167,6 +178,22 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  if (templateOptions.length === 0 || !selectedTemplate) {
+    return (
+      <section className="space-y-6">
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle>{tOrder("noTemplatesTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600">{tOrder("noTemplatesDescription")}</p>
+          </CardContent>
+        </Card>
+        <Analytics />
+      </section>
+    );
+  }
+
   const openConfirm = () => {
     if (isSubmitting) return;
     setSubmitError(null);
@@ -208,7 +235,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || tOrder("errors.generic"));
+        throw new Error(data.error || tOrder("errors.generic"));
       }
 
       setIsConfirmOpen(false);

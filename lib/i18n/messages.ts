@@ -96,6 +96,9 @@ export const messages = {
       errors: {
         generic: "Unexpected error while saving order",
       },
+      noTemplatesTitle: "No templates available",
+      noTemplatesDescription:
+        "There is currently no business card template assigned to your brand. Please contact your administrator to request access.",
     },
     ordersPage: {
       title: "Orders",
@@ -757,6 +760,9 @@ export const messages = {
       errors: {
         generic: "Unerwarteter Fehler beim Speichern der Bestellung",
       },
+      noTemplatesTitle: "Keine Vorlagen verfügbar",
+      noTemplatesDescription:
+        "Deiner Marke ist derzeit keine Visitenkartenvorlage zugewiesen. Bitte wende dich an die Administration, um Zugriff zu erhalten.",
     },
     ordersPage: {
       title: "Bestellungen",
