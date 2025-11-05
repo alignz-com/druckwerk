@@ -6,7 +6,10 @@ import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export type TranslationFn = (key: string, values?: Record<string, unknown>) => string;
+export type TranslationFn = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
 
 export type BrandColumn<TData> = {
   id: string;
