@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     printDpi = parsed;
   }
 
-  let config: unknown = {};
+  let config: Prisma.JsonValue = {};
   if (typeof configRaw === "string") {
     try {
       config = JSON.parse(configRaw);
