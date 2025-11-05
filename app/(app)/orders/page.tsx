@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
 
 const formatDate = (date: Date, locale: Locale) =>
@@ -47,6 +47,27 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   const wasCreated = searchParams?.created === "1";
 
+  const tableData: OrdersTableRow[] = orders.map((order) => {
+    const templateKey =
+      typeof order.meta === "object" && order.meta && "templateKey" in order.meta
+        ? (order.meta as { templateKey?: unknown }).templateKey
+        : null;
+
+    return {
+      id: order.id,
+      referenceCode: order.referenceCode,
+      createdAtLabel: formatDate(order.createdAt, locale),
+      createdAtValue: order.createdAt.getTime(),
+      userName: order.user?.name ?? null,
+      userEmail: (order.user?.email ?? order.requesterEmail) ?? null,
+      templateLabel: order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
+      quantity: order.quantity,
+      status: order.status,
+      statusLabel: t.statuses[order.status] ?? order.status,
+      pdfUrl: order.pdfUrl,
+    };
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -65,67 +86,32 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         </div>
       ) : null}
 
-      {orders.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="text-sm text-slate-500">{t.ordersPage.empty}</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.reference}</th>
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.created}</th>
-                {isAdmin ? <th className="px-4 py-3 font-medium">{t.ordersPage.table.user}</th> : null}
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.template}</th>
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.quantity}</th>
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.status}</th>
-                <th className="px-4 py-3 font-medium">{t.ordersPage.table.pdf}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {orders.map((order) => {
-                const templateKey = typeof order.meta === "object" && order.meta && "templateKey" in order.meta ? (order.meta as any).templateKey : null;
-                return (
-                  <tr key={order.id} className="hover:bg-slate-50/60">
-                    <td className="px-4 py-3 font-medium text-slate-900">{order.referenceCode}</td>
-                    <td className="px-4 py-3 text-slate-600">{formatDate(order.createdAt, locale)}</td>
-                    {isAdmin ? (
-                      <td className="px-4 py-3 text-slate-600">
-                        {order.user?.name ?? order.requesterEmail}
-                        <span className="block text-xs text-slate-400">{order.user?.email ?? order.requesterEmail}</span>
-                      </td>
-                    ) : null}
-                    <td className="px-4 py-3 text-slate-600">
-                      {order.template?.label ?? templateKey ?? order.templateId ?? "–"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{order.quantity}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={order.status === "SUBMITTED" ? "secondary" : "outline"}>
-                        {t.statuses[order.status] ?? order.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.pdfUrl ? (
-                        <a
-                          href={order.pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {t.ordersPage.table.viewPdf}
-                        </a>
-                      ) : (
-                        <span className="text-slate-400">–</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <OrdersTable
+        data={tableData}
+        showUserColumn={isAdmin}
+        labels={{
+          reference: t.ordersPage.table.reference,
+          created: t.ordersPage.table.created,
+          user: t.ordersPage.table.user,
+          template: t.ordersPage.table.template,
+          quantity: t.ordersPage.table.quantity,
+          status: t.ordersPage.table.status,
+          pdf: t.ordersPage.table.pdf,
+          viewPdf: t.ordersPage.table.viewPdf,
+        }}
+        searchPlaceholder={t.ordersPage.table.searchPlaceholder}
+        emptyState={t.ordersPage.table.empty}
+        noResults={t.ordersPage.table.noResults}
+        pagination={{
+          labelTemplate: t.ordersPage.table.pagination.label,
+          previous: t.ordersPage.table.pagination.previous,
+          next: t.ordersPage.table.pagination.next,
+          reset: t.ordersPage.table.pagination.reset,
+        }}
+        selectionLabel={(count) =>
+          t.ordersPage.table.selection.replace("{count}", String(count))
+        }
+      />
     </div>
   );
 }

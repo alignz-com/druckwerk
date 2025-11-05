@@ -5,6 +5,8 @@ import SessionProviderWrapper from "./SessionProviderWrapper"; // 👈 import
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { isLocale } from "@/lib/i18n/messages";
 import { getServerAuthSession } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+import { fontMono, fontSans } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Omicron – Business Card Order",
@@ -32,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className="antialiased">
+      <body className={cn("antialiased font-sans", fontSans.variable, fontMono.variable)}>
         <SessionProviderWrapper>
           <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
         </SessionProviderWrapper>

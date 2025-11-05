@@ -1,21 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { TemplateAssetType } from "@prisma/client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import TemplateDetailContent from "./TemplateDetailContent";
 import { useTranslations } from "@/components/providers/locale-provider";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import TemplateDetailContent from "./TemplateDetailContent";
+import { TemplatesTable } from "./templates-table";
 
 type Props = {
   templates: AdminTemplateSummary[];
@@ -30,85 +23,71 @@ const MANAGED_TYPES: TemplateAssetType[] = [
 
 export default function AdminTemplatesClient({ templates }: Props) {
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<AdminTemplateSummary[]>(templates);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const router = useRouter();
   const t = useTranslations("admin.templates");
 
+  useEffect(() => {
+    setEntries(templates);
+  }, [templates]);
+
   const activeTemplate = useMemo(
-    () => templates.find((template) => template.id === activeTemplateId) ?? null,
-    [activeTemplateId, templates],
+    () => entries.find((template) => template.id === activeTemplateId) ?? null,
+    [activeTemplateId, entries],
   );
 
-  const templateTable = (
-    <Card>
-      <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-        <CardTitle className="text-lg">{t("title")}</CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto px-0 py-0">
-        {templates.length === 0 ? (
-          <div className="px-6 py-8 text-sm text-slate-500">{t("table.empty")}</div>
-        ) : (
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.template")}</th>
-                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.brands")}</th>
-                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.assetStatus")}</th>
-                <th className="px-6 py-3 text-left font-semibold">{t("table.headers.updated")}</th>
-                <th className="px-6 py-3 text-right font-semibold">{t("table.headers.actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-600">
-              {templates.map((template) => {
-                const assetStatus = computeAssetStatus(
-                  template,
-                  (type) => t(`assetTypes.${type}` as any),
-                  (count, list) => t("assetStatus.missingPlural", { count, list }),
-                  t("assetStatus.allPresent"),
-                );
-                return (
-                  <tr key={template.id} className="hover:bg-slate-50/60">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">{template.label}</div>
-                      <div className="text-xs text-slate-500">{template.key}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {template.brandAssignments.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 text-xs text-slate-600">
-                          {template.brandAssignments.map((brand) => (
-                            <span key={brand.id} className="rounded-full bg-slate-100 px-2 py-0.5">
-                              {brand.brandName}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-amber-600">{t("table.unassigned")}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-xs">
-                      <span className={assetStatus.missing > 0 ? "text-amber-600" : "text-emerald-600"}>
-                        {assetStatus.message}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">{formatDate(template.updatedAt)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => setActiveTemplateId(template.id)}
-                        className="bg-slate-900 text-white hover:bg-slate-800"
-                      >
-                        {t("table.manage")}
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </CardContent>
-    </Card>
-  );
+  const tableRows = useMemo(() => {
+    return entries.map((template) => {
+      const assetStatus = computeAssetStatus(
+        template,
+        (type) => t(`assetTypes.${type}` as any),
+        (count, list) => t("assetStatus.missingPlural", { count, list }),
+        t("assetStatus.allPresent"),
+      );
+
+      return {
+        id: template.id,
+        label: template.label,
+        key: template.key,
+        brandNames: template.brandAssignments.map((brand) => brand.brandName),
+        assetStatus: {
+          message: assetStatus.message,
+          tone: assetStatus.missing > 0 ? "warning" : "ok",
+        } as const,
+        updatedAtLabel: formatDate(template.updatedAt),
+        updatedAtValue: new Date(template.updatedAt).getTime(),
+        brandCount: template.brandAssignments.length,
+      };
+    });
+  }, [entries, t]);
+
+  const deleteTemplates = async (ids: string[]) => {
+    if (ids.length === 0) return false;
+    setIsDeleting(true);
+    setFeedback(null);
+    try {
+      for (const id of ids) {
+        const response = await fetch(`/api/admin/templates/${id}`, { method: "DELETE" });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error ?? t("table.bulkDelete.error"));
+        }
+      }
+
+      setEntries((current) => current.filter((template) => !ids.includes(template.id)));
+      setFeedback({ type: "success", message: t("table.bulkDelete.success", { count: ids.length }) });
+      router.refresh();
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("table.bulkDelete.error");
+      setFeedback({ type: "error", message });
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -116,32 +95,70 @@ export default function AdminTemplatesClient({ templates }: Props) {
         <h1 className="text-2xl font-semibold text-slate-900">{t("title")}</h1>
         <p className="text-sm text-slate-500">{t("description")}</p>
       </header>
-      {templateTable}
 
-      <Dialog open={Boolean(activeTemplate)} onOpenChange={(open) => (!open ? setActiveTemplateId(null) : null)}>
-        <DialogContent className="max-w-4xl">
+      {feedback ? (
+        <div
+          className={
+            feedback.type === "success"
+              ? "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+              : "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          }
+        >
+          {feedback.message}
+        </div>
+      ) : null}
+
+      <TemplatesTable
+        data={tableRows}
+        searchPlaceholder={t("table.searchPlaceholder")}
+        emptyState={t("table.empty")}
+        noResults={t("table.noResults")}
+        paginationLabel={({ from, to, total }) => t("table.pagination.label", { from, to, total })}
+        previousLabel={t("table.pagination.previous")}
+        nextLabel={t("table.pagination.next")}
+        resetLabel={t("table.pagination.reset")}
+        deleteLabel={t("table.bulkDelete.action")}
+        selectionLabel={(count) => t("table.bulkDelete.selection", { count })}
+        manageLabel={t("table.manage")}
+        columns={{
+          template: t("table.headers.template"),
+          brands: t("table.headers.brands"),
+          assetStatus: t("table.headers.assetStatus"),
+          updated: t("table.headers.updated"),
+          actions: t("table.headers.actions"),
+        }}
+        unassignedLabel={t("table.unassigned")}
+        onManage={(id) => setActiveTemplateId(id)}
+        onDeleteSelected={deleteTemplates}
+        isDeleting={isDeleting}
+      />
+
+      <Sheet open={Boolean(activeTemplate)} onOpenChange={(open) => (!open ? setActiveTemplateId(null) : null)}>
+        <SheetContent className="flex h-full max-w-4xl flex-col p-0">
           {activeTemplate ? (
             <>
-              <DialogHeader className="sr-only">
-                <DialogTitle>{t("title")}</DialogTitle>
-                <DialogDescription>{activeTemplate.label}</DialogDescription>
-              </DialogHeader>
-              <TemplateDetailContent
-                template={activeTemplate}
-                onDelete={async (templateId) => {
-                  const response = await fetch(`/api/admin/templates/${templateId}`, { method: "DELETE" });
-                  if (!response.ok) {
-                    const payload = await response.json().catch(() => ({}));
-                    throw new Error(payload?.error ?? t("detail.deleteFailed"));
-                  }
-                  setActiveTemplateId(null);
-                  router.refresh();
-                }}
-              />
+              <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                <SheetTitle>{activeTemplate.label}</SheetTitle>
+                <SheetDescription>
+                  {activeTemplate.description || t("detail.noDescription")}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <TemplateDetailContent
+                  template={activeTemplate}
+                  onDelete={async (templateId) => {
+                    const success = await deleteTemplates([templateId]);
+                    if (!success) {
+                      throw new Error(t("detail.deleteFailed"));
+                    }
+                    setActiveTemplateId(null);
+                  }}
+                />
+              </div>
             </>
           ) : null}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

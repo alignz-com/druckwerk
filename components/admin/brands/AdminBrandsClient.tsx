@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { BrandsTable } from "./brands-table";
 import { createBrandColumns } from "./columns";
@@ -17,8 +16,39 @@ type Props = {
 
 export default function AdminBrandsClient({ brands }: Props) {
   const t = useTranslations("admin.brands");
+  const [rows, setRows] = useState(brands);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const columns = useMemo(() => createBrandColumns(t), [t]);
+
+  useEffect(() => {
+    setRows(brands);
+  }, [brands]);
+
+  const handleDeleteSelected = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setIsDeleting(true);
+    setFeedback(null);
+
+    try {
+      for (const id of ids) {
+        const response = await fetch(`/api/admin/brands/${id}`, { method: "DELETE" });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error ?? t("table.bulkDelete.error"));
+        }
+      }
+
+      setRows((current) => current.filter((brand) => !ids.includes(brand.id)));
+      setFeedback({ type: "success", message: t("table.bulkDelete.success", { count: ids.length }) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("table.bulkDelete.error");
+      setFeedback({ type: "error", message });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -32,27 +62,35 @@ export default function AdminBrandsClient({ brands }: Props) {
         </Button>
       </header>
 
-      <Card className="border-slate-200 shadow-none">
-        <CardHeader className="border-b border-slate-200 bg-slate-50/60">
-          <CardTitle className="text-lg">{t("table.title")}</CardTitle>
-          <CardDescription>{t("table.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <BrandsTable
-            columns={columns}
-            data={brands}
-            searchPlaceholder={t("table.searchPlaceholder")}
-            emptyState={t("table.empty")}
-            noResults={t("table.noResults")}
-            paginationLabel={({ from, to, total }) =>
-              t("table.pagination.label", { from, to, total })
-            }
-            previousLabel={t("table.pagination.previous")}
-            nextLabel={t("table.pagination.next")}
-            resetLabel={t("table.pagination.reset")}
-          />
-        </CardContent>
-      </Card>
+      {feedback ? (
+        <div
+          className={
+            feedback.type === "success"
+              ? "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+              : "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          }
+        >
+          {feedback.message}
+        </div>
+      ) : null}
+
+      <BrandsTable
+        columns={columns}
+        data={rows}
+        searchPlaceholder={t("table.searchPlaceholder")}
+        emptyState={t("table.empty")}
+        noResults={t("table.noResults")}
+        paginationLabel={({ from, to, total }) =>
+          t("table.pagination.label", { from, to, total })
+        }
+        previousLabel={t("table.pagination.previous")}
+        nextLabel={t("table.pagination.next")}
+        resetLabel={t("table.pagination.reset")}
+        deleteLabel={t("table.bulkDelete.action")}
+        selectionLabel={(count) => t("table.bulkDelete.selection", { count })}
+        onDeleteSelected={handleDeleteSelected}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
