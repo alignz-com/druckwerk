@@ -1,35 +1,13 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, TemplateAssetType } from "@prisma/client";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { mapTemplateToAdminSummary } from "@/lib/admin/templates-data";
-
-const templateInclude = {
-  assets: {
-    orderBy: [
-      { version: "desc" as const },
-      { updatedAt: "desc" as const },
-    ],
-  },
-  fonts: {
-    include: {
-      fontVariant: {
-        include: {
-          fontFamily: true,
-        },
-      },
-    },
-  },
-  assignments: {
-    include: {
-      brand: true,
-    },
-    orderBy: [{ assignedAt: "desc" as const }],
-  },
-};
+import { adminTemplateSummaryInclude, mapTemplateToAdminSummary } from "@/lib/admin/templates-data";
+import { getTemplateAssetPublicUrl, uploadTemplateAsset } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
   const session = await getServerAuthSession();
@@ -37,22 +15,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let payload: any;
-  try {
-    payload = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  const key = String(payload?.key ?? "").trim();
-  const label = String(payload?.label ?? "").trim();
-  const description = payload?.description === null ? null : String(payload?.description ?? "").trim();
-  const pdfPath = String(payload?.pdfPath ?? "").trim();
-  const previewFrontPath = String(payload?.previewFrontPath ?? "").trim();
-  const previewBackPath = String(payload?.previewBackPath ?? "").trim();
-  const layoutVersionRaw = payload?.layoutVersion;
-  const printDpiRaw = payload?.printDpi;
-  const config = payload?.config;
+  const form = await req.formData();
+  const key = String(form.get("key") ?? "").trim();
+  const label = String(form.get("label") ?? "").trim();
+  const descriptionRaw = form.get("description");
+  const description =
+    descriptionRaw === null || String(descriptionRaw).trim().length === 0 ? null : String(descriptionRaw).trim();
+  const layoutVersionRaw = form.get("layoutVersion");
+  const printDpiRaw = form.get("printDpi");
+  const configRaw = form.get("config");
+  const pdfFile = form.get("pdfFile");
+  const previewFrontFile = form.get("previewFrontFile");
+  const previewBackFile = form.get("previewBackFile");
 
   if (!key) {
     return NextResponse.json({ error: "key is required" }, { status: 400 });
@@ -63,21 +37,9 @@ export async function POST(req: NextRequest) {
   if (!label) {
     return NextResponse.json({ error: "label is required" }, { status: 400 });
   }
-  if (!pdfPath) {
-    return NextResponse.json({ error: "pdfPath is required" }, { status: 400 });
-  }
-  if (!previewFrontPath) {
-    return NextResponse.json({ error: "previewFrontPath is required" }, { status: 400 });
-  }
-  if (!previewBackPath) {
-    return NextResponse.json({ error: "previewBackPath is required" }, { status: 400 });
-  }
-  if (config === null || typeof config !== "object") {
-    return NextResponse.json({ error: "config must be an object" }, { status: 400 });
-  }
 
   let layoutVersion: number | null = null;
-  if (layoutVersionRaw !== undefined && layoutVersionRaw !== null && layoutVersionRaw !== "") {
+  if (layoutVersionRaw !== undefined && layoutVersionRaw !== null && String(layoutVersionRaw).trim() !== "") {
     const parsed = Number.parseInt(String(layoutVersionRaw), 10);
     if (!Number.isFinite(parsed) || parsed < 0) {
       return NextResponse.json({ error: "layoutVersion must be a non-negative integer" }, { status: 400 });
@@ -86,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
   let printDpi: number | null = null;
-  if (printDpiRaw !== undefined && printDpiRaw !== null && printDpiRaw !== "") {
+  if (printDpiRaw !== undefined && printDpiRaw !== null && String(printDpiRaw).trim() !== "") {
     const parsed = Number.parseInt(String(printDpiRaw), 10);
     if (!Number.isFinite(parsed) || parsed < 0) {
       return NextResponse.json({ error: "printDpi must be a non-negative integer" }, { status: 400 });
@@ -94,26 +56,85 @@ export async function POST(req: NextRequest) {
     printDpi = parsed;
   }
 
+  let config: unknown = {};
+  if (typeof configRaw === "string") {
+    try {
+      config = JSON.parse(configRaw);
+    } catch {
+      return NextResponse.json({ error: "config must be valid JSON" }, { status: 400 });
+    }
+  } else if (configRaw && typeof configRaw === "object") {
+    return NextResponse.json({ error: "config must be provided as JSON string" }, { status: 400 });
+  }
+
+  const pdfUpload = pdfFile instanceof File ? pdfFile : null;
+  const previewFrontUpload = previewFrontFile instanceof File ? previewFrontFile : null;
+  const previewBackUpload = previewBackFile instanceof File ? previewBackFile : null;
+
   try {
     const template = await prisma.template.create({
       data: {
         key,
         label,
-        description: description && description.length > 0 ? description : null,
-        pdfPath,
-        previewFrontPath,
-        previewBackPath,
+        description,
+        pdfPath: "",
+        previewFrontPath: "",
+        previewBackPath: "",
         layoutVersion,
         printDpi,
         config,
       },
-      include: templateInclude,
     });
+
+    const updateData: Prisma.TemplateUpdateInput = {};
+
+    if (pdfUpload) {
+      const { publicUrl } = await uploadInitialAsset(template.id, key, pdfUpload, TemplateAssetType.PDF, 1);
+      updateData.pdfPath = publicUrl;
+    }
+
+    if (previewFrontUpload) {
+      const { publicUrl } = await uploadInitialAsset(
+        template.id,
+        key,
+        previewFrontUpload,
+        TemplateAssetType.PREVIEW_FRONT,
+        1,
+      );
+      updateData.previewFrontPath = publicUrl;
+    }
+
+    if (previewBackUpload) {
+      const { publicUrl } = await uploadInitialAsset(
+        template.id,
+        key,
+        previewBackUpload,
+        TemplateAssetType.PREVIEW_BACK,
+        1,
+      );
+      updateData.previewBackPath = publicUrl;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.template.update({
+        where: { id: template.id },
+        data: updateData,
+      });
+    }
+
+    const hydrated = await prisma.template.findUnique({
+      where: { id: template.id },
+      include: adminTemplateSummaryInclude,
+    });
+
+    if (!hydrated) {
+      throw new Error("Template creation failed");
+    }
 
     return NextResponse.json(
       {
-        templateId: template.id,
-        template: mapTemplateToAdminSummary(template),
+        templateId: hydrated.id,
+        template: mapTemplateToAdminSummary(hydrated),
       },
       { status: 201 },
     );
@@ -124,4 +145,63 @@ export async function POST(req: NextRequest) {
     console.error("[admin] create template failed", error);
     return NextResponse.json({ error: "Template creation failed" }, { status: 500 });
   }
+}
+
+async function uploadInitialAsset(
+  templateId: string,
+  templateKey: string,
+  file: File,
+  type: TemplateAssetType,
+  version: number,
+) {
+  const arrayBuffer = await file.arrayBuffer();
+  const data = new Uint8Array(arrayBuffer);
+  const checksum = createHash("sha256").update(data).digest("hex");
+  const fileName = file.name || defaultFileName(type, file.type);
+  const contentType = file.type || guessContentType(fileName);
+
+  const upload = await uploadTemplateAsset(
+    {
+      templateKey,
+      version,
+      type,
+      fileName,
+      data,
+      contentType,
+    },
+    { upsert: true },
+  );
+
+  await prisma.templateAsset.create({
+    data: {
+      templateId,
+      type,
+      storageKey: upload.storageKey,
+      mimeType: contentType,
+      fileName,
+      checksum,
+      version,
+      sizeBytes: upload.sizeBytes ?? data.byteLength,
+    },
+  });
+
+  const publicUrl = getTemplateAssetPublicUrl(upload.storageKey);
+  return { publicUrl };
+}
+
+function defaultFileName(type: TemplateAssetType, mimeType: string) {
+  if (type === TemplateAssetType.PDF) return "template.pdf";
+  if (type === TemplateAssetType.PREVIEW_FRONT) return "preview-front.png";
+  if (type === TemplateAssetType.PREVIEW_BACK) return "preview-back.png";
+  if (type === TemplateAssetType.CONFIG) return "config.json";
+  return mimeType.startsWith("image/") ? "asset.png" : "asset.bin";
+}
+
+function guessContentType(fileName: string) {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".json")) return "application/json";
+  return "application/octet-stream";
 }

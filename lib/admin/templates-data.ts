@@ -36,6 +36,7 @@ export type AdminTemplateSummary = {
   printDpi: number | null;
   createdAt: string;
   updatedAt: string;
+  config: Prisma.JsonValue | null;
   assets: AdminTemplateAsset[];
   fonts: AdminTemplateFontLink[];
   brandAssignments: AdminTemplateBrandAssignment[];
@@ -74,24 +75,32 @@ export type AdminFontFamily = {
   variants: AdminFontVariant[];
 };
 
+export const adminTemplateSummaryInclude = {
+  assets: {
+    orderBy: [
+      { version: "desc" as const },
+      { updatedAt: "desc" as const },
+    ],
+  },
+  fonts: {
+    include: {
+      fontVariant: {
+        include: {
+          fontFamily: true,
+        },
+      },
+    },
+  },
+  assignments: {
+    include: {
+      brand: true,
+    },
+    orderBy: [{ assignedAt: "desc" as const }],
+  },
+} satisfies Prisma.TemplateInclude;
+
 type TemplateWithRelations = Prisma.TemplateGetPayload<{
-  include: {
-    assets: true;
-    fonts: {
-      include: {
-        fontVariant: {
-          include: {
-            fontFamily: true;
-          };
-        };
-      };
-    };
-    assignments: {
-      include: {
-        brand: true;
-      };
-    };
-  };
+  include: typeof adminTemplateSummaryInclude;
 }>;
 
 export function mapTemplateToAdminSummary(template: TemplateWithRelations): AdminTemplateSummary {
@@ -104,6 +113,7 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     printDpi: template.printDpi,
     createdAt: template.createdAt.toISOString(),
     updatedAt: template.updatedAt.toISOString(),
+    config: template.config,
     assets: template.assets.map((asset) => ({
       id: asset.id,
       type: asset.type,
@@ -149,29 +159,7 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
 export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[]> {
   const templates = await prisma.template.findMany({
     orderBy: [{ label: "asc" }, { createdAt: "asc" }],
-    include: {
-      assets: {
-        orderBy: [
-          { version: "desc" },
-          { updatedAt: "desc" },
-        ],
-      },
-      fonts: {
-        include: {
-          fontVariant: {
-            include: {
-              fontFamily: true,
-            },
-          },
-        },
-      },
-      assignments: {
-        include: {
-          brand: true,
-        },
-        orderBy: [{ assignedAt: "desc" }],
-      },
-    },
+    include: adminTemplateSummaryInclude,
   });
 
   return templates.map((template) => mapTemplateToAdminSummary(template));

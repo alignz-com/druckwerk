@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 
 import { useTranslations } from "@/components/providers/locale-provider";
@@ -23,9 +23,6 @@ type FormState = {
   key: string;
   label: string;
   description: string;
-  pdfPath: string;
-  previewFrontPath: string;
-  previewBackPath: string;
   layoutVersion: string;
   printDpi: string;
   config: string;
@@ -35,9 +32,6 @@ const emptyForm: FormState = {
   key: "",
   label: "",
   description: "",
-  pdfPath: "",
-  previewFrontPath: "",
-  previewBackPath: "",
   layoutVersion: "",
   printDpi: "",
   config: defaultConfig,
@@ -46,8 +40,13 @@ const emptyForm: FormState = {
 export default function TemplateCreateForm({ onCreated, onCancel, className }: TemplateCreateFormProps) {
   const t = useTranslations("admin.templates");
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [previewFrontFile, setPreviewFrontFile] = useState<File | null>(null);
+  const [previewBackFile, setPreviewBackFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const hasUploads = useMemo(() => Boolean(pdfFile || previewFrontFile || previewBackFile), [pdfFile, previewFrontFile, previewBackFile]);
 
   const handleChange = (field: keyof FormState) => (value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -73,24 +72,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       return;
     }
 
-    const pdfPath = form.pdfPath.trim();
-    if (!pdfPath) {
-      setError(t("create.errors.pdfPathRequired"));
-      return;
-    }
-
-    const previewFrontPath = form.previewFrontPath.trim();
-    if (!previewFrontPath) {
-      setError(t("create.errors.previewFrontPathRequired"));
-      return;
-    }
-
-    const previewBackPath = form.previewBackPath.trim();
-    if (!previewBackPath) {
-      setError(t("create.errors.previewBackPathRequired"));
-      return;
-    }
-
     let layoutVersion: number | null = null;
     if (form.layoutVersion.trim()) {
       const parsed = Number.parseInt(form.layoutVersion.trim(), 10);
@@ -111,9 +92,9 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       printDpi = parsed;
     }
 
-    let config: unknown;
+    let configObject: unknown;
     try {
-      config = JSON.parse(form.config);
+      configObject = JSON.parse(form.config);
     } catch {
       setError(t("create.errors.configInvalid"));
       return;
@@ -121,35 +102,49 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
 
     const description = form.description.trim();
 
+    const payload = new FormData();
+    payload.append("key", key);
+    payload.append("label", label);
+    payload.append("description", description);
+    if (layoutVersion !== null) {
+      payload.append("layoutVersion", String(layoutVersion));
+    }
+    if (printDpi !== null) {
+      payload.append("printDpi", String(printDpi));
+    }
+    payload.append("config", JSON.stringify(configObject));
+
+    if (pdfFile) {
+      payload.append("pdfFile", pdfFile);
+    }
+    if (previewFrontFile) {
+      payload.append("previewFrontFile", previewFrontFile);
+    }
+    if (previewBackFile) {
+      payload.append("previewBackFile", previewBackFile);
+    }
+
     startTransition(async () => {
       try {
         const response = await fetch("/api/admin/templates", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key,
-            label,
-            description: description || null,
-            pdfPath,
-            previewFrontPath,
-            previewBackPath,
-            layoutVersion,
-            printDpi,
-            config,
-          }),
+          body: payload,
         });
 
-        const payload = await response.json().catch(() => ({}));
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(payload?.error ?? t("create.errors.requestFailed"));
+          throw new Error(data?.error ?? t("create.errors.requestFailed"));
         }
 
-        if (!payload?.template) {
+        if (!data?.template) {
           throw new Error(t("create.errors.requestFailed"));
         }
 
-        onCreated(payload.template as AdminTemplateSummary);
+        onCreated(data.template as AdminTemplateSummary);
         setForm(emptyForm);
+        setPdfFile(null);
+        setPreviewFrontFile(null);
+        setPreviewBackFile(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : t("create.errors.requestFailed"));
       }
@@ -190,34 +185,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="template-pdf">{t("create.fields.pdfPath")}</Label>
-          <Input
-            id="template-pdf"
-            value={form.pdfPath}
-            onChange={(event) => handleChange("pdfPath")(event.target.value)}
-            placeholder="templates/my-template.pdf"
-          />
-          <p className="text-xs text-slate-500">{t("create.hints.pdfPath")}</p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-preview-front">{t("create.fields.previewFrontPath")}</Label>
-          <Input
-            id="template-preview-front"
-            value={form.previewFrontPath}
-            onChange={(event) => handleChange("previewFrontPath")(event.target.value)}
-            placeholder="/templates/my-template-front.png"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-preview-back">{t("create.fields.previewBackPath")}</Label>
-          <Input
-            id="template-preview-back"
-            value={form.previewBackPath}
-            onChange={(event) => handleChange("previewBackPath")(event.target.value)}
-            placeholder="/templates/my-template-back.png"
-          />
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="template-layout-version">{t("create.fields.layoutVersion")}</Label>
           <Input
             id="template-layout-version"
@@ -251,6 +218,48 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
           className="font-mono text-xs"
         />
         <p className="text-xs text-slate-500">{t("create.hints.config")}</p>
+      </div>
+
+      <div className="space-y-4 rounded-lg border border-dashed border-slate-300 bg-slate-50/80 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">{t("create.uploads.title")}</h3>
+          <p className="text-xs text-slate-500">{t("create.uploads.description")}</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="template-pdf-file">{t("create.fields.pdfFile")}</Label>
+            <Input
+              id="template-pdf-file"
+              type="file"
+              accept="application/pdf"
+              onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
+            />
+            {pdfFile ? <p className="text-xs text-slate-500 truncate">{pdfFile.name}</p> : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="template-preview-front-file">{t("create.fields.previewFrontFile")}</Label>
+            <Input
+              id="template-preview-front-file"
+              type="file"
+              accept="image/png,image/svg+xml"
+              onChange={(event) => setPreviewFrontFile(event.target.files?.[0] ?? null)}
+            />
+            {previewFrontFile ? <p className="text-xs text-slate-500 truncate">{previewFrontFile.name}</p> : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="template-preview-back-file">{t("create.fields.previewBackFile")}</Label>
+            <Input
+              id="template-preview-back-file"
+              type="file"
+              accept="image/png,image/svg+xml"
+              onChange={(event) => setPreviewBackFile(event.target.files?.[0] ?? null)}
+            />
+            {previewBackFile ? <p className="text-xs text-slate-500 truncate">{previewBackFile.name}</p> : null}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">
+          {hasUploads ? t("create.uploads.ready") : t("create.uploads.hint")}
+        </p>
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

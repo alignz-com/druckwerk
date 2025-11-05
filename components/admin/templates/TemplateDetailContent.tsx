@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TemplateAssetType } from "@prisma/client";
 import { AlertCircle, FileWarning, Trash2 } from "lucide-react";
 
@@ -8,6 +9,7 @@ import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import TemplateAssetUploader from "./TemplateAssetUploader";
 
@@ -25,12 +27,29 @@ type Props = {
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const t = useTranslations("admin.templates");
+  const [configDraft, setConfigDraft] = useState(() => stringifyConfig(template.config));
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [configMessage, setConfigMessage] = useState<string | null>(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   const latestAssets = new Map<TemplateAssetType, (typeof template.assets)[number] | undefined>();
   for (const type of MANAGED_TYPES) {
     latestAssets.set(type, template.assets.find((asset) => asset.type === type));
   }
+
+  useEffect(() => {
+    setConfigDraft(stringifyConfig(template.config));
+    setConfigError(null);
+    setConfigMessage(null);
+  }, [template.config]);
+
+  useEffect(() => {
+    if (!configMessage) return;
+    const timeout = setTimeout(() => setConfigMessage(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [configMessage]);
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -43,6 +62,36 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       alert(message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleConfigSave = async () => {
+    setConfigError(null);
+    setConfigMessage(null);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(configDraft);
+    } catch {
+      setConfigError(t("detail.configInvalid"));
+      return;
+    }
+    setIsSavingConfig(true);
+    try {
+      const response = await fetch(`/api/admin/templates/${template.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: parsed }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error ?? t("detail.configSaveFailed"));
+      }
+      setConfigMessage(t("detail.configSaved"));
+      router.refresh();
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : t("detail.configSaveFailed"));
+    } finally {
+      setIsSavingConfig(false);
     }
   };
 
@@ -85,6 +134,31 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             {t("detail.notAssigned")}
           </div>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{t("detail.configHeading")}</h3>
+            <p className="text-xs text-slate-500">{t("detail.configDescription")}</p>
+          </div>
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            {configMessage ? <span className="text-xs text-emerald-600">{configMessage}</span> : null}
+            <Button size="sm" variant="secondary" onClick={handleConfigSave} disabled={isSavingConfig}>
+              {isSavingConfig ? t("detail.configSaving") : t("detail.configSave")}
+            </Button>
+          </div>
+        </div>
+        <Textarea
+          value={configDraft}
+          onChange={(event) => {
+            setConfigDraft(event.target.value);
+            if (configError) setConfigError(null);
+          }}
+          rows={12}
+          className="font-mono text-xs"
+        />
+        {configError ? <p className="text-xs text-red-600">{configError}</p> : null}
       </section>
 
       <section className="space-y-3">
@@ -210,4 +284,15 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function stringifyConfig(value: unknown) {
+  try {
+    if (value === null || value === undefined) {
+      return "{}";
+    }
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "{}";
+  }
 }

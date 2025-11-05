@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { TemplateAssetType } from "@prisma/client";
+import { Prisma, TemplateAssetType } from "@prisma/client";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { extractPdfMetadata, extractPngMetadata, uploadTemplateAsset } from "@/lib/storage";
+import {
+  extractPdfMetadata,
+  extractPngMetadata,
+  getTemplateAssetPublicUrl,
+  uploadTemplateAsset,
+} from "@/lib/storage";
 
 const TEMPLATE_ASSET_TYPE_MAP: Record<string, TemplateAssetType> = {
   pdf: TemplateAssetType.PDF,
@@ -66,6 +71,15 @@ export async function POST(req: NextRequest) {
     { upsert: true },
   );
 
+  let parsedConfig: unknown | null = null;
+  if (type === TemplateAssetType.CONFIG) {
+    try {
+      parsedConfig = JSON.parse(new TextDecoder().decode(data));
+    } catch {
+      return NextResponse.json({ error: "config must be valid JSON" }, { status: 400 });
+    }
+  }
+
   const asset = await prisma.templateAsset.create({
     data: {
       templateId: template.id,
@@ -78,6 +92,26 @@ export async function POST(req: NextRequest) {
       sizeBytes: upload.sizeBytes ?? data.byteLength,
     },
   });
+
+  let templateUpdate: Prisma.TemplateUpdateInput | null = null;
+  const publicUrl = getTemplateAssetPublicUrl(upload.storageKey);
+
+  if (type === TemplateAssetType.PDF) {
+    templateUpdate = { pdfPath: publicUrl };
+  } else if (type === TemplateAssetType.PREVIEW_FRONT) {
+    templateUpdate = { previewFrontPath: publicUrl };
+  } else if (type === TemplateAssetType.PREVIEW_BACK) {
+    templateUpdate = { previewBackPath: publicUrl };
+  } else if (type === TemplateAssetType.CONFIG && parsedConfig !== null) {
+    templateUpdate = { config: parsedConfig };
+  }
+
+  if (templateUpdate) {
+    await prisma.template.update({
+      where: { id: template.id },
+      data: templateUpdate,
+    });
+  }
 
   let metadata: Record<string, unknown> | null = null;
   if (type === TemplateAssetType.PDF) {
@@ -111,6 +145,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     asset,
+    publicUrl,
     metadata,
   });
 }

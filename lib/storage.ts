@@ -167,6 +167,10 @@ export function buildFontPath(familySlug: string, weight: number, style: string,
   return `${safeFamily}/${weight}${style === "italic" ? "i" : ""}.${format.toLowerCase()}`;
 }
 
+export function getTemplateAssetPublicUrl(storageKey: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(TEMPLATE_BUCKET)}/${encodeStoragePath(storageKey)}`;
+}
+
 async function uploadToSupabase(bucket: string, path: string, data: Uint8Array, contentType: string, opts: UploadOptions) {
   const url = `${STORAGE_BASE_URL}/${encodeURIComponent(bucket)}/${encodeStoragePath(path)}`;
   const body = Buffer.from(data);
