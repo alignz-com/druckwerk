@@ -543,6 +543,7 @@ export const messages = {
           save: "Save changes",
           saving: "Saving…",
           delete: "Delete brand",
+          close: "Close",
           cancel: "Cancel",
         },
         toast: {
@@ -1203,6 +1204,7 @@ export const messages = {
           save: "Änderungen speichern",
           saving: "Speichern…",
           delete: "Marke löschen",
+          close: "Schließen",
           cancel: "Abbrechen",
         },
         toast: {

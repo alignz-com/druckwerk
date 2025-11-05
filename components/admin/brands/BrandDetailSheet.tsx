@@ -543,13 +543,18 @@ export default function BrandDetailSheet({
                   </div>
                 </section>
               </div>
-              <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
-                <Button type="button" variant="destructive" onClick={handleDelete} disabled={disableActions}>
-                  {t("actions.delete")}
+              <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={disableActions}
+                >
+                  {t("actions.close")}
                 </Button>
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disableActions}>
-                    {t("actions.cancel")}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <Button type="button" variant="destructive" onClick={handleDelete} disabled={disableActions}>
+                    {t("actions.delete")}
                   </Button>
                   <Button type="submit" disabled={disableActions || !form.name.trim()}>
                     {isSaving ? t("actions.saving") : t("actions.save")}
