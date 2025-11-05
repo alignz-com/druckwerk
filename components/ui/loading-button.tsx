@@ -28,12 +28,12 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
     ref,
   ) => {
     const content = loading ? (
-      <span className="flex items-center gap-2">
+      <>
         {spinner ?? <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-        <span>{loadingText ?? children}</span>
-      </span>
+        {loadingText ?? children}
+      </>
     ) : (
-      <span className="flex items-center gap-2">{children}</span>
+      children
     );
 
     return (
@@ -42,7 +42,6 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
         className={cn(minWidthClassName, className)}
         disabled={disabled || loading}
         aria-busy={loading}
-        data-loading={loading ? "true" : undefined}
         {...props}
       >
         {content}
