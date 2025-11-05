@@ -165,6 +165,49 @@ export async function getAdminTemplateSummaries(): Promise<AdminTemplateSummary[
   return templates.map((template) => mapTemplateToAdminSummary(template));
 }
 
+type FontFamilyWithVariants = Prisma.FontFamilyGetPayload<{
+  include: { variants: true };
+}>;
+
+function mapFontVariant(variant: FontFamilyWithVariants["variants"][number]): AdminFontVariant {
+  return {
+    id: variant.id,
+    weight: variant.weight,
+    style: variant.style,
+    format: variant.format,
+    fileName: variant.fileName ?? null,
+    storageKey: variant.storageKey,
+    sizeBytes: variant.sizeBytes ?? null,
+    checksum: variant.checksum ?? null,
+    createdAt: variant.createdAt.toISOString(),
+    updatedAt: variant.updatedAt.toISOString(),
+  };
+}
+
+export function mapFontFamily(family: FontFamilyWithVariants): AdminFontFamily {
+  return {
+    id: family.id,
+    name: family.name,
+    slug: family.slug,
+    defaultWeight: family.defaultWeight ?? null,
+    defaultStyle: family.defaultStyle ?? null,
+    notes: family.notes ?? null,
+    createdAt: family.createdAt.toISOString(),
+    updatedAt: family.updatedAt.toISOString(),
+    variants: family.variants
+      .map((variant) => mapFontVariant(variant))
+      .sort((a, b) => {
+        if (a.weight !== b.weight) {
+          return a.weight - b.weight;
+        }
+        if (a.style !== b.style) {
+          return a.style.localeCompare(b.style);
+        }
+        return a.format.localeCompare(b.format);
+      }),
+  };
+}
+
 export async function getAdminFontFamilies(): Promise<AdminFontFamily[]> {
   const families = await prisma.fontFamily.findMany({
     orderBy: [{ name: "asc" }],
@@ -175,26 +218,22 @@ export async function getAdminFontFamilies(): Promise<AdminFontFamily[]> {
     },
   });
 
-  return families.map((family) => ({
-    id: family.id,
-    name: family.name,
-    slug: family.slug,
-    defaultWeight: family.defaultWeight,
-    defaultStyle: family.defaultStyle,
-    notes: family.notes,
-    createdAt: family.createdAt.toISOString(),
-    updatedAt: family.updatedAt.toISOString(),
-    variants: family.variants.map((variant) => ({
-      id: variant.id,
-      weight: variant.weight,
-      style: variant.style,
-      format: variant.format,
-      fileName: variant.fileName,
-      storageKey: variant.storageKey,
-      sizeBytes: variant.sizeBytes,
-      checksum: variant.checksum,
-      createdAt: variant.createdAt.toISOString(),
-      updatedAt: variant.updatedAt.toISOString(),
-    })),
-  }));
+  return families.map((family) => mapFontFamily(family as FontFamilyWithVariants));
+}
+
+export async function getAdminFontFamily(familyId: string): Promise<AdminFontFamily | null> {
+  const family = await prisma.fontFamily.findUnique({
+    where: { id: familyId },
+    include: {
+      variants: {
+        orderBy: [{ weight: "asc" }, { style: "asc" }],
+      },
+    },
+  });
+
+  if (!family) {
+    return null;
+  }
+
+  return mapFontFamily(family as FontFamilyWithVariants);
 }

@@ -79,6 +79,10 @@ export async function uploadFontVariant(input: FontUpload, opts: UploadOptions =
   };
 }
 
+export async function deleteFontVariantObject(storageKey: string) {
+  await deleteObject(FONT_BUCKET, storageKey);
+}
+
 export async function deleteObject(bucket: string, key: string) {
   const url = `${STORAGE_BASE_URL}/${encodeURIComponent(bucket)}/${encodeStoragePath(key)}`;
   const res = await fetch(url, {

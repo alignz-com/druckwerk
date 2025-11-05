@@ -1,16 +1,78 @@
 "use client";
 
-import type { AdminFontFamily } from "@/lib/admin/templates-data";
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
+import type { AdminFontFamily } from "@/lib/admin/templates-data";
 import { useTranslations } from "@/components/providers/locale-provider";
-import FontVariantUploader from "./FontVariantUploader";
+import { Button } from "@/components/ui/button";
+import { FontsTable } from "./fonts-table";
+import { FontCreateSheet } from "./FontCreateSheet";
+import { FontDetailSheet } from "./FontDetailSheet";
 
 type Props = {
   fontFamilies: AdminFontFamily[];
 };
 
+type SheetState = { mode: "create" } | { mode: "view"; familyId: string } | null;
+
 export default function AdminFontsClient({ fontFamilies }: Props) {
   const t = useTranslations("admin.fonts");
+  const [families, setFamilies] = useState<AdminFontFamily[]>(fontFamilies);
+  const [sheetState, setSheetState] = useState<SheetState>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    setFamilies(fontFamilies);
+  }, [fontFamilies]);
+
+  const activeFamily = useMemo(() => {
+    if (sheetState?.mode !== "view") return null;
+    return families.find((family) => family.id === sheetState.familyId) ?? null;
+  }, [sheetState, families]);
+
+  const tableRows = useMemo(() => {
+    return families.map((family) => {
+      const variantSummary =
+        family.variants.length === 0
+          ? t("table.variantSummary.empty")
+          : family.variants
+              .slice(0, 3)
+              .map((variant) => `${variant.weight}${variant.style === "ITALIC" ? "i" : ""} / ${variant.format}`)
+              .join(", ") + (family.variants.length > 3 ? "…" : "");
+
+      return {
+        id: family.id,
+        name: family.name,
+        slug: family.slug,
+        variantCount: family.variants.length,
+        variantSummary,
+        updatedAtLabel: new Date(family.updatedAt).toLocaleDateString(),
+        updatedAtValue: new Date(family.updatedAt).getTime(),
+      };
+    });
+  }, [families, t]);
+
+  const handleFamilyCreated = (family: AdminFontFamily) => {
+    setFamilies((current) => {
+      const next = [...current, family];
+      return next.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    setFeedback({ type: "success", message: t("toast.created", { name: family.name }) });
+    setSheetState({ mode: "view", familyId: family.id });
+  };
+
+  const handleFamilyUpdated = (family: AdminFontFamily) => {
+    setFamilies((current) => current.map((item) => (item.id === family.id ? family : item)));
+    setFeedback({ type: "success", message: t("toast.updated", { name: family.name }) });
+    setSheetState({ mode: "view", familyId: family.id });
+  };
+
+  const handleFamilyDeleted = (familyId: string) => {
+    setFamilies((current) => current.filter((family) => family.id !== familyId));
+    setFeedback({ type: "success", message: t("toast.deleted") });
+    setSheetState(null);
+  };
 
   return (
     <div className="space-y-8">
@@ -19,51 +81,60 @@ export default function AdminFontsClient({ fontFamilies }: Props) {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
         </div>
+        <Button
+          onClick={() => setSheetState({ mode: "create" })}
+          className="inline-flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          {t("actions.newFamily")}
+        </Button>
       </header>
 
-      <section className="space-y-6">
-        <p className="text-sm text-slate-500">{t("libraryDescription")}</p>
-
-        {fontFamilies.length > 0 ? (
-          <div className="space-y-4">
-            {fontFamilies.map((family) => (
-              <div key={family.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-semibold text-slate-900">{family.name}</h2>
-                    <p className="text-xs text-slate-500">Slug: {family.slug}</p>
-                  </div>
-                </div>
-                {family.variants.length > 0 ? (
-                  <ul className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                    {family.variants.map((variant) => {
-                      const styleLabel = variant.style === "ITALIC" ? t("labels.styleItalic") : t("labels.styleNormal");
-                      return (
-                        <li key={variant.id} className="rounded-full bg-slate-100 px-3 py-1">
-                          {variant.weight} / {styleLabel} / {variant.format}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-xs text-slate-500">{t("empty")}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">{t("empty")}</p>
-        )}
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-inner">
-          <h3 className="text-sm font-semibold text-slate-900">{t("uploaderTitle")}</h3>
-          <p className="text-xs text-slate-500">{t("uploaderHint")}</p>
-          <FontVariantUploader
-            families={fontFamilies.map((family) => ({ id: family.id, name: family.name, slug: family.slug }))}
-            className="mt-4"
-          />
+      {feedback ? (
+        <div
+          className={
+            feedback.type === "success"
+              ? "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+              : "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          }
+        >
+          {feedback.message}
         </div>
-      </section>
+      ) : null}
+
+      <FontsTable
+        data={tableRows}
+        searchPlaceholder={t("table.searchPlaceholder")}
+        emptyState={t("table.empty")}
+        noResults={t("table.noResults")}
+        paginationLabel={({ from, to, total }) => t("table.pagination.label", { from, to, total })}
+        previousLabel={t("table.pagination.previous")}
+        nextLabel={t("table.pagination.next")}
+        resetLabel={t("table.pagination.reset")}
+        manageLabel={t("table.manage")}
+        columns={{
+          family: t("table.headers.family"),
+          slug: t("table.headers.slug"),
+          variants: t("table.headers.variants"),
+          updated: t("table.headers.updated"),
+          actions: t("table.headers.actions"),
+        }}
+        onManage={(id) => setSheetState({ mode: "view", familyId: id })}
+      />
+
+      <FontDetailSheet
+        family={activeFamily}
+        open={sheetState?.mode === "view" && Boolean(activeFamily)}
+        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
+        onFamilyUpdated={handleFamilyUpdated}
+        onFamilyDeleted={handleFamilyDeleted}
+      />
+
+      <FontCreateSheet
+        open={sheetState?.mode === "create"}
+        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
+        onCreated={handleFamilyCreated}
+      />
     </div>
   );
 }

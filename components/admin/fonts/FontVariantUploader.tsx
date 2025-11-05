@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { AdminFontFamily } from "@/lib/admin/templates-data";
 
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,19 @@ const FORMAT_OPTIONS = [
 ];
 
 type Props = {
-  families: Pick<AdminFontFamily, "id" | "name" | "slug">[];
+  families?: Pick<AdminFontFamily, "id" | "name" | "slug">[];
+  family?: Pick<AdminFontFamily, "id" | "name" | "slug">;
+  onUploaded?: (family: AdminFontFamily) => void;
   className?: string;
 };
 
-export default function FontVariantUploader({ families, className }: Props) {
+export default function FontVariantUploader({ families = [], family, onUploaded, className }: Props) {
   const router = useRouter();
   const t = useTranslations("admin.fonts");
-  const [selectedFamilyId, setSelectedFamilyId] = useState<string>(families[0]?.id ?? "new");
+  const isLockedFamily = Boolean(family?.id);
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>(
+    family?.id ?? families[0]?.id ?? "new",
+  );
   const [familyName, setFamilyName] = useState("");
   const [familySlug, setFamilySlug] = useState("");
   const [weight, setWeight] = useState("400");
@@ -37,7 +42,13 @@ export default function FontVariantUploader({ families, className }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const isNewFamily = selectedFamilyId === "new";
+  useEffect(() => {
+    if (family?.id) {
+      setSelectedFamilyId(family.id);
+    }
+  }, [family?.id]);
+
+  const isNewFamily = !isLockedFamily && selectedFamilyId === "new";
 
   const styleOptions = [
     { value: "normal", label: t("labels.styleNormal") },
@@ -61,6 +72,10 @@ export default function FontVariantUploader({ families, className }: Props) {
 
     const formData = new FormData();
     if (!isNewFamily) {
+      if (!selectedFamilyId && !family?.id) {
+        setError(t("errors.nameRequired"));
+        return;
+      }
       formData.append("familyId", selectedFamilyId);
     } else {
       formData.append("familyName", familyName.trim());
@@ -85,18 +100,29 @@ export default function FontVariantUploader({ families, className }: Props) {
       }
 
       const payload = await response.json();
-      const familyNameResult = payload?.family?.name ?? familyName;
+      const updatedFamily = payload?.family as AdminFontFamily | undefined;
       const variant = payload?.variant;
 
-      const styleLabel = variant?.style === "ITALIC" ? t("labels.styleItalic") : t("labels.styleNormal");
-      setMessage(
-        variant
-          ? t("uploadSuccess", { name: familyNameResult, weight: variant.weight, style: styleLabel })
-          : t("uploadSuccessDefault"),
-      );
-      startTransition(() => {
-        router.refresh();
-      });
+      if (updatedFamily) {
+        const targetFamilyName = updatedFamily.name ?? familyName;
+        const styleLabel = variant?.style === "ITALIC" ? t("labels.styleItalic") : t("labels.styleNormal");
+        setMessage(
+          variant
+            ? t("uploadSuccess", { name: targetFamilyName, weight: variant.weight, style: styleLabel })
+            : t("uploadSuccessDefault"),
+        );
+        onUploaded?.(updatedFamily);
+        if (!onUploaded) {
+          startTransition(() => {
+            router.refresh();
+          });
+        }
+      } else {
+        setMessage(t("uploadSuccessDefault"));
+        startTransition(() => {
+          router.refresh();
+        });
+      }
       setFile(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.uploadFailed"));
@@ -106,22 +132,29 @@ export default function FontVariantUploader({ families, className }: Props) {
   return (
     <form onSubmit={submit} className={cn("space-y-4", className)}>
       <div className="grid gap-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="font-family">{t("labels.family")}</Label>
-          <Select value={selectedFamilyId} onValueChange={setSelectedFamilyId}>
-            <SelectTrigger id="font-family">
-              <SelectValue placeholder={t("placeholders.family")} />
-            </SelectTrigger>
-            <SelectContent>
-              {families.map((family) => (
-                <SelectItem key={family.id} value={family.id}>
-                  {family.name}
-                </SelectItem>
-              ))}
-              <SelectItem value="new">{t("labels.newFamily")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {isLockedFamily ? (
+          <div className="grid gap-1.5">
+            <Label>{t("labels.family")}</Label>
+            <Input value={family?.name ?? ""} disabled />
+          </div>
+        ) : (
+          <div className="grid gap-1.5">
+            <Label htmlFor="font-family">{t("labels.family")}</Label>
+            <Select value={selectedFamilyId} onValueChange={setSelectedFamilyId}>
+              <SelectTrigger id="font-family">
+                <SelectValue placeholder={t("placeholders.family")} />
+              </SelectTrigger>
+              <SelectContent>
+                {families.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value="new">{t("labels.newFamily")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {isNewFamily ? (
           <div className="grid gap-1.5">

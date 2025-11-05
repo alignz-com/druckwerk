@@ -5,6 +5,8 @@ import { FontFormat, FontStyle } from "@prisma/client";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadFontVariant } from "@/lib/storage";
+import { getAdminFontFamily } from "@/lib/admin/templates-data";
+import { ensureUniqueFontSlug, slugifyFontFamily } from "../util";
 
 const FONT_STYLE_MAP: Record<string, FontStyle> = {
   normal: FontStyle.NORMAL,
@@ -52,27 +54,28 @@ export async function POST(req: NextRequest) {
       where: { id: familyId },
     }));
 
+  if (!family && familySlug) {
+    family = await prisma.fontFamily.findUnique({
+      where: { slug: familySlug },
+    });
+  }
+
   if (!family) {
-    if (!familySlug && familyName) {
-      familySlug = slugify(familyName);
-    }
-    if (!familySlug) {
+    if (!familyName) {
       return NextResponse.json({ error: "Provide either familyId or familySlug/familyName" }, { status: 400 });
     }
+    const baseSlug = slugifyFontFamily(familySlug || familyName);
+    const uniqueSlug = await ensureUniqueFontSlug(baseSlug);
 
-    family =
-      (await prisma.fontFamily.findUnique({
-        where: { slug: familySlug },
-      })) ??
-      (familyName
-        ? await prisma.fontFamily.create({
-            data: {
-              name: familyName,
-              slug: familySlug,
-            },
-          })
-        : null);
+    family = await prisma.fontFamily.create({
+      data: {
+        name: familyName,
+        slug: uniqueSlug,
+      },
+    });
   }
+
+  const effectiveSlug = family.slug;
 
   if (!family) {
     return NextResponse.json({ error: "Font family not found and could not be created" }, { status: 404 });
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   const upload = await uploadFontVariant(
     {
-      familySlug: family.slug,
+      familySlug: effectiveSlug,
       weight,
       style: style === FontStyle.ITALIC ? "italic" : "normal",
       format: format.toLowerCase() as "ttf" | "otf" | "woff" | "woff2",
@@ -114,17 +117,12 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const adminFamily = await getAdminFontFamily(family.id);
+
   return NextResponse.json({
-    family,
+    family: adminFamily,
     variant,
   });
-}
-
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 function guessFontContentType(format: FontFormat) {
