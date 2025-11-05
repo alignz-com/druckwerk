@@ -224,7 +224,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
     <section className="space-y-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{tOrder("title")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{tOrder("title")}</h1>
           {tOrder("subtitle") ? (
             <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
           ) : null}
