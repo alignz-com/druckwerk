@@ -1,14 +1,12 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import LogoutButton from "@/components/layout/LogoutButton";
 import UserSettingsDialog from "@/components/UserSettingsDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { SidebarNav, type NavGroup } from "./SidebarNav";
@@ -20,8 +18,6 @@ type Props = {
   roleLabel?: string | null;
   brandTitle: string;
   logoutLabel: string;
-  collapseLabel: string;
-  expandLabel: string;
   settingsLabel: string;
 };
 
@@ -60,13 +56,9 @@ export function AppSidebar({
   roleLabel,
   brandTitle,
   logoutLabel,
-  collapseLabel,
-  expandLabel,
   settingsLabel,
 }: Props) {
-  const [collapsed, setCollapsed] = useState(true);
-
-  const toggleCollapsed = () => setCollapsed((prev) => !prev);
+  const collapsed = true;
   const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
   const logoWidth = collapsed ? 45 : 180;
   const logoHeight = collapsed ? 45 : 48;
@@ -121,31 +113,6 @@ export function AppSidebar({
             collapsed={collapsed}
             className={collapsed ? "items-center" : undefined}
           />
-          <SidebarTooltip
-            label={collapsed ? expandLabel : collapseLabel}
-            className={cn(
-              "mt-6 justify-end",
-              collapsed && "justify-center",
-            )}
-          >
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "rounded-full text-slate-600 hover:bg-slate-100",
-                collapsed ? "h-11 w-11 bg-white" : "h-9 w-9 bg-white",
-              )}
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? expandLabel : collapseLabel}
-            >
-              {collapsed ? (
-                <ChevronsRight className="h-4 w-4" />
-              ) : (
-                <ChevronsLeft className="h-4 w-4" />
-              )}
-            </Button>
-          </SidebarTooltip>
         </div>
 
         <div
