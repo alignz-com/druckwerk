@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import TemplateDetailContent from "./TemplateDetailContent";
+import { hasInlineDesignConfig } from "@/lib/template-design";
 import { TemplatesTable } from "./templates-table";
 import TemplateCreateForm from "./TemplateCreateForm";
 
@@ -48,8 +49,10 @@ export default function AdminTemplatesClient({ templates }: Props) {
 
   const tableRows = useMemo(() => {
     return entries.map((template) => {
+      const inlineDesign = hasInlineDesignConfig(template.config);
       const assetStatus = computeAssetStatus(
         template,
+        inlineDesign,
         (type) => t(`assetTypes.${type}` as any),
         (count, list) => t("assetStatus.missingPlural", { count, list }),
         t("assetStatus.allPresent"),
@@ -209,6 +212,7 @@ export default function AdminTemplatesClient({ templates }: Props) {
 
 function computeAssetStatus(
   template: AdminTemplateSummary,
+  hasInlineDesign: boolean,
   getLabel: (type: TemplateAssetType) => string,
   missingMessage: (count: number, list: string) => string,
   allPresentMessage: string,
@@ -221,6 +225,9 @@ function computeAssetStatus(
     if (latestByType.has(asset.type) && !latestByType.get(asset.type)) {
       latestByType.set(asset.type, true);
     }
+  }
+  if (hasInlineDesign) {
+    latestByType.set(TemplateAssetType.CONFIG, true);
   }
   const missing = Array.from(latestByType.entries())
     .filter(([, present]) => !present)

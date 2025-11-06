@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
+import { hasInlineDesignConfig } from "@/lib/template-design";
 
 const assetUploadFields: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; accept: string }> = [
   { type: TemplateAssetType.PDF, field: "pdf", accept: "application/pdf" },
@@ -77,6 +78,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [isUploadingAssets, setIsUploadingAssets] = useState(false);
   const [assetMessage, setAssetMessage] = useState<string | null>(null);
   const [assetError, setAssetError] = useState<string | null>(null);
+  const inlineDesign = useMemo(() => hasInlineDesignConfig(template.config), [template.config]);
 
   const assignedBrandIds = useMemo(
     () => new Set(template.brandAssignments.map((assignment) => assignment.brandId)),
@@ -646,26 +648,38 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           {assetOverviewTypes.map((type) => {
             const asset = template.assets.find((item) => item.type === type);
             const label = t(`assetTypes.${type}` as any);
-            const missing = !asset;
+            const isConfig = type === TemplateAssetType.CONFIG;
+            const hasInline = isConfig ? inlineDesign : false;
+            const missing = isConfig ? !asset && !hasInline : !asset;
+            const hasAssetMeta = Boolean(asset);
+            const description = isConfig
+              ? hasAssetMeta
+                ? t("detail.assetMeta", { version: asset?.version ?? 1, updated: formatDate(asset!.updatedAt) })
+                : hasInline
+                  ? t("detail.configInline")
+                  : t("detail.missingAsset")
+              : missing
+                ? t("detail.missingAsset")
+                : t("detail.assetMeta", { version: asset?.version ?? 1, updated: formatDate(asset!.updatedAt) });
             return (
               <Card key={type} className={missing ? "border-dashed border-amber-500 bg-amber-50/40 text-amber-700" : ""}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">{label}</CardTitle>
-                  <CardDescription>
-                    {missing
-                      ? t("detail.missingAsset")
-                      : t("detail.assetMeta", { version: asset?.version ?? 1, updated: formatDate(asset!.updatedAt) })}
-                  </CardDescription>
+                  <CardDescription>{description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between">
-                  <div className="flex flex-col text-xs text-slate-500">
-                    <span>
-                      {t("detail.fileLabel")}: {asset?.fileName ?? "–"}
-                    </span>
-                    <span>
-                      {t("detail.sizeLabel")}: {formatBytes(asset?.sizeBytes ?? null)}
-                    </span>
-                  </div>
+                  {isConfig && hasInline && !asset ? (
+                    <p className="text-xs text-slate-500">{t("detail.configInlineDescription")}</p>
+                  ) : (
+                    <div className="flex flex-col text-xs text-slate-500">
+                      <span>
+                        {t("detail.fileLabel")}: {asset?.fileName ?? "–"}
+                      </span>
+                      <span>
+                        {t("detail.sizeLabel")}: {formatBytes(asset?.sizeBytes ?? null)}
+                      </span>
+                    </div>
+                  )}
                   {missing ? <FileWarning className="size-5 text-amber-500" /> : null}
                 </CardContent>
               </Card>

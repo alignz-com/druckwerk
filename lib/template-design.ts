@@ -100,6 +100,22 @@ export function parseTemplateDesign(input: unknown): TemplateDesign {
   return templateDesignSchema.parse(input);
 }
 
+export function extractDesignFromConfigSource(config: unknown): TemplateDesign | null {
+  if (!config || typeof config !== "object") return null;
+  const candidate = (config as any).design ?? (config as any).layout;
+  if (!candidate) return null;
+  try {
+    return parseTemplateDesign(candidate);
+  } catch (error) {
+    console.warn("[design] Invalid inline design", error);
+    return null;
+  }
+}
+
+export function hasInlineDesignConfig(config: unknown): boolean {
+  return extractDesignFromConfigSource(config) !== null;
+}
+
 export const DEFAULT_TEMPLATE_DESIGN: TemplateDesign = {
   version: 1,
   front: [],

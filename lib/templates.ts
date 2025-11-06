@@ -4,7 +4,12 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition, TemplateAssetSummary } from "./templates-defaults";
-import { DEFAULT_TEMPLATE_DESIGN, parseTemplateDesign, type TemplateDesign } from "./template-design";
+import {
+  DEFAULT_TEMPLATE_DESIGN,
+  extractDesignFromConfigSource,
+  parseTemplateDesign,
+  type TemplateDesign,
+} from "./template-design";
 import { getSignedUrl } from "./storage";
 
 function clone<T>(value: T): T {
@@ -93,7 +98,8 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   const pdfAsset = assets.find((asset) => asset.type === TemplateAssetType.PDF);
   const previewFrontAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_FRONT);
   const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
-  const design = await loadTemplateDesign(tpl.assets, fallback?.design);
+  const designFromConfig = extractDesignFromConfigSource(tpl.config);
+  const design = designFromConfig ?? (await loadTemplateDesign(tpl.assets, fallback?.design));
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
