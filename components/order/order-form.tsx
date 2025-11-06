@@ -173,6 +173,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     }),
   );
   const [addressSearch, setAddressSearch] = useState("");
+  const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
@@ -230,6 +231,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     setCity(entry.city ?? "");
     setCountryCode(entry.countryCode ?? "");
     setAddressSearch(entry.label || entry.company || "");
+    setAddressDropdownOpen(false);
   };
 
   const estimatedDeliveryDate = useMemo(() => {
@@ -478,35 +480,45 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2 sm:col-span-2">
                     <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
-                    <Input
-                      id="addressSearch"
-                      value={addressSearch}
-                      onChange={(e) => setAddressSearch(e.target.value)}
-                      placeholder={tOrder("placeholders.addressSearch") ?? ""}
-                    />
-                    <div className="rounded-md border border-slate-200 bg-white text-sm">
-                      {addressOptions.length === 0 ? (
-                        <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.empty")}</p>
-                      ) : displayedAddressOptions.length === 0 ? (
-                        <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.noResults")}</p>
-                      ) : (
-                        displayedAddressOptions.map((entry) => {
-                          const title = entry.label || entry.company || tOrder("addressSearch.unnamed");
-                          const subtitle = [entry.company, entry.street, entry.city]
-                            .filter(Boolean)
-                            .join(" • ");
-                          return (
-                            <button
-                              type="button"
-                              key={entry.id}
-                              onClick={() => handleSelectAddress(entry)}
-                              className="w-full px-3 py-2 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                            >
-                              <p className="font-medium text-slate-900">{title}</p>
-                              {subtitle ? <p className="text-xs text-slate-500">{subtitle}</p> : null}
-                            </button>
-                          );
-                        })
+                    <div className="relative">
+                      <Input
+                        id="addressSearch"
+                        value={addressSearch}
+                        onFocus={() => setAddressDropdownOpen(true)}
+                        onBlur={() => setTimeout(() => setAddressDropdownOpen(false), 150)}
+                        onChange={(e) => {
+                          setAddressSearch(e.target.value);
+                          if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
+                        }}
+                        placeholder={tOrder("placeholders.addressSearch") ?? ""}
+                      />
+                      {isAddressDropdownOpen && (
+                        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
+                          {addressOptions.length === 0 ? (
+                            <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.empty")}</p>
+                          ) : displayedAddressOptions.length === 0 ? (
+                            <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.noResults")}</p>
+                          ) : (
+                            displayedAddressOptions.map((entry) => {
+                              const title = entry.label || entry.company || tOrder("addressSearch.unnamed");
+                              const subtitle = [entry.company, entry.street, entry.city]
+                                .filter(Boolean)
+                                .join(" • ");
+                              return (
+                                <button
+                                  type="button"
+                                  key={entry.id}
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => handleSelectAddress(entry)}
+                                  className="w-full px-3 py-2 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                >
+                                  <p className="font-medium text-slate-900">{title}</p>
+                                  {subtitle ? <p className="text-xs text-slate-500">{subtitle}</p> : null}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       )}
                     </div>
                     <p className="text-xs text-slate-500">{tOrder("hints.addressSearch")}</p>
