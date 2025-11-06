@@ -10,6 +10,7 @@ export const addressSchema = z.object({
   postalCode: z.string().trim().max(40).optional().nullable(),
   city: z.string().trim().max(120).optional().nullable(),
   countryCode: z.string().trim().max(2).optional().nullable(),
+  url: z.string().trim().max(200).optional().nullable(),
 });
 
 export const brandSchema = z.object({

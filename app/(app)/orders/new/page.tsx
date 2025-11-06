@@ -25,6 +25,17 @@ export default async function NewOrderPage() {
       ? await prisma.brandAddress.findMany({
           where: { brandId: effectiveBrandId },
           orderBy: [{ label: "asc" }, { company: "asc" }],
+          select: {
+            id: true,
+            label: true,
+            company: true,
+            street: true,
+            addressExtra: true,
+            postalCode: true,
+            city: true,
+            countryCode: true,
+            url: true,
+          },
         })
       : [];
 
@@ -37,6 +48,7 @@ export default async function NewOrderPage() {
     postalCode: address.postalCode,
     city: address.city,
     countryCode: address.countryCode,
+    url: address.url,
   }));
 
   return <OrderForm templates={templates} addresses={normalizedAddresses} />;

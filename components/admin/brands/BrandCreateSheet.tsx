@@ -25,6 +25,7 @@ type AddressForm = {
   postalCode: string;
   city: string;
   countryCode: string;
+  url: string;
 };
 
 type FormState = {
@@ -50,6 +51,7 @@ const emptyAddress = (): AddressForm => ({
   postalCode: "",
   city: "",
   countryCode: "",
+  url: "",
 });
 
 const emptyForm = (): FormState => ({
@@ -135,6 +137,7 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
+        url: address.url.trim() ? address.url.trim() : null,
       })),
     };
 
@@ -288,6 +291,14 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
                       <Input
                         value={address.company}
                         onChange={(event) => handleAddressChange(address.clientKey, "company", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("addresses.fields.url")}</Label>
+                      <Input
+                        value={address.url}
+                        onChange={(event) => handleAddressChange(address.clientKey, "url", event.target.value)}
+                        placeholder="https://"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">

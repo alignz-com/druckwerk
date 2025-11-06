@@ -9,6 +9,7 @@ export type AdminBrandAddress = {
   postalCode: string | null;
   city: string | null;
   countryCode: string | null;
+  url: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -51,6 +52,7 @@ type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
     postalCode: string | null;
     city: string | null;
     countryCode: string | null;
+    url: string | null;
     createdAt: Date;
     updatedAt: Date;
   }[];
@@ -81,6 +83,7 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
       postalCode: address.postalCode ?? null,
       city: address.city ?? null,
       countryCode: address.countryCode ?? null,
+      url: address.url ?? null,
       createdAt: address.createdAt.toISOString(),
       updatedAt: address.updatedAt.toISOString(),
     })),

@@ -39,6 +39,7 @@ type BrandAddressForm = {
   postalCode: string;
   city: string;
   countryCode: string;
+  url: string;
 };
 
 const generateKey = () =>
@@ -55,6 +56,7 @@ const emptyAddress = (): BrandAddressForm => ({
   postalCode: "",
   city: "",
   countryCode: "",
+  url: "",
 });
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -149,6 +151,7 @@ export default function BrandDetailSheet({
         postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
+        url: address.url.trim() ? address.url.trim() : null,
       })),
     };
 
@@ -379,6 +382,16 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
+                            <div className="space-y-2">
+                              <Label>{t("addresses.fields.url")}</Label>
+                              <Input
+                                value={address.url}
+                                onChange={(event) =>
+                                  handleAddressChange(address.clientKey, "url", event.target.value)
+                                }
+                                placeholder="https://"
+                              />
+                            </div>
                             <div className="space-y-2 sm:col-span-2">
                               <Label>{t("addresses.fields.street")}</Label>
                               <Input
@@ -603,5 +616,6 @@ function mapAddress(address: AdminBrandAddress): BrandAddressForm {
     postalCode: address.postalCode ?? "",
     city: address.city ?? "",
     countryCode: address.countryCode ?? "",
+    url: address.url ?? "",
   };
 }

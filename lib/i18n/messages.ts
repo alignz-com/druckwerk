@@ -653,6 +653,7 @@ export const messages = {
           fields: {
             label: "Label",
             company: "Company",
+            url: "URL",
             street: "Street & number",
             addressExtra: "Address addition",
             postalCode: "Postal code",
@@ -1332,6 +1333,7 @@ export const messages = {
           fields: {
             label: "Bezeichnung",
             company: "Firma",
+            url: "URL",
             street: "Straße & Nummer",
             addressExtra: "Adresszusatz",
             postalCode: "Postleitzahl",

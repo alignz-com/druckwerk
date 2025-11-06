@@ -44,6 +44,7 @@ type BrandAddressEntry = {
   postalCode: string | null;
   city: string | null;
   countryCode: string | null;
+  url?: string | null;
 };
 
 const DELIVERY_OPTIONS = {
@@ -216,6 +217,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     setPostalCode(entry.postalCode ?? "");
     setCity(entry.city ?? "");
     setCountryCode(entry.countryCode ?? "");
+    setUrl(entry.url ?? "");
     setAddressSearch(entry.label || entry.company || "");
     setAddressDropdownOpen(false);
   };

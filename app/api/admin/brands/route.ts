@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
               postalCode: addr.postalCode ?? null,
               city: addr.city ?? null,
               countryCode: addr.countryCode ?? null,
+              url: addr.url ?? null,
             })),
           }
         : undefined,
