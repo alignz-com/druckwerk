@@ -92,7 +92,6 @@ export const messages = {
         empty: "No saved addresses for this brand.",
         noResults: "No addresses match your search.",
         unnamed: "Saved address",
-        start: "Start here",
       },
       previewTitle: "Preview",
       buttons: {
@@ -772,7 +771,6 @@ export const messages = {
         empty: "Für diese Marke sind keine Adressen gespeichert.",
         noResults: "Keine Adresse passt zu deiner Suche.",
         unnamed: "Gespeicherte Adresse",
-        start: "Hier starten",
       },
       previewTitle: "Vorschau",
       buttons: {

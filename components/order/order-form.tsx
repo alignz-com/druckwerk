@@ -465,10 +465,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                 <h3 className="text-base font-semibold text-slate-800">{tOrder("sections.company")}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2 sm:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
-                      <span className="text-xs font-medium text-amber-600">{tOrder("addressSearch.start")}</span>
-                    </div>
+                    <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
                     <div className="relative">
                       <Input
                         id="addressSearch"
@@ -480,7 +477,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                           if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
-                        className="border-amber-200 bg-amber-50 focus-visible:border-amber-400 focus-visible:ring-amber-200"
+                        className="border-teal-200 bg-teal-50 focus-visible:border-teal-400 focus-visible:ring-teal-200"
                       />
                       {isAddressDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
