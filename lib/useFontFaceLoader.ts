@@ -14,16 +14,12 @@ export function useFontFaceLoader(fonts: ResolvedTemplate["fonts"] | undefined) 
 
       const loader = (async () => {
         try {
-          const urlRes = await fetch(`/api/admin/templates/fonts/url?storageKey=${encodeURIComponent(font.storageKey)}`);
-          if (!urlRes.ok) {
-            throw new Error(`Failed to fetch font URL: ${urlRes.status}`);
-          }
-          const data = (await urlRes.json()) as { url?: string };
-          if (!data.url) return;
+          const url = font.publicUrl;
+          if (!url) return;
 
           const face = new FontFace(
             font.fontFamilyName,
-            `url(${data.url})`,
+            `url(${url})`,
             {
               weight: font.weight ? String(font.weight) : undefined,
               style: font.style.toLowerCase() === "italic" ? "italic" : "normal",

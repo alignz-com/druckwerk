@@ -47,6 +47,8 @@ export type ResolvedTemplateFont = {
   weight: number;
   style: string;
   format: string;
+  publicUrl: string | null;
+  expiresAt?: string;
 };
 
 export type ResolvedTemplate = TemplateDefinition & {
@@ -132,11 +134,24 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
   const designFromConfig = extractDesignFromConfigSource(tpl.config);
   const design = designFromConfig ?? (await loadTemplateDesign(tpl.assets, fallback?.design));
-  const fonts: ResolvedTemplateFont[] = tpl.fonts
-    .filter((link) => link.fontVariant && link.fontVariant.fontFamily)
-    .map((link) => {
-      const variant = link.fontVariant!;
-      const family = variant.fontFamily!;
+  const fonts: ResolvedTemplateFont[] = await Promise.all(
+    tpl.fonts
+      .filter((link) => link.fontVariant && link.fontVariant.fontFamily)
+      .map(async (link) => {
+        const variant = link.fontVariant!;
+        const family = variant.fontFamily!;
+        let publicUrl: string | null = null;
+        let expiresAt: string | undefined;
+        try {
+        publicUrl = await getSignedUrl(
+          process.env.SUPABASE_FONT_BUCKET ?? "fonts",
+          variant.storageKey,
+          SIGNED_URL_TTL_SECONDS,
+        );
+        expiresAt = new Date(Date.now() + SIGNED_URL_TTL_MS).toISOString();
+      } catch (error) {
+        console.warn(`[templates] Failed to sign font ${variant.storageKey}`, error);
+      }
       return {
         id: link.id,
         fontFamilyName: family.name,
@@ -146,9 +161,12 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
         fileName: variant.fileName ?? null,
         weight: variant.weight,
         style: variant.style,
-        format: variant.format,
-      };
-    });
+          format: variant.format,
+          publicUrl,
+          expiresAt,
+        };
+      }),
+  );
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,

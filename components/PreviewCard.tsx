@@ -258,6 +258,54 @@ const CANVAS_W = IMAGE_PIXEL_WIDTH * PX_TO_MM_X;
 const CANVAS_H = IMAGE_PIXEL_HEIGHT * PX_TO_MM_Y;
 const CANVAS_OFFSET_X = IMAGE_PADDING_PX * PX_TO_MM_X;
 const CANVAS_OFFSET_Y = IMAGE_PADDING_PX * PX_TO_MM_Y;
+const mmToPx = (mm: number) => (mm * 96) / 25.4;
+const measurementCanvas = typeof document !== "undefined" ? document.createElement("canvas") : null;
+
+function measureTextWidthPx(text: string, fontFamily: string | undefined, fontSizePx: number, fontWeight?: number | string) {
+  if (!text) return 0;
+  if (!measurementCanvas) return text.length * fontSizePx * 0.6;
+  const ctx = measurementCanvas.getContext("2d");
+  if (!ctx) return text.length * fontSizePx * 0.6;
+  const weight = fontWeight ? String(fontWeight) : "400";
+  const family = fontFamily ?? "sans-serif";
+  ctx.font = `${weight} ${fontSizePx}px ${family}`;
+  return ctx.measureText(text).width;
+}
+
+function clampTextToWidth(
+  text: string,
+  maxWidthMm: number,
+  opts: { fontFamily?: string; fontSizeMm: number; fontWeight?: number | string; letterSpacingMm?: number },
+) {
+  if (!text) return text;
+  const maxWidthPx = mmToPx(maxWidthMm);
+  const fontSizePx = mmToPx(opts.fontSizeMm);
+  const letterSpacingPx = opts.letterSpacingMm ? mmToPx(opts.letterSpacingMm) : 0;
+
+  const widthWithSpacing = (value: string) =>
+    measureTextWidthPx(value, opts.fontFamily, fontSizePx, opts.fontWeight) +
+    Math.max(0, value.length - 1) * letterSpacingPx;
+
+  if (widthWithSpacing(text) <= maxWidthPx) return text;
+
+  const ellipsis = "…";
+  let low = 0;
+  let high = text.length;
+  let best = "";
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const test = text.slice(0, mid) + ellipsis;
+    if (widthWithSpacing(test) <= maxWidthPx) {
+      best = test;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return best || "";
+}
 
 type AssetState = {
   storageKey: string | null;
@@ -449,13 +497,23 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
   if (element.visibility && !evaluateVisibility(element.visibility, context)) {
     return null;
   }
+  const fontSizeMm = ptToMm(element.font.sizePt);
   const content = evaluateTextContent(element, context);
   if (!content) return null;
-  const fontSizeMm = ptToMm(element.font.sizePt);
+  let finalContent = content;
+  if (element.maxWidthMm) {
+    finalContent = clampTextToWidth(content, element.maxWidthMm, {
+      fontFamily: element.font.family,
+      fontSizeMm,
+      fontWeight: element.font.weight,
+      letterSpacingMm: element.font.letterSpacing,
+    });
+    if (!finalContent) return null;
+  }
   const lineHeightMm = getLineHeightMm(element.font);
   return {
     element,
-    content,
+    content: finalContent,
     fontSizeMm,
     lineHeightMm,
   };
@@ -494,7 +552,7 @@ function renderTextElement(prepared: PreparedText, context: RenderContext, key: 
       fontWeight={element.font.weight ?? 400}
       fill={element.font.color ?? "#1f2937"}
       dominantBaseline={element.font.baseline ?? "hanging"}
-      letterSpacing={element.font.letterSpacing}
+      letterSpacing={element.font.letterSpacing !== undefined ? `${element.font.letterSpacing}mm` : undefined}
       textAnchor={element.textAnchor}
     >
       {content}

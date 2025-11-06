@@ -47,6 +47,7 @@ const textElementSchema = z.object({
   type: z.literal("text"),
   xMm: z.number().optional().default(0),
   yMm: z.number().optional().default(0),
+  maxWidthMm: z.number().optional(),
   parts: z.array(textPartSchema).optional(),
   binding: z.string().optional(),
   font: textFontSchema,
