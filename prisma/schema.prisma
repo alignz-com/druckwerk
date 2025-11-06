@@ -198,6 +198,7 @@ model Order {
   status         OrderStatus @default(SUBMITTED)
   quantity       Int
   deliveryTime   String
+  deliveryDueAt  DateTime?
   requesterName  String
   requesterRole  String?
   requesterEmail String

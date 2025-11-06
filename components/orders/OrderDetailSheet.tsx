@@ -108,40 +108,17 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
               </SheetDescription>
             </SheetHeader>
 
-            <div className="mt-6 space-y-6">
-              <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-                <Badge variant={order.deliveryTime === "express" ? "destructive" : "outline"}>
-                  {labels.delivery}: {order.deliveryTimeLabel}
-                </Badge>
-                {order.detail.customerReference ? (
-                  <Badge variant="outline">
-                    {labels.customerReference}: {order.detail.customerReference}
-                  </Badge>
-                ) : null}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900">{labels.requester}</h3>
-                  <DetailItem label={labels.name} value={order.detail.requester.name} />
-                  <DetailItem label={labels.role} value={order.detail.requester.role} />
-                  <DetailItem label={labels.email} value={order.detail.requester.email} />
-                  <DetailItem label={labels.phone} value={order.detail.requester.phone} />
-                  <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
-                  <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
-                  <DetailItem label={labels.url} value={order.detail.requester.url} />
-                </div>
-                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900">{labels.company}</h3>
-                  <DetailItem label={labels.companyName} value={primaryCompanyName} />
-                  <h4 className="pt-2 text-sm font-medium text-slate-900">{labels.address}</h4>
-                  <pre className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs text-slate-700">{order.detail.company || "–"}</pre>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">{labels.previewTitle}</h3>
+            <div className="mt-6 space-y-8">
+              <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">{labels.previewTitle}</h3>
+                    <p className="text-xs text-slate-500">
+                      {order.detail.deliveryDueAtLabel
+                        ? `${labels.delivery}: ${order.deliveryTimeLabel} • ${order.detail.deliveryDueAtLabel}`
+                        : `${labels.delivery}: ${order.deliveryTimeLabel}`}
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <Button variant={activePreviewSide === "front" ? "default" : "outline"} size="sm" onClick={() => setActivePreviewSide("front")}>
                       Front
@@ -151,16 +128,16 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                     </Button>
                   </div>
                 </div>
-                <div className="relative aspect-[85/55] w-full rounded-2xl border border-slate-200 bg-white p-2">
+                <div className="relative aspect-[85/55] w-full rounded-xl border border-slate-200 bg-white p-2">
                   {(!template || isLoadingTemplate) && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 text-sm text-slate-500">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 text-sm text-slate-500">
                       {templateError ?? labels.loadingTemplate}
                     </div>
                   )}
                   {template && (
                     <div className="h-full w-full">
                       {!previewReady && !templateError && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 text-xs text-slate-500">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 text-xs text-slate-500">
                           {labels.loadingPreview}
                         </div>
                       )}
@@ -202,6 +179,41 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                       </div>
                     </div>
                   )}
+                </div>
+              </section>
+
+              <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                <Badge variant={order.deliveryTime === "express" ? "destructive" : "outline"}>
+                  {labels.delivery}: {order.deliveryTimeLabel}
+                </Badge>
+                {order.detail.deliveryDueAtLabel ? (
+                  <Badge variant="outline">{order.detail.deliveryDueAtLabel}</Badge>
+                ) : null}
+                {order.detail.customerReference ? (
+                  <Badge variant="outline">
+                    {labels.customerReference}: {order.detail.customerReference}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
+                  <h3 className="text-sm font-semibold text-slate-900">{labels.requester}</h3>
+                  <DetailItem label={labels.name} value={order.detail.requester.name} />
+                  <DetailItem label={labels.role} value={order.detail.requester.role} />
+                  <DetailItem label={labels.email} value={order.detail.requester.email} />
+                  <DetailItem label={labels.phone} value={order.detail.requester.phone} />
+                  <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
+                  <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
+                  <DetailItem label={labels.url} value={order.detail.requester.url} />
+                </div>
+                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
+                  <h3 className="text-sm font-semibold text-slate-900">{labels.company}</h3>
+                  <DetailItem label={labels.companyName} value={primaryCompanyName} />
+                  <h4 className="pt-2 text-sm font-medium text-slate-900">{labels.address}</h4>
+                  <pre className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+                    {order.detail.company || "–"}
+                  </pre>
                 </div>
               </div>
             </div>

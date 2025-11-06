@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { getCountryLabel } from "@/lib/countries";
 import { generateOrderPdf } from "@/lib/orderPdf";
 import { getTemplateByKey } from "@/lib/templates";
+import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
+import { addBusinessDays } from "@/lib/date-utils";
 
 export const runtime = "nodejs";
 
@@ -75,6 +77,8 @@ export async function POST(req: Request) {
         }
       : undefined;
     const templateDefinition = await getTemplateByKey(data.template, effectiveBrandId);
+    const deliveryConfig = DELIVERY_OPTIONS[data.deliveryTime] ?? DELIVERY_OPTIONS.standard;
+    const deliveryDueAt = addBusinessDays(new Date(), deliveryConfig.businessDays);
 
     const { pdfBytes, fontReport } = await generateOrderPdf(
       {
@@ -108,6 +112,7 @@ export async function POST(req: Request) {
         templateId: templateDefinition.id ?? null,
         quantity: data.quantity,
         deliveryTime: data.deliveryTime,
+        deliveryDueAt,
         status: "SUBMITTED",
         requesterName: data.name,
         requesterRole: data.role || null,

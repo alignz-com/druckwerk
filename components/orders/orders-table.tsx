@@ -27,6 +27,8 @@ export type OrdersTableRow = {
   statusLabel: string;
   deliveryTime: string;
   deliveryTimeLabel: string;
+  deliveryDueAtLabel: string | null;
+  deliveryDueAtValue: number | null;
   templateKey: string | null;
   brandId: string | null;
   detail: {
@@ -47,6 +49,7 @@ export type OrdersTableRow = {
     customerReference: string;
     brandName: string;
     templateLabel: string;
+    deliveryDueAtLabel: string | null;
   };
 };
 
@@ -139,9 +142,14 @@ export function OrdersTable({
         id: "delivery",
         title: labels.delivery,
         enableSorting: true,
-        sortAccessor: (row) => row.deliveryTime,
+        sortAccessor: (row) => row.deliveryDueAtValue ?? Number.MAX_SAFE_INTEGER,
         renderCell: (row) => (
-          <Badge variant={row.deliveryTime === "express" ? "destructive" : "outline"}>{row.deliveryTimeLabel}</Badge>
+          <div className="space-y-1">
+            <Badge variant={row.deliveryTime === "express" ? "destructive" : "outline"}>{row.deliveryTimeLabel}</Badge>
+            {row.deliveryDueAtLabel ? (
+              <p className="text-xs text-slate-500">{row.deliveryDueAtLabel}</p>
+            ) : null}
+          </div>
         ),
       },
       {

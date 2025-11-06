@@ -64,6 +64,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       (order.deliveryTime in t.orderForm.deliveryTimes
         ? t.orderForm.deliveryTimes[order.deliveryTime as "express" | "standard"]
         : order.deliveryTime) ?? order.deliveryTime;
+    const deliveryDueAtLabel = order.deliveryDueAt ? formatDate(order.deliveryDueAt, locale) : null;
 
     return {
       id: order.id,
@@ -78,6 +79,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryTime: order.deliveryTime,
       deliveryTimeLabel,
+      deliveryDueAtLabel,
+      deliveryDueAtValue: order.deliveryDueAt?.getTime() ?? null,
       templateKey: typeof templateKey === "string" ? templateKey : order.template?.key ?? null,
       brandId: order.brandId,
       detail: {
@@ -99,6 +102,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         brandName: order.brand?.name ?? "–",
         templateLabel:
           order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
+        deliveryDueAtLabel,
       },
     };
   });
