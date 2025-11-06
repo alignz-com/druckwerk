@@ -237,6 +237,13 @@ export type Props = {
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
   onOverflowChange?: (hasOverflow: boolean) => void;
+  addressFields?: {
+    companyName?: string;
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+  };
 };
 
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
@@ -873,6 +880,7 @@ export function BusinessCardFront({
   url = "",
   linkedin,
   onOverflowChange,
+  addressFields: _addressFields,
 }: Props) {
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
@@ -1069,11 +1077,21 @@ export function BusinessCardBack({
   linkedin,
   qrOverride,
   onOverflowChange,
+  addressFields,
 }: Props) {
-  const normalized = normalizeAddress(company);
-  const { org, label, street: addrStreet, postalCode: addrPostal, city: addrCity, country: addrCountry, lines: addrLines } = normalized;
+  const normalized = useMemo(() => normalizeAddress(company), [company]);
+  const { org: parsedOrg, label, street: parsedStreet, postalCode: parsedPostal, city: parsedCity, country: parsedCountry } = normalized;
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
-  const addressExtra = addrLines && addrLines.length > 3 ? addrLines.slice(3).join(" ") : undefined;
+  const structuredOrg = addressFields?.companyName?.trim();
+  const structuredStreet = addressFields?.street?.trim();
+  const structuredPostal = addressFields?.postalCode?.trim();
+  const structuredCity = addressFields?.city?.trim();
+  const structuredCountry = addressFields?.country?.trim();
+  const orgForVcard = structuredOrg || parsedOrg;
+  const addrStreet = structuredStreet || parsedStreet || undefined;
+  const addrPostal = structuredPostal || parsedPostal || undefined;
+  const addrCity = structuredCity || parsedCity || undefined;
+  const addrCountry = structuredCountry || parsedCountry || undefined;
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: backBackground, onError: handleBackAssetError } = useTemplateAssetSource(
@@ -1087,7 +1105,7 @@ export function BusinessCardBack({
     () =>
       buildVCard3({
         fullName: name,
-        org,
+        org: orgForVcard,
         title: role || undefined,
         email: email || undefined,
         phone: phone || undefined,
@@ -1096,14 +1114,13 @@ export function BusinessCardBack({
         linkedin: linkedin || undefined,
         addrLabel,
         address: {
-          street: addrStreet ?? undefined,
-          postalCode: addrPostal ?? undefined,
-          city: addrCity ?? undefined,
-          country: addrCountry ?? undefined,
-          addressExtra,
+          street: addrStreet,
+          postalCode: addrPostal,
+          city: addrCity,
+          country: addrCountry,
         },
       }),
-    [name, role, email, phone, mobile, url, linkedin, org, addrLabel, addrStreet, addrPostal, addrCity, addrCountry, addressExtra],
+    [name, role, email, phone, mobile, url, linkedin, orgForVcard, addrLabel, addrStreet, addrPostal, addrCity, addrCountry],
   );
 
   const [qrData, setQrData] = useState<string>("");
@@ -1132,6 +1149,15 @@ export function BusinessCardBack({
   const qx = qrOverride?.xMm ?? previewQrOverride?.xMm ?? qrConfig?.xMm;
   const qy = qrOverride?.yMm ?? previewQrOverride?.yMm ?? qrConfig?.yMm;
   const qs = qrOverride?.sizeMm ?? previewQrOverride?.sizeMm ?? qrConfig?.sizeMm;
+  const backAddressContext = useMemo(
+    () => ({
+      street: addrStreet,
+      postalCode: addrPostal,
+      city: addrCity,
+      country: addrCountry,
+    }),
+    [addrStreet, addrPostal, addrCity, addrCountry],
+  );
   const backContext = useMemo(
     () => ({
       name,
@@ -1143,8 +1169,9 @@ export function BusinessCardBack({
       url,
       linkedin,
       qrData,
+      address: backAddressContext,
     }),
-    [name, role, email, phone, mobile, company, url, linkedin, qrData],
+    [name, role, email, phone, mobile, company, url, linkedin, qrData, backAddressContext],
   );
   const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
     let hasOverflow = false;

@@ -76,6 +76,33 @@ function buildWebsiteFromEmail(email?: string | null) {
   return domain ? `www.${domain}` : "";
 }
 
+function buildAddressBlock(opts: {
+  companyName?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  countryCode?: string;
+  locale: "en" | "de";
+}) {
+  const { companyName, street, postalCode, city, countryCode, locale } = opts;
+  const lines: string[] = [];
+  const nameLine = (companyName ?? "").trim();
+  if (nameLine) lines.push(nameLine);
+
+  const segments: string[] = [];
+  const streetLine = (street ?? "").trim();
+  if (streetLine) segments.push(streetLine);
+  const postalCity = [postalCode, city].filter((part) => part && part.toString().trim().length > 0).join(" ").trim();
+  if (postalCity) segments.push(postalCity);
+  const countryLabel =
+    countryCode && countryCode.length > 0 ? getCountryLabel(locale, countryCode).trim() : "";
+  if (countryLabel) segments.push(countryLabel);
+  if (segments.length > 0) {
+    lines.push(segments.join(" | "));
+  }
+  return lines.join("\n");
+}
+
 export type OrderFormProps = {
   templates: ResolvedTemplate[];
 };
@@ -118,11 +145,22 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [postalCode, setPostalCode] = useState(DEFAULT_ADDRESS_PARTS.postalCode ?? "");
   const [city, setCity] = useState(DEFAULT_ADDRESS_PARTS.city ?? "");
   const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
-  const [addressExtra, setAddressExtra] = useState("");
   const [url, setUrl] = useState("");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
+  const [addressBlock, setAddressBlock] = useState(() =>
+    buildAddressBlock({
+      companyName: DEFAULT_ADDRESS_PARTS.org ?? DEFAULT_ADDRESS_PARTS.lines[0] ?? "",
+      street: DEFAULT_ADDRESS_PARTS.street ?? "",
+      postalCode: DEFAULT_ADDRESS_PARTS.postalCode ?? "",
+      city: DEFAULT_ADDRESS_PARTS.city ?? "",
+      countryCode: DEFAULT_COUNTRY_CODE,
+      locale: localeShort,
+    }),
+  );
+  const [addressBlockChanged, setAddressBlockChanged] = useState(false);
+  const generatedAddressBlockRef = useRef(addressBlock);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
@@ -133,24 +171,42 @@ export default function OrderForm({ templates }: OrderFormProps) {
     );
   }, [localeShort]);
 
-  const companyBlock = useMemo(() => {
-    const lines: string[] = [];
-    if (companyName) lines.push(companyName);
-    const segments: string[] = [];
-    if (street) segments.push(street);
-    const postalCity = [postalCode, city].filter(Boolean).join(" ").trim();
-    if (postalCity) segments.push(postalCity);
-    if (countryCode) {
-      segments.push(getCountryLabel(localeShort, countryCode));
+  useEffect(() => {
+    const generated = buildAddressBlock({
+      companyName,
+      street,
+      postalCode,
+      city,
+      countryCode,
+      locale: localeShort,
+    });
+    generatedAddressBlockRef.current = generated;
+    if (!addressBlockChanged) {
+      setAddressBlock(generated);
     }
-    if (segments.length > 0) {
-      lines.push(segments.join(" | "));
+  }, [companyName, street, postalCode, city, countryCode, localeShort, addressBlockChanged]);
+
+  useEffect(() => {
+    if (addressBlock === generatedAddressBlockRef.current) {
+      setAddressBlockChanged(false);
     }
-    if (addressExtra) {
-      lines.push(addressExtra);
-    }
-    return lines.join("\n");
-  }, [companyName, street, postalCode, city, countryCode, addressExtra, localeShort]);
+  }, [addressBlock]);
+
+  const previewAddressFields = useMemo(
+    () => ({
+      companyName: companyName.trim() ? companyName : undefined,
+      street: street.trim() ? street : undefined,
+      postalCode: postalCode.trim() ? postalCode : undefined,
+      city: city.trim() ? city : undefined,
+      country: countryCode ? getCountryLabel(localeShort, countryCode) : undefined,
+    }),
+    [companyName, street, postalCode, city, countryCode, localeShort],
+  );
+
+  const handleAddressBlockChange = (value: string) => {
+    setAddressBlock(value);
+    setAddressBlockChanged(value !== generatedAddressBlockRef.current);
+  };
 
   const estimatedDeliveryDate = useMemo(() => {
     const option = DELIVERY_OPTIONS[deliveryTime];
@@ -218,7 +274,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
           email,
           phone,
           mobile,
-          company: companyBlock,
+          company: addressBlock,
           url,
           linkedin,
           template: selectedTemplate.key,
@@ -231,7 +287,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
             postalCode,
             city,
             countryCode,
-            addressExtra,
           },
         }),
       });
@@ -428,13 +483,17 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   </Select>
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="addressExtra">{tOrder("fields.addressExtra")}</Label>
-                  <Input
-                    id="addressExtra"
-                    value={addressExtra}
-                    onChange={(e) => setAddressExtra(e.target.value)}
+                  <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
+                  <Textarea
+                    id="addressBlock"
+                    value={addressBlock}
+                    onChange={(e) => handleAddressBlockChange(e.target.value)}
+                    rows={4}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
                   />
+                  <p className="text-xs text-slate-500">
+                    {tOrder("hints.addressExtra")}
+                  </p>
                 </div>
               </div>
 
@@ -478,10 +537,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         email={email}
                         phone={phone}
                         mobile={mobile}
-                        company={companyBlock}
+                        company={addressBlock}
                         url={url}
                         linkedin={linkedin}
                         onOverflowChange={setFrontOverflow}
+                        addressFields={previewAddressFields}
                       />
                     }
                     back={
@@ -492,10 +552,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         email={email}
                         phone={phone}
                         mobile={mobile}
-                        company={companyBlock}
+                        company={addressBlock}
                         url={url}
                         linkedin={linkedin}
                         onOverflowChange={setBackOverflow}
+                        addressFields={previewAddressFields}
                       />
                     }
                     className="h-full w-full"
@@ -559,10 +620,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         email={email}
                         phone={phone}
                         mobile={mobile}
-                        company={companyBlock}
+                        company={addressBlock}
                         url={url}
                         linkedin={linkedin}
                         onOverflowChange={setFrontOverflow}
+                        addressFields={previewAddressFields}
                       />
                     }
                     back={
@@ -573,10 +635,11 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         email={email}
                         phone={phone}
                         mobile={mobile}
-                        company={companyBlock}
+                        company={addressBlock}
                         url={url}
                         linkedin={linkedin}
                         onOverflowChange={setBackOverflow}
+                        addressFields={previewAddressFields}
                       />
                     }
                   />
