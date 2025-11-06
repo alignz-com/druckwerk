@@ -7,8 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Info } from "lucide-react";
 
 import type { ResolvedTemplate } from "@/lib/templates";
-import { normalizeAddress } from "@/lib/normalizeAddress";
-import { COUNTRY_CODES, findCountryCodeByName, getCountryLabel } from "@/lib/countries";
+import { COUNTRY_CODES, getCountryLabel } from "@/lib/countries";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
 import FlipCard from "@/components/FlipCard";
@@ -52,10 +51,6 @@ const DELIVERY_OPTIONS = {
   standard: { businessDays: 15 },
 } as const;
 type DeliveryOption = keyof typeof DELIVERY_OPTIONS;
-
-const DEFAULT_COMPANY_ADDRESS = "OMICRON electronics GmbH\nOberes Ried 1 | 6833 Klaus | Österreich";
-const DEFAULT_ADDRESS_PARTS = normalizeAddress(DEFAULT_COMPANY_ADDRESS);
-const DEFAULT_COUNTRY_CODE = findCountryCodeByName(DEFAULT_ADDRESS_PARTS.country) ?? "AT";
 
 function addBusinessDays(start: Date, days: number) {
   const date = new Date(start);
@@ -153,25 +148,16 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [mobile, setMobile] = useState("");
-  const [companyName, setCompanyName] = useState(DEFAULT_ADDRESS_PARTS.org ?? DEFAULT_ADDRESS_PARTS.lines[0] ?? "");
-  const [street, setStreet] = useState(DEFAULT_ADDRESS_PARTS.street ?? "");
-  const [postalCode, setPostalCode] = useState(DEFAULT_ADDRESS_PARTS.postalCode ?? "");
-  const [city, setCity] = useState(DEFAULT_ADDRESS_PARTS.city ?? "");
-  const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
+  const [companyName, setCompanyName] = useState("");
+  const [street, setStreet] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const [countryCode, setCountryCode] = useState<string>("");
   const [url, setUrl] = useState("");
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
-  const [addressBlock, setAddressBlock] = useState(() =>
-    buildAddressBlock({
-      companyName: DEFAULT_ADDRESS_PARTS.org ?? DEFAULT_ADDRESS_PARTS.lines[0] ?? "",
-      street: DEFAULT_ADDRESS_PARTS.street ?? "",
-      postalCode: DEFAULT_ADDRESS_PARTS.postalCode ?? "",
-      city: DEFAULT_ADDRESS_PARTS.city ?? "",
-      countryCode: DEFAULT_COUNTRY_CODE,
-      locale: localeShort,
-    }),
-  );
+  const [addressBlock, setAddressBlock] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
   const [frontOverflow, setFrontOverflow] = useState(false);
@@ -479,7 +465,10 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                 <h3 className="text-base font-semibold text-slate-800">{tOrder("sections.company")}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2 sm:col-span-2">
-                    <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
+                      <span className="text-xs font-medium text-amber-600">{tOrder("addressSearch.start")}</span>
+                    </div>
                     <div className="relative">
                       <Input
                         id="addressSearch"
@@ -491,6 +480,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                           if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
+                        className="border-amber-200 bg-amber-50 focus-visible:border-amber-400 focus-visible:ring-amber-200"
                       />
                       {isAddressDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
