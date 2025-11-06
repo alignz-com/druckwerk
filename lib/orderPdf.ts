@@ -243,17 +243,24 @@ function wrapText(text: string, maxWidthPt: number, font: PDFFont, sizePt: numbe
   return lines;
 }
 
+type PdfClampResult = {
+  text: string;
+  truncated: boolean;
+};
+
 function clampTextToWidthPdf(
   text: string,
   maxWidthPt: number,
   font: PDFFont,
   fontSizePt: number,
   letterSpacingPt: number,
-) {
+): PdfClampResult {
   const widthWithSpacing = (value: string) =>
     font.widthOfTextAtSize(value, fontSizePt) + Math.max(0, value.length - 1) * letterSpacingPt;
 
-  if (widthWithSpacing(text) <= maxWidthPt) return text;
+  if (widthWithSpacing(text) <= maxWidthPt) {
+    return { text, truncated: false };
+  }
 
   const ellipsis = "…";
   let low = 0;
@@ -271,7 +278,8 @@ function clampTextToWidthPdf(
     }
   }
 
-  return best || "";
+  const clamped = best || "";
+  return { text: clamped, truncated: Boolean(clamped && clamped !== text) };
 }
 
 function drawLine(
@@ -433,10 +441,13 @@ function renderDesignElementsToPdf(opts: {
         const letterSpacingPt = element.font.letterSpacing ? mmToPt(element.font.letterSpacing) : 0;
         const textAnchor = element.textAnchor ?? "start";
         let text = content;
+        let truncated = false;
         if (element.maxWidthMm) {
           const maxWidthPt = mmToPt(element.maxWidthMm);
-          text = clampTextToWidthPdf(text, maxWidthPt, font, sizePt, letterSpacingPt);
+          const clamped = clampTextToWidthPdf(text, maxWidthPt, font, sizePt, letterSpacingPt);
+          text = clamped.text;
           if (!text) return 0;
+          truncated = clamped.truncated;
         }
         const xMm = offsetXMm + offsetX + (element.xMm ?? 0);
         const yMm = offsetYMm + offsetY + (element.yMm ?? 0);
@@ -462,12 +473,13 @@ function renderDesignElementsToPdf(opts: {
         }
         const y = pageHeightPt - baselinePt;
 
+        const fillColor = truncated ? rgb(1, 0, 0) : parseColor(element.font.color);
         page.drawText(text, {
           x,
           y,
           size: sizePt,
           font,
-          color: parseColor(element.font.color),
+          color: fillColor,
           characterSpacing: letterSpacingPt,
         });
         const lineHeightMm =

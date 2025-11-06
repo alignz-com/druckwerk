@@ -236,6 +236,7 @@ export type Props = {
   template: ResolvedTemplate;
   /** Feintuning für QR nur in der Preview (mm) */
   qrOverride?: { xMm?: number; yMm?: number; sizeMm?: number };
+  onOverflowChange?: (hasOverflow: boolean) => void;
 };
 
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
@@ -279,6 +280,11 @@ function measureTextWidthPx(
   return ctx.measureText(text).width;
 }
 
+type ClampResult = {
+  text: string;
+  truncated: boolean;
+};
+
 function clampTextToWidth(
   text: string,
   maxWidthMm: number,
@@ -289,8 +295,10 @@ function clampTextToWidth(
     fontStyle?: "normal" | "italic";
     letterSpacingMm?: number;
   },
-) {
-  if (!text) return text;
+): ClampResult {
+  if (!text) {
+    return { text, truncated: false };
+  }
   const maxWidthPx = mmToPx(maxWidthMm);
   const fontSizePx = mmToPx(opts.fontSizeMm);
   const letterSpacingPx = opts.letterSpacingMm ? mmToPx(opts.letterSpacingMm) : 0;
@@ -299,7 +307,9 @@ function clampTextToWidth(
     measureTextWidthPx(value, opts.fontFamily, fontSizePx, opts.fontWeight, opts.fontStyle) +
     Math.max(0, value.length - 1) * letterSpacingPx;
 
-  if (widthWithSpacing(text) <= maxWidthPx) return text;
+  if (widthWithSpacing(text) <= maxWidthPx) {
+    return { text, truncated: false };
+  }
 
   const ellipsis = "…";
   let low = 0;
@@ -317,7 +327,8 @@ function clampTextToWidth(
     }
   }
 
-  return best || "";
+  const clamped = best || "";
+  return { text: clamped, truncated: Boolean(clamped && clamped !== text) };
 }
 
 type AssetState = {
@@ -504,6 +515,7 @@ type PreparedText = {
   content: string;
   fontSizeMm: number;
   lineHeightMm: number;
+  isTruncated: boolean;
 };
 
 function prepareTextElement(element: TextElement, context: RenderContext): PreparedText | null {
@@ -515,14 +527,17 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
   const content = evaluateTextContent(element, context);
   if (!content) return null;
   let finalContent = content;
+  let isTruncated = false;
   if (element.maxWidthMm) {
-    finalContent = clampTextToWidth(content, element.maxWidthMm, {
+    const clamped = clampTextToWidth(content, element.maxWidthMm, {
       fontFamily: element.font.family,
       fontSizeMm,
       fontWeight: element.font.weight,
       fontStyle,
       letterSpacingMm: element.font.letterSpacing,
     });
+    finalContent = clamped.text;
+    isTruncated = clamped.truncated;
     if (!finalContent) return null;
   }
   const lineHeightMm = getLineHeightMm(element.font);
@@ -531,6 +546,7 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
     content: finalContent,
     fontSizeMm,
     lineHeightMm,
+    isTruncated,
   };
 }
 
@@ -555,8 +571,18 @@ function renderRectElement(rect: RectElement, context: RenderContext, key: strin
   );
 }
 
-function renderTextElement(prepared: PreparedText, context: RenderContext, key: string, offsetX = 0, offsetY = 0) {
-  const { element, fontSizeMm, content } = prepared;
+function renderTextElement(
+  prepared: PreparedText,
+  context: RenderContext,
+  key: string,
+  offsetX = 0,
+  offsetY = 0,
+  reportOverflow?: () => void,
+) {
+  const { element, fontSizeMm, content, isTruncated } = prepared;
+  const baseColor = element.font.color ?? "#1f2937";
+  const fillColor = isTruncated ? "#ef4444" : baseColor;
+  if (isTruncated) reportOverflow?.();
   return (
     <text
       key={key}
@@ -566,7 +592,7 @@ function renderTextElement(prepared: PreparedText, context: RenderContext, key: 
       fontFamily={element.font.family}
       fontWeight={element.font.weight ?? 400}
       fontStyle={element.font.style === "italic" ? "italic" : "normal"}
-      fill={element.font.color ?? "#1f2937"}
+      fill={fillColor}
       dominantBaseline={element.font.baseline ?? "hanging"}
       letterSpacing={element.font.letterSpacing !== undefined ? `${element.font.letterSpacing}mm` : undefined}
       textAnchor={element.textAnchor}
@@ -605,7 +631,12 @@ type StackPreparedChild = {
   element: RectElement;
 };
 
-function renderStackElement(element: StackElement, context: RenderContext, key: string): ReactNode | null {
+function renderStackElement(
+  element: StackElement,
+  context: RenderContext,
+  key: string,
+  reportOverflow?: () => void,
+): ReactNode | null {
   if (element.visibility && element.visibility.binding) {
     if (!evaluateVisibility(element.visibility, context)) return null;
   }
@@ -637,6 +668,7 @@ function renderStackElement(element: StackElement, context: RenderContext, key: 
         `${key}-stack-${idx}`,
         0,
         cursorY,
+        reportOverflow,
       );
       cursorY += item.prepared.lineHeightMm + (idx < preparedItems.length - 1 ? gap : 0);
       return rendered;
@@ -672,9 +704,21 @@ function renderStackElement(element: StackElement, context: RenderContext, key: 
   );
 }
 
-function renderDesignElements(elements: DesignElement[] | undefined, context: RenderContext, keyPrefix = "el"): ReactNode[] {
-  if (!elements?.length) return [];
+function renderDesignElements(
+  elements: DesignElement[] | undefined,
+  context: RenderContext,
+  keyPrefix = "el",
+  reportOverflow?: (hasOverflow: boolean) => void,
+): ReactNode[] {
+  if (!elements?.length) {
+    reportOverflow?.(false);
+    return [];
+  }
   const nodes: ReactNode[] = [];
+  let overflow = false;
+  const markOverflow = () => {
+    overflow = true;
+  };
 
   elements.forEach((element, index) => {
     const key = `${keyPrefix}-${index}`;
@@ -687,12 +731,12 @@ function renderDesignElements(elements: DesignElement[] | undefined, context: Re
       case "text": {
         const prepared = prepareTextElement(element, context);
         if (prepared) {
-          nodes.push(renderTextElement(prepared, context, key));
+          nodes.push(renderTextElement(prepared, context, key, 0, 0, markOverflow));
         }
         break;
       }
       case "stack": {
-        const stackNode = renderStackElement(element, context, key);
+        const stackNode = renderStackElement(element, context, key, markOverflow);
         if (stackNode) nodes.push(stackNode);
         break;
       }
@@ -705,6 +749,12 @@ function renderDesignElements(elements: DesignElement[] | undefined, context: Re
         break;
     }
   });
+
+  if (overflow) {
+    reportOverflow?.(true);
+  } else {
+    reportOverflow?.(false);
+  }
 
   return nodes;
 }
@@ -812,7 +862,18 @@ function buildVCard3(o: {
   return lines.join("\r\n");
 }
 /* ============================== FRONT ============================== */
-export function BusinessCardFront({ template, name, role = "", email = "", phone = "", mobile = "", company = "", url = "", linkedin }: Props) {
+export function BusinessCardFront({
+  template,
+  name,
+  role = "",
+  email = "",
+  phone = "",
+  mobile = "",
+  company = "",
+  url = "",
+  linkedin,
+  onOverflowChange,
+}: Props) {
   const previewCfg = template.config.front.preview ?? {};
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: frontBackground, onError: handleFrontAssetError } = useTemplateAssetSource(
@@ -873,10 +934,16 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
     }),
     [name, role, email, phone, mobile, company, companyPrimary, companySecondary, frontAddressContext, url, linkedin],
   );
-  const frontNodes = useMemo(
-    () => renderDesignElements(design.front, frontContext, "front"),
-    [design.front, frontContext],
-  );
+  const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
+    let hasOverflow = false;
+    const nodes = renderDesignElements(design.front, frontContext, "front", (flag) => {
+      hasOverflow = flag;
+    });
+    return { nodes, overflow: hasOverflow };
+  }, [design.front, frontContext]);
+  useEffect(() => {
+    onOverflowChange?.(frontOverflow);
+  }, [frontOverflow, onOverflowChange]);
   useFontFaceLoader(template.fonts);
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
@@ -1001,6 +1068,7 @@ export function BusinessCardBack({
   url = "",
   linkedin,
   qrOverride,
+  onOverflowChange,
 }: Props) {
   const normalized = normalizeAddress(company);
   const { org, label, street: addrStreet, postalCode: addrPostal, city: addrCity, country: addrCountry, lines: addrLines } = normalized;
@@ -1078,10 +1146,16 @@ export function BusinessCardBack({
     }),
     [name, role, email, phone, mobile, company, url, linkedin, qrData],
   );
-  const backNodes = useMemo(
-    () => renderDesignElements(design.back, backContext, "back"),
-    [design.back, backContext],
-  );
+  const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
+    let hasOverflow = false;
+    const nodes = renderDesignElements(design.back, backContext, "back", (flag) => {
+      hasOverflow = flag;
+    });
+    return { nodes, overflow: hasOverflow };
+  }, [design.back, backContext]);
+  useEffect(() => {
+    onOverflowChange?.(backOverflow);
+  }, [backOverflow, onOverflowChange]);
   useFontFaceLoader(template.fonts);
 
   return (

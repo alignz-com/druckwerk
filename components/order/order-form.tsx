@@ -123,6 +123,9 @@ export default function OrderForm({ templates }: OrderFormProps) {
   const [quantity, setQuantity] = useState<string>(String(QUANTITIES[1]));
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
+  const [frontOverflow, setFrontOverflow] = useState(false);
+  const [backOverflow, setBackOverflow] = useState(false);
+  const hasOverflow = frontOverflow || backOverflow;
 
   const countryOptions = useMemo(() => {
     return COUNTRY_CODES.map((code) => ({ code, label: getCountryLabel(localeShort, code) })).sort((a, b) =>
@@ -256,7 +259,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
             <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
           ) : null}
         </div>
-        <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden">
+        <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden" disabled={hasOverflow}>
           {tOrder("buttons.order")}
         </Button>
       </header>
@@ -335,7 +338,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     value={customerReference}
                     onChange={(e) => setCustomerReference(e.target.value)}
                     rows={2}
-                    maxLength={200}
                     placeholder={tOrder("placeholders.customerReference") ?? ""}
                   />
                 </div>
@@ -354,19 +356,19 @@ export default function OrderForm({ templates }: OrderFormProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="role">{tOrder("fields.role")}</Label>
-                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} maxLength={45} />
+                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={19} />
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
-                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={19} />
+                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">{tOrder("fields.email")}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={50} />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center gap-2">
@@ -383,7 +385,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   placeholder={tOrder("fields.linkedinPlaceholder")}
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}
-                  maxLength={100}
                   aria-describedby="linkedin-hint"
                 />
                 <p id="linkedin-hint" className="text-xs text-slate-500">
@@ -392,44 +393,24 @@ export default function OrderForm({ templates }: OrderFormProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="url">{tOrder("fields.url")}</Label>
-                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={32} />
+                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
-                  <Input
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    maxLength={64}
-                  />
+                  <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="street">{tOrder("fields.street")}</Label>
-                  <Input
-                    id="street"
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                    maxLength={64}
-                  />
+                  <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="postalCode">{tOrder("fields.postalCode")}</Label>
-                  <Input
-                    id="postalCode"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    maxLength={10}
-                  />
+                  <Input id="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="city">{tOrder("fields.city")}</Label>
-                  <Input
-                    id="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    maxLength={48}
-                  />
+                  <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="country">{tOrder("fields.country")}</Label>
@@ -452,7 +433,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     id="addressExtra"
                     value={addressExtra}
                     onChange={(e) => setAddressExtra(e.target.value)}
-                    maxLength={64}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
                   />
                 </div>
@@ -501,6 +481,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         company={companyBlock}
                         url={url}
                         linkedin={linkedin}
+                        onOverflowChange={setFrontOverflow}
                       />
                     }
                     back={
@@ -514,6 +495,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         company={companyBlock}
                         url={url}
                         linkedin={linkedin}
+                        onOverflowChange={setBackOverflow}
                       />
                     }
                     className="h-full w-full"
@@ -523,7 +505,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
             </CardContent>
           </Card>
           <div className="hidden lg:flex lg:justify-end">
-            <Button onClick={openConfirm} className="px-6">
+            <Button onClick={openConfirm} className="px-6" disabled={hasOverflow}>
               {tOrder("buttons.order")}
             </Button>
           </div>
@@ -580,6 +562,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         company={companyBlock}
                         url={url}
                         linkedin={linkedin}
+                        onOverflowChange={setFrontOverflow}
                       />
                     }
                     back={
@@ -593,6 +576,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                         company={companyBlock}
                         url={url}
                         linkedin={linkedin}
+                        onOverflowChange={setBackOverflow}
                       />
                     }
                   />
@@ -611,7 +595,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
             <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} disabled={isSubmitting}>
               {tOrder("confirm.cancel")}
             </Button>
-            <Button onClick={confirmOrder} disabled={isSubmitting}>
+            <Button onClick={confirmOrder} disabled={isSubmitting || hasOverflow}>
               {isSubmitting ? tOrder("confirm.submitting") : tOrder("confirm.submit")}
             </Button>
           </DialogFooter>
