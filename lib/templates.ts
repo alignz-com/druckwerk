@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition, TemplateAssetSummary } from "./templates-defaults";
+import { DEFAULT_TEMPLATE_DESIGN, parseTemplateDesign, type TemplateDesign } from "./template-design";
 import { getSignedUrl } from "./storage";
 
 function clone<T>(value: T): T {
@@ -92,6 +93,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   const pdfAsset = assets.find((asset) => asset.type === TemplateAssetType.PDF);
   const previewFrontAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_FRONT);
   const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
+  const design = await loadTemplateDesign(tpl.assets, fallback?.design);
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
@@ -103,6 +105,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     previewBackPath: previewBackAsset?.publicUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",
     config: mergeConfigs(baseConfig, tpl.config ?? undefined),
     assets,
+    design,
   };
 
   if (!resolved.pdfPath) {
@@ -110,6 +113,25 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   }
 
   return resolved;
+}
+
+async function loadTemplateDesign(assets: TemplateWithAssets["assets"], fallback?: TemplateDesign): Promise<TemplateDesign> {
+  const configAsset = assets.find((asset) => asset.type === TemplateAssetType.CONFIG);
+  if (!configAsset) {
+    return fallback ?? DEFAULT_TEMPLATE_DESIGN;
+  }
+  try {
+    const url = await getSignedUrl(TEMPLATE_BUCKET, configAsset.storageKey, SIGNED_URL_TTL_SECONDS);
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch template design (${res.status})`);
+    }
+    const json = await res.json();
+    return parseTemplateDesign(json);
+  } catch (error) {
+    console.warn(`[templates] Failed to load design for ${configAsset.storageKey}`, error);
+    return fallback ?? DEFAULT_TEMPLATE_DESIGN;
+  }
 }
 
 export async function listTemplatesForBrand(brandId?: string | null): Promise<ResolvedTemplate[]> {

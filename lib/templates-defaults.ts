@@ -1,3 +1,6 @@
+import type { TemplateDesign } from "./template-design";
+import { DEFAULT_TEMPLATE_DESIGN } from "./template-design";
+
 export type TemplateFontStyle = "bold" | "light" | "lightItalic";
 
 export type TemplateTextStyle = {
@@ -52,6 +55,7 @@ export type TemplateDefinition = {
   previewBackPath: string;
   config: TemplateConfig;
   assets?: TemplateAssetSummary[];
+  design?: TemplateDesign;
 };
 
 export type TemplateAssetSummary = {
@@ -101,6 +105,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
       },
     },
     assets: [],
+    design: DEFAULT_TEMPLATE_DESIGN,
   },
   claim: {
     key: "claim",
@@ -118,6 +123,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
       },
     },
     assets: [],
+    design: DEFAULT_TEMPLATE_DESIGN,
   },
   "omicron-lab": {
     key: "omicron-lab",
@@ -139,6 +145,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
       },
     },
     assets: [],
+    design: DEFAULT_TEMPLATE_DESIGN,
   },
 };
 
