@@ -1,4 +1,4 @@
-import { PDFDocument, grayscale, type PDFFont, type Color } from "pdf-lib";
+import { PDFDocument, grayscale, rgb, type PDFFont, type Color } from "pdf-lib";
 import * as QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
@@ -10,8 +10,104 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import { getCountryLabel } from "@/lib/countries";
 import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
+import type {
+  DesignElement,
+  RectElement,
+  StackElement,
+  TemplateDesign,
+  TextElement,
+} from "@/lib/template-design";
 
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
+const pt2mm = (pt: number) => (pt * 25.4) / 72;
+
+type PdfFontPack = {
+  regular?: PDFFont;
+  bold?: PDFFont;
+  italic?: PDFFont;
+  boldItalic?: PDFFont;
+};
+
+function parseColor(value: string | undefined) {
+  if (!value) return undefined;
+  let hex = value.trim();
+  if (hex.startsWith("#")) {
+    hex = hex.slice(1);
+  }
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+  if (hex.length !== 6) return undefined;
+  const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return undefined;
+  return rgb(r, g, b);
+}
+
+function resolveField(context: Record<string, unknown>, path: string) {
+  const parts = path.split(".");
+  let current: any = context;
+  for (const part of parts) {
+    if (current == null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+function evaluateVisibility(elementVisibility: TextElement["visibility"], context: Record<string, unknown>) {
+  if (!elementVisibility) return true;
+  const value = resolveField(context, elementVisibility.binding);
+  if (elementVisibility.equals !== undefined) {
+    return value === elementVisibility.equals;
+  }
+  if (elementVisibility.notEmpty) {
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "string") return value.trim().length > 0;
+    return Boolean(value);
+  }
+  return Boolean(value);
+}
+
+function evaluateTextParts(element: TextElement, context: Record<string, unknown>) {
+  const parts = element.parts ?? (element.binding ? [{ type: "binding" as const, field: element.binding }] : []);
+  if (parts.length === 0) return "";
+
+  const bindingStates = new Map<string, { text: string; hasValue: boolean }>();
+  const evaluated = parts.map((part) => {
+    if (part.type === "literal") {
+      return { kind: "literal" as const, text: part.value, requires: part.requires ?? [] };
+    }
+    const raw = resolveField(context, part.field);
+    let value: string | null = null;
+    if (raw == null || (typeof raw === "string" && raw.trim().length === 0)) {
+      value = part.fallback ?? null;
+    } else if (Array.isArray(raw)) {
+      value = raw.filter(Boolean).join(", ");
+    } else {
+      value = String(raw);
+    }
+    const hasValue = Boolean(value && value.trim().length > 0);
+    const text = hasValue ? `${part.prefix ?? ""}${value}${part.suffix ?? ""}` : "";
+    bindingStates.set(part.field, { text, hasValue });
+    return { kind: "binding" as const, field: part.field, text, hasValue };
+  });
+
+  const output: string[] = [];
+  for (const item of evaluated) {
+    if (item.kind === "binding") {
+      if (item.hasValue) output.push(item.text);
+    } else {
+      const ok = item.requires.length === 0 || item.requires.every((field) => bindingStates.get(field)?.hasValue);
+      if (ok) output.push(item.text);
+    }
+  }
+  const result = output.join("");
+  return result.trim().length > 0 ? result : "";
+}
 
 export type OrderPdfFields = {
   name: string;
@@ -147,6 +243,37 @@ function wrapText(text: string, maxWidthPt: number, font: PDFFont, sizePt: numbe
   return lines;
 }
 
+function clampTextToWidthPdf(
+  text: string,
+  maxWidthPt: number,
+  font: PDFFont,
+  fontSizePt: number,
+  letterSpacingPt: number,
+) {
+  const widthWithSpacing = (value: string) =>
+    font.widthOfTextAtSize(value, fontSizePt) + Math.max(0, value.length - 1) * letterSpacingPt;
+
+  if (widthWithSpacing(text) <= maxWidthPt) return text;
+
+  const ellipsis = "…";
+  let low = 0;
+  let high = text.length;
+  let best = "";
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const test = text.slice(0, mid) + ellipsis;
+    if (widthWithSpacing(test) <= maxWidthPt) {
+      best = test;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return best || "";
+}
+
 function drawLine(
   page: any,
   text: string,
@@ -248,6 +375,106 @@ function pickFont(style: TemplateTextStyle, fonts: Partial<Record<string, PDFFon
   }
 }
 
+function pickDesignFont(font: TextElement["font"], fonts: PdfFontPack) {
+  const weight = font.weight ?? 400;
+  const style = (font as any).style?.toLowerCase?.() ?? "normal";
+  const italic = style === "italic";
+
+  if (italic && weight >= 600) return fonts.boldItalic ?? fonts.italic ?? fonts.bold ?? fonts.regular;
+  if (italic) return fonts.italic ?? fonts.regular ?? fonts.bold;
+  if (weight >= 600) return fonts.bold ?? fonts.regular ?? fonts.italic;
+  return fonts.regular ?? fonts.bold ?? fonts.italic;
+}
+
+function renderDesignElementsToPdf(opts: {
+  page: any;
+  elements: DesignElement[];
+  context: Record<string, unknown>;
+  fonts: PdfFontPack;
+  cardWidthMm: number;
+  cardHeightMm: number;
+  scaleX: number;
+  scaleY: number;
+}) {
+  const { page, elements, context, fonts, cardWidthMm, cardHeightMm, scaleX, scaleY } = opts;
+
+  const renderElement = (element: DesignElement, offsetX = 0, offsetY = 0): number => {
+    switch (element.type) {
+      case "rect": {
+        if (element.visibility && !evaluateVisibility(element.visibility, context)) return 0;
+        const xMm = offsetX + element.xMm;
+        const yMm = offsetY + element.yMm;
+        const widthMm = element.widthMm;
+        const heightMm = element.heightMm;
+        const x = xMm * scaleX;
+        const y = (cardHeightMm - yMm - heightMm) * scaleY;
+        page.drawRectangle({
+          x,
+          y,
+          width: widthMm * scaleX,
+          height: heightMm * scaleY,
+          color: element.fill ? parseColor(element.fill) : undefined,
+          opacity: element.opacity,
+          borderColor: element.stroke ? parseColor(element.stroke) : undefined,
+          borderWidth: element.strokeWidthMm ? element.strokeWidthMm * scaleX : undefined,
+        });
+        return heightMm;
+      }
+      case "text": {
+        if (!evaluateVisibility(element.visibility, context)) return 0;
+        const content = evaluateTextParts(element, context);
+        if (!content) return 0;
+        const font = pickDesignFont(element.font, fonts);
+        if (!font) return 0;
+        const sizePt = element.font.sizePt;
+        const letterSpacingPt = element.font.letterSpacing ? element.font.letterSpacing * scaleX : 0;
+        let text = content;
+        if (element.maxWidthMm) {
+          const maxWidthPt = element.maxWidthMm * scaleX;
+          text = clampTextToWidthPdf(text, maxWidthPt, font, sizePt, letterSpacingPt);
+          if (!text) return 0;
+        }
+        const xMm = offsetX + (element.xMm ?? 0);
+        const yMm = offsetY + (element.yMm ?? 0);
+        const baselineMode = element.font.baseline ?? "hanging";
+        const x = xMm * scaleX;
+        let y = (cardHeightMm - yMm) * scaleY;
+        if (baselineMode === "hanging") {
+          y -= sizePt;
+        }
+        page.drawText(text, {
+          x,
+          y,
+          size: sizePt,
+          font,
+          color: parseColor(element.font.color),
+          characterSpacing: letterSpacingPt,
+        });
+        const lineHeightMm =
+          element.font.lineHeightMm ??
+          (element.font.lineHeight ?? 1.2) * pt2mm(sizePt);
+        return lineHeightMm;
+      }
+      case "stack": {
+        if (!evaluateVisibility(element.visibility, context)) return 0;
+        const gapMm = element.gapMm ?? 0;
+        let cursor = 0;
+        for (const child of element.items) {
+          const childHeight = renderElement(child, offsetX + element.xMm, offsetY + element.yMm + cursor);
+          if (childHeight > 0) {
+            cursor += childHeight + gapMm;
+          }
+        }
+        return cursor;
+      }
+      default:
+        return 0;
+    }
+  };
+
+  elements.forEach((element) => renderElement(element));
+}
+
 export async function generateOrderPdf(fields: OrderPdfFields, template: ResolvedTemplate) {
   const {
     name,
@@ -294,59 +521,97 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
 
   const front = tplDoc.getPage(0);
   const back = tplDoc.getPage(1);
-  const { height: pageHeight } = front.getSize();
+  const { width: pageWidth, height: pageHeight } = front.getSize();
+  const scaleX = pageWidth / 85;
+  const scaleY = pageHeight / 55;
 
-  const frame = template.config.front.textFrame;
-  const xLeft = mm2pt(frame.xMm);
-  const colWidth = mm2pt(frame.columnWidthMm);
-  let cursor = pageHeight - mm2pt(frame.topMm);
-
-  const applyBlock = (lines: string[], style?: TemplateTextStyle) => {
-    if (!style || lines.length === 0) return;
-    const fontRef = pickFont(style, Frutiger);
-    cursor = drawBlock(front, lines, cursor, {
-      xLeftPt: xLeft,
-      widthPt: colWidth,
-      size: style.sizePt,
-      lhMm: style.lineGapMm,
-      font: fontRef,
-      align: "left",
-    });
-    if (style.spacingAfterMm) {
-      cursor -= mm2pt(style.spacingAfterMm);
-    }
+  const pdfFonts: PdfFontPack = {
+    regular: Frutiger.Light,
+    bold: Frutiger.Bold,
+    italic: Frutiger.LightItalic,
+    boldItalic: Frutiger.Bold ?? Frutiger.LightItalic,
   };
 
-  applyBlock([name], frame.name);
-  if (role) applyBlock([role], frame.role);
+  const frame = template.config.front.textFrame;
 
-  const contactLines: string[] = [];
-  const phoneLine = formatPhones(phone, mobile);
-  if (phoneLine) contactLines.push(phoneLine);
-  if (email) contactLines.push(email);
-  if (url) contactLines.push(url);
-  if (linkedin) contactLines.push(linkedin);
+  const sharedContext = {
+    name,
+    role,
+    email,
+    phone,
+    mobile,
+    company,
+    url,
+    linkedin,
+    address: resolvedAddress,
+  };
 
-  if (frame.contacts) {
-    const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
-    const contactWrapped = contactsFont
-      ? contactLines.flatMap((line) => wrapText(line, colWidth, contactsFont, frame.contacts!.sizePt))
-      : contactLines;
-    applyBlock(contactWrapped, frame.contacts);
-  }
+  const hasDesignFront = Array.isArray(template.design?.front) && template.design!.front.length > 0;
+  if (hasDesignFront) {
+    renderDesignElementsToPdf({
+      page: front,
+      elements: template.design!.front,
+      context: sharedContext,
+      fonts: pdfFonts,
+      cardWidthMm: 85,
+      cardHeightMm: 55,
+      scaleX,
+      scaleY,
+    });
+  } else {
+    const frame = template.config.front.textFrame;
+    const xLeft = mm2pt(frame.xMm);
+    const colWidth = mm2pt(frame.columnWidthMm);
+    let cursor = pageHeight - mm2pt(frame.topMm);
 
-  if (frame.company) {
-    const raw = splitLinesMultiline(company || "");
-    const companyFont = pickFont(frame.company, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
-    const wrapped = companyFont
-      ? raw.flatMap((line) => wrapText(line, colWidth, companyFont, frame.company!.sizePt))
-      : raw;
-    applyBlock(wrapped, frame.company);
+    const applyBlock = (lines: string[], style?: TemplateTextStyle) => {
+      if (!style || lines.length === 0) return;
+      const fontRef = pickFont(style, Frutiger);
+      cursor = drawBlock(front, lines, cursor, {
+        xLeftPt: xLeft,
+        widthPt: colWidth,
+        size: style.sizePt,
+        lhMm: style.lineGapMm,
+        font: fontRef,
+        align: "left",
+      });
+      if (style.spacingAfterMm) {
+        cursor -= mm2pt(style.spacingAfterMm);
+      }
+    };
+
+    applyBlock([name], frame.name);
+    if (role) applyBlock([role], frame.role);
+
+    const contactLines: string[] = [];
+    const phoneLine = formatPhones(phone, mobile);
+    if (phoneLine) contactLines.push(phoneLine);
+    if (email) contactLines.push(email);
+    if (url) contactLines.push(url);
+    if (linkedin) contactLines.push(linkedin);
+
+    if (frame.contacts) {
+      const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
+      const contactWrapped = contactsFont
+        ? contactLines.flatMap((line) => wrapText(line, colWidth, contactsFont, frame.contacts!.sizePt))
+        : contactLines;
+      applyBlock(contactWrapped, frame.contacts);
+    }
+
+    if (frame.company) {
+      const raw = splitLinesMultiline(company || "");
+      const companyFont = pickFont(frame.company, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
+      const wrapped = companyFont
+        ? raw.flatMap((line) => wrapText(line, colWidth, companyFont, frame.company!.sizePt))
+        : raw;
+      applyBlock(wrapped, frame.company);
+    }
   }
 
   const orgName = address?.companyName || (company || "").split(/\r?\n/)[0] || "";
   const addrLabel = company || "";
 
+  let qrData: string | null = null;
   if (template.config.back.mode === "qr" && template.config.back.qr) {
     const vcard = buildVCard3({
       fullName: name,
@@ -360,13 +625,29 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       addrLabel,
       address: resolvedAddress,
     });
-
-    const dataUrl = await QRCode.toDataURL(vcard, {
+    qrData = await QRCode.toDataURL(vcard, {
       width: 1024,
       margin: 0,
       errorCorrectionLevel: "M",
     });
-    const pngBytes = Buffer.from(dataUrl.split(",")[1], "base64");
+  }
+
+  const hasDesignBack = Array.isArray(template.design?.back) && template.design!.back.length > 0;
+  if (hasDesignBack) {
+    renderDesignElementsToPdf({
+      page: back,
+      elements: template.design!.back,
+      context: { ...sharedContext, qrData },
+      fonts: pdfFonts,
+      cardWidthMm: 85,
+      cardHeightMm: 55,
+      scaleX,
+      scaleY,
+    });
+  }
+
+  if (template.config.back.mode === "qr" && template.config.back.qr && qrData) {
+    const pngBytes = Buffer.from(qrData.split(",")[1], "base64");
     const img = await tplDoc.embedPng(pngBytes);
 
     const qrConfig = template.config.back.qr;
@@ -374,6 +655,16 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     const qx = mm2pt(qrConfig.xMm);
     const qy = mm2pt(qrConfig.yMm);
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
+
+    const captionFont = pickFont(frame.contacts ?? frame.company ?? frame.name, Frutiger) ?? Frutiger.Light;
+    if (captionFont) {
+      back.drawText("Scan to save contact", {
+        x: qx,
+        y: qy - mm2pt(4),
+        size: 8,
+        font: captionFont,
+      });
+    }
   }
 
   const pdfBytes = await tplDoc.save();
