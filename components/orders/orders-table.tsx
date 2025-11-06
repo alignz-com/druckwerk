@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
+import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 
 const PAGE_SIZE = 10;
 
@@ -24,7 +25,29 @@ export type OrdersTableRow = {
   quantity: number;
   status: string;
   statusLabel: string;
-  pdfUrl: string | null;
+  deliveryTime: string;
+  deliveryTimeLabel: string;
+  templateKey: string | null;
+  brandId: string | null;
+  detail: {
+    requester: {
+      name: string;
+      role: string;
+      email: string;
+      phone: string;
+      mobile: string;
+      url: string;
+      linkedin: string;
+    };
+    company: string;
+    address?: Record<string, unknown>;
+    quantity: number;
+    deliveryTime: string;
+    deliveryTimeLabel: string;
+    customerReference: string;
+    brandName: string;
+    templateLabel: string;
+  };
 };
 
 type OrdersTableColumn = {
@@ -40,15 +63,15 @@ type OrdersTableProps = {
   data: OrdersTableRow[];
   showUserColumn: boolean;
   labels: {
-    reference: string;
     created: string;
     user: string;
     template: string;
     quantity: string;
     status: string;
-    pdf: string;
-    viewPdf: string;
+    delivery: string;
+    view: string;
   };
+  detailLabels: OrderDetailLabels;
   searchPlaceholder: string;
   emptyState: string;
   noResults: string;
@@ -66,6 +89,7 @@ export function OrdersTable({
   data,
   showUserColumn,
   labels,
+  detailLabels,
   searchPlaceholder,
   emptyState,
   noResults,
@@ -77,18 +101,18 @@ export function OrdersTable({
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [detailOrder, setDetailOrder] = useState<OrdersTableRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const normalizedSearch = search.trim().toLowerCase();
 
+  const handleOpenDetail = useCallback((row: OrdersTableRow) => {
+    setDetailOrder(row);
+    setDetailOpen(true);
+  }, []);
+
   const columns = useMemo<OrdersTableColumn[]>(() => {
     const baseColumns: OrdersTableColumn[] = [
-      {
-        id: "reference",
-        title: labels.reference,
-        enableSorting: true,
-        sortAccessor: (row) => row.referenceCode.toLowerCase(),
-        renderCell: (row) => <span className="font-medium text-slate-900">{row.referenceCode}</span>,
-      },
       {
         id: "created",
         title: labels.created,
@@ -112,6 +136,15 @@ export function OrdersTable({
         renderCell: (row) => <span className="text-slate-600">{row.quantity}</span>,
       },
       {
+        id: "delivery",
+        title: labels.delivery,
+        enableSorting: true,
+        sortAccessor: (row) => row.deliveryTime,
+        renderCell: (row) => (
+          <Badge variant={row.deliveryTime === "express" ? "destructive" : "outline"}>{row.deliveryTimeLabel}</Badge>
+        ),
+      },
+      {
         id: "status",
         title: labels.status,
         enableSorting: true,
@@ -121,16 +154,13 @@ export function OrdersTable({
         ),
       },
       {
-        id: "pdf",
-        title: labels.pdf,
-        renderCell: (row) =>
-          row.pdfUrl ? (
-            <a href={row.pdfUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-              {labels.viewPdf}
-            </a>
-          ) : (
-            <span className="text-slate-400">–</span>
-          ),
+        id: "actions",
+        title: "",
+        renderCell: (row) => (
+          <Button variant="ghost" size="sm" onClick={() => handleOpenDetail(row)}>
+            {labels.view}
+          </Button>
+        ),
       },
     ];
 
@@ -150,7 +180,7 @@ export function OrdersTable({
     }
 
     return baseColumns;
-  }, [labels, showUserColumn]);
+  }, [labels, showUserColumn, handleOpenDetail]);
 
   const filteredData = useMemo(() => {
     if (!normalizedSearch) {
@@ -398,6 +428,44 @@ export function OrdersTable({
           </Button>
         </div>
       </div>
+
+      <OrderDetailSheet
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setDetailOrder(null);
+          }
+        }}
+        order={detailOrder}
+        labels={detailLabels}
+      />
     </div>
   );
 }
+export type OrderDetailLabels = {
+  title: string;
+  status: string;
+  brand: string;
+  template: string;
+  quantity: string;
+  delivery: string;
+  customerReference: string;
+  requester: string;
+  company: string;
+  address: string;
+  contact: string;
+  previewTitle: string;
+  close: string;
+  loadingTemplate: string;
+  loadingPreview: string;
+  noTemplate: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  mobile: string;
+  url: string;
+  linkedin: string;
+  companyName: string;
+};

@@ -52,6 +52,18 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       typeof order.meta === "object" && order.meta && "templateKey" in order.meta
         ? (order.meta as { templateKey?: unknown }).templateKey
         : null;
+    const customerReference =
+      typeof order.meta === "object" && order.meta && "customerReference" in order.meta
+        ? String((order.meta as { customerReference?: unknown }).customerReference ?? "")
+        : "";
+    const addressMeta =
+      typeof order.meta === "object" && order.meta && "address" in order.meta
+        ? ((order.meta as { address?: Record<string, unknown> }).address as Record<string, unknown> | undefined)
+        : undefined;
+    const deliveryTimeLabel =
+      (order.deliveryTime in t.orderForm.deliveryTimes
+        ? t.orderForm.deliveryTimes[order.deliveryTime as "express" | "standard"]
+        : order.deliveryTime) ?? order.deliveryTime;
 
     return {
       id: order.id,
@@ -64,7 +76,30 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       quantity: order.quantity,
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
-      pdfUrl: order.pdfUrl,
+      deliveryTime: order.deliveryTime,
+      deliveryTimeLabel,
+      templateKey: typeof templateKey === "string" ? templateKey : order.template?.key ?? null,
+      brandId: order.brandId,
+      detail: {
+        requester: {
+          name: order.requesterName,
+          role: order.requesterRole ?? "",
+          email: order.requesterEmail,
+          phone: order.phone ?? "",
+          mobile: order.mobile ?? "",
+          url: order.url ?? "",
+          linkedin: order.linkedin ?? "",
+        },
+        company: order.company ?? "",
+        address: addressMeta,
+        quantity: order.quantity,
+        deliveryTime: order.deliveryTime,
+        deliveryTimeLabel,
+        customerReference: customerReference || "",
+        brandName: order.brand?.name ?? "–",
+        templateLabel:
+          order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
+      },
     };
   });
 
@@ -90,14 +125,39 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         data={tableData}
         showUserColumn={isAdmin}
         labels={{
-          reference: t.ordersPage.table.reference,
           created: t.ordersPage.table.created,
           user: t.ordersPage.table.user,
           template: t.ordersPage.table.template,
           quantity: t.ordersPage.table.quantity,
           status: t.ordersPage.table.status,
-          pdf: t.ordersPage.table.pdf,
-          viewPdf: t.ordersPage.table.viewPdf,
+          delivery: t.ordersPage.table.delivery,
+          view: t.ordersPage.table.view,
+        }}
+        detailLabels={{
+          title: t.ordersPage.detail.title,
+          status: t.ordersPage.detail.status,
+          brand: t.ordersPage.detail.brand,
+          template: t.ordersPage.detail.template,
+          quantity: t.ordersPage.detail.quantity,
+          delivery: t.ordersPage.detail.delivery,
+          customerReference: t.ordersPage.detail.customerReference,
+          requester: t.ordersPage.detail.requester,
+          company: t.ordersPage.detail.company,
+          address: t.ordersPage.detail.address,
+          contact: t.ordersPage.detail.contact,
+          previewTitle: t.ordersPage.detail.previewTitle,
+          close: t.ordersPage.detail.close,
+          loadingTemplate: t.ordersPage.detail.loadingTemplate,
+          loadingPreview: t.ordersPage.detail.loadingPreview,
+          noTemplate: t.ordersPage.detail.noTemplate,
+          name: t.ordersPage.detail.name,
+          role: t.ordersPage.detail.role,
+          email: t.ordersPage.detail.email,
+          phone: t.ordersPage.detail.phone,
+          mobile: t.ordersPage.detail.mobile,
+          url: t.ordersPage.detail.url,
+          linkedin: t.ordersPage.detail.linkedin,
+          companyName: t.ordersPage.detail.companyName,
         }}
         searchPlaceholder={t.ordersPage.table.searchPlaceholder}
         emptyState={t.ordersPage.table.empty}
