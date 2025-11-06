@@ -479,7 +479,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                           if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
-                        className="border-teal-200 bg-teal-50 focus-visible:border-teal-400 focus-visible:ring-teal-200"
+                        className="border-slate-300 bg-slate-50 focus-visible:border-slate-400 focus-visible:ring-slate-200"
                       />
                       {isAddressDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
