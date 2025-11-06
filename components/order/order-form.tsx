@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,17 @@ import {
 } from "@/components/ui/select";
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
+
+type BrandAddressEntry = {
+  id: string;
+  label: string | null;
+  company: string | null;
+  street: string | null;
+  addressExtra?: string | null;
+  postalCode: string | null;
+  city: string | null;
+  countryCode: string | null;
+};
 
 const DELIVERY_OPTIONS = {
   express: { businessDays: 5 },
@@ -105,9 +117,10 @@ function buildAddressBlock(opts: {
 
 export type OrderFormProps = {
   templates: ResolvedTemplate[];
+  addresses?: BrandAddressEntry[];
 };
 
-export default function OrderForm({ templates }: OrderFormProps) {
+export default function OrderForm({ templates, addresses = [] }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const sessionUser = session?.user;
@@ -159,6 +172,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
       locale: localeShort,
     }),
   );
+  const [addressSearch, setAddressSearch] = useState("");
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
@@ -191,6 +205,32 @@ export default function OrderForm({ templates }: OrderFormProps) {
     }),
     [companyName, street, postalCode, city, countryCode, localeShort],
   );
+
+  const addressOptions = useMemo(() => addresses, [addresses]);
+  const filteredAddressOptions = useMemo(() => {
+    const query = addressSearch.trim().toLowerCase();
+    if (!query) return addressOptions;
+    return addressOptions.filter((entry) => {
+      const haystack = [entry.label, entry.company, entry.street, entry.postalCode, entry.city]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [addressOptions, addressSearch]);
+  const displayedAddressOptions = useMemo(
+    () => filteredAddressOptions.slice(0, 5),
+    [filteredAddressOptions],
+  );
+
+  const handleSelectAddress = (entry: BrandAddressEntry) => {
+    setCompanyName(entry.company ?? "");
+    setStreet(entry.street ?? "");
+    setPostalCode(entry.postalCode ?? "");
+    setCity(entry.city ?? "");
+    setCountryCode(entry.countryCode ?? "");
+    setAddressSearch(entry.label || entry.company || "");
+  };
 
   const estimatedDeliveryDate = useMemo(() => {
     const option = DELIVERY_OPTIONS[deliveryTime];
@@ -386,9 +426,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
 
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle className="text-base md:text-lg">{tOrder("detailsTitle")}</CardTitle>
+              <CardTitle className="text-base md:text-lg">{tOrder("sections.personal")}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">{tOrder("fields.name")}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -430,11 +471,46 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   {tOrder("hints.linkedin")}
                 </p>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="url">{tOrder("fields.url")}</Label>
-                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <Separator />
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-slate-800">{tOrder("sections.company")}</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:col-span-2">
+                    <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
+                    <Input
+                      id="addressSearch"
+                      value={addressSearch}
+                      onChange={(e) => setAddressSearch(e.target.value)}
+                      placeholder={tOrder("placeholders.addressSearch") ?? ""}
+                    />
+                    <div className="rounded-md border border-slate-200 bg-white text-sm">
+                      {addressOptions.length === 0 ? (
+                        <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.empty")}</p>
+                      ) : displayedAddressOptions.length === 0 ? (
+                        <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.noResults")}</p>
+                      ) : (
+                        displayedAddressOptions.map((entry) => {
+                          const title = entry.label || entry.company || tOrder("addressSearch.unnamed");
+                          const subtitle = [entry.company, entry.street, entry.city]
+                            .filter(Boolean)
+                            .join(" • ");
+                          return (
+                            <button
+                              type="button"
+                              key={entry.id}
+                              onClick={() => handleSelectAddress(entry)}
+                              className="w-full px-3 py-2 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                            >
+                              <p className="font-medium text-slate-900">{title}</p>
+                              {subtitle ? <p className="text-xs text-slate-500">{subtitle}</p> : null}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">{tOrder("hints.addressSearch")}</p>
+                  </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
                   <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
@@ -467,6 +543,10 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   </Select>
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="url">{tOrder("fields.url")}</Label>
+                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
                   <Textarea
                     id="addressBlock"
@@ -479,8 +559,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
                     {tOrder("hints.addressExtra")}
                   </p>
                 </div>
+                </div>
               </div>
-
             </CardContent>
           </Card>
         </div>

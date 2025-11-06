@@ -52,6 +52,10 @@ export const messages = {
       expressNotice: "⚠️ Express delivery will cause additional costs.",
       estimatedDelivery: "Estimated delivery",
       detailsTitle: "Details",
+      sections: {
+        personal: "Personal details",
+        company: "Company details",
+      },
       placeholders: {
         quantity: "Select quantity",
         template: "Select template",
@@ -59,6 +63,7 @@ export const messages = {
         addressExtra: "Care of, building, etc.",
         country: "Select country",
         customerReference: "Customer reference",
+        addressSearch: "Search brand addresses",
       },
       fields: {
         name: "Name",
@@ -75,11 +80,18 @@ export const messages = {
         city: "City",
         country: "Country",
         addressExtra: "Address block",
+        addressSearch: "Company address",
         customerReference: "Customer reference",
       },
       hints: {
         linkedin: "LinkedIn URL won’t be printed, but is available via the QR code.",
         addressExtra: "Edit this block to control the printed layout. Structured fields still power the QR code.",
+        addressSearch: "Choose an address saved for your brand to prefill the company data.",
+      },
+      addressSearch: {
+        empty: "No saved addresses for this brand.",
+        noResults: "No addresses match your search.",
+        unnamed: "Saved address",
       },
       previewTitle: "Preview",
       buttons: {
@@ -719,6 +731,10 @@ export const messages = {
       expressNotice: "⚠️ Expressversand verursacht zusätzliche Kosten.",
       estimatedDelivery: "Voraussichtliche Lieferung",
       detailsTitle: "Details",
+      sections: {
+        personal: "Persönliche Angaben",
+        company: "Firmendaten",
+      },
       placeholders: {
         quantity: "Menge auswählen",
         template: "Vorlage auswählen",
@@ -726,6 +742,7 @@ export const messages = {
         addressExtra: "c/o, Gebäude, Zusatz",
         country: "Land auswählen",
         customerReference: "Kundenreferenz",
+        addressSearch: "Adressen durchsuchen",
       },
       fields: {
         name: "Name",
@@ -742,11 +759,18 @@ export const messages = {
         city: "Ort",
         country: "Land",
         addressExtra: "Adressblock",
+        addressSearch: "Firmenadresse",
         customerReference: "Kundenreferenz",
       },
       hints: {
         linkedin: "Die LinkedIn-URL wird nicht aufgedruckt, ist aber über den QR-Code abrufbar.",
         addressExtra: "Hier kannst du den Drucktext anpassen. Die strukturierten Felder oben steuern weiterhin den QR-Code.",
+        addressSearch: "Wähle eine gespeicherte Adresse deiner Marke, um die Felder automatisch zu füllen.",
+      },
+      addressSearch: {
+        empty: "Für diese Marke sind keine Adressen gespeichert.",
+        noResults: "Keine Adresse passt zu deiner Suche.",
+        unnamed: "Gespeicherte Adresse",
       },
       previewTitle: "Vorschau",
       buttons: {

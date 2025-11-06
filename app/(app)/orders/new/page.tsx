@@ -20,6 +20,24 @@ export default async function NewOrderPage() {
     : null;
   const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
   const templates = await listTemplatesForBrand(effectiveBrandId);
+  const addresses =
+    effectiveBrandId
+      ? await prisma.brandAddress.findMany({
+          where: { brandId: effectiveBrandId },
+          orderBy: [{ label: "asc" }, { company: "asc" }],
+        })
+      : [];
 
-  return <OrderForm templates={templates} />;
+  const normalizedAddresses = addresses.map((address) => ({
+    id: address.id,
+    label: address.label,
+    company: address.company,
+    street: address.street,
+    addressExtra: address.addressExtra,
+    postalCode: address.postalCode,
+    city: address.city,
+    countryCode: address.countryCode,
+  }));
+
+  return <OrderForm templates={templates} addresses={normalizedAddresses} />;
 }
