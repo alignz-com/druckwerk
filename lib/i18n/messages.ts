@@ -79,6 +79,7 @@ export const messages = {
       },
       hints: {
         linkedin: "LinkedIn URL won’t be printed, but is available via the QR code.",
+        addressExtra: "Edit this block to control the printed layout. Structured fields still power the QR code.",
       },
       previewTitle: "Preview",
       buttons: {
@@ -745,6 +746,7 @@ export const messages = {
       },
       hints: {
         linkedin: "Die LinkedIn-URL wird nicht aufgedruckt, ist aber über den QR-Code abrufbar.",
+        addressExtra: "Hier kannst du den Drucktext anpassen. Die strukturierten Felder oben steuern weiterhin den QR-Code.",
       },
       previewTitle: "Vorschau",
       buttons: {
