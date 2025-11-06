@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
@@ -159,8 +159,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
       locale: localeShort,
     }),
   );
-  const [addressBlockChanged, setAddressBlockChanged] = useState(false);
-  const generatedAddressBlockRef = useRef(addressBlock);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
@@ -180,17 +178,8 @@ export default function OrderForm({ templates }: OrderFormProps) {
       countryCode,
       locale: localeShort,
     });
-    generatedAddressBlockRef.current = generated;
-    if (!addressBlockChanged) {
-      setAddressBlock(generated);
-    }
-  }, [companyName, street, postalCode, city, countryCode, localeShort, addressBlockChanged]);
-
-  useEffect(() => {
-    if (addressBlock === generatedAddressBlockRef.current) {
-      setAddressBlockChanged(false);
-    }
-  }, [addressBlock]);
+    setAddressBlock((current) => (current === generated ? current : generated));
+  }, [companyName, street, postalCode, city, countryCode, localeShort]);
 
   const previewAddressFields = useMemo(
     () => ({
@@ -202,11 +191,6 @@ export default function OrderForm({ templates }: OrderFormProps) {
     }),
     [companyName, street, postalCode, city, countryCode, localeShort],
   );
-
-  const handleAddressBlockChange = (value: string) => {
-    setAddressBlock(value);
-    setAddressBlockChanged(value !== generatedAddressBlockRef.current);
-  };
 
   const estimatedDeliveryDate = useMemo(() => {
     const option = DELIVERY_OPTIONS[deliveryTime];
@@ -487,7 +471,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
                   <Textarea
                     id="addressBlock"
                     value={addressBlock}
-                    onChange={(e) => handleAddressBlockChange(e.target.value)}
+                    onChange={(e) => setAddressBlock(e.target.value)}
                     rows={4}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
                   />
