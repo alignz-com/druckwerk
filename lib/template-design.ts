@@ -101,11 +101,33 @@ export function parseTemplateDesign(input: unknown): TemplateDesign {
 }
 
 export function extractDesignFromConfigSource(config: unknown): TemplateDesign | null {
-  if (!config || typeof config !== "object") return null;
-  const candidate = (config as any).design ?? (config as any).layout;
-  if (!candidate) return null;
+  if (config == null) return null;
+
+  let candidate: unknown = config;
+  if (typeof config === "string") {
+    try {
+      candidate = JSON.parse(config);
+    } catch (error) {
+      console.warn("[design] Failed to parse config JSON", error);
+      return null;
+    }
+  }
+
+  if (candidate && typeof candidate === "object") {
+    const direct = tryParseDesign(candidate);
+    if (direct) return direct;
+    const nested = (candidate as any).design ?? (candidate as any).layout;
+    if (nested) {
+      const parsed = tryParseDesign(nested);
+      if (parsed) return parsed;
+    }
+  }
+  return null;
+}
+
+function tryParseDesign(input: unknown): TemplateDesign | null {
   try {
-    return parseTemplateDesign(candidate);
+    return parseTemplateDesign(input);
   } catch (error) {
     console.warn("[design] Invalid inline design", error);
     return null;
