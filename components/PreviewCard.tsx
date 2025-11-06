@@ -10,6 +10,7 @@ import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
 import { DEFAULT_TEMPLATE_DESIGN } from "@/lib/template-design";
 import type { DesignElement, TextElement, StackElement, RectElement, QrElement } from "@/lib/template-design";
+import { useFontFaceLoader } from "@/lib/useFontFaceLoader";
 
 function SmoothSvgImage({
   src,
@@ -386,19 +387,44 @@ function evaluateTextContent(element: TextElement, context: RenderContext) {
   const parts = element.parts ?? (element.binding ? [{ type: "binding" as const, field: element.binding }] : []);
   if (parts.length === 0) return "";
 
+  const bindingStates = new Map<string, { text: string; hasValue: boolean }>();
   const resolved = parts.map((part) => {
     if (part.type === "literal") {
-      return part.value;
+      return { kind: "literal" as const, text: part.value, requires: part.requires ?? [] };
     }
-    const value = resolveField(context, part.field);
-    if (value == null || value === "") {
-      return part.fallback ?? "";
+
+    const raw = resolveField(context, part.field);
+    let value: string | null = null;
+    if (raw == null || (typeof raw === "string" && raw.trim().length === 0)) {
+      value = part.fallback ?? null;
+    } else if (Array.isArray(raw)) {
+      value = raw.filter(Boolean).join(", ");
+    } else {
+      value = String(raw);
     }
-    if (Array.isArray(value)) return value.join("\n");
-    return String(value);
+
+    const hasValue = Boolean(value && value.trim().length > 0);
+    const text = hasValue ? `${part.prefix ?? ""}${value}${part.suffix ?? ""}` : "";
+    bindingStates.set(part.field, { text, hasValue });
+    return { kind: "binding" as const, field: part.field, text, hasValue };
   });
 
-  const joined = resolved.join("");
+  const pieces: string[] = [];
+  for (const item of resolved) {
+    if (item.kind === "binding") {
+      if (item.hasValue) {
+        pieces.push(item.text);
+      }
+      continue;
+    }
+
+    const ok = item.requires.length === 0 || item.requires.every((field) => bindingStates.get(field)?.hasValue);
+    if (ok) {
+      pieces.push(item.text);
+    }
+  }
+
+  const joined = pieces.join("");
   if (joined.trim().length === 0) {
     return "";
   }
@@ -464,6 +490,7 @@ function renderTextElement(prepared: PreparedText, context: RenderContext, key: 
       x={offsetX + (element.xMm ?? 0)}
       y={offsetY + (element.yMm ?? 0)}
       fontSize={fontSizeMm}
+      fontFamily={element.font.family}
       fontWeight={element.font.weight ?? 400}
       fill={element.font.color ?? "#1f2937"}
       dominantBaseline={element.font.baseline ?? "hanging"}
@@ -737,6 +764,7 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
     () => renderDesignElements(design.front, frontContext, "front"),
     [design.front, frontContext],
   );
+  useFontFaceLoader(template.fonts);
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -941,6 +969,7 @@ export function BusinessCardBack({
     () => renderDesignElements(design.back, backContext, "back"),
     [design.back, backContext],
   );
+  useFontFaceLoader(template.fonts);
 
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">

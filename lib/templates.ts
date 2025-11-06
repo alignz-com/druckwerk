@@ -37,7 +37,30 @@ function mergeConfigs(base: TemplateConfig, override?: unknown): TemplateConfig 
   return target;
 }
 
-export type ResolvedTemplate = TemplateDefinition;
+export type ResolvedTemplateFont = {
+  id: string;
+  fontFamilyName: string;
+  fontFamilySlug: string;
+  fontVariantId: string;
+  storageKey: string;
+  fileName: string | null;
+  weight: number;
+  style: string;
+  format: string;
+};
+
+export type ResolvedTemplate = TemplateDefinition & {
+  fonts: ResolvedTemplateFont[];
+};
+
+function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
+  return {
+    ...clone(def),
+    assets: def.assets ? clone(def.assets) : [],
+    design: def.design ? clone(def.design) : DEFAULT_TEMPLATE_DESIGN,
+    fonts: [],
+  };
+}
 
 function sortTemplates(templates: Iterable<ResolvedTemplate>) {
   return Array.from(templates).sort((a, b) => a.label.localeCompare(b.label));
@@ -49,6 +72,15 @@ const templateInclude = {
       { version: "desc" as const },
       { updatedAt: "desc" as const },
     ],
+  },
+  fonts: {
+    include: {
+      fontVariant: {
+        include: {
+          fontFamily: true,
+        },
+      },
+    },
   },
 };
 
@@ -100,6 +132,23 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
   const designFromConfig = extractDesignFromConfigSource(tpl.config);
   const design = designFromConfig ?? (await loadTemplateDesign(tpl.assets, fallback?.design));
+  const fonts: ResolvedTemplateFont[] = tpl.fonts
+    .filter((link) => link.fontVariant && link.fontVariant.fontFamily)
+    .map((link) => {
+      const variant = link.fontVariant!;
+      const family = variant.fontFamily!;
+      return {
+        id: link.id,
+        fontFamilyName: family.name,
+        fontFamilySlug: family.slug,
+        fontVariantId: variant.id,
+        storageKey: variant.storageKey,
+        fileName: variant.fileName ?? null,
+        weight: variant.weight,
+        style: variant.style,
+        format: variant.format,
+      };
+    });
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
@@ -112,6 +161,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     config: mergeConfigs(baseConfig, tpl.config ?? undefined),
     assets,
     design,
+    fonts,
   };
 
   if (!resolved.pdfPath) {
@@ -214,7 +264,7 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
   }
 
   const fallback = DEFAULT_TEMPLATES[key];
-  if (fallback) return clone(fallback);
+  if (fallback) return resolvedFromDefinition(fallback);
 
   throw new Error(`Unknown template key: ${key}`);
 }

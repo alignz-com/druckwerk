@@ -13,16 +13,20 @@ const textPartSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("literal"),
     value: z.string(),
+    requires: z.array(z.string()).optional(),
   }),
   z.object({
     type: z.literal("binding"),
     field: z.string(),
     fallback: z.string().optional(),
+    prefix: z.string().optional(),
+    suffix: z.string().optional(),
   }),
 ]);
 
 const textFontSchema = z.object({
   sizePt: z.number().positive(),
+  family: z.string().optional(),
   weight: z.number().optional(),
   color: z.string().optional(),
   baseline: z.enum(["hanging", "baseline"]).optional(),
