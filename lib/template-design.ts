@@ -102,51 +102,6 @@ export function parseTemplateDesign(input: unknown): TemplateDesign {
 
 export const DEFAULT_TEMPLATE_DESIGN: TemplateDesign = {
   version: 1,
-  front: [
-    {
-      type: "rect",
-      xMm: 10,
-      yMm: 10,
-      widthMm: 65,
-      heightMm: 5,
-      fill: "#ff00ff",
-      opacity: 0.35,
-    },
-    {
-      type: "text",
-      binding: "name",
-      xMm: 10,
-      yMm: 15,
-      font: {
-        sizePt: 10,
-        weight: 700,
-        baseline: "hanging",
-      },
-    },
-    {
-      type: "stack",
-      xMm: 10,
-      yMm: 22,
-      gapMm: 1.5,
-      items: [
-        {
-          type: "text",
-          parts: [
-            { type: "literal", value: "T " },
-            { type: "binding", field: "phone" },
-          ],
-          font: { sizePt: 8, baseline: "hanging" },
-        },
-        {
-          type: "text",
-          parts: [
-            { type: "literal", value: "M " },
-            { type: "binding", field: "mobile" },
-          ],
-          font: { sizePt: 8, baseline: "hanging" },
-        },
-      ],
-    },
-  ],
+  front: [],
   back: [],
 };

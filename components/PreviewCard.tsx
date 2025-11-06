@@ -760,16 +760,6 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
         ) : null}
 
         <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`} className="[&>g]:opacity-100">
-          <rect
-            x={0}
-            y={0}
-            width={CARD_W}
-            height={CARD_H}
-            fill="none"
-            stroke="red"
-            strokeWidth={0.4}
-            vectorEffect="non-scaling-stroke"
-          />
           {frontNodes}
         </g>
       </svg>
@@ -975,16 +965,6 @@ export function BusinessCardBack({
         ) : null}
 
         <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`}>
-          <rect
-            x={0}
-            y={0}
-            width={CARD_W}
-            height={CARD_H}
-            fill="none"
-            stroke="red"
-            strokeWidth={0.4}
-            vectorEffect="non-scaling-stroke"
-          />
           {backNodes}
 
           {template.config.back.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
