@@ -144,11 +144,6 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     }
   }, [templateOptions, selectedTemplateKey]);
 
-  useEffect(() => {
-    setFrontPreviewReady(false);
-    setBackPreviewReady(false);
-  }, [selectedTemplateKey]);
-
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -173,6 +168,27 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [backPreviewReady, setBackPreviewReady] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
   const previewReady = frontPreviewReady && backPreviewReady;
+  const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
+
+  useEffect(() => {
+    setFrontPreviewReady(false);
+    setBackPreviewReady(false);
+    setShowPreviewSkeleton(true);
+  }, [selectedTemplateKey]);
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    if (previewReady) {
+      timeout = setTimeout(() => {
+        setShowPreviewSkeleton(false);
+      }, 400);
+    } else {
+      setShowPreviewSkeleton(true);
+    }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [previewReady]);
 
   const countryOptions = useMemo(() => {
     return COUNTRY_CODES.map((code) => ({ code, label: getCountryLabel(localeShort, code) })).sort((a, b) =>
@@ -601,14 +617,14 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <CardContent className="flex items-center justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px]">
                 <div className="relative aspect-[85/55] w-full">
-                  {!previewReady && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+                  {showPreviewSkeleton && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
                       <div className="animate-pulse text-xs font-medium text-slate-500">
                         {tOrder("preview.loading")}
                       </div>
                     </div>
                   )}
-                  <div className={`h-full w-full transition-opacity duration-200 ${previewReady ? "opacity-100" : "opacity-0"}`}>
+                  <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
                     <FlipCard
                       activeSide={previewView}
                       front={
