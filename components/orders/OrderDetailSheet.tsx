@@ -91,7 +91,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-3xl">
+      <SheetContent className="w-full overflow-y-auto px-6 sm:max-w-3xl sm:px-8">
         {order ? (
           <>
             <SheetHeader>
