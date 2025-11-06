@@ -550,6 +550,7 @@ function renderTextElement(prepared: PreparedText, context: RenderContext, key: 
       fontSize={fontSizeMm}
       fontFamily={element.font.family}
       fontWeight={element.font.weight ?? 400}
+      fontStyle={(element.font as any).style ?? "normal"}
       fill={element.font.color ?? "#1f2937"}
       dominantBaseline={element.font.baseline ?? "hanging"}
       letterSpacing={element.font.letterSpacing !== undefined ? `${element.font.letterSpacing}mm` : undefined}
