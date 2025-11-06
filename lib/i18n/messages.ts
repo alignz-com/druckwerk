@@ -74,7 +74,7 @@ export const messages = {
         postalCode: "Postal Code",
         city: "City",
         country: "Country",
-        addressExtra: "Additional address line",
+        addressExtra: "Address block",
         customerReference: "Customer reference",
       },
       hints: {
@@ -741,7 +741,7 @@ export const messages = {
         postalCode: "Postleitzahl",
         city: "Ort",
         country: "Land",
-        addressExtra: "Zusätzliche Adresszeile",
+        addressExtra: "Adressblock",
         customerReference: "Kundenreferenz",
       },
       hints: {
