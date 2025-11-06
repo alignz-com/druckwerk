@@ -550,6 +550,10 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   })();
 
   const companyPrimary = resolvedAddress.companyName ?? companyFirstLine;
+  const companyLines = (company || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
@@ -588,7 +592,9 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     mobile,
     company,
     companyPrimary,
+    companyLines,
     companySecondary: (() => {
+      if (companyLines.length > 1) return companyLines.slice(1).join(" | ");
       const parts: string[] = [];
       if (resolvedAddress.street) parts.push(resolvedAddress.street);
       const postalCity = [resolvedAddress.postalCode, resolvedAddress.city].filter(Boolean).join(" ").trim();
@@ -596,12 +602,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       if (resolvedAddress.country) parts.push(resolvedAddress.country);
       const candidate = parts.filter(Boolean).join(" | ");
       if (candidate) return candidate;
-      const restLines = (company || "")
-        .split(/\r?\n/)
-        .slice(1)
-        .map((line) => line.trim())
-        .filter(Boolean);
-      return restLines[0] ?? "";
+      return "";
     })(),
     url,
     linkedin,

@@ -891,16 +891,25 @@ export function BusinessCardFront({
   );
   const design = template.design ?? DEFAULT_TEMPLATE_DESIGN;
   const normalizedFrontAddress = useMemo(() => normalizeAddress(company), [company]);
+  const companyLines = useMemo(
+    () =>
+      (company ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+    [company],
+  );
   const companyFirstLine = useMemo(() => {
-    const first = (company ?? "").split(/\r?\n/)[0];
-    return first ? first.trim() : "";
-  }, [company]);
+    return companyLines[0] ?? "";
+  }, [companyLines]);
   const companyPrimary = useMemo(() => {
+    if (companyLines.length > 0) return companyLines[0];
     const org = normalizedFrontAddress.org?.trim();
     if (org && org.length > 0) return org;
     return companyFirstLine;
-  }, [normalizedFrontAddress, companyFirstLine]);
+  }, [companyLines, normalizedFrontAddress, companyFirstLine]);
   const companySecondary = useMemo(() => {
+    if (companyLines.length > 1) return companyLines.slice(1).join(" | ");
     const parts: string[] = [];
     if (normalizedFrontAddress.street) parts.push(normalizedFrontAddress.street);
     const postalCity = [normalizedFrontAddress.postalCode, normalizedFrontAddress.city].filter(Boolean).join(" ").trim();
@@ -908,13 +917,8 @@ export function BusinessCardFront({
     if (normalizedFrontAddress.country) parts.push(normalizedFrontAddress.country);
     const candidate = parts.filter(Boolean).join(" | ");
     if (candidate) return candidate;
-    const restLines = (company ?? "")
-      .split(/\r?\n/)
-      .slice(1)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    return restLines[0] ?? "";
-  }, [normalizedFrontAddress, company]);
+    return "";
+  }, [companyLines, normalizedFrontAddress]);
   const frontAddressContext = useMemo(
     () => ({
       companyName: companyPrimary || undefined,
@@ -936,11 +940,12 @@ export function BusinessCardFront({
       company,
       companyPrimary,
       companySecondary,
+      companyLines,
       address: frontAddressContext,
       url,
       linkedin,
     }),
-    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, frontAddressContext, url, linkedin],
+    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, url, linkedin],
   );
   const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
     let hasOverflow = false;
