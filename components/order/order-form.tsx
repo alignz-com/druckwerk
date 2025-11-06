@@ -350,7 +350,7 @@ export default function OrderForm({ templates }: OrderFormProps) {
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">{tOrder("fields.name")}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={32} />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="role">{tOrder("fields.role")}</Label>
