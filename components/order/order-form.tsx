@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 
@@ -143,6 +144,11 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     }
   }, [templateOptions, selectedTemplateKey]);
 
+  useEffect(() => {
+    setFrontPreviewReady(false);
+    setBackPreviewReady(false);
+  }, [selectedTemplateKey]);
+
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -163,7 +169,10 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
+  const [frontPreviewReady, setFrontPreviewReady] = useState(false);
+  const [backPreviewReady, setBackPreviewReady] = useState(false);
   const hasOverflow = frontOverflow || backOverflow;
+  const previewReady = frontPreviewReady && backPreviewReady;
 
   const countryOptions = useMemo(() => {
     return COUNTRY_CODES.map((code) => ({ code, label: getCountryLabel(localeShort, code) })).sort((a, b) =>
@@ -328,7 +337,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
           ) : null}
         </div>
-        <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden" disabled={hasOverflow}>
+        <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden" disabled={hasOverflow || isSubmitting}>
           {tOrder("buttons.order")}
         </Button>
       </header>
@@ -592,46 +601,57 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <CardContent className="flex items-center justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px]">
                 <div className="relative aspect-[85/55] w-full">
-                  <FlipCard
-                    activeSide={previewView}
-                    front={
-                      <BusinessCardFront
-                        template={selectedTemplate}
-                        name={name}
-                        role={role}
-                        email={email}
-                        phone={phone}
-                        mobile={mobile}
-                        company={addressBlock}
-                        url={url}
-                        linkedin={linkedin}
-                        onOverflowChange={setFrontOverflow}
-                        addressFields={previewAddressFields}
-                      />
-                    }
-                    back={
-                      <BusinessCardBack
-                        template={selectedTemplate}
-                        name={name}
-                        role={role}
-                        email={email}
-                        phone={phone}
-                        mobile={mobile}
-                        company={addressBlock}
-                        url={url}
-                        linkedin={linkedin}
-                        onOverflowChange={setBackOverflow}
-                        addressFields={previewAddressFields}
-                      />
-                    }
-                    className="h-full w-full"
-                  />
+                  {!previewReady && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+                      <div className="animate-pulse text-xs font-medium text-slate-500">
+                        {tOrder("preview.loading")}
+                      </div>
+                    </div>
+                  )}
+                  <div className={`h-full w-full transition-opacity duration-200 ${previewReady ? "opacity-100" : "opacity-0"}`}>
+                    <FlipCard
+                      activeSide={previewView}
+                      front={
+                        <BusinessCardFront
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={linkedin}
+                          onOverflowChange={setFrontOverflow}
+                          addressFields={previewAddressFields}
+                          onReadyChange={setFrontPreviewReady}
+                        />
+                      }
+                      back={
+                        <BusinessCardBack
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={linkedin}
+                          onOverflowChange={setBackOverflow}
+                          addressFields={previewAddressFields}
+                          onReadyChange={setBackPreviewReady}
+                        />
+                      }
+                      className="h-full w-full"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
           <div className="hidden lg:flex lg:justify-end">
-            <Button onClick={openConfirm} className="px-6" disabled={hasOverflow}>
+            <Button onClick={openConfirm} className="px-6" disabled={hasOverflow || isSubmitting}>
               {tOrder("buttons.order")}
             </Button>
           </div>
@@ -712,6 +732,12 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
               </div>
             </div>
 
+            {isSubmitting ? (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                {tOrder("confirm.generating")}
+              </p>
+            ) : null}
+
             {submitError ? (
               <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
                 {submitError}
@@ -723,9 +749,14 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} disabled={isSubmitting}>
               {tOrder("confirm.cancel")}
             </Button>
-            <Button onClick={confirmOrder} disabled={isSubmitting || hasOverflow}>
-              {isSubmitting ? tOrder("confirm.submitting") : tOrder("confirm.submit")}
-            </Button>
+            <LoadingButton
+              onClick={confirmOrder}
+              loading={isSubmitting}
+              loadingText={tOrder("confirm.submitting")}
+              disabled={hasOverflow}
+            >
+              {tOrder("confirm.submit")}
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

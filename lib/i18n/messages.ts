@@ -94,6 +94,9 @@ export const messages = {
         unnamed: "Saved address",
       },
       previewTitle: "Preview",
+      preview: {
+        loading: "Loading preview…",
+      },
       buttons: {
         order: "Order Business Card",
       },
@@ -105,6 +108,7 @@ export const messages = {
         cancel: "Back",
         submit: "Confirm order",
         submitting: "Saving order…",
+        generating: "Generating your PDF. This can take a few seconds…",
       },
       errors: {
         generic: "Unexpected error while saving order",
@@ -774,6 +778,9 @@ export const messages = {
         unnamed: "Gespeicherte Adresse",
       },
       previewTitle: "Vorschau",
+      preview: {
+        loading: "Vorschau wird geladen…",
+      },
       buttons: {
         order: "Visitenkarte bestellen",
       },
@@ -785,6 +792,7 @@ export const messages = {
         cancel: "Zurück",
         submit: "Bestellung bestätigen",
         submitting: "Bestellung wird gespeichert…",
+        generating: "PDF wird erstellt. Das kann einen Moment dauern…",
       },
       errors: {
         generic: "Unerwarteter Fehler beim Speichern der Bestellung",
