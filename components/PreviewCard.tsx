@@ -821,6 +821,42 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
     template.previewFrontPath,
   );
   const design = template.design ?? DEFAULT_TEMPLATE_DESIGN;
+  const normalizedFrontAddress = useMemo(() => normalizeAddress(company), [company]);
+  const companyFirstLine = useMemo(() => {
+    const first = (company ?? "").split(/\r?\n/)[0];
+    return first ? first.trim() : "";
+  }, [company]);
+  const companyPrimary = useMemo(() => {
+    const org = normalizedFrontAddress.org?.trim();
+    if (org && org.length > 0) return org;
+    return companyFirstLine;
+  }, [normalizedFrontAddress, companyFirstLine]);
+  const companySecondary = useMemo(() => {
+    const parts: string[] = [];
+    if (normalizedFrontAddress.street) parts.push(normalizedFrontAddress.street);
+    const postalCity = [normalizedFrontAddress.postalCode, normalizedFrontAddress.city].filter(Boolean).join(" ").trim();
+    if (postalCity) parts.push(postalCity);
+    if (normalizedFrontAddress.country) parts.push(normalizedFrontAddress.country);
+    const candidate = parts.filter(Boolean).join(" | ");
+    if (candidate) return candidate;
+    const restLines = (company ?? "")
+      .split(/\r?\n/)
+      .slice(1)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    return restLines[0] ?? "";
+  }, [normalizedFrontAddress, company]);
+  const frontAddressContext = useMemo(
+    () => ({
+      companyName: companyPrimary || undefined,
+      street: normalizedFrontAddress.street ?? undefined,
+      postalCode: normalizedFrontAddress.postalCode ?? undefined,
+      city: normalizedFrontAddress.city ?? undefined,
+      country: normalizedFrontAddress.country ?? undefined,
+      addressExtra: undefined,
+    }),
+    [companyPrimary, normalizedFrontAddress],
+  );
   const frontContext = useMemo(
     () => ({
       name,
@@ -829,10 +865,13 @@ export function BusinessCardFront({ template, name, role = "", email = "", phone
       phone,
       mobile,
       company,
+      companyPrimary,
+      companySecondary,
+      address: frontAddressContext,
       url,
       linkedin,
     }),
-    [name, role, email, phone, mobile, company, url, linkedin],
+    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, frontAddressContext, url, linkedin],
   );
   const frontNodes = useMemo(
     () => renderDesignElements(design.front, frontContext, "front"),

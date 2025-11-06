@@ -508,10 +508,16 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     address,
   } = fields;
 
+  const companyFirstLine = (company || "").split(/\r?\n/)[0]?.trim() || "";
+
+  const fallbackCompanyName = companyFirstLine || undefined;
+
   const resolvedAddress = (() => {
     if (address) {
       const countryName = address.country ?? (address.countryCode ? getCountryLabel("en", address.countryCode) : undefined);
+      const companyName = address.companyName ?? fallbackCompanyName;
       return {
+        companyName,
         street: address.street ?? undefined,
         postalCode: address.postalCode ?? undefined,
         city: address.city ?? undefined,
@@ -520,7 +526,9 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       };
     }
     const parsed = normalizeAddress(company);
+    const companyName = parsed.org ?? fallbackCompanyName;
     return {
+      companyName,
       street: parsed.street ?? undefined,
       postalCode: parsed.postalCode ?? undefined,
       city: parsed.city ?? undefined,
@@ -528,6 +536,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       addressExtra: undefined,
     };
   })();
+
+  const companyPrimary = resolvedAddress.companyName ?? companyFirstLine;
 
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
@@ -565,6 +575,22 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     phone,
     mobile,
     company,
+    companyPrimary,
+    companySecondary: (() => {
+      const parts: string[] = [];
+      if (resolvedAddress.street) parts.push(resolvedAddress.street);
+      const postalCity = [resolvedAddress.postalCode, resolvedAddress.city].filter(Boolean).join(" ").trim();
+      if (postalCity) parts.push(postalCity);
+      if (resolvedAddress.country) parts.push(resolvedAddress.country);
+      const candidate = parts.filter(Boolean).join(" | ");
+      if (candidate) return candidate;
+      const restLines = (company || "")
+        .split(/\r?\n/)
+        .slice(1)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      return restLines[0] ?? "";
+    })(),
     url,
     linkedin,
     address: resolvedAddress,
