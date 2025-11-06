@@ -61,6 +61,12 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { brandId: true },
+    });
+    const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+
     const localeShort = session.user.locale === "de" ? "de" : "en";
     const addressMeta = data.address
       ? {
@@ -68,7 +74,7 @@ export async function POST(req: Request) {
           country: data.address.countryCode ? getCountryLabel(localeShort, data.address.countryCode) : undefined,
         }
       : undefined;
-    const templateDefinition = await getTemplateByKey(data.template, session.user.brandId ?? null);
+    const templateDefinition = await getTemplateByKey(data.template, effectiveBrandId);
 
     const { pdfBytes, fontReport } = await generateOrderPdf(
       {
@@ -98,7 +104,7 @@ export async function POST(req: Request) {
       data: {
         referenceCode,
         userId: session.user.id,
-        brandId: session.user.brandId ?? null,
+        brandId: effectiveBrandId,
         templateId: templateDefinition.id ?? null,
         quantity: data.quantity,
         deliveryTime: data.deliveryTime,
