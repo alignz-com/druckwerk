@@ -377,7 +377,7 @@ function pickFont(style: TemplateTextStyle, fonts: Partial<Record<string, PDFFon
 
 function pickDesignFont(font: TextElement["font"], fonts: PdfFontPack) {
   const weight = font.weight ?? 400;
-  const style = (font as any).style?.toLowerCase?.() ?? "normal";
+  const style = font.style?.toLowerCase?.() ?? "normal";
   const italic = style === "italic";
 
   if (italic && weight >= 600) return fonts.boldItalic ?? fonts.italic ?? fonts.bold ?? fonts.regular;
@@ -393,30 +393,33 @@ function renderDesignElementsToPdf(opts: {
   fonts: PdfFontPack;
   cardWidthMm: number;
   cardHeightMm: number;
-  scaleX: number;
-  scaleY: number;
+  pageWidthMm: number;
+  pageHeightMm: number;
+  offsetXMm: number;
+  offsetYMm: number;
 }) {
-  const { page, elements, context, fonts, cardWidthMm, cardHeightMm, scaleX, scaleY } = opts;
+  const { page, elements, context, fonts, cardWidthMm, cardHeightMm, pageWidthMm, pageHeightMm, offsetXMm, offsetYMm } = opts;
+  const mmToPt = mm2pt;
 
   const renderElement = (element: DesignElement, offsetX = 0, offsetY = 0): number => {
     switch (element.type) {
       case "rect": {
         if (element.visibility && !evaluateVisibility(element.visibility, context)) return 0;
-        const xMm = offsetX + element.xMm;
-        const yMm = offsetY + element.yMm;
+        const xMm = offsetXMm + offsetX + element.xMm;
+        const yMm = offsetYMm + offsetY + element.yMm;
         const widthMm = element.widthMm;
         const heightMm = element.heightMm;
-        const x = xMm * scaleX;
-        const y = (cardHeightMm - yMm - heightMm) * scaleY;
+        const x = mmToPt(xMm);
+        const y = mmToPt(pageHeightMm - yMm - heightMm);
         page.drawRectangle({
           x,
           y,
-          width: widthMm * scaleX,
-          height: heightMm * scaleY,
+          width: mmToPt(widthMm),
+          height: mmToPt(heightMm),
           color: element.fill ? parseColor(element.fill) : undefined,
           opacity: element.opacity,
           borderColor: element.stroke ? parseColor(element.stroke) : undefined,
-          borderWidth: element.strokeWidthMm ? element.strokeWidthMm * scaleX : undefined,
+          borderWidth: element.strokeWidthMm ? mmToPt(element.strokeWidthMm) : undefined,
         });
         return heightMm;
       }
@@ -427,21 +430,38 @@ function renderDesignElementsToPdf(opts: {
         const font = pickDesignFont(element.font, fonts);
         if (!font) return 0;
         const sizePt = element.font.sizePt;
-        const letterSpacingPt = element.font.letterSpacing ? element.font.letterSpacing * scaleX : 0;
+        const letterSpacingPt = element.font.letterSpacing ? mmToPt(element.font.letterSpacing) : 0;
+        const textAnchor = element.textAnchor ?? "start";
         let text = content;
         if (element.maxWidthMm) {
-          const maxWidthPt = element.maxWidthMm * scaleX;
+          const maxWidthPt = mmToPt(element.maxWidthMm);
           text = clampTextToWidthPdf(text, maxWidthPt, font, sizePt, letterSpacingPt);
           if (!text) return 0;
         }
-        const xMm = offsetX + (element.xMm ?? 0);
-        const yMm = offsetY + (element.yMm ?? 0);
+        const xMm = offsetXMm + offsetX + (element.xMm ?? 0);
+        const yMm = offsetYMm + offsetY + (element.yMm ?? 0);
         const baselineMode = element.font.baseline ?? "hanging";
-        const x = xMm * scaleX;
-        let y = (cardHeightMm - yMm) * scaleY;
-        if (baselineMode === "hanging") {
-          y -= sizePt;
+        const pageHeightPt = mmToPt(pageHeightMm);
+
+        const textWidthPt =
+          font.widthOfTextAtSize(text, sizePt) + Math.max(0, text.length - 1) * letterSpacingPt;
+        let x = mmToPt(xMm);
+        if (textAnchor === "middle") {
+          x -= textWidthPt / 2;
+        } else if (textAnchor === "end") {
+          x -= textWidthPt;
         }
+
+        const topPt = mmToPt(yMm);
+        let baselinePt: number;
+        if (baselineMode === "hanging") {
+          const ascentPt = font.heightAtSize(sizePt, { descender: false });
+          baselinePt = topPt + ascentPt;
+        } else {
+          baselinePt = topPt;
+        }
+        const y = pageHeightPt - baselinePt;
+
         page.drawText(text, {
           x,
           y,
@@ -522,8 +542,12 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   const front = tplDoc.getPage(0);
   const back = tplDoc.getPage(1);
   const { width: pageWidth, height: pageHeight } = front.getSize();
-  const scaleX = pageWidth / 85;
-  const scaleY = pageHeight / 55;
+  const pageWidthMm = pt2mm(pageWidth);
+  const pageHeightMm = pt2mm(pageHeight);
+  const cardWidthMm = 85;
+  const cardHeightMm = 55;
+  const offsetXMm = Math.max(0, (pageWidthMm - cardWidthMm) / 2);
+  const offsetYMm = Math.max(0, (pageHeightMm - cardHeightMm) / 2);
 
   const pdfFonts: PdfFontPack = {
     regular: Frutiger.Light,
@@ -553,16 +577,18 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       elements: template.design!.front,
       context: sharedContext,
       fonts: pdfFonts,
-      cardWidthMm: 85,
-      cardHeightMm: 55,
-      scaleX,
-      scaleY,
+      cardWidthMm,
+      cardHeightMm,
+      pageWidthMm,
+      pageHeightMm,
+      offsetXMm,
+      offsetYMm,
     });
   } else {
     const frame = template.config.front.textFrame;
-    const xLeft = mm2pt(frame.xMm);
+    const xLeft = mm2pt(frame.xMm + offsetXMm);
     const colWidth = mm2pt(frame.columnWidthMm);
-    let cursor = pageHeight - mm2pt(frame.topMm);
+    let cursor = pageHeight - mm2pt(offsetYMm + frame.topMm);
 
     const applyBlock = (lines: string[], style?: TemplateTextStyle) => {
       if (!style || lines.length === 0) return;
@@ -639,10 +665,12 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       elements: template.design!.back,
       context: { ...sharedContext, qrData },
       fonts: pdfFonts,
-      cardWidthMm: 85,
-      cardHeightMm: 55,
-      scaleX,
-      scaleY,
+      cardWidthMm,
+      cardHeightMm,
+      pageWidthMm,
+      pageHeightMm,
+      offsetXMm,
+      offsetYMm,
     });
   }
 
@@ -652,8 +680,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
 
     const qrConfig = template.config.back.qr;
     const qrSize = mm2pt(qrConfig.sizeMm);
-    const qx = mm2pt(qrConfig.xMm);
-    const qy = mm2pt(qrConfig.yMm);
+    const qx = mm2pt(offsetXMm + qrConfig.xMm);
+    const qy = mm2pt(offsetYMm + qrConfig.yMm);
     back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
 
     const captionFont = pickFont(frame.contacts ?? frame.company ?? frame.name, Frutiger) ?? Frutiger.Light;

@@ -261,21 +261,34 @@ const CANVAS_OFFSET_Y = IMAGE_PADDING_PX * PX_TO_MM_Y;
 const mmToPx = (mm: number) => (mm * 96) / 25.4;
 const measurementCanvas = typeof document !== "undefined" ? document.createElement("canvas") : null;
 
-function measureTextWidthPx(text: string, fontFamily: string | undefined, fontSizePx: number, fontWeight?: number | string) {
+function measureTextWidthPx(
+  text: string,
+  fontFamily: string | undefined,
+  fontSizePx: number,
+  fontWeight?: number | string,
+  fontStyle?: "normal" | "italic",
+) {
   if (!text) return 0;
   if (!measurementCanvas) return text.length * fontSizePx * 0.6;
   const ctx = measurementCanvas.getContext("2d");
   if (!ctx) return text.length * fontSizePx * 0.6;
   const weight = fontWeight ? String(fontWeight) : "400";
   const family = fontFamily ?? "sans-serif";
-  ctx.font = `${weight} ${fontSizePx}px ${family}`;
+  const style = fontStyle && fontStyle !== "normal" ? `${fontStyle} ` : "";
+  ctx.font = `${style}${weight} ${fontSizePx}px ${family}`;
   return ctx.measureText(text).width;
 }
 
 function clampTextToWidth(
   text: string,
   maxWidthMm: number,
-  opts: { fontFamily?: string; fontSizeMm: number; fontWeight?: number | string; letterSpacingMm?: number },
+  opts: {
+    fontFamily?: string;
+    fontSizeMm: number;
+    fontWeight?: number | string;
+    fontStyle?: "normal" | "italic";
+    letterSpacingMm?: number;
+  },
 ) {
   if (!text) return text;
   const maxWidthPx = mmToPx(maxWidthMm);
@@ -283,7 +296,7 @@ function clampTextToWidth(
   const letterSpacingPx = opts.letterSpacingMm ? mmToPx(opts.letterSpacingMm) : 0;
 
   const widthWithSpacing = (value: string) =>
-    measureTextWidthPx(value, opts.fontFamily, fontSizePx, opts.fontWeight) +
+    measureTextWidthPx(value, opts.fontFamily, fontSizePx, opts.fontWeight, opts.fontStyle) +
     Math.max(0, value.length - 1) * letterSpacingPx;
 
   if (widthWithSpacing(text) <= maxWidthPx) return text;
@@ -498,6 +511,7 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
     return null;
   }
   const fontSizeMm = ptToMm(element.font.sizePt);
+  const fontStyle = element.font.style === "italic" ? "italic" : "normal";
   const content = evaluateTextContent(element, context);
   if (!content) return null;
   let finalContent = content;
@@ -506,6 +520,7 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
       fontFamily: element.font.family,
       fontSizeMm,
       fontWeight: element.font.weight,
+      fontStyle,
       letterSpacingMm: element.font.letterSpacing,
     });
     if (!finalContent) return null;
@@ -550,7 +565,7 @@ function renderTextElement(prepared: PreparedText, context: RenderContext, key: 
       fontSize={fontSizeMm}
       fontFamily={element.font.family}
       fontWeight={element.font.weight ?? 400}
-      fontStyle={(element.font as any).style ?? "normal"}
+      fontStyle={element.font.style === "italic" ? "italic" : "normal"}
       fill={element.font.color ?? "#1f2937"}
       dominantBaseline={element.font.baseline ?? "hanging"}
       letterSpacing={element.font.letterSpacing !== undefined ? `${element.font.letterSpacing}mm` : undefined}

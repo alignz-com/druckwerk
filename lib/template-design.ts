@@ -29,6 +29,13 @@ const textFontSchema = z.object({
   family: z.string().optional(),
   weight: z.number().optional(),
   color: z.string().optional(),
+  style: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value) return undefined;
+      return value.toLowerCase() === "italic" ? "italic" : "normal";
+    }),
   baseline: z.enum(["hanging", "baseline"]).optional(),
   letterSpacing: z.number().optional(),
   lineHeight: z.number().optional(), // multiplier
