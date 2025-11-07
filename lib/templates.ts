@@ -51,16 +51,29 @@ export type ResolvedTemplateFont = {
   expiresAt?: string;
 };
 
-export type ResolvedTemplate = TemplateDefinition & {
+export type TemplatePaperStock = {
+  id?: string;
+  name: string;
+  description?: string | null;
+  finish?: string | null;
+  color?: string | null;
+  weightGsm?: number | null;
+};
+
+export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock"> & {
   fonts: ResolvedTemplateFont[];
+  paperStock: TemplatePaperStock | null;
 };
 
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
+  const cloned = clone(def) as TemplateDefinition;
+  const { paperStock, ...rest } = cloned;
   return {
-    ...clone(def),
-    assets: def.assets ? clone(def.assets) : [],
-    design: def.design ? clone(def.design) : DEFAULT_TEMPLATE_DESIGN,
+    ...rest,
+    assets: rest.assets ? clone(rest.assets) : [],
+    design: rest.design ? clone(rest.design) : DEFAULT_TEMPLATE_DESIGN,
     fonts: [],
+    paperStock: paperStock ? { ...paperStock } : null,
   };
 }
 
@@ -84,6 +97,7 @@ const templateInclude = {
       },
     },
   },
+  paperStock: true,
 };
 
 type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateInclude }>;
@@ -168,6 +182,17 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
       }),
   );
 
+  const paperStockFromDb: TemplatePaperStock | null = tpl.paperStock
+    ? {
+        id: tpl.paperStock.id,
+        name: tpl.paperStock.name,
+        description: tpl.paperStock.description ?? null,
+        finish: tpl.paperStock.finish ?? null,
+        color: tpl.paperStock.color ?? null,
+        weightGsm: tpl.paperStock.weightGsm ?? null,
+      }
+    : null;
+
   const resolved: ResolvedTemplate = {
     id: tpl.id,
     key: tpl.key,
@@ -180,6 +205,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     assets,
     design,
     fonts,
+    paperStock: paperStockFromDb ?? (fallback?.paperStock ? { ...fallback.paperStock } : null),
   };
 
   if (!resolved.pdfPath) {

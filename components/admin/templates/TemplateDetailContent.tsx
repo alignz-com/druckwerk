@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { hasInlineDesignConfig } from "@/lib/template-design";
+import { PaperStockSelector } from "./PaperStockSelector";
 
 const assetUploadFields: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; accept: string }> = [
   { type: TemplateAssetType.PDF, field: "pdf", accept: "application/pdf" },
@@ -55,6 +56,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     description: template.description ?? "",
     layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
     printDpi: template.printDpi ? String(template.printDpi) : "",
+    paperStockId: template.paperStock?.id ?? "",
     config: stringifyConfig(template.config),
   }));
 
@@ -126,6 +128,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       description: template.description ?? "",
       layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
       printDpi: template.printDpi ? String(template.printDpi) : "",
+      paperStockId: template.paperStock?.id ?? "",
       config: stringifyConfig(template.config),
     });
     setMetadataError(null);
@@ -218,6 +221,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           description: metadata.description.trim(),
           layoutVersion,
           printDpi,
+          paperStockId: metadata.paperStockId || null,
           config: parsedConfig,
         }),
       });
@@ -440,20 +444,30 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               }}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
-            <Input
-              id="template-print-dpi"
-              type="number"
-              min={0}
-              value={metadata.printDpi}
-              onChange={(event) => {
-                setMetadata((current) => ({ ...current, printDpi: event.target.value }));
-                setMetadataSuccess(null);
-              }}
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
+          <Input
+            id="template-print-dpi"
+            type="number"
+            min={0}
+            value={metadata.printDpi}
+            onChange={(event) => {
+              setMetadata((current) => ({ ...current, printDpi: event.target.value }));
+              setMetadataSuccess(null);
+            }}
+          />
         </div>
+        <div className="md:col-span-2">
+          <PaperStockSelector
+            value={metadata.paperStockId}
+            onChange={(next) => {
+              setMetadata((current) => ({ ...current, paperStockId: next }));
+              setMetadataSuccess(null);
+            }}
+            helperText={t("paperStock.helper")}
+          />
+        </div>
+      </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="template-config">{t("create.fields.config")}</Label>

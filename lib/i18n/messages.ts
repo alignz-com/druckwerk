@@ -270,6 +270,7 @@ export const messages = {
             description: "Description",
             layoutVersion: "Layout version",
             printDpi: "Print DPI",
+            paperStock: "Paper stock",
             config: "Config (JSON)",
             pdfFile: "PDF file",
             previewFrontFile: "Preview (front)",
@@ -278,6 +279,7 @@ export const messages = {
           hints: {
             key: "Lowercase letters, digits, dashes, underscores, or dots.",
             config: "Provide the JSON layout configuration used for rendering.",
+            paperStock: "Optional: specify the substrate this template should use.",
           },
           placeholders: {
             label: "Template name",
@@ -340,6 +342,36 @@ export const messages = {
         assetStatus: {
           allPresent: "All required assets available",
           missingPlural: "{count} missing: {list}",
+        },
+        paperStock: {
+          label: "Paper stock",
+          helper: "Select or create the paper or board this template uses.",
+          placeholder: "Select a paper stock…",
+          loading: "Loading paper stocks…",
+          none: "No stock assigned",
+          addButton: "New paper stock",
+          dialogTitle: "Create paper stock",
+          dialogDescription: "Store the stock specification once and reuse it across templates.",
+          fields: {
+            name: "Name",
+            weight: "Weight (gsm)",
+            finish: "Finish",
+            color: "Color",
+            description: "Notes",
+          },
+          placeholders: {
+            description: "Optional notes visible to admins",
+          },
+          actions: {
+            cancel: "Cancel",
+            save: "Save stock",
+          },
+          errors: {
+            load: "Failed to load paper stocks.",
+            create: "Paper stock could not be saved.",
+            nameRequired: "Name is required.",
+            weightInvalid: "Weight must be a positive number.",
+          },
         },
         detail: {
           noDescription: "No description provided.",
@@ -980,6 +1012,7 @@ export const messages = {
             description: "Beschreibung",
             layoutVersion: "Layout-Version",
             printDpi: "Druck-DPI",
+            paperStock: "Papier",
             config: "Konfiguration (JSON)",
             pdfFile: "PDF-Datei",
             previewFrontFile: "Vorschau (Vorderseite)",
@@ -988,6 +1021,7 @@ export const messages = {
           hints: {
             key: "Kleinbuchstaben, Ziffern, Bindestriche, Unterstriche oder Punkte.",
             config: "JSON-Konfiguration für das Layout hinterlegen.",
+            paperStock: "Optional: Welches Papier bzw. welcher Karton soll verwendet werden?",
           },
           placeholders: {
             label: "Name der Vorlage",
@@ -1050,6 +1084,36 @@ export const messages = {
         assetStatus: {
           allPresent: "Alle Pflicht-Assets vorhanden",
           missingPlural: "{count} fehlen: {list}",
+        },
+        paperStock: {
+          label: "Papier",
+          helper: "Wähle oder erstelle das Papier bzw. den Karton für diese Vorlage.",
+          placeholder: "Papier auswählen…",
+          loading: "Papiere werden geladen…",
+          none: "Kein Papier zugewiesen",
+          addButton: "Neues Papier",
+          dialogTitle: "Papier anlegen",
+          dialogDescription: "Speichere die Papierspezifikation einmalig und nutze sie in mehreren Vorlagen.",
+          fields: {
+            name: "Name",
+            weight: "Grammatur (g/m²)",
+            finish: "Oberfläche",
+            color: "Farbe",
+            description: "Notizen",
+          },
+          placeholders: {
+            description: "Optionale Notizen für Admins",
+          },
+          actions: {
+            cancel: "Abbrechen",
+            save: "Papier speichern",
+          },
+          errors: {
+            load: "Papiere konnten nicht geladen werden.",
+            create: "Papier konnte nicht gespeichert werden.",
+            nameRequired: "Name ist erforderlich.",
+            weightInvalid: "Grammatur muss eine positive Zahl sein.",
+          },
         },
         detail: {
           noDescription: "Keine Beschreibung hinterlegt.",

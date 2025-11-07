@@ -162,6 +162,7 @@ model Template {
   key              String          @unique
   label            String
   description      String?
+  paperStockId     String?
   pdfPath          String
   previewFrontPath String?
   previewBackPath  String?
@@ -172,8 +173,21 @@ model Template {
   assignments      BrandTemplate[]
   assets           TemplateAsset[]
   fonts            TemplateFont[]
+  paperStock       PaperStock?     @relation(fields: [paperStockId], references: [id])
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+}
+
+model PaperStock {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  finish      String?
+  color       String?
+  weightGsm   Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  templates   Template[]
 }
 
 model BrandTemplate {

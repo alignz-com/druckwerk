@@ -45,6 +45,14 @@ export type TemplateConfig = {
   };
 };
 
+export type TemplatePaperStockDefinition = {
+  name: string;
+  description?: string;
+  finish?: string;
+  color?: string;
+  weightGsm?: number;
+};
+
 export type TemplateDefinition = {
   id?: string;
   key: string;
@@ -56,6 +64,7 @@ export type TemplateDefinition = {
   config: TemplateConfig;
   assets?: TemplateAssetSummary[];
   design?: TemplateDesign;
+  paperStock?: TemplatePaperStockDefinition | null;
 };
 
 export type TemplateAssetSummary = {

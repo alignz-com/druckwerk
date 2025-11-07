@@ -27,6 +27,15 @@ export type AdminTemplateFontLink = {
   fileName: string | null;
 };
 
+export type AdminPaperStockSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  finish: string | null;
+  color: string | null;
+  weightGsm: number | null;
+};
+
 export type AdminTemplateSummary = {
   id: string;
   key: string;
@@ -34,6 +43,7 @@ export type AdminTemplateSummary = {
   description: string | null;
   layoutVersion: number | null;
   printDpi: number | null;
+  paperStock: AdminPaperStockSummary | null;
   createdAt: string;
   updatedAt: string;
   config: Prisma.JsonValue | null;
@@ -97,6 +107,7 @@ export const adminTemplateSummaryInclude = {
     },
     orderBy: [{ assignedAt: "desc" as const }],
   },
+  paperStock: true,
 } satisfies Prisma.TemplateInclude;
 
 type TemplateWithRelations = Prisma.TemplateGetPayload<{
@@ -111,6 +122,16 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     description: template.description,
     layoutVersion: template.layoutVersion,
     printDpi: template.printDpi,
+    paperStock: template.paperStock
+      ? {
+          id: template.paperStock.id,
+          name: template.paperStock.name,
+          description: template.paperStock.description ?? null,
+          finish: template.paperStock.finish ?? null,
+          color: template.paperStock.color ?? null,
+          weightGsm: template.paperStock.weightGsm ?? null,
+        }
+      : null,
     createdAt: template.createdAt.toISOString(),
     updatedAt: template.updatedAt.toISOString(),
     config: template.config,

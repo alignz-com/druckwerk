@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DEFAULT_TEMPLATES } from "@/lib/templates-defaults";
+import { PaperStockSelector } from "./PaperStockSelector";
 
 const defaultConfig = JSON.stringify(Object.values(DEFAULT_TEMPLATES)[0]?.config ?? {}, null, 2);
 
@@ -25,6 +26,7 @@ type FormState = {
   description: string;
   layoutVersion: string;
   printDpi: string;
+  paperStockId: string;
   config: string;
 };
 
@@ -34,6 +36,7 @@ const emptyForm: FormState = {
   description: "",
   layoutVersion: "",
   printDpi: "",
+  paperStockId: "",
   config: defaultConfig,
 };
 
@@ -113,6 +116,9 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       payload.append("printDpi", String(printDpi));
     }
     payload.append("config", JSON.stringify(configObject));
+    if (form.paperStockId) {
+      payload.append("paperStockId", form.paperStockId);
+    }
 
     if (pdfFile) {
       payload.append("pdfFile", pdfFile);
@@ -204,6 +210,13 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             value={form.printDpi}
             onChange={(event) => handleChange("printDpi")(event.target.value)}
             placeholder="300"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <PaperStockSelector
+            value={form.paperStockId}
+            onChange={(next) => handleChange("paperStockId")(next)}
+            helperText={t("create.hints.paperStock")}
           />
         </div>
       </div>

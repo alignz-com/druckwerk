@@ -70,6 +70,15 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     }
   }
 
+  if (payload?.paperStockId !== undefined) {
+    const value = payload.paperStockId === null ? "" : String(payload.paperStockId).trim();
+    if (!value) {
+      updateData.paperStock = { disconnect: true };
+    } else {
+      updateData.paperStock = { connect: { id: value } };
+    }
+  }
+
   if (payload?.config !== undefined) {
     if (payload.config === null || typeof payload.config !== "object") {
       return NextResponse.json({ error: "config must be an object" }, { status: 400 });

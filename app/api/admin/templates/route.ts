@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     descriptionRaw === null || String(descriptionRaw).trim().length === 0 ? null : String(descriptionRaw).trim();
   const layoutVersionRaw = form.get("layoutVersion");
   const printDpiRaw = form.get("printDpi");
+  const paperStockIdRaw = form.get("paperStockId");
   const configRaw = form.get("config");
   const pdfFile = form.get("pdfFile");
   const previewFrontFile = form.get("previewFrontFile");
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
   const previewFrontUpload = previewFrontFile instanceof File ? previewFrontFile : null;
   const previewBackUpload = previewBackFile instanceof File ? previewBackFile : null;
 
+  const paperStockId =
+    paperStockIdRaw === null || paperStockIdRaw === undefined ? "" : String(paperStockIdRaw).trim();
+
   try {
     const template = await prisma.template.create({
       data: {
@@ -84,6 +88,7 @@ export async function POST(req: NextRequest) {
         layoutVersion,
         printDpi,
         config,
+        paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
       },
     });
 
