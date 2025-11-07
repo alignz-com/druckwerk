@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
-import { Info } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 
 import type { ResolvedTemplate } from "@/lib/templates";
 import { COUNTRY_CODES, getCountryLabel } from "@/lib/countries";
@@ -495,7 +495,11 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                           if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
-                        className={`border-slate-300 bg-slate-50 focus-visible:border-slate-400 focus-visible:ring-slate-200 ${isAddressDropdownOpen ? "cursor-text" : "cursor-pointer"}`}
+                        className={`border-slate-300 bg-slate-50 pr-10 focus-visible:border-slate-400 focus-visible:ring-slate-200 ${isAddressDropdownOpen ? "cursor-text" : "cursor-pointer"}`}
+                      />
+                      <ChevronDown
+                        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                        aria-hidden="true"
                       />
                       {isAddressDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
