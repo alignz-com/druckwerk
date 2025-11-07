@@ -199,8 +199,8 @@ export async function POST(req: Request) {
       createdAt: new Date(),
     });
 
-    const jdfFileName = `${fileBaseName}.jdf`;
-    const jdfStorageKey = toStorageKey(referenceCode, fileBaseName, "jdf");
+    const jdfFileName = `${referenceCode}.jdf`;
+    const jdfStorageKey = toStorageKey(referenceCode, referenceCode, "jdf");
     const jdfBlob = new Blob([jdfXml], { type: "application/xml" });
     const jdfUpload = await put(jdfStorageKey, jdfBlob, {
       access: "public",
