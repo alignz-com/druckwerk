@@ -91,146 +91,151 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex h-full w-full flex-col overflow-hidden sm:max-w-3xl">
+      <SheetContent className="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-3xl">
         {order ? (
           <>
-            <div className="border-b border-slate-200 bg-white px-6 pb-4 pt-6 sm:px-8">
-              <SheetHeader>
-                  <SheetTitle className="text-xl font-semibold tracking-tight text-slate-900">
-                    {labels.title}: {order.referenceCode}
-                  </SheetTitle>
-                  <SheetDescription className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                    <Badge variant="secondary">{order.statusLabel}</Badge>
-                    <span>{labels.brand}: {order.detail.brandName}</span>
-                    <span>•</span>
-                    <span>{labels.template}: {order.detail.templateLabel}</span>
-                    <span>•</span>
-                    <span>{labels.quantity}: {order.quantity.toLocaleString()}</span>
-                  </SheetDescription>
-                </SheetHeader>
-              </div>
-
-            <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 sm:px-8 sm:pb-8">
-              <section className="space-y-3 rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">{labels.previewTitle}</p>
-                    <h3 className="text-base font-semibold text-slate-900">{order.detail.templateLabel}</h3>
-                    <p className="text-xs text-slate-500">
-                      {order.detail.deliveryDueAtLabel
-                        ? `${labels.delivery}: ${order.deliveryTimeLabel} • ${order.detail.deliveryDueAtLabel}`
-                        : `${labels.delivery}: ${order.deliveryTimeLabel}`}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant={activePreviewSide === "front" ? "default" : "outline"} size="sm" onClick={() => setActivePreviewSide("front")}>
-                      Front
-                    </Button>
-                    <Button variant={activePreviewSide === "back" ? "default" : "outline"} size="sm" onClick={() => setActivePreviewSide("back")}>
-                      Back
-                    </Button>
-                  </div>
-                </div>
-                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-inner">
-                  <div className="aspect-[85/55] w-full">
-                  {(!template || isLoadingTemplate) && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm text-slate-500">
-                      {templateError ?? labels.loadingTemplate}
-                    </div>
-                  )}
-                  {template && (
-                    <div className="h-full w-full">
-                      {!previewReady && !templateError && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-xs text-slate-500">
-                          {labels.loadingPreview}
-                        </div>
-                      )}
-                      <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
-                        <FlipCard
-                          activeSide={activePreviewSide}
-                          front={
-                            <BusinessCardFront
-                              template={template}
-                              name={order.detail.requester.name}
-                              role={order.detail.requester.role}
-                              email={order.detail.requester.email}
-                              phone={order.detail.requester.phone}
-                              mobile={order.detail.requester.mobile}
-                              company={order.detail.company}
-                              url={order.detail.requester.url}
-                              linkedin={order.detail.requester.linkedin}
-                              addressFields={addressFields}
-                              onReadyChange={setFrontReady}
-                            />
-                          }
-                          back={
-                            <BusinessCardBack
-                              template={template}
-                              name={order.detail.requester.name}
-                              role={order.detail.requester.role}
-                              email={order.detail.requester.email}
-                              phone={order.detail.requester.phone}
-                              mobile={order.detail.requester.mobile}
-                              company={order.detail.company}
-                              url={order.detail.requester.url}
-                              linkedin={order.detail.requester.linkedin}
-                              addressFields={addressFields}
-                              onReadyChange={setBackReady}
-                            />
-                          }
-                          className="h-full w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-                  <Badge variant={order.deliveryTime === "express" ? "destructive" : "secondary"}>{order.deliveryTimeLabel}</Badge>
-                  {order.detail.deliveryDueAtLabel ? (
-                    <Badge variant="outline">{order.detail.deliveryDueAtLabel}</Badge>
-                  ) : null}
-                  {order.detail.customerReference ? (
-                    <Badge variant="outline">
-                      {labels.customerReference}: {order.detail.customerReference}
-                    </Badge>
-                  ) : null}
-                </div>
-              </section>
-
-              <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-900">{labels.requester}</h3>
-                    <p className="text-xs text-slate-500">{labels.contact}</p>
-                    <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50/60 p-4 text-xs text-slate-600">
-                      <DetailItem label={labels.name} value={order.detail.requester.name} />
-                      <DetailItem label={labels.role} value={order.detail.requester.role} />
-                      <DetailItem label={labels.email} value={order.detail.requester.email} />
-                      <DetailItem label={labels.phone} value={order.detail.requester.phone} />
-                      <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
-                      <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
-                      <DetailItem label={labels.url} value={order.detail.requester.url} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-900">{labels.company}</h3>
-                    <p className="text-xs text-slate-500">{labels.address}</p>
-                    <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                      <DetailItem label={labels.companyName} value={primaryCompanyName} />
-                      <pre className="whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-slate-700 shadow-inner">
-                        {order.detail.company || "–"}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              </section>
+            <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-5 sm:px-8">
+              <SheetHeader className="space-y-3">
+                <SheetTitle className="text-xl font-semibold tracking-tight text-slate-900">
+                  {labels.title}: {order.referenceCode}
+                </SheetTitle>
+                <SheetDescription className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                  <Badge variant="secondary">{order.statusLabel}</Badge>
+                  <span>
+                    {labels.brand}: {order.detail.brandName}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {labels.template}: {order.detail.templateLabel}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {labels.quantity}: {order.quantity.toLocaleString()}
+                  </span>
+                </SheetDescription>
+              </SheetHeader>
             </div>
 
-            <div className="sticky bottom-0 mt-auto border-t border-slate-200 bg-white pt-4 text-right">
+            <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
+              <div className="space-y-10">
+                <section className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{labels.previewTitle}</p>
+                      <p className="text-xs text-slate-500">
+                        {order.detail.deliveryDueAtLabel
+                          ? `${labels.delivery}: ${order.deliveryTimeLabel} • ${order.detail.deliveryDueAtLabel}`
+                          : `${labels.delivery}: ${order.deliveryTimeLabel}`}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant={activePreviewSide === "front" ? "default" : "outline"} size="sm" onClick={() => setActivePreviewSide("front")}>
+                        Front
+                      </Button>
+                      <Button variant={activePreviewSide === "back" ? "default" : "outline"} size="sm" onClick={() => setActivePreviewSide("back")}>
+                        Back
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="relative aspect-[85/55] w-full">
+                    {(!template || isLoadingTemplate) && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm text-slate-500">
+                        {templateError ?? labels.loadingTemplate}
+                      </div>
+                    )}
+                    {template && (
+                      <div className="h-full w-full">
+                        {!previewReady && !templateError && (
+                          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-xs text-slate-500">
+                            {labels.loadingPreview}
+                          </div>
+                        )}
+                        <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
+                          <FlipCard
+                            activeSide={activePreviewSide}
+                            front={
+                              <BusinessCardFront
+                                template={template}
+                                name={order.detail.requester.name}
+                                role={order.detail.requester.role}
+                                email={order.detail.requester.email}
+                                phone={order.detail.requester.phone}
+                                mobile={order.detail.requester.mobile}
+                                company={order.detail.company}
+                                url={order.detail.requester.url}
+                                linkedin={order.detail.requester.linkedin}
+                                addressFields={addressFields}
+                                onReadyChange={setFrontReady}
+                              />
+                            }
+                            back={
+                              <BusinessCardBack
+                                template={template}
+                                name={order.detail.requester.name}
+                                role={order.detail.requester.role}
+                                email={order.detail.requester.email}
+                                phone={order.detail.requester.phone}
+                                mobile={order.detail.requester.mobile}
+                                company={order.detail.company}
+                                url={order.detail.requester.url}
+                                linkedin={order.detail.requester.linkedin}
+                                addressFields={addressFields}
+                                onReadyChange={setBackReady}
+                              />
+                            }
+                            className="h-full w-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="border-t border-slate-200 pt-6">
+                  <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                    <Badge variant={order.deliveryTime === "express" ? "destructive" : "secondary"}>{order.deliveryTimeLabel}</Badge>
+                    {order.detail.deliveryDueAtLabel ? <Badge variant="outline">{order.detail.deliveryDueAtLabel}</Badge> : null}
+                    {order.detail.customerReference ? (
+                      <Badge variant="outline">
+                        {labels.customerReference}: {order.detail.customerReference}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section className="border-t border-slate-200 pt-8">
+                  <div className="grid gap-10 lg:grid-cols-2">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">{labels.requester}</h3>
+                        <p className="text-sm text-slate-500">{labels.contact}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <DetailItem label={labels.name} value={order.detail.requester.name} />
+                        <DetailItem label={labels.role} value={order.detail.requester.role} />
+                        <DetailItem label={labels.email} value={order.detail.requester.email} />
+                        <DetailItem label={labels.phone} value={order.detail.requester.phone} />
+                        <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
+                        <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
+                        <DetailItem label={labels.url} value={order.detail.requester.url} />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">{labels.company}</h3>
+                        <p className="text-sm text-slate-500">{labels.address}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <DetailItem label={labels.companyName} value={primaryCompanyName} />
+                        <pre className="whitespace-pre-wrap text-sm text-slate-700">{order.detail.company || "–"}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 border-t border-slate-200 bg-white px-6 py-4 text-right sm:px-8">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {labels.close}
               </Button>
@@ -245,7 +250,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 function DetailItem({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
-    <div className="text-xs text-slate-600">
+    <div className="text-sm text-slate-600">
       <span className="font-medium text-slate-900">{label}: </span>
       <span>{value}</span>
     </div>
