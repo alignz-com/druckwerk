@@ -91,7 +91,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex h-full w-full flex-col gap-6 overflow-y-auto px-6 pb-6 pt-8 sm:max-w-3xl sm:px-10 sm:pb-8">
+      <SheetContent className="flex h-full w-full flex-col gap-6 overflow-y-auto px-4 pb-6 pt-8 sm:max-w-3xl sm:px-8 sm:pb-8">
         {order ? (
           <>
             <div className="space-y-6">
@@ -132,6 +132,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                   </div>
                 </div>
                 <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-inner">
+                  <div className="aspect-[85/55] w-full">
                   {(!template || isLoadingTemplate) && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm text-slate-500">
                       {templateError ?? labels.loadingTemplate}
@@ -182,6 +183,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </section>
 
