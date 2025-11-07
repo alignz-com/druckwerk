@@ -74,9 +74,9 @@ function sanitizeFileComponent(value: string, fallback: string) {
 }
 
 function buildFileBaseName(brandName: string | null | undefined, requesterName: string) {
-  const brand = sanitizeFileComponent(brandName ?? "Brand", "Brand");
-  const requester = sanitizeFileComponent(requesterName, "Requester");
-  return `BC - ${brand} - ${requester}`;
+  const brand = sanitizeFileComponent(brandName ?? "Brand", "Brand").replace(/\s+/g, "_");
+  const requester = sanitizeFileComponent(requesterName, "Requester").replace(/\s+/g, "_");
+  return `BC-${brand}-${requester}`;
 }
 
 function toStorageKey(referenceCode: string, baseName: string, extension: string) {
