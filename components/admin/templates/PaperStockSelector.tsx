@@ -56,6 +56,8 @@ export function PaperStockSelector({ value, onChange, helperText, className }: P
     return [match.name, weight, finish].filter(Boolean).join(" ");
   }, [value, stocks]);
 
+  const loadErrorMessage = t("paperStock.errors.load");
+
   const refreshStocks = useCallback(async () => {
     setIsLoading(true);
     setLoadError(null);
@@ -68,11 +70,11 @@ export function PaperStockSelector({ value, onChange, helperText, className }: P
       setStocks(Array.isArray(payload?.paperStocks) ? payload.paperStocks : []);
     } catch (error) {
       console.error("[admin] failed to load paper stocks", error);
-      setLoadError(t("paperStock.errors.load"));
+      setLoadError(loadErrorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [loadErrorMessage]);
 
   useEffect(() => {
     void refreshStocks();
