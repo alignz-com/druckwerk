@@ -684,7 +684,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
           </DialogHeader>
 
           <div className="space-y-5">
-            <div className="flex gap-2">
+            <div className="flex w-full justify-end gap-2">
               <Button
                 variant={confirmView === "front" ? "default" : "ghost"}
                 size="sm"
