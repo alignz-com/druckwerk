@@ -226,6 +226,9 @@ model Order {
   pdfUrl         String?
   blobId         String?
   pdfFileName    String?
+  jdfUrl         String?
+  jdfBlobId      String?
+  jdfFileName    String?
   meta           Json?
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   brand          Brand?      @relation(fields: [brandId], references: [id])

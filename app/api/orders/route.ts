@@ -11,6 +11,8 @@ import { generateOrderPdf } from "@/lib/orderPdf";
 import { getTemplateByKey } from "@/lib/templates";
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
+import { buildJdfDocument } from "@/lib/jdf";
+import { uploadJdfToPrinterFtp } from "@/lib/printer-ftp";
 
 export const runtime = "nodejs";
 
@@ -105,7 +107,10 @@ export async function POST(req: Request) {
     });
     const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
     const brand = effectiveBrandId
-      ? await prisma.brand.findUnique({ where: { id: effectiveBrandId }, select: { name: true } })
+      ? await prisma.brand.findUnique({
+          where: { id: effectiveBrandId },
+          select: { name: true, contactName: true, contactEmail: true, contactPhone: true },
+        })
       : null;
 
     const localeShort = session.user.locale === "de" ? "de" : "en";
@@ -145,6 +150,66 @@ export async function POST(req: Request) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
+    const requesterContact = {
+      company: data.company ?? brand?.name ?? null,
+      personName: data.name,
+      email: data.email,
+      phone: data.phone || null,
+      mobile: data.mobile || null,
+      street: addressMeta?.street ?? null,
+      city: addressMeta?.city ?? null,
+      postalCode: addressMeta?.postalCode ?? null,
+      country: addressMeta?.country ?? null,
+      countryCode: addressMeta?.countryCode ?? null,
+    };
+
+    const administratorContact = brand
+      ? {
+          company: brand.name,
+          personName: brand.contactName ?? session.user.name ?? null,
+          email: brand.contactEmail ?? session.user.email ?? null,
+          phone: brand.contactPhone ?? null,
+        }
+      : undefined;
+
+    const deliveryAddress = addressMeta
+      ? {
+          companyName: addressMeta.companyName || data.company || brand?.name || undefined,
+          street: addressMeta.street,
+          postalCode: addressMeta.postalCode,
+          city: addressMeta.city,
+          country: addressMeta.country,
+          countryCode: addressMeta.countryCode,
+          addressExtra: addressMeta.addressExtra,
+        }
+      : undefined;
+
+    const jdfXml = buildJdfDocument({
+      referenceCode,
+      templateKey: data.template,
+      brandName: brand?.name,
+      requester: requesterContact,
+      administrator: administratorContact,
+      deliveryAddress,
+      quantity: data.quantity,
+      pdfUrl: upload.url,
+      pdfFileName,
+      customerReference: data.customerReference || undefined,
+      deliveryDueAt,
+      createdAt: new Date(),
+    });
+
+    const jdfFileName = `${fileBaseName}.jdf`;
+    const jdfStorageKey = toStorageKey(referenceCode, fileBaseName, "jdf");
+    const jdfBlob = new Blob([jdfXml], { type: "application/xml" });
+    const jdfUpload = await put(jdfStorageKey, jdfBlob, {
+      access: "public",
+      contentType: "application/xml",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+
+    const ftpResult = await uploadJdfToPrinterFtp(Buffer.from(jdfXml, "utf-8"), `${referenceCode}/${jdfFileName}`);
+
     const order = await prisma.order.create({
       data: {
         referenceCode,
@@ -168,11 +233,15 @@ export async function POST(req: Request) {
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
         pdfFileName,
+        jdfUrl: jdfUpload.url,
+        jdfBlobId: jdfUpload.pathname ?? jdfUpload.url,
+        jdfFileName,
         meta: {
           templateKey: data.template,
           ...(data.customerReference ? { customerReference: data.customerReference } : {}),
           ...(addressMeta ? { address: addressMeta } : {}),
           ...(fontReport?.length ? { fontReport } : {}),
+          jdfFtp: ftpResult,
         },
       },
     });
