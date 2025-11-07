@@ -91,28 +91,31 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto px-6 sm:max-w-3xl sm:px-8">
+      <SheetContent className="flex h-full w-full flex-col gap-6 overflow-y-auto px-6 pb-6 pt-8 sm:max-w-3xl sm:px-10 sm:pb-8">
         {order ? (
           <>
-            <SheetHeader>
-              <SheetTitle>
-                {labels.title}: {order.referenceCode}
-              </SheetTitle>
-              <SheetDescription className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                <Badge variant="secondary">{order.statusLabel}</Badge>
-                <span>{labels.brand}: {order.detail.brandName}</span>
-                <span>•</span>
-                <span>{labels.template}: {order.detail.templateLabel}</span>
-                <span>•</span>
-                <span>{labels.quantity}: {order.quantity.toLocaleString()}</span>
-              </SheetDescription>
-            </SheetHeader>
+            <div className="space-y-6">
+              <div className="space-y-1 border-b border-slate-200 pb-4">
+                <SheetHeader>
+                  <SheetTitle className="text-xl font-semibold tracking-tight text-slate-900">
+                    {labels.title}: {order.referenceCode}
+                  </SheetTitle>
+                  <SheetDescription className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                    <Badge variant="secondary">{order.statusLabel}</Badge>
+                    <span>{labels.brand}: {order.detail.brandName}</span>
+                    <span>•</span>
+                    <span>{labels.template}: {order.detail.templateLabel}</span>
+                    <span>•</span>
+                    <span>{labels.quantity}: {order.quantity.toLocaleString()}</span>
+                  </SheetDescription>
+                </SheetHeader>
+              </div>
 
-            <div className="mt-6 space-y-8">
-              <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <section className="space-y-3 rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">{labels.previewTitle}</h3>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{labels.previewTitle}</p>
+                    <h3 className="text-base font-semibold text-slate-900">{order.detail.templateLabel}</h3>
                     <p className="text-xs text-slate-500">
                       {order.detail.deliveryDueAtLabel
                         ? `${labels.delivery}: ${order.deliveryTimeLabel} • ${order.detail.deliveryDueAtLabel}`
@@ -128,16 +131,16 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                     </Button>
                   </div>
                 </div>
-                <div className="relative aspect-[85/55] w-full rounded-xl border border-slate-200 bg-white p-2">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-inner">
                   {(!template || isLoadingTemplate) && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 text-sm text-slate-500">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm text-slate-500">
                       {templateError ?? labels.loadingTemplate}
                     </div>
                   )}
                   {template && (
                     <div className="h-full w-full">
                       {!previewReady && !templateError && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 text-xs text-slate-500">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-xs text-slate-500">
                           {labels.loadingPreview}
                         </div>
                       )}
@@ -182,43 +185,50 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                 </div>
               </section>
 
-              <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-                <Badge variant={order.deliveryTime === "express" ? "destructive" : "outline"}>
-                  {labels.delivery}: {order.deliveryTimeLabel}
-                </Badge>
-                {order.detail.deliveryDueAtLabel ? (
-                  <Badge variant="outline">{order.detail.deliveryDueAtLabel}</Badge>
-                ) : null}
-                {order.detail.customerReference ? (
-                  <Badge variant="outline">
-                    {labels.customerReference}: {order.detail.customerReference}
-                  </Badge>
-                ) : null}
-              </div>
+              <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                  <Badge variant={order.deliveryTime === "express" ? "destructive" : "secondary"}>{order.deliveryTimeLabel}</Badge>
+                  {order.detail.deliveryDueAtLabel ? (
+                    <Badge variant="outline">{order.detail.deliveryDueAtLabel}</Badge>
+                  ) : null}
+                  {order.detail.customerReference ? (
+                    <Badge variant="outline">
+                      {labels.customerReference}: {order.detail.customerReference}
+                    </Badge>
+                  ) : null}
+                </div>
+              </section>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900">{labels.requester}</h3>
-                  <DetailItem label={labels.name} value={order.detail.requester.name} />
-                  <DetailItem label={labels.role} value={order.detail.requester.role} />
-                  <DetailItem label={labels.email} value={order.detail.requester.email} />
-                  <DetailItem label={labels.phone} value={order.detail.requester.phone} />
-                  <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
-                  <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
-                  <DetailItem label={labels.url} value={order.detail.requester.url} />
+              <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-900">{labels.requester}</h3>
+                    <p className="text-xs text-slate-500">{labels.contact}</p>
+                    <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50/60 p-4 text-xs text-slate-600">
+                      <DetailItem label={labels.name} value={order.detail.requester.name} />
+                      <DetailItem label={labels.role} value={order.detail.requester.role} />
+                      <DetailItem label={labels.email} value={order.detail.requester.email} />
+                      <DetailItem label={labels.phone} value={order.detail.requester.phone} />
+                      <DetailItem label={labels.mobile} value={order.detail.requester.mobile} />
+                      <DetailItem label={labels.linkedin} value={order.detail.requester.linkedin} />
+                      <DetailItem label={labels.url} value={order.detail.requester.url} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-900">{labels.company}</h3>
+                    <p className="text-xs text-slate-500">{labels.address}</p>
+                    <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                      <DetailItem label={labels.companyName} value={primaryCompanyName} />
+                      <pre className="whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-slate-700 shadow-inner">
+                        {order.detail.company || "–"}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900">{labels.company}</h3>
-                  <DetailItem label={labels.companyName} value={primaryCompanyName} />
-                  <h4 className="pt-2 text-sm font-medium text-slate-900">{labels.address}</h4>
-                  <pre className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs text-slate-700">
-                    {order.detail.company || "–"}
-                  </pre>
-                </div>
-              </div>
+              </section>
             </div>
 
-            <div className="mt-6 text-right">
+            <div className="sticky bottom-0 mt-auto border-t border-slate-200 bg-white pt-4 text-right">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {labels.close}
               </Button>
