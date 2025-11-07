@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
@@ -46,15 +46,6 @@ export function PaperStockSelector({ value, onChange, helperText, className }: P
   const [paperForm, setPaperForm] = useState<PaperStockFormState>(emptyPaperForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const selectedLabel = useMemo(() => {
-    if (!value) return "";
-    const match = stocks.find((stock) => stock.id === value);
-    if (!match) return "";
-    const weight = match.weightGsm ? `${match.weightGsm}gsm` : "";
-    const finish = match.finish ? `• ${match.finish}` : "";
-    return [match.name, weight, finish].filter(Boolean).join(" ");
-  }, [value, stocks]);
 
   const loadErrorMessage = t("paperStock.errors.load");
 
@@ -141,9 +132,7 @@ export function PaperStockSelector({ value, onChange, helperText, className }: P
           }}
         >
           <SelectTrigger className="sm:min-w-[220px]">
-            <SelectValue placeholder={isLoading ? t("paperStock.loading") : t("paperStock.placeholder")}>
-              {value ? selectedLabel : undefined}
-            </SelectValue>
+            <SelectValue placeholder={isLoading ? t("paperStock.loading") : t("paperStock.placeholder")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={NONE_VALUE}>{t("paperStock.none")}</SelectItem>
