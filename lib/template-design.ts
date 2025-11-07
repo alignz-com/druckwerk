@@ -137,7 +137,16 @@ export function extractDesignFromConfigSource(config: unknown): TemplateDesign |
   return null;
 }
 
+function looksLikeDesignStructure(input: unknown): input is { front?: unknown; back?: unknown } {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as { front?: unknown; back?: unknown };
+  return Array.isArray(candidate.front) || Array.isArray(candidate.back);
+}
+
 function tryParseDesign(input: unknown): TemplateDesign | null {
+  if (!looksLikeDesignStructure(input)) {
+    return null;
+  }
   try {
     return parseTemplateDesign(input);
   } catch (error) {

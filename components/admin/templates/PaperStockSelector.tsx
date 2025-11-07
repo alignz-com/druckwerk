@@ -35,6 +35,8 @@ const emptyPaperForm: PaperStockFormState = {
   weightGsm: "",
 };
 
+const NONE_VALUE = "__paper_stock_none__";
+
 export function PaperStockSelector({ value, onChange, helperText, className }: PaperStockSelectorProps) {
   const t = useTranslations("admin.templates");
   const [stocks, setStocks] = useState<AdminPaperStockSummary[]>([]);
@@ -131,18 +133,18 @@ export function PaperStockSelector({ value, onChange, helperText, className }: P
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Select
           disabled={isLoading}
-          value={value ?? ""}
+          value={value || NONE_VALUE}
           onValueChange={(next) => {
-            onChange(next === "none" || next === "" ? "" : next);
+            onChange(next === NONE_VALUE ? "" : next);
           }}
         >
           <SelectTrigger className="sm:min-w-[220px]">
             <SelectValue placeholder={isLoading ? t("paperStock.loading") : t("paperStock.placeholder")}>
-              {selectedLabel || undefined}
+              {value ? selectedLabel : undefined}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("paperStock.none")}</SelectItem>
+            <SelectItem value={NONE_VALUE}>{t("paperStock.none")}</SelectItem>
             {stocks.map((stock) => {
               const details = [];
               if (stock.weightGsm) details.push(`${stock.weightGsm}gsm`);
