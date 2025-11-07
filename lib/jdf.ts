@@ -1,5 +1,7 @@
 import { create } from "xmlbuilder2";
 
+import type { TemplatePaperStock } from "@/lib/templates";
+
 export type JdfContact = {
   company?: string | null;
   personName?: string | null;
@@ -37,6 +39,7 @@ export type BuildJdfParams = {
   customerReference?: string;
   deliveryDueAt?: Date;
   createdAt?: Date;
+  paperStock?: TemplatePaperStock | null;
 };
 
 const CIP4_NAMESPACE = "http://www.CIP4.org/JDFSchema_1_1";
@@ -132,6 +135,7 @@ export function buildJdfDocument(params: BuildJdfParams) {
     customerReference,
     deliveryDueAt,
     createdAt,
+    paperStock,
   } = params;
 
   const descriptiveName = `${brandName ?? "Brand"} Business Card`.trim();
@@ -197,7 +201,29 @@ export function buildJdfDocument(params: BuildJdfParams) {
     Preferred: "8.5 5.5 0",
   });
 
-  productResourcePool.ele("MediaIntent", { ID: mediaIntentId, Class: "Intent", Status: "Available" });
+  const mediaIntentDescription = paperStock?.name
+    ? `${paperStock.name}${paperStock.weightGsm ? ` ${paperStock.weightGsm}gsm` : ""}`.trim()
+    : "Business Card Stock";
+  const mediaIntent = productResourcePool.ele("MediaIntent", {
+    ID: mediaIntentId,
+    Class: "Intent",
+    Status: "Available",
+    DescriptiveName: mediaIntentDescription,
+  });
+  if (paperStock?.weightGsm) {
+    mediaIntent.ele("Weight", {
+      Actual: String(paperStock.weightGsm),
+      DataType: "NumberSpan",
+      Preferred: String(paperStock.weightGsm),
+    });
+  }
+  if (paperStock?.name) {
+    mediaIntent.ele("StockBrand", {
+      Actual: paperStock.name,
+      DataType: "StringSpan",
+      Preferred: paperStock.name,
+    });
+  }
   productResourcePool.ele("Component", {
     ID: componentId,
     Class: "Quantity",

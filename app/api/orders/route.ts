@@ -197,6 +197,7 @@ export async function POST(req: Request) {
       customerReference: data.customerReference || undefined,
       deliveryDueAt,
       createdAt: new Date(),
+      paperStock: templateDefinition.paperStock ?? undefined,
     });
 
     const jdfFileName = `${referenceCode}.jdf`;
