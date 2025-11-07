@@ -143,6 +143,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
   const [addressBlock, setAddressBlock] = useState("");
+  const [addressInputValue, setAddressInputValue] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
   const [frontOverflow, setFrontOverflow] = useState(false);
@@ -226,7 +227,9 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     setCity(entry.city ?? "");
     setCountryCode(entry.countryCode ?? "");
     setUrl(entry.url ?? "");
-    setAddressSearch(entry.label || entry.company || "");
+    const displayLabel = entry.label || entry.company || "";
+    setAddressInputValue(displayLabel);
+    setAddressSearch("");
     setAddressDropdownOpen(false);
   };
 
@@ -479,15 +482,20 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                     <div className="relative">
                       <Input
                         id="addressSearch"
-                        value={addressSearch}
-                        onFocus={() => setAddressDropdownOpen(true)}
+                        value={addressInputValue}
+                        onFocus={(e) => {
+                          setAddressDropdownOpen(true);
+                          setAddressSearch("");
+                          e.target.select();
+                        }}
                         onBlur={() => setTimeout(() => setAddressDropdownOpen(false), 150)}
                         onChange={(e) => {
+                          setAddressInputValue(e.target.value);
                           setAddressSearch(e.target.value);
                           if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
-                        className="border-slate-300 bg-slate-50 focus-visible:border-slate-400 focus-visible:ring-slate-200"
+                        className={`border-slate-300 bg-slate-50 focus-visible:border-slate-400 focus-visible:ring-slate-200 ${isAddressDropdownOpen ? "cursor-text" : "cursor-pointer"}`}
                       />
                       {isAddressDropdownOpen && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
