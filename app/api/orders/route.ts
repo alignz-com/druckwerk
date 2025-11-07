@@ -150,8 +150,9 @@ export async function POST(req: Request) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
+    const requesterCompany = data.address?.companyName?.trim() || data.company?.split("\n")[0]?.trim() || brand?.name || null;
     const requesterContact = {
-      company: data.company ?? brand?.name ?? null,
+      company: requesterCompany,
       personName: data.name,
       email: data.email,
       phone: data.phone || null,
