@@ -95,7 +95,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
         {order ? (
           <>
             <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-5 sm:px-8">
-              <SheetHeader className="space-y-3">
+              <SheetHeader className="space-y-3 border-b-0 px-0 py-0">
                 <SheetTitle className="text-xl font-semibold tracking-tight text-slate-900">
                   {labels.title}: {order.referenceCode}
                 </SheetTitle>
