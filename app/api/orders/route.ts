@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
 
 import { getServerSession } from "next-auth";
 
@@ -40,10 +39,47 @@ const requestSchema = z.object({
     .optional(),
 });
 
-function buildReferenceCode() {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const random = randomUUID().slice(0, 4).toUpperCase();
-  return `OC-${stamp}-${random}`;
+function formatReferenceCode(year: number, sequence: number) {
+  return `${year}-${sequence.toString().padStart(5, "0")}`;
+}
+
+async function reserveReferenceCode() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const counter = await prisma.$transaction((tx) =>
+    tx.orderReferenceCounter.upsert({
+      where: { year },
+      update: { lastValue: { increment: 1 } },
+      create: { year, lastValue: 1 },
+    }),
+  );
+  const sequence = counter.lastValue;
+  return {
+    referenceCode: formatReferenceCode(year, sequence),
+    referenceYear: year,
+    referenceSequence: sequence,
+  };
+}
+
+function sanitizeFileComponent(value: string, fallback: string) {
+  const normalized = value
+    .normalize("NFKD")
+    .replace(/[^\w\s.-]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, " ");
+  return normalized || fallback;
+}
+
+function buildFileBaseName(brandName: string | null | undefined, requesterName: string) {
+  const brand = sanitizeFileComponent(brandName ?? "Brand", "Brand");
+  const requester = sanitizeFileComponent(requesterName, "Requester");
+  return `BC - ${brand} - ${requester}`;
+}
+
+function toStorageKey(referenceCode: string, baseName: string, extension: string) {
+  const safeSegment = baseName.replace(/\s+/g, "_") || referenceCode;
+  return `orders/${referenceCode}/${safeSegment}.${extension}`;
 }
 
 export async function POST(req: Request) {
@@ -68,6 +104,9 @@ export async function POST(req: Request) {
       select: { brandId: true },
     });
     const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+    const brand = effectiveBrandId
+      ? await prisma.brand.findUnique({ where: { id: effectiveBrandId }, select: { name: true } })
+      : null;
 
     const localeShort = session.user.locale === "de" ? "de" : "en";
     const addressMeta = data.address
@@ -95,8 +134,10 @@ export async function POST(req: Request) {
       templateDefinition,
     );
 
-    const referenceCode = buildReferenceCode();
-    const fileName = `orders/${session.user.id}/${referenceCode}.pdf`;
+    const { referenceCode, referenceYear, referenceSequence } = await reserveReferenceCode();
+    const fileBaseName = buildFileBaseName(brand?.name, data.name);
+    const pdfFileName = `${fileBaseName}.pdf`;
+    const fileName = toStorageKey(referenceCode, fileBaseName, "pdf");
     const pdfBlob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
     const upload = await put(fileName, pdfBlob, {
       access: "public",
@@ -107,6 +148,8 @@ export async function POST(req: Request) {
     const order = await prisma.order.create({
       data: {
         referenceCode,
+        referenceYear,
+        referenceSequence,
         userId: session.user.id,
         brandId: effectiveBrandId,
         templateId: templateDefinition.id ?? null,
@@ -124,6 +167,7 @@ export async function POST(req: Request) {
         linkedin: data.linkedin || null,
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
+        pdfFileName,
         meta: {
           templateKey: data.template,
           ...(data.customerReference ? { customerReference: data.customerReference } : {}),

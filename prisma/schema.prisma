@@ -206,6 +206,8 @@ model BrandTemplate {
 model Order {
   id             String      @id @default(cuid())
   referenceCode  String      @unique
+  referenceYear  Int?
+  referenceSequence Int?
   userId         String
   brandId        String?
   templateId     String?
@@ -223,6 +225,7 @@ model Order {
   linkedin       String?
   pdfUrl         String?
   blobId         String?
+  pdfFileName    String?
   meta           Json?
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   brand          Brand?      @relation(fields: [brandId], references: [id])
@@ -232,6 +235,12 @@ model Order {
 
   @@index([brandId])
   @@index([templateId])
+}
+
+model OrderReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 model TemplateAsset {
