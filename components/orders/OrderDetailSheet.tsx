@@ -91,12 +91,11 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex h-full w-full flex-col gap-6 overflow-y-auto px-4 pb-6 pt-8 sm:max-w-3xl sm:px-8 sm:pb-8">
+      <SheetContent className="flex h-full w-full flex-col overflow-hidden sm:max-w-3xl">
         {order ? (
           <>
-            <div className="space-y-6">
-              <div className="space-y-1 border-b border-slate-200 pb-4">
-                <SheetHeader>
+            <div className="border-b border-slate-200 bg-white px-6 pb-4 pt-6 sm:px-8">
+              <SheetHeader>
                   <SheetTitle className="text-xl font-semibold tracking-tight text-slate-900">
                     {labels.title}: {order.referenceCode}
                   </SheetTitle>
@@ -111,6 +110,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                 </SheetHeader>
               </div>
 
+            <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 sm:px-8 sm:pb-8">
               <section className="space-y-3 rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
