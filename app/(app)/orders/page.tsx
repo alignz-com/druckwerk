@@ -41,7 +41,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     label: t.statuses[status as keyof typeof t.statuses] ?? status,
   }));
   const orders = await prisma.order.findMany({
-    where: isAdmin ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
+    where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     include: {
       template: true,
