@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let payload: { email?: string; name?: string | null; role?: string; brandId?: string | null };
+let payload: { email?: string; name?: string | null; role?: string; brandId?: string | null; password?: string | null };
   try {
     payload = await req.json();
   } catch {
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
   const roleRaw = payload?.role?.toUpperCase?.().trim() ?? "USER";
   if (!ROLE_VALUES.includes(roleRaw as UserRole)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+
+  const passwordRaw = payload?.password?.trim();
+  let hashedPassword: string | null = null;
+  if (passwordRaw) {
+    if (passwordRaw.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
+    hashedPassword = await bcrypt.hash(passwordRaw, 12);
   }
 
   const brandId = payload?.brandId?.trim() ? payload.brandId.trim() : null;
@@ -61,6 +71,7 @@ export async function POST(req: NextRequest) {
       name: payload?.name?.trim() || null,
       role: roleRaw as UserRole,
       brandId,
+      hashedPassword,
     },
     include: {
       brand: { select: { id: true, name: true } },

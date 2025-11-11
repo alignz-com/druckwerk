@@ -38,6 +38,7 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
   const [name, setName] = useState("");
   const [role, setRole] = useState<AdminUserSummary["role"]>("USER");
   const [brandId, setBrandId] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
     setName("");
     setRole("USER");
     setBrandId(null);
+    setPassword("");
     setIsSubmitting(false);
     setError(null);
     setSuccess(null);
@@ -63,6 +65,7 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
       name: name.trim() || undefined,
       role,
       brandId,
+      password: password.trim() || undefined,
     };
 
     try {
@@ -136,6 +139,17 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="user-create-password">{t("create.fields.password")}</Label>
+              <Input
+                id="user-create-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={t("create.placeholders.password")}
+              />
+              <p className="text-xs text-slate-500">{t("create.hints.password")}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="user-create-brand">{t("create.fields.brand")}</Label>
