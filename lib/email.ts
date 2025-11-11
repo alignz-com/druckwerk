@@ -28,9 +28,11 @@ export type OrderConfirmationEmailPayload = {
   cardHolderName: string;
   quantity: number;
   templateLabel?: string | null;
+  brandLabel?: string | null;
   deliveryDate?: Date | string | null;
   addressSummary?: string | null;
   orderUrl?: string | null;
+  customerReference?: string | null;
 };
 
 export async function sendPasswordResetEmail({
@@ -127,9 +129,11 @@ export async function sendOrderConfirmationEmail({
   cardHolderName,
   quantity,
   templateLabel,
+  brandLabel,
   deliveryDate,
   addressSummary,
   orderUrl,
+  customerReference,
 }: OrderConfirmationEmailPayload) {
   const apiToken = process.env.POSTMARK_API_TOKEN;
   const fromEmail = process.env.POSTMARK_FROM_EMAIL;
@@ -143,21 +147,24 @@ export async function sendOrderConfirmationEmail({
   const greetingName = userName?.trim() || "";
   const greeting = greetingName ? `Hi ${greetingName},` : "Hi,";
 
+  const templateDisplay = [brandLabel, templateLabel].filter((value) => value && value.trim().length > 0).join(" · ");
+
   const details = [
     `Order ID: ${referenceCode}`,
     `Business card for: ${cardHolderName}`,
     `Quantity: ${quantity}`,
   ];
-  if (templateLabel) details.push(`Template: ${templateLabel}`);
+  if (templateDisplay) details.push(`Template: ${templateDisplay}`);
   if (deliveryDate) details.push(`Target delivery: ${formatDateForEmail(deliveryDate)}`);
   if (addressSummary) details.push(`Shipping to: ${addressSummary}`);
+  if (customerReference) details.push(`Customer reference: ${customerReference}`);
 
   const summary = details.join("\n");
   const orderLinkLine = orderUrl ? `\nView order: ${orderUrl}\n` : "\n";
 
-  const textBody = `${greeting}
+const textBody = `${greeting}
 
-thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:
+Thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:
 
 ${summary}
 ${orderLinkLine}Best,
@@ -165,8 +172,8 @@ Thurnher Druckerei GmbH
 
 ${COMPANY_SIGNATURE}`;
 
-  const htmlBody = `<p>${greeting}</p>
-<p>thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:</p>
+const htmlBody = `<p>${greeting}</p>
+<p>Thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:</p>
 <pre style="font-family:monospace;line-height:1.4;">${escapeHtml(summary)}</pre>
 ${orderUrl ? `<p><a href="${orderUrl}" target="_blank" rel="noopener noreferrer">View this order</a></p>` : ""}
 <p>Best,<br/>Thurnher Druckerei GmbH</p>

@@ -283,9 +283,11 @@ export async function POST(req: Request) {
           cardHolderName: data.name,
           quantity: data.quantity,
           templateLabel: templateDefinition.label,
+          brandLabel: brand?.name ?? null,
           deliveryDate: deliveryDueAt,
           addressSummary,
           orderUrl,
+          customerReference: data.customerReference || null,
         });
       } catch (error) {
         console.error("[order] Failed to send confirmation email", error);
