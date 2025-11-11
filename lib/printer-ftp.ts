@@ -19,6 +19,12 @@ function getFtpConfig() {
   return { host, user, password, port, secure, basePath };
 }
 
+function debugLog(...args: unknown[]) {
+  if (process.env.PRINTER_FTP_DEBUG === "true") {
+    console.info("[ftp]", ...args);
+  }
+}
+
 export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: string): Promise<PrinterFtpResult> {
   const config = getFtpConfig();
   if (!config) {
@@ -27,6 +33,7 @@ export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: str
 
   const client = new Client();
   try {
+    debugLog("connecting", { host: config.host, port: config.port, secure: config.secure });
     await client.access({
       host: config.host,
       user: config.user,
@@ -34,6 +41,7 @@ export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: str
       port: config.port,
       secure: config.secure,
     });
+    debugLog("connected");
 
     const sanitizedSegments = remoteFileName
       .replace(/\\/g, "/")
@@ -50,6 +58,7 @@ export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: str
 
     // Move into the configured base path first.
     if (config.basePath) {
+      debugLog("ensuring base path", config.basePath);
       await client.ensureDir(config.basePath);
       await client.cd(config.basePath);
     }
@@ -57,17 +66,21 @@ export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: str
     // Create (or switch into) optional subdirectories from remoteFileName.
     if (directorySegments.length > 0) {
       const dirPath = directorySegments.join("/");
+      debugLog("ensuring nested path", dirPath);
       await client.ensureDir(dirPath);
       await client.cd(dirPath);
     }
 
+    debugLog("uploading", fileName, content.length);
     const readable = Readable.from(content);
     await client.uploadFrom(readable, fileName);
+    debugLog("uploaded");
     return { status: "uploaded" };
   } catch (error: any) {
     console.error("[ftp] upload failed", error);
     return { status: "failed", error: error?.message ?? "Unknown FTP error" };
   } finally {
+    debugLog("closing connection");
     client.close();
   }
 }
