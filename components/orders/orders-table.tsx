@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,10 @@ export function OrdersTable({
   selectionLabelTemplate,
   renderActions,
 }: OrdersTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
@@ -107,12 +112,64 @@ export function OrdersTable({
   const [detailOrder, setDetailOrder] = useState<OrdersTableRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  const orderById = useMemo(() => {
+    const map = new Map<string, OrdersTableRow>();
+    for (const row of data) {
+      map.set(row.id, row);
+    }
+    return map;
+  }, [data]);
+
   const normalizedSearch = search.trim().toLowerCase();
 
-  const handleOpenDetail = useCallback((row: OrdersTableRow) => {
-    setDetailOrder(row);
-    setDetailOpen(true);
-  }, []);
+  const updateDetailParam = useCallback(
+    (nextId: string | null) => {
+      const params = new URLSearchParams(searchParamsString);
+      if (nextId) {
+        params.set("detail", nextId);
+      } else {
+        params.delete("detail");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParamsString],
+  );
+
+  const handleOpenDetail = useCallback(
+    (row: OrdersTableRow) => {
+      setDetailOrder(row);
+      setDetailOpen(true);
+      updateDetailParam(row.id);
+    },
+    [updateDetailParam],
+  );
+
+  const handleDetailOpenChange = useCallback(
+    (open: boolean) => {
+      setDetailOpen(open);
+      if (!open) {
+        setDetailOrder(null);
+        updateDetailParam(null);
+      }
+    },
+    [updateDetailParam],
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParamsString);
+    const targetId = params.get("detail");
+    if (targetId) {
+      const row = orderById.get(targetId);
+      if (row) {
+        setDetailOrder(row);
+        setDetailOpen(true);
+        return;
+      }
+    }
+    setDetailOpen(false);
+    setDetailOrder(null);
+  }, [orderById, searchParamsString]);
 
   const columns = useMemo<OrdersTableColumn[]>(() => {
     const baseColumns: OrdersTableColumn[] = [
@@ -437,17 +494,7 @@ export function OrdersTable({
         </div>
       </div>
 
-      <OrderDetailSheet
-        open={detailOpen}
-        onOpenChange={(open) => {
-          setDetailOpen(open);
-          if (!open) {
-            setDetailOrder(null);
-          }
-        }}
-        order={detailOrder}
-        labels={detailLabels}
-      />
+      <OrderDetailSheet open={detailOpen} onOpenChange={handleDetailOpenChange} order={detailOrder} labels={detailLabels} />
     </div>
   );
 }

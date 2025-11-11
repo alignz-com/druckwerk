@@ -274,7 +274,7 @@ export async function POST(req: Request) {
 
     if (session.user.email) {
       const addressSummary = formatAddressSummary(addressMeta);
-      const orderUrl = APP_URL ? `${APP_URL}/orders/${order.id}` : undefined;
+      const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
       try {
         await sendOrderConfirmationEmail({
           to: session.user.email,
