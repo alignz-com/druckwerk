@@ -75,9 +75,10 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
           {t("microsoft")}
         </Button>
 
-        <div className="relative mb-6 text-center text-xs uppercase tracking-wide text-slate-400">
-          <span className="bg-white px-2">{t("or")}</span>
-          <span className="absolute inset-x-0 top-1/2 block h-px bg-slate-200" aria-hidden />
+        <div className="mb-6 flex items-center gap-2 text-xs uppercase tracking-wide text-slate-400">
+          <span className="flex-1 h-px bg-slate-200 rounded-full" aria-hidden />
+          <span>{t("or")}</span>
+          <span className="flex-1 h-px bg-slate-200 rounded-full" aria-hidden />
         </div>
 
         <form onSubmit={handleCredentialsSignIn} className="space-y-4">
