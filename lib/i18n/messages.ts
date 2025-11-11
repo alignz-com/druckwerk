@@ -109,6 +109,8 @@ export const messages = {
         loadAddressDefault: "Load default value",
         order: "Order Business Card",
       },
+      selectBrandPrompt: "Please pick a brand to continue.",
+      noTemplatesForBrand: "No templates are assigned to this brand.",
       confirm: {
         title: "Confirm order",
         description: "Review the preview before submitting your business card order.",
@@ -899,6 +901,8 @@ export const messages = {
         loadAddressDefault: "Standardwert laden",
         order: "Visitenkarte bestellen",
       },
+      selectBrandPrompt: "Bitte wähle zuerst eine Marke aus.",
+      noTemplatesForBrand: "Dieser Marke ist keine Vorlage zugewiesen.",
       confirm: {
         title: "Bestellung bestätigen",
         description: "Bitte überprüfe die Vorschau, bevor du die Visitenkarte bestellst.",

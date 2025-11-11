@@ -33,13 +33,14 @@ export default async function NewOrderPage() {
     knownBrandId: preferredBrandId,
   });
 
-  const initialBrandId =
-    brandOptions.find((brand) => brand.id === preferredBrandId)?.id ??
-    brandOptions[0]?.id ??
-    preferredBrandId ??
-    null;
+  let initialBrandId: string | null = null;
+  if (preferredBrandId && brandOptions.some((brand) => brand.id === preferredBrandId)) {
+    initialBrandId = preferredBrandId;
+  } else if (brandOptions.length === 1) {
+    initialBrandId = brandOptions[0]!.id;
+  }
 
-  const templatesPromise = listTemplateSummariesForBrand(initialBrandId);
+  const templatesPromise = initialBrandId ? listTemplateSummariesForBrand(initialBrandId) : Promise.resolve([]);
   const addressesPromise = initialBrandId
     ? prisma.brandAddress.findMany({
         where: { brandId: initialBrandId },
@@ -60,8 +61,8 @@ export default async function NewOrderPage() {
     : Promise.resolve([]);
 
   const [templates, addresses] = await Promise.all([templatesPromise, addressesPromise]);
-  const initialTemplate = templates[0]?.key
-    ? await getTemplateForBrandOrGlobal(templates[0]!.key, initialBrandId ?? null)
+  const initialTemplate = templates[0]?.key && initialBrandId
+    ? await getTemplateForBrandOrGlobal(templates[0]!.key, initialBrandId)
     : null;
 
   const normalizedAddresses = addresses.map((address) => ({

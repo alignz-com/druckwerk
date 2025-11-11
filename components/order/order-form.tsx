@@ -144,7 +144,7 @@ export default function OrderForm({
   const [addresses, setAddresses] = useState<BrandAddressEntry[]>(initialAddresses);
   const [isBrandLoading, setIsBrandLoading] = useState(false);
   const [brandError, setBrandError] = useState<string | null>(null);
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templates[0]?.key ?? "");
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(initialTemplateSummaries[0]?.key ?? "");
   const [templateDetails, setTemplateDetails] = useState<Record<string, ResolvedTemplate>>(() => {
     if (initialTemplate) {
       return { [initialTemplate.key]: initialTemplate };
@@ -419,23 +419,10 @@ export default function OrderForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (templates.length === 0) {
-    return (
-      <section className="space-y-6">
-        <Card className="max-w-xl">
-          <CardHeader>
-            <CardTitle>{tOrder("noTemplatesTitle")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600">{tOrder("noTemplatesDescription")}</p>
-          </CardContent>
-        </Card>
-        <Analytics />
-      </section>
-    );
-  }
+  const mustSelectBrand = availableBrands.length > 1 && !currentBrandId;
+  const noTemplatesForBrand = Boolean(currentBrandId) && templates.length === 0 && !templateIsLoading && !isBrandLoading;
 
-  const canSubmitOrder = Boolean(selectedTemplate) && !templateIsLoading;
+  const canSubmitOrder = Boolean(selectedTemplate) && !templateIsLoading && !mustSelectBrand;
 
   const openConfirm = () => {
     if (isSubmitting || !canSubmitOrder) return;
@@ -554,6 +541,9 @@ export default function OrderForm({
                       </SelectContent>
                     </Select>
                     {brandError ? <p className="text-xs text-red-600">{brandError}</p> : null}
+                    {mustSelectBrand ? (
+                      <p className="text-xs text-slate-500">{tOrder("selectBrandPrompt")}</p>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -564,19 +554,26 @@ export default function OrderForm({
                     onValueChange={(next) => {
                       setSelectedTemplateKey(next);
                     }}
-                    >
-                      <SelectTrigger id="template">
-                        <SelectValue placeholder={tOrder("placeholders.template")} />
-                      </SelectTrigger>
-                      <SelectContent>
+                    disabled={mustSelectBrand || isBrandLoading || templates.length === 0}
+                  >
+                    <SelectTrigger id="template">
+                      <SelectValue placeholder={tOrder("placeholders.template")} />
+                    </SelectTrigger>
+                    <SelectContent>
                         {templates.map((tpl) => (
                           <SelectItem key={tpl.key} value={tpl.key}>
                             {tpl.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
-                  </div>
+                  </Select>
+                  {mustSelectBrand ? (
+                    <p className="text-xs text-slate-500">{tOrder("selectBrandPrompt")}</p>
+                  ) : null}
+                  {noTemplatesForBrand ? (
+                    <p className="text-xs text-red-600">{tOrder("noTemplatesForBrand")}</p>
+                  ) : null}
+                </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="delivery">{tOrder("deliveryTime")}</Label>
