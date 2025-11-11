@@ -4,6 +4,7 @@ import OrderForm from "@/components/order/order-form";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTemplateByKey, listTemplateSummariesForBrand } from "@/lib/templates";
+import { getBrandsForUser } from "@/lib/brand-access";
 
 export default async function NewOrderPage() {
   const sessionPromise = getServerAuthSession();
@@ -13,6 +14,9 @@ export default async function NewOrderPage() {
   }
 
   const userId = session.user.id;
+  if (!userId) {
+    redirect("/login");
+  }
   const userPromise = userId
     ? prisma.user.findUnique({
         where: { id: userId },
@@ -21,12 +25,24 @@ export default async function NewOrderPage() {
     : Promise.resolve(null);
 
   const dbUser = await userPromise;
-  const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+  const preferredBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
 
-  const templatesPromise = listTemplateSummariesForBrand(effectiveBrandId);
-  const addressesPromise = effectiveBrandId
+  const brandOptions = await getBrandsForUser({
+    userId,
+    role: session.user.role ?? "USER",
+    knownBrandId: preferredBrandId,
+  });
+
+  const initialBrandId =
+    brandOptions.find((brand) => brand.id === preferredBrandId)?.id ??
+    brandOptions[0]?.id ??
+    preferredBrandId ??
+    null;
+
+  const templatesPromise = listTemplateSummariesForBrand(initialBrandId);
+  const addressesPromise = initialBrandId
     ? prisma.brandAddress.findMany({
-        where: { brandId: effectiveBrandId },
+        where: { brandId: initialBrandId },
         orderBy: [{ label: "asc" }, { company: "asc" }],
         select: {
           id: true,
@@ -45,8 +61,8 @@ export default async function NewOrderPage() {
 
   const [templates, addresses] = await Promise.all([templatesPromise, addressesPromise]);
   const initialTemplate =
-    templates[0]?.key && effectiveBrandId !== undefined
-      ? await getTemplateByKey(templates[0]!.key, effectiveBrandId ?? null)
+    templates[0]?.key && initialBrandId !== undefined
+      ? await getTemplateByKey(templates[0]!.key, initialBrandId ?? null)
       : null;
 
   const normalizedAddresses = addresses.map((address) => ({
@@ -64,10 +80,11 @@ export default async function NewOrderPage() {
 
   return (
     <OrderForm
-      templateSummaries={templates}
+      availableBrands={brandOptions}
+      initialBrandId={initialBrandId}
+      initialTemplateSummaries={templates}
       initialTemplate={initialTemplate}
-      brandId={effectiveBrandId}
-      addresses={normalizedAddresses}
+      initialAddresses={normalizedAddresses}
     />
   );
 }

@@ -14,6 +14,7 @@ import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
 import { uploadJdfToPrinterFtp } from "@/lib/printer-ftp";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { getBrandsForUser } from "@/lib/brand-access";
 
 export const runtime = "nodejs";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
@@ -27,6 +28,7 @@ const requestSchema = z.object({
   company: z.string().optional().default(""),
   url: z.string().optional().default(""),
   linkedin: z.string().optional().default(""),
+  brandId: z.string().optional().nullable(),
   template: z.string().optional().default("omicron"),
   quantity: z.number().int().positive(),
   deliveryTime: z.enum(["express", "standard"]),
@@ -125,11 +127,25 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
+    const requestedBrandId = data.brandId?.trim() || null;
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { brandId: true },
     });
-    const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+    const brandOptions = await getBrandsForUser({
+      userId: session.user.id,
+      role: session.user.role ?? "USER",
+      knownBrandId: dbUser?.brandId ?? session.user.brandId ?? null,
+    });
+    let effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+    if (requestedBrandId) {
+      if (!brandOptions.some((brand) => brand.id === requestedBrandId)) {
+        return NextResponse.json({ error: "Brand not allowed" }, { status: 403 });
+      }
+      effectiveBrandId = requestedBrandId;
+    } else if (!effectiveBrandId && brandOptions.length === 1) {
+      effectiveBrandId = brandOptions[0]?.id ?? null;
+    }
     const brand = effectiveBrandId
       ? await prisma.brand.findUnique({
           where: { id: effectiveBrandId },

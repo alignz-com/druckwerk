@@ -49,6 +49,7 @@ export const messages = {
       infoTitle: "Order information",
       quantity: "Quantity",
       template: "Template",
+      brand: "Brand",
       deliveryTime: "Delivery Time",
       deliveryTimes: {
         express: "1 Week (Express)",
@@ -64,6 +65,7 @@ export const messages = {
       placeholders: {
         quantity: "Select quantity",
         template: "Select template",
+        brand: "Select brand",
         deliveryTime: "Select delivery time",
         addressExtra: "Care of, building, etc.",
         country: "Select country",
@@ -119,6 +121,7 @@ export const messages = {
       },
       errors: {
         generic: "Unexpected error while saving order",
+        brandLoadFailed: "Failed to load brand data.",
       },
       noTemplatesTitle: "No templates available",
       noTemplatesDescription:
@@ -836,6 +839,7 @@ export const messages = {
       infoTitle: "Bestellinformationen",
       quantity: "Menge",
       template: "Vorlage",
+      brand: "Marke",
       deliveryTime: "Lieferzeit",
       deliveryTimes: {
         express: "1 Woche (Express)",
@@ -851,6 +855,7 @@ export const messages = {
       placeholders: {
         quantity: "Menge auswählen",
         template: "Vorlage auswählen",
+        brand: "Marke auswählen",
         deliveryTime: "Lieferzeit auswählen",
         addressExtra: "c/o, Gebäude, Zusatz",
         country: "Land auswählen",
@@ -906,6 +911,7 @@ export const messages = {
       },
       errors: {
         generic: "Unerwarteter Fehler beim Speichern der Bestellung",
+        brandLoadFailed: "Markendaten konnten nicht geladen werden.",
       },
       noTemplatesTitle: "Keine Vorlagen verfügbar",
       noTemplatesDescription:

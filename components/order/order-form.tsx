@@ -105,18 +105,31 @@ function buildAddressBlock(opts: {
   return lines.join("\n");
 }
 
-export type OrderFormProps = {
-  templateSummaries: TemplateSummary[];
+type BrandOption = {
+  id: string;
+  name: string;
+};
+
+type BrandDataResponse = {
+  templates: TemplateSummary[];
+  addresses: BrandAddressEntry[];
   initialTemplate?: ResolvedTemplate | null;
-  brandId?: string | null;
-  addresses?: BrandAddressEntry[];
+};
+
+export type OrderFormProps = {
+  availableBrands?: BrandOption[];
+  initialBrandId?: string | null;
+  initialTemplateSummaries: TemplateSummary[];
+  initialTemplate?: ResolvedTemplate | null;
+  initialAddresses?: BrandAddressEntry[];
 };
 
 export default function OrderForm({
-  templateSummaries,
+  availableBrands = [],
+  initialBrandId,
+  initialTemplateSummaries,
   initialTemplate,
-  brandId,
-  addresses = [],
+  initialAddresses = [],
 }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -126,7 +139,12 @@ export default function OrderForm({
   const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
   const tOrder = useTranslations("orderForm");
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateSummaries[0]?.key ?? "");
+  const [currentBrandId, setCurrentBrandId] = useState<string | null>(initialBrandId ?? null);
+  const [templates, setTemplates] = useState<TemplateSummary[]>(initialTemplateSummaries);
+  const [addresses, setAddresses] = useState<BrandAddressEntry[]>(initialAddresses);
+  const [isBrandLoading, setIsBrandLoading] = useState(false);
+  const [brandError, setBrandError] = useState<string | null>(null);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templates[0]?.key ?? "");
   const [templateDetails, setTemplateDetails] = useState<Record<string, ResolvedTemplate>>(() => {
     if (initialTemplate) {
       return { [initialTemplate.key]: initialTemplate };
@@ -146,9 +164,9 @@ export default function OrderForm({
   }, [initialTemplate]);
 
   const selectedSummary = useMemo(() => {
-    if (templateSummaries.length === 0) return null;
-    return templateSummaries.find((tpl) => tpl.key === selectedTemplateKey) ?? templateSummaries[0]!;
-  }, [templateSummaries, selectedTemplateKey]);
+    if (templates.length === 0) return null;
+    return templates.find((tpl) => tpl.key === selectedTemplateKey) ?? templates[0]!;
+  }, [templates, selectedTemplateKey]);
 
   const selectedTemplate = selectedSummary ? templateDetails[selectedSummary.key] ?? null : null;
   const selectedSummaryKey = selectedSummary?.key ?? "";
@@ -156,15 +174,15 @@ export default function OrderForm({
   const templateIsLoading = selectedSummaryKey ? templateLoadingKey === selectedSummaryKey : false;
 
   useEffect(() => {
-    if (templateSummaries.length === 0) {
+    if (templates.length === 0) {
       if (selectedTemplateKey) setSelectedTemplateKey("");
       return;
     }
-    const exists = templateSummaries.some((tpl) => tpl.key === selectedTemplateKey);
+    const exists = templates.some((tpl) => tpl.key === selectedTemplateKey);
     if (!exists) {
-      setSelectedTemplateKey(templateSummaries[0]!.key);
+      setSelectedTemplateKey(templates[0]!.key);
     }
-  }, [templateSummaries, selectedTemplateKey]);
+  }, [templates, selectedTemplateKey]);
 
   useEffect(() => {
     if (!selectedSummaryKey || templateLoaded) return;
@@ -172,7 +190,7 @@ export default function OrderForm({
     setTemplateError(null);
     setTemplateLoadingKey(selectedSummaryKey);
     const params = new URLSearchParams({ key: selectedSummaryKey });
-    if (brandId) params.set("brandId", brandId);
+    if (currentBrandId) params.set("brandId", currentBrandId);
     fetch(`/api/templates/resolve?${params.toString()}`)
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load template");
@@ -197,7 +215,7 @@ export default function OrderForm({
     return () => {
       cancelled = true;
     };
-  }, [selectedSummaryKey, templateLoaded, brandId]);
+  }, [selectedSummaryKey, templateLoaded, currentBrandId]);
 
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
@@ -242,6 +260,60 @@ export default function OrderForm({
       });
     },
     [localeShort],
+  );
+
+  const handleBrandChange = useCallback(
+    async (nextBrandId: string) => {
+      if (!nextBrandId || nextBrandId === currentBrandId) return;
+      setCurrentBrandId(nextBrandId);
+      setIsBrandLoading(true);
+      setBrandError(null);
+      setTemplateError(null);
+      try {
+        const params = new URLSearchParams({ brandId: nextBrandId });
+        const response = await fetch(`/api/orders/brand-data?${params.toString()}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json().catch(() => null)) as BrandDataResponse | null;
+        if (!response.ok || !payload) {
+          const errorMessage =
+            (payload as any)?.error && typeof (payload as any).error === "string"
+              ? (payload as any).error
+              : tOrder("errors.brandLoadFailed");
+          throw new Error(errorMessage);
+        }
+        const nextTemplates = Array.isArray(payload.templates) ? payload.templates : [];
+        const nextAddresses = Array.isArray(payload.addresses) ? payload.addresses : [];
+
+        setTemplates(nextTemplates);
+        setAddresses(nextAddresses);
+        setSelectedAddressEntry(null);
+        setAddressInputValue("");
+        setAddressSearch("");
+        setAddressBlock("");
+
+        const nextKey = nextTemplates[0]?.key ?? "";
+        setSelectedTemplateKey(nextKey);
+        setTemplateDetails((current) => {
+          const nextMap: typeof current = {};
+          for (const summary of nextTemplates) {
+            if (current[summary.key]) {
+              nextMap[summary.key] = current[summary.key];
+            }
+          }
+          if (payload.initialTemplate) {
+            nextMap[payload.initialTemplate.key] = payload.initialTemplate;
+          }
+          return nextMap;
+        });
+      } catch (error) {
+        console.error("[order-form] failed to load brand data", error);
+        setBrandError(error instanceof Error ? error.message : tOrder("errors.brandLoadFailed"));
+      } finally {
+        setIsBrandLoading(false);
+      }
+    },
+    [currentBrandId, tOrder],
   );
 
   useEffect(() => {
@@ -347,7 +419,7 @@ export default function OrderForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (templateSummaries.length === 0) {
+  if (templates.length === 0) {
     return (
       <section className="space-y-6">
         <Card className="max-w-xl">
@@ -389,6 +461,7 @@ export default function OrderForm({
           company: addressBlock,
           url,
           linkedin,
+          brandId: currentBrandId,
           template: selectedSummary.key,
           quantity: Number(quantity),
           deliveryTime,
@@ -459,6 +532,31 @@ export default function OrderForm({
                   </Select>
                 </div>
 
+                {availableBrands.length > 1 ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="brand">{tOrder("brand")}</Label>
+                    <Select
+                      value={currentBrandId ?? ""}
+                      onValueChange={(value) => {
+                        handleBrandChange(value);
+                      }}
+                      disabled={isBrandLoading}
+                    >
+                      <SelectTrigger id="brand">
+                        <SelectValue placeholder={tOrder("placeholders.brand")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableBrands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.id}>
+                            {brand.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {brandError ? <p className="text-xs text-red-600">{brandError}</p> : null}
+                  </div>
+                ) : null}
+
                 <div className="grid gap-2">
                   <Label htmlFor="template">{tOrder("template")}</Label>
                   <Select
@@ -466,19 +564,19 @@ export default function OrderForm({
                     onValueChange={(next) => {
                       setSelectedTemplateKey(next);
                     }}
-                  >
-                    <SelectTrigger id="template">
-                      <SelectValue placeholder={tOrder("placeholders.template")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templateSummaries.map((tpl) => (
-                        <SelectItem key={tpl.key} value={tpl.key}>
-                          {tpl.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    >
+                      <SelectTrigger id="template">
+                        <SelectValue placeholder={tOrder("placeholders.template")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((tpl) => (
+                          <SelectItem key={tpl.key} value={tpl.key}>
+                            {tpl.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="delivery">{tOrder("deliveryTime")}</Label>
