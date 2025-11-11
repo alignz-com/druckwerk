@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminFontFamily, AdminFontVariant } from "@/lib/admin/templates-data";
+import { formatDateTime } from "@/lib/formatDateTime";
 import FontVariantUploader from "./FontVariantUploader";
 
 type Props = {
@@ -324,7 +325,7 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                               {formatBytes(variant.sizeBytes)}
                             </TableCell>
                             <TableCell className="text-right text-sm text-slate-600">
-                              {new Date(variant.updatedAt).toLocaleString()}
+                              {formatDateTime(variant.updatedAt)}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button

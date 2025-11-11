@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminUserSummary } from "@/lib/admin/users-data";
 import { LoadingButton } from "@/components/ui/loading-button";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 const ROLE_OPTIONS = ["USER", "ADMIN", "BRAND_ADMIN", "PRINTER"] as const;
 type RoleOption = typeof ROLE_OPTIONS[number];
@@ -102,11 +103,11 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
                   </div>
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-slate-400">{t("detail.metadata.created")}</dt>
-                    <dd>{new Date(user.createdAt).toLocaleString()}</dd>
+                    <dd>{formatDateTime(user.createdAt)}</dd>
                   </div>
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-slate-400">{t("detail.metadata.updated")}</dt>
-                    <dd>{new Date(user.updatedAt).toLocaleString()}</dd>
+                    <dd>{formatDateTime(user.updatedAt)}</dd>
                   </div>
                 </dl>
               </section>

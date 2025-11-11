@@ -9,10 +9,13 @@ import { Button } from "@/components/ui/button";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
 
+const ORDER_TIME_ZONE = "Europe/Vienna";
+
 const formatDate = (date: Date, locale: Locale) =>
   new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: ORDER_TIME_ZONE,
   }).format(date);
 
 type OrdersPageProps = {

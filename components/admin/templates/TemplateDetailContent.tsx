@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { hasInlineDesignConfig } from "@/lib/template-design";
+import { formatDateTime } from "@/lib/formatDateTime";
 import { PaperStockSelector } from "./PaperStockSelector";
 
 const IMAGE_ACCEPT = "image/png,image/svg+xml,image/webp";
@@ -693,7 +694,7 @@ function formatBytes(bytes: number | null) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("de-AT", {
+  return formatDateTime(iso, "de-AT", {
     year: "numeric",
     month: "short",
     day: "2-digit",
