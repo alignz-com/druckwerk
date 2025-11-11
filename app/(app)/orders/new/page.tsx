@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import OrderForm from "@/components/order/order-form";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getTemplateByKey, listTemplateSummariesForBrand } from "@/lib/templates";
+import { getTemplateForBrandOrGlobal, listTemplateSummariesForBrand } from "@/lib/templates";
 import { getBrandsForUser } from "@/lib/brand-access";
 
 export default async function NewOrderPage() {
@@ -60,10 +60,9 @@ export default async function NewOrderPage() {
     : Promise.resolve([]);
 
   const [templates, addresses] = await Promise.all([templatesPromise, addressesPromise]);
-  const initialTemplate =
-    templates[0]?.key && initialBrandId !== undefined
-      ? await getTemplateByKey(templates[0]!.key, initialBrandId ?? null)
-      : null;
+  const initialTemplate = templates[0]?.key
+    ? await getTemplateForBrandOrGlobal(templates[0]!.key, initialBrandId ?? null)
+    : null;
 
   const normalizedAddresses = addresses.map((address) => ({
     id: address.id,

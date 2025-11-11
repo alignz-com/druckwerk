@@ -8,7 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCountryLabel } from "@/lib/countries";
 import { generateOrderPdf } from "@/lib/orderPdf";
-import { getTemplateByKey } from "@/lib/templates";
+import { getTemplateForBrandOrGlobal } from "@/lib/templates";
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
           country: data.address.countryCode ? getCountryLabel(localeShort, data.address.countryCode) : undefined,
         }
       : undefined;
-    const templateDefinition = await getTemplateByKey(data.template, effectiveBrandId);
+    const templateDefinition = await getTemplateForBrandOrGlobal(data.template, effectiveBrandId);
     const deliveryConfig = DELIVERY_OPTIONS[data.deliveryTime] ?? DELIVERY_OPTIONS.standard;
     const deliveryDueAt = addBusinessDays(new Date(), deliveryConfig.businessDays);
 

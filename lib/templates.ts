@@ -392,3 +392,18 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
 
   throw new Error(`Unknown template key: ${key}`);
 }
+
+export async function getTemplateForBrandOrGlobal(key: string, brandId?: string | null): Promise<ResolvedTemplate> {
+  if (!brandId) {
+    return getTemplateByKey(key, null);
+  }
+
+  try {
+    return await getTemplateByKey(key, brandId);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("not assigned to brand")) {
+      return getTemplateByKey(key, null);
+    }
+    throw error;
+  }
+}

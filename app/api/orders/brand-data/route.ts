@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { prisma } from "@/lib/prisma";
-import { getTemplateByKey, listTemplateSummariesForBrand } from "@/lib/templates";
+import { getTemplateForBrandOrGlobal, listTemplateSummariesForBrand } from "@/lib/templates";
 
 export async function GET(req: Request) {
   const session = await getServerAuthSession();
@@ -58,7 +58,7 @@ export async function GET(req: Request) {
   let initialTemplate = null;
   if (templates[0]?.key) {
     try {
-      initialTemplate = await getTemplateByKey(templates[0]!.key, resolvedBrandId);
+      initialTemplate = await getTemplateForBrandOrGlobal(templates[0]!.key, resolvedBrandId);
     } catch (error) {
       console.warn("[orders] failed to preload template for brand", resolvedBrandId, error);
     }
