@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   brand: AdminBrandSummary | null;
@@ -105,6 +106,14 @@ export default function BrandDetailSheet({
   }, [open, brand]);
 
   const addresses = useMemo(() => form.addresses, [form.addresses]);
+  const statItems =
+    brand?.id
+      ? [
+          { label: t("detail.stats.templates"), value: brand.templateCount },
+          { label: t("detail.stats.orders"), value: brand.orderCount },
+          { label: t("detail.stats.addresses"), value: addresses.length },
+        ]
+      : [];
 
   const handleFieldChange = (field: keyof Omit<BrandForm, "id" | "addresses">, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -297,14 +306,25 @@ export default function BrandDetailSheet({
                   </div>
                 ) : null}
 
-                <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                  <header className="space-y-1">
-                    <h2 className="text-sm font-semibold text-slate-900">
-                      {t("detail.sections.general.title")}
-                    </h2>
-                    <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
-                  </header>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                {statItems.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {statItems.map((item) => (
+                      <Card key={item.label}>
+                        <CardHeader className="pb-2">
+                          <CardDescription>{item.label}</CardDescription>
+                          <CardTitle className="text-2xl">{item.value}</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                  </div>
+                ) : null}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">{t("detail.sections.general.title")}</CardTitle>
+                    <CardDescription>{t("detail.sections.general.description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="brand-name-detail">{t("form.name")}</Label>
                       <Input
@@ -348,27 +368,27 @@ export default function BrandDetailSheet({
                         onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
                       />
                     </div>
-                  </div>
-                </section>
+                  </CardContent>
+                </Card>
 
-                <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                  <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Card>
+                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold text-slate-900">{t("addresses.title")}</h2>
-                      <p className="text-xs text-slate-500">{t("addresses.description")}</p>
+                      <CardTitle className="text-base">{t("addresses.title")}</CardTitle>
+                      <CardDescription>{t("addresses.description")}</CardDescription>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={addAddress} disabled={disableActions}>
                       {t("addresses.add")}
                     </Button>
-                  </header>
-                  <div className="space-y-4">
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     {addresses.length === 0 ? (
                       <p className="text-xs text-slate-500">{t("addresses.empty")}</p>
                     ) : (
                       addresses.map((address) => (
-                        <div key={address.clientKey} className="rounded-lg border border-slate-200 p-4">
+                        <div key={address.clientKey} className="space-y-4 rounded-lg border border-slate-200 p-4">
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.label")}</Label>
                               <Input
                                 value={address.label}
@@ -377,7 +397,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.company")}</Label>
                               <Input
                                 value={address.company}
@@ -386,7 +406,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.url")}</Label>
                               <Input
                                 value={address.url}
@@ -396,7 +416,7 @@ export default function BrandDetailSheet({
                                 placeholder="https://"
                               />
                             </div>
-                            <div className="space-y-2 sm:col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                               <Label>{t("addresses.fields.street")}</Label>
                               <Input
                                 value={address.street}
@@ -405,7 +425,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.addressExtra")}</Label>
                               <Input
                                 value={address.addressExtra}
@@ -414,7 +434,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2 sm:col-span-2">
+                            <div className="space-y-1.5 sm:col-span-2">
                               <div className="flex items-center justify-between">
                                 <Label>{t("addresses.fields.cardAddressText")}</Label>
                                 <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
@@ -427,7 +447,7 @@ export default function BrandDetailSheet({
                                 rows={4}
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.postalCode")}</Label>
                               <Input
                                 value={address.postalCode}
@@ -436,7 +456,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.city")}</Label>
                               <Input
                                 value={address.city}
@@ -445,7 +465,7 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <Label>{t("addresses.fields.countryCode")}</Label>
                               <Input
                                 value={address.countryCode}
@@ -458,7 +478,7 @@ export default function BrandDetailSheet({
                               <p className="text-xs text-slate-500">{t("addresses.countryHint")}</p>
                             </div>
                           </div>
-                          <div className="mt-3 text-right">
+                          <div className="flex justify-end">
                             <Button
                               type="button"
                               variant="ghost"
@@ -472,106 +492,101 @@ export default function BrandDetailSheet({
                         </div>
                       ))
                     )}
-                  </div>
-                </section>
+                  </CardContent>
+                </Card>
 
-                <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                  <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h2>
-                      <p className="text-xs text-slate-500">{t("domains.description")}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">{t("domains.title")}</CardTitle>
+                    <CardDescription>{t("domains.description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <Input
                         value={domainInput}
                         onChange={(event) => setDomainInput(event.target.value)}
                         placeholder={t("domains.placeholder")}
-                        className="w-52"
+                        className="sm:w-64"
                         disabled={disableActions}
                       />
                       <Button type="button" variant="secondary" disabled={disableActions} onClick={submitDomain}>
                         {isDomainSubmitting ? t("domains.saving") : t("domains.add")}
                       </Button>
                     </div>
-                  </header>
-                  {domainError ? (
-                    <p className="text-xs text-red-600">{domainError}</p>
-                  ) : null}
-                  {brand.domains.length === 0 ? (
-                    <p className="text-xs text-slate-500">{t("domains.empty")}</p>
-                  ) : (
-                    <ul className="flex flex-wrap gap-2 text-sm text-slate-600">
-                      {brand.domains.map((domain) => (
-                        <li
-                          key={domain.id}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
-                        >
-                          <span>{domain.domain}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            disabled={disableActions}
-                            onClick={() => removeDomain(domain.id)}
-                            aria-label={t("domains.removeLabel", { domain: domain.domain })}
+                    {domainError ? <p className="text-xs text-red-600">{domainError}</p> : null}
+                    {brand.domains.length === 0 ? (
+                      <p className="text-xs text-slate-500">{t("domains.empty")}</p>
+                    ) : (
+                      <ul className="flex flex-wrap gap-2 text-sm text-slate-600">
+                        {brand.domains.map((domain) => (
+                          <li
+                            key={domain.id}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
                           >
-                            ×
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
+                            <span>{domain.domain}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              disabled={disableActions}
+                              onClick={() => removeDomain(domain.id)}
+                              aria-label={t("domains.removeLabel", { domain: domain.domain })}
+                            >
+                              ×
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
 
-                <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                  <header className="space-y-1">
-                    <h2 className="text-sm font-semibold text-slate-900">
-                      {t("detail.sections.metadata.title")}
-                    </h2>
-                    <p className="text-xs text-slate-500">{t("detail.sections.metadata.description")}</p>
-                  </header>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-                      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t("detail.stats.templates")}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">{t("detail.sections.metadata.title")}</CardTitle>
+                    <CardDescription>{t("detail.sections.metadata.description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          {t("detail.metadata.createdAt")}
+                        </span>
+                        <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.createdAt))}</p>
                       </div>
-                      <div className="mt-2 text-xl font-semibold text-slate-900">{brand.templateCount}</div>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-                      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t("detail.stats.orders")}
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          {t("detail.metadata.updatedAt")}
+                        </span>
+                        <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.updatedAt))}</p>
                       </div>
-                      <div className="mt-2 text-xl font-semibold text-slate-900">{brand.orderCount}</div>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-                      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t("detail.stats.addresses")}
-                      </div>
-                      <div className="mt-2 text-xl font-semibold text-slate-900">{addresses.length}</div>
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t("detail.metadata.createdAt")}
+                        {t("form.slug")}
                       </span>
-                      <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.createdAt))}</p>
+                      <Badge variant="outline">{brand.slug}</Badge>
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t("detail.metadata.updatedAt")}
-                      </span>
-                      <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.updatedAt))}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      {t("form.slug")}
-                    </span>
-                    <Badge variant="outline">{brand.slug}</Badge>
-                  </div>
-                </section>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-red-200 bg-red-50/70">
+                  <CardHeader>
+                    <CardTitle className="text-base text-red-900">
+                      {t("detail.sections.danger.title")}
+                    </CardTitle>
+                    <CardDescription className="text-red-800">
+                      {t("detail.sections.danger.description")}
+                    </CardDescription>
+                    <p className="text-xs text-red-700">{t("detail.sections.danger.helper")}</p>
+                  </CardHeader>
+                  <CardFooter className="justify-end">
+                    <Button type="button" variant="destructive" onClick={handleDelete} disabled={disableActions}>
+                      {t("actions.delete")}
+                    </Button>
+                  </CardFooter>
+                </Card>
               </div>
               <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <Button
@@ -583,9 +598,6 @@ export default function BrandDetailSheet({
                   {t("actions.close")}
                 </Button>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <Button type="button" variant="destructive" onClick={handleDelete} disabled={disableActions}>
-                    {t("actions.delete")}
-                  </Button>
                   <Button type="submit" disabled={disableActions || !form.name.trim()}>
                     {isSaving ? t("actions.saving") : t("actions.save")}
                   </Button>
