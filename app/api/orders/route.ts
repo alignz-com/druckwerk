@@ -275,19 +275,21 @@ export async function POST(req: Request) {
     if (session.user.email) {
       const addressSummary = formatAddressSummary(addressMeta);
       const orderUrl = APP_URL ? `${APP_URL}/orders/${order.id}` : undefined;
-      sendOrderConfirmationEmail({
-        to: session.user.email,
-        userName: session.user.name,
-        referenceCode,
-        cardHolderName: data.name,
-        quantity: data.quantity,
-        templateLabel: templateDefinition.label,
-        deliveryDate: deliveryDueAt,
-        addressSummary,
-        orderUrl,
-      }).catch((error) => {
+      try {
+        await sendOrderConfirmationEmail({
+          to: session.user.email,
+          userName: session.user.name,
+          referenceCode,
+          cardHolderName: data.name,
+          quantity: data.quantity,
+          templateLabel: templateDefinition.label,
+          deliveryDate: deliveryDueAt,
+          addressSummary,
+          orderUrl,
+        });
+      } catch (error) {
         console.error("[order] Failed to send confirmation email", error);
-      });
+      }
     }
 
     return NextResponse.json({ success: true, orderId: order.id, referenceCode }, { status: 201 });
