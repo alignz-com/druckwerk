@@ -19,7 +19,7 @@ export default async function NewOrderPage() {
       })
     : null;
   const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
-  const templates = await listTemplatesForBrand(effectiveBrandId);
+  const templates = await listTemplatesForBrand(effectiveBrandId, { fallbackToDefaults: false });
   const addresses =
     effectiveBrandId
       ? await prisma.brandAddress.findMany({
