@@ -14,7 +14,7 @@ type Props = {
 
 export default function LanguageSwitcher({ onChanged }: Props) {
   const router = useRouter();
-  const { update } = useSession();
+  const { data: session, update } = useSession();
   const { locale, setLocale } = useLocale();
   const t = useTranslations();
   const [isPending, startTransition] = useTransition();
@@ -28,22 +28,29 @@ export default function LanguageSwitcher({ onChanged }: Props) {
     setIsSaving(true);
     document.cookie = `locale=${value}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     setLocale(value);
+    const isAuthenticated = Boolean(session?.user?.id);
     try {
-      const res = await fetch("/api/user/locale", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale: value }),
-      });
-      if (!res.ok) {
-        throw new Error(t("language.saveError"));
+      if (isAuthenticated) {
+        const res = await fetch("/api/user/locale", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale: value }),
+        });
+        if (!res.ok) {
+          throw new Error(t("language.saveError"));
+        }
+        await update?.({ locale: value });
       }
-      await update?.({ locale: value });
       startTransition(() => {
         router.refresh();
       });
       onChanged?.();
     } catch (err: any) {
-      setError(err?.message ?? t("language.saveError"));
+      if (isAuthenticated) {
+        setError(err?.message ?? t("language.saveError"));
+      } else {
+        console.error(err);
+      }
     } finally {
       setIsSaving(false);
     }

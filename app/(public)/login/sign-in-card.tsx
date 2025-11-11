@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type SignInCardProps = {
   successMessage?: string;
@@ -43,11 +44,11 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
     <div className="min-h-screen bg-slate-50 px-4 py-16">
       <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-            BC
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+            <img src="/logo-mark.svg" alt="Druckwerk Logo" className="h-8 w-8" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-900 leading-tight">Business Card Portal</h1>
+            <h1 className="text-lg font-semibold text-slate-900 leading-tight">Druckwerk von Thurnher Druckerei</h1>
             <p className="text-xs text-slate-500">Please sign in to continue</p>
           </div>
         </div>
@@ -122,6 +123,10 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
         <p className="mt-6 text-center text-xs text-slate-500">
           Printer accounts can use their email login once configured by an administrator.
         </p>
+
+        <div className="mt-8">
+          <LanguageSwitcher />
+        </div>
       </div>
     </div>
   );
