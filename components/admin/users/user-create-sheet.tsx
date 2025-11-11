@@ -26,6 +26,7 @@ type Props = {
 const ROLE_OPTIONS: Array<{ value: AdminUserSummary["role"]; label: string }> = [
   { value: "USER", label: "User" },
   { value: "ADMIN", label: "Admin" },
+  { value: "BRAND_ADMIN", label: "Brand admin" },
   { value: "PRINTER", label: "Printer" },
 ];
 

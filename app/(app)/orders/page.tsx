@@ -34,9 +34,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       : "en";
   const t = getTranslations(locale);
 
-  const isAdmin = session.user.role === "ADMIN";
+  const role = session.user.role;
+  const brandId = session.user.brandId ?? null;
+  const isAdmin = role === "ADMIN";
+  const isBrandAdmin = role === "BRAND_ADMIN";
   const orders = await prisma.order.findMany({
-    where: isAdmin ? {} : { userId: session.user.id },
+    where: isAdmin ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     include: {
       template: true,
@@ -127,7 +130,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
       <OrdersTable
         data={tableData}
-        showUserColumn={isAdmin}
+        showUserColumn={isAdmin || isBrandAdmin}
         labels={{
           created: t.ordersPage.table.created,
           user: t.ordersPage.table.user,

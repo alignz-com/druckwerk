@@ -1,1 +1,1 @@
-export type AppUserRole = "USER" | "ADMIN" | "PRINTER";
+export type AppUserRole = "USER" | "ADMIN" | "BRAND_ADMIN" | "PRINTER";

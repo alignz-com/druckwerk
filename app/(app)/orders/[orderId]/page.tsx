@@ -75,8 +75,12 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     },
   });
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!order || (!isAdmin && order.userId !== session.user.id)) {
+  const role = session.user.role;
+  const isAdmin = role === "ADMIN";
+  const isBrandAdmin = role === "BRAND_ADMIN";
+  const sameBrand = order?.brandId && session.user.brandId && order.brandId === session.user.brandId;
+  const canView = order && (isAdmin || (isBrandAdmin && sameBrand) || order.userId === session.user.id);
+  if (!canView || !order) {
     notFound();
   }
 

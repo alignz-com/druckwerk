@@ -20,6 +20,7 @@ export const messages = {
       roles: {
         USER: "User",
         ADMIN: "Admin",
+        BRAND_ADMIN: "Brand admin",
         PRINTER: "Printer",
       } as Record<string, string>,
       sidebar: {
@@ -779,6 +780,7 @@ export const messages = {
       roles: {
         USER: "Benutzer",
         ADMIN: "Admin",
+        BRAND_ADMIN: "Marken-Admin",
         PRINTER: "Druckerei",
       },
       sidebar: {

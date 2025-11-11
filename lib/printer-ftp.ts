@@ -40,14 +40,10 @@ export async function uploadJdfToPrinterFtp(content: Buffer, remoteFileName: str
       await client.cd(config.basePath);
     }
 
-    const segments = remoteFileName.split("/").filter(Boolean);
-    const fileName = segments.pop();
+    // Always upload flat (no directory creation) to avoid FTP 550 errors
+    const fileName = remoteFileName.replace(/\\/g, "/").split("/").filter(Boolean).pop();
     if (!fileName) {
       return { status: "failed", error: "Invalid remote file name" };
-    }
-    for (const segment of segments) {
-      await client.ensureDir(segment);
-      await client.cd(segment);
     }
 
     const readable = Readable.from(content);
