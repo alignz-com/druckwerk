@@ -125,6 +125,8 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
     if (map.size > 0) {
       return sortSummaries(map.values());
     }
+
+    return [];
   }
 
   const dbTemplates = await prisma.template.findMany({
