@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerAuthSession();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "PRINTER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
