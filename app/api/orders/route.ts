@@ -235,6 +235,17 @@ export async function POST(req: Request) {
     });
 
     const ftpResult = await uploadJdfToPrinterFtp(Buffer.from(jdfXml, "utf-8"), jdfFileName);
+    if (ftpResult.status !== "uploaded") {
+      const errorMessage =
+        ftpResult.status === "skipped"
+          ? ftpResult.reason || "FTP upload skipped due to missing configuration"
+          : ftpResult.error || "FTP upload failed";
+      console.error("[order] JDF FTP upload failed", errorMessage);
+      return NextResponse.json(
+        { error: `JDF upload failed: ${errorMessage}` },
+        { status: 500 },
+      );
+    }
 
     const order = await prisma.order.create({
       data: {
