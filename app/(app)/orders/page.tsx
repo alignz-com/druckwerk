@@ -94,6 +94,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       deliveryDueAtValue: order.deliveryDueAt?.getTime() ?? null,
       templateKey: typeof templateKey === "string" ? templateKey : order.template?.key ?? null,
       brandId: order.brandId,
+      brandName: order.brand?.name ?? null,
       detail: {
         requester: {
           name: order.requesterName,
@@ -138,8 +139,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
       <OrdersTable
         data={tableData}
-        showUserColumn={isAdmin || isBrandAdmin}
+        showBrandColumn={isAdmin}
         labels={{
+          brand: t.ordersPage.table.brand,
           created: t.ordersPage.table.created,
           user: t.ordersPage.table.user,
           template: t.ordersPage.table.template,

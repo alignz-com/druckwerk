@@ -39,6 +39,7 @@ export type OrdersTableRow = {
   deliveryDueAtValue: number | null;
   templateKey: string | null;
   brandId: string | null;
+  brandName: string | null;
   detail: {
     requester: {
       name: string;
@@ -72,8 +73,9 @@ type OrdersTableColumn = {
 
 type OrdersTableProps = {
   data: OrdersTableRow[];
-  showUserColumn: boolean;
+  showBrandColumn: boolean;
   labels: {
+    brand: string;
     created: string;
     user: string;
     template: string;
@@ -107,7 +109,7 @@ type OrdersTableProps = {
 
 export function OrdersTable({
   data,
-  showUserColumn,
+  showBrandColumn,
   labels,
   detailLabels,
   searchPlaceholder,
@@ -191,13 +193,34 @@ export function OrdersTable({
   }, [orderById, searchParamsString]);
 
   const columns = useMemo<OrdersTableColumn[]>(() => {
-    const baseColumns: OrdersTableColumn[] = [
-      {
-        id: "created",
-        title: labels.created,
+    const baseColumns: OrdersTableColumn[] = [];
+
+    if (showBrandColumn) {
+      baseColumns.push({
+        id: "brand",
+        title: labels.brand,
         enableSorting: true,
-        sortAccessor: (row) => row.createdAtValue,
-        renderCell: (row) => <span className="text-slate-600">{row.createdAtLabel}</span>,
+        sortAccessor: (row) => (row.brandName ?? "").toLowerCase(),
+        renderCell: (row) => <span className="text-slate-600">{row.brandName ?? "–"}</span>,
+      });
+    }
+
+    baseColumns.push(
+      {
+        id: "requester",
+        title: labels.user,
+        enableSorting: true,
+        sortAccessor: (row) => `${row.detail.requester.name ?? ""} ${row.detail.requester.role ?? ""}`
+          .trim()
+          .toLowerCase(),
+        renderCell: (row) => (
+          <div className="text-slate-600">
+            <span className="font-medium text-slate-900">{row.detail.requester.name || row.userEmail || "–"}</span>
+            {row.detail.requester.role ? (
+              <span className="block text-xs text-slate-500">{row.detail.requester.role}</span>
+            ) : null}
+          </div>
+        ),
       },
       {
         id: "template",
@@ -212,7 +235,14 @@ export function OrdersTable({
         align: "right",
         enableSorting: true,
         sortAccessor: (row) => row.quantity,
-        renderCell: (row) => <span className="text-slate-600">{row.quantity}</span>,
+        renderCell: (row) => <span className="text-slate-600">{row.quantity.toLocaleString()}</span>,
+      },
+      {
+        id: "created",
+        title: labels.created,
+        enableSorting: true,
+        sortAccessor: (row) => row.createdAtValue,
+        renderCell: (row) => <span className="text-slate-600">{row.createdAtLabel}</span>,
       },
       {
         id: "delivery",
@@ -220,11 +250,9 @@ export function OrdersTable({
         enableSorting: true,
         sortAccessor: (row) => row.deliveryDueAtValue ?? Number.MAX_SAFE_INTEGER,
         renderCell: (row) => (
-          <div className="space-y-1">
-            <Badge variant={row.deliveryTime === "express" ? "destructive" : "outline"}>{row.deliveryTimeLabel}</Badge>
-            {row.deliveryDueAtLabel ? (
-              <p className="text-xs text-slate-500">{row.deliveryDueAtLabel}</p>
-            ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-slate-700">{row.deliveryDueAtLabel ?? "—"}</span>
+            {row.deliveryTime === "express" ? <Badge variant="destructive">{row.deliveryTimeLabel}</Badge> : null}
           </div>
         ),
       },
@@ -239,32 +267,18 @@ export function OrdersTable({
       },
       {
         id: "actions",
-        title: "",
+        title: labels.view,
+        align: "right",
         renderCell: (row) => (
           <Button variant="ghost" size="sm" onClick={() => handleOpenDetail(row)}>
             {labels.view}
           </Button>
         ),
       },
-    ];
-
-    if (showUserColumn) {
-      baseColumns.splice(2, 0, {
-        id: "user",
-        title: labels.user,
-        enableSorting: true,
-        sortAccessor: (row) => `${row.userName ?? ""} ${row.userEmail ?? ""}`.trim().toLowerCase(),
-        renderCell: (row) => (
-          <div className="text-slate-600">
-            {row.userName ?? row.userEmail ?? "–"}
-            {row.userEmail ? <span className="block text-xs text-slate-400">{row.userEmail}</span> : null}
-          </div>
-        ),
-      });
-    }
+    );
 
     return baseColumns;
-  }, [labels, showUserColumn, handleOpenDetail]);
+  }, [labels, showBrandColumn, handleOpenDetail]);
 
   const filteredData = useMemo(() => {
     if (!normalizedSearch) {
@@ -278,6 +292,7 @@ export function OrdersTable({
         order.statusLabel,
         order.userName ?? "",
         order.userEmail ?? "",
+        order.brandName ?? "",
       ]
         .join(" ")
         .toLowerCase();
