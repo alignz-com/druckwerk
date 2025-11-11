@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
 import { ChevronDown, Info } from "lucide-react";
 
-import type { ResolvedTemplate } from "@/lib/templates";
+import type { ResolvedTemplate, TemplateSummary } from "@/lib/templates";
 import { COUNTRY_CODES, getCountryLabel } from "@/lib/countries";
 import { DELIVERY_OPTIONS, type DeliveryOption } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
@@ -97,11 +97,18 @@ function buildAddressBlock(opts: {
 }
 
 export type OrderFormProps = {
-  templates: ResolvedTemplate[];
+  templateSummaries: TemplateSummary[];
+  initialTemplate?: ResolvedTemplate | null;
+  brandId?: string | null;
   addresses?: BrandAddressEntry[];
 };
 
-export default function OrderForm({ templates, addresses = [] }: OrderFormProps) {
+export default function OrderForm({
+  templateSummaries,
+  initialTemplate,
+  brandId,
+  addresses = [],
+}: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const sessionUser = session?.user;
@@ -110,23 +117,78 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const hasPrefilledProfile = useRef(false);
   const t = useTranslations();
   const tOrder = useTranslations("orderForm");
-  const templateOptions = templates;
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateOptions[0]?.key ?? "");
-  const selectedTemplate = useMemo<ResolvedTemplate | null>(() => {
-    if (templateOptions.length === 0) return null;
-    return templateOptions.find((tpl) => tpl.key === selectedTemplateKey) ?? templateOptions[0]!;
-  }, [templateOptions, selectedTemplateKey]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(templateSummaries[0]?.key ?? "");
+  const [templateDetails, setTemplateDetails] = useState<Record<string, ResolvedTemplate>>(() => {
+    if (initialTemplate) {
+      return { [initialTemplate.key]: initialTemplate };
+    }
+    return {};
+  });
+  const [templateLoadingKey, setTemplateLoadingKey] = useState<string | null>(null);
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (templateOptions.length === 0) {
+    if (initialTemplate) {
+      setTemplateDetails((current) => {
+        if (current[initialTemplate.key]) return current;
+        return { ...current, [initialTemplate.key]: initialTemplate };
+      });
+    }
+  }, [initialTemplate]);
+
+  const selectedSummary = useMemo(() => {
+    if (templateSummaries.length === 0) return null;
+    return templateSummaries.find((tpl) => tpl.key === selectedTemplateKey) ?? templateSummaries[0]!;
+  }, [templateSummaries, selectedTemplateKey]);
+
+  const selectedTemplate = selectedSummary ? templateDetails[selectedSummary.key] ?? null : null;
+  const selectedSummaryKey = selectedSummary?.key ?? "";
+  const templateLoaded = selectedSummaryKey ? Boolean(templateDetails[selectedSummaryKey]) : false;
+  const templateIsLoading = selectedSummaryKey ? templateLoadingKey === selectedSummaryKey : false;
+
+  useEffect(() => {
+    if (templateSummaries.length === 0) {
       if (selectedTemplateKey) setSelectedTemplateKey("");
       return;
     }
-    const exists = templateOptions.some((tpl) => tpl.key === selectedTemplateKey);
+    const exists = templateSummaries.some((tpl) => tpl.key === selectedTemplateKey);
     if (!exists) {
-      setSelectedTemplateKey(templateOptions[0]!.key);
+      setSelectedTemplateKey(templateSummaries[0]!.key);
     }
-  }, [templateOptions, selectedTemplateKey]);
+  }, [templateSummaries, selectedTemplateKey]);
+
+  useEffect(() => {
+    if (!selectedSummaryKey || templateLoaded) return;
+    let cancelled = false;
+    setTemplateError(null);
+    setTemplateLoadingKey(selectedSummaryKey);
+    const params = new URLSearchParams({ key: selectedSummaryKey });
+    if (brandId) params.set("brandId", brandId);
+    fetch(`/api/templates/resolve?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to load template");
+        return response.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.template) {
+          setTemplateDetails((current) => ({ ...current, [data.template.key]: data.template }));
+        } else {
+          throw new Error("Template not available");
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setTemplateError(error instanceof Error ? error.message : "Failed to load template");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setTemplateLoadingKey((current) => (current === selectedSummaryKey ? null : current));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSummaryKey, templateLoaded, brandId]);
 
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
@@ -276,7 +338,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (templateOptions.length === 0 || !selectedTemplate) {
+  if (templateSummaries.length === 0) {
     return (
       <section className="space-y-6">
         <Card className="max-w-xl">
@@ -292,15 +354,17 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     );
   }
 
+  const canSubmitOrder = Boolean(selectedTemplate) && !templateIsLoading;
+
   const openConfirm = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !canSubmitOrder) return;
     setSubmitError(null);
     setConfirmView("front");
     setIsConfirmOpen(true);
   };
 
   const confirmOrder = async () => {
-    if (!selectedTemplate) return;
+    if (!selectedSummary || !selectedTemplate) return;
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -316,7 +380,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
           company: addressBlock,
           url,
           linkedin,
-          template: selectedTemplate.key,
+          template: selectedSummary.key,
           quantity: Number(quantity),
           deliveryTime,
           customerReference,
@@ -353,7 +417,11 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
           ) : null}
         </div>
-        <Button onClick={openConfirm} className="self-start sm:self-auto lg:hidden" disabled={hasOverflow || isSubmitting}>
+        <Button
+          onClick={openConfirm}
+          className="self-start sm:self-auto lg:hidden"
+          disabled={!canSubmitOrder || hasOverflow || isSubmitting}
+        >
           {tOrder("buttons.order")}
         </Button>
       </header>
@@ -384,12 +452,17 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
 
                 <div className="grid gap-2">
                   <Label htmlFor="template">{tOrder("template")}</Label>
-                  <Select value={selectedTemplateKey} onValueChange={setSelectedTemplateKey}>
+                  <Select
+                    value={selectedTemplateKey}
+                    onValueChange={(next) => {
+                      setSelectedTemplateKey(next);
+                    }}
+                  >
                     <SelectTrigger id="template">
                       <SelectValue placeholder={tOrder("placeholders.template")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {templateOptions.map((tpl) => (
+                      {templateSummaries.map((tpl) => (
                         <SelectItem key={tpl.key} value={tpl.key}>
                           {tpl.label}
                         </SelectItem>
@@ -645,49 +718,58 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                     </div>
                   )}
                   <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
-                    <FlipCard
-                      activeSide={previewView}
-                      front={
-                        <BusinessCardFront
-                          template={selectedTemplate}
-                          name={name}
-                          role={role}
-                          email={email}
-                          phone={phone}
-                          mobile={mobile}
-                          company={addressBlock}
-                          url={url}
-                          linkedin={linkedin}
-                          onOverflowChange={setFrontOverflow}
-                          addressFields={previewAddressFields}
-                          onReadyChange={setFrontPreviewReady}
-                        />
-                      }
-                      back={
-                        <BusinessCardBack
-                          template={selectedTemplate}
-                          name={name}
-                          role={role}
-                          email={email}
-                          phone={phone}
-                          mobile={mobile}
-                          company={addressBlock}
-                          url={url}
-                          linkedin={linkedin}
-                          onOverflowChange={setBackOverflow}
-                          addressFields={previewAddressFields}
-                          onReadyChange={setBackPreviewReady}
-                        />
-                      }
-                      className="h-full w-full"
-                    />
+                    {selectedTemplate ? (
+                      <FlipCard
+                        activeSide={previewView}
+                        front={
+                          <BusinessCardFront
+                            template={selectedTemplate}
+                            name={name}
+                            role={role}
+                            email={email}
+                            phone={phone}
+                            mobile={mobile}
+                            company={addressBlock}
+                            url={url}
+                            linkedin={linkedin}
+                            onOverflowChange={setFrontOverflow}
+                            addressFields={previewAddressFields}
+                            onReadyChange={setFrontPreviewReady}
+                          />
+                        }
+                        back={
+                          <BusinessCardBack
+                            template={selectedTemplate}
+                            name={name}
+                            role={role}
+                            email={email}
+                            phone={phone}
+                            mobile={mobile}
+                            company={addressBlock}
+                            url={url}
+                            linkedin={linkedin}
+                            onOverflowChange={setBackOverflow}
+                            addressFields={previewAddressFields}
+                            onReadyChange={setBackPreviewReady}
+                          />
+                        }
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+                        {templateError ?? tOrder("preview.loading")}
+                      </div>
+                    )}
                   </div>
                 </div>
+                {templateError ? (
+                  <p className="mt-2 text-center text-xs text-red-600">{templateError}</p>
+                ) : null}
               </div>
             </CardContent>
           </Card>
           <div className="hidden lg:flex lg:justify-end">
-            <Button onClick={openConfirm} className="px-6" disabled={hasOverflow || isSubmitting}>
+            <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
               {tOrder("buttons.order")}
             </Button>
           </div>
@@ -730,40 +812,46 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
               <div className="mx-auto w-full max-w-[920px]">
                 <div className="relative mx-auto aspect-[85/55] w-full max-w-[600px]">
-                  <FlipCard
-                    activeSide={confirmView}
-                    className="h-full w-full"
-                    front={
-                      <BusinessCardFront
-                        template={selectedTemplate}
-                        name={name}
-                        role={role}
-                        email={email}
-                        phone={phone}
-                        mobile={mobile}
-                        company={addressBlock}
-                        url={url}
-                        linkedin={linkedin}
-                        onOverflowChange={setFrontOverflow}
-                        addressFields={previewAddressFields}
-                      />
-                    }
-                    back={
-                      <BusinessCardBack
-                        template={selectedTemplate}
-                        name={name}
-                        role={role}
-                        email={email}
-                        phone={phone}
-                        mobile={mobile}
-                        company={addressBlock}
-                        url={url}
-                        linkedin={linkedin}
-                        onOverflowChange={setBackOverflow}
-                        addressFields={previewAddressFields}
-                      />
-                    }
-                  />
+                  {selectedTemplate ? (
+                    <FlipCard
+                      activeSide={confirmView}
+                      className="h-full w-full"
+                      front={
+                        <BusinessCardFront
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={linkedin}
+                          onOverflowChange={setFrontOverflow}
+                          addressFields={previewAddressFields}
+                        />
+                      }
+                      back={
+                        <BusinessCardBack
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={linkedin}
+                          onOverflowChange={setBackOverflow}
+                          addressFields={previewAddressFields}
+                        />
+                      }
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 text-sm text-slate-500">
+                      {templateError ?? tOrder("preview.loading")}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -789,7 +877,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
               onClick={confirmOrder}
               loading={isSubmitting}
               loadingText={tOrder("confirm.submitting")}
-              disabled={hasOverflow}
+              disabled={hasOverflow || !canSubmitOrder}
             >
               {tOrder("confirm.submit")}
             </LoadingButton>

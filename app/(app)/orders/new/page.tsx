@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import OrderForm from "@/components/order/order-form";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { listTemplatesForBrand } from "@/lib/templates";
+import { getTemplateByKey, listTemplateSummariesForBrand } from "@/lib/templates";
 
 export default async function NewOrderPage() {
   const session = await getServerAuthSession();
@@ -19,7 +19,9 @@ export default async function NewOrderPage() {
       })
     : null;
   const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
-  const templates = await listTemplatesForBrand(effectiveBrandId, { fallbackToDefaults: false });
+  const templates = await listTemplateSummariesForBrand(effectiveBrandId);
+  const initialTemplate =
+    templates[0]?.key ? await getTemplateByKey(templates[0]!.key, effectiveBrandId ?? null) : null;
   const addresses =
     effectiveBrandId
       ? await prisma.brandAddress.findMany({
@@ -53,5 +55,12 @@ export default async function NewOrderPage() {
     url: address.url,
   }));
 
-  return <OrderForm templates={templates} addresses={normalizedAddresses} />;
+  return (
+    <OrderForm
+      templateSummaries={templates}
+      initialTemplate={initialTemplate}
+      brandId={effectiveBrandId}
+      addresses={normalizedAddresses}
+    />
+  );
 }

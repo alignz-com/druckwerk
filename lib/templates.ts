@@ -3,7 +3,13 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
-import { DEFAULT_TEMPLATES, TemplateConfig, TemplateDefinition, TemplateAssetSummary } from "./templates-defaults";
+import {
+  DEFAULT_TEMPLATE_LIST,
+  DEFAULT_TEMPLATES,
+  TemplateConfig,
+  TemplateDefinition,
+  TemplateAssetSummary,
+} from "./templates-defaults";
 import {
   DEFAULT_TEMPLATE_DESIGN,
   extractDesignFromConfigSource,
@@ -65,6 +71,12 @@ export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock"> & {
   paperStock: TemplatePaperStock | null;
 };
 
+export type TemplateSummary = {
+  key: string;
+  label: string;
+  description: string | null;
+};
+
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
   const cloned = clone(def) as TemplateDefinition;
   const { paperStock, ...rest } = cloned;
@@ -79,6 +91,66 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
 
 function sortTemplates(templates: Iterable<ResolvedTemplate>) {
   return Array.from(templates).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function sortSummaries(summaries: Iterable<TemplateSummary>) {
+  return Array.from(summaries).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export async function listTemplateSummariesForBrand(brandId?: string | null): Promise<TemplateSummary[]> {
+  if (brandId) {
+    const assignments = await prisma.brandTemplate.findMany({
+      where: { brandId },
+      include: {
+        template: {
+          select: {
+            key: true,
+            label: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    const map = new Map<string, TemplateSummary>();
+    for (const assignment of assignments) {
+      const tpl = assignment.template;
+      if (!tpl) continue;
+      map.set(tpl.key, {
+        key: tpl.key,
+        label: tpl.label,
+        description: tpl.description ?? null,
+      });
+    }
+    if (map.size > 0) {
+      return sortSummaries(map.values());
+    }
+  }
+
+  const dbTemplates = await prisma.template.findMany({
+    select: {
+      key: true,
+      label: true,
+      description: true,
+    },
+    orderBy: [{ label: "asc" }],
+  });
+
+  if (dbTemplates.length > 0) {
+    return dbTemplates.map((tpl) => ({
+      key: tpl.key,
+      label: tpl.label,
+      description: tpl.description ?? null,
+    }));
+  }
+
+  return sortSummaries(
+    DEFAULT_TEMPLATE_LIST.map((tpl) => ({
+      key: tpl.key,
+      label: tpl.label,
+      description: tpl.description ?? null,
+    })),
+  );
 }
 
 const templateInclude = {
