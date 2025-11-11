@@ -65,6 +65,7 @@ model User {
   brand          Brand?    @relation(fields: [brandId], references: [id])
   accounts       Account[]
   sessions       Session[]
+  passwordResetTokens PasswordResetToken[]
   orders         Order[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -263,6 +264,19 @@ model TemplateAsset {
 
   @@index([templateId])
   @@index([templateId, type])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model FontFamily {

@@ -96,16 +96,22 @@ export default function SignInCard() {
             />
           </div>
 
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {error ? <p className="text-xs text-red-600">{error}</p> : null}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Printer accounts can use their email login once configured by an administrator.
-        </p>
+      <p className="mt-3 text-center text-xs text-slate-500">
+        <a href="/password-reset" className="text-slate-700 underline-offset-2 hover:underline">
+          Forgot password?
+        </a>
+      </p>
+
+      <p className="mt-6 text-center text-xs text-slate-500">
+        Printer accounts can use their email login once configured by an administrator.
+      </p>
       </div>
     </div>
   );
