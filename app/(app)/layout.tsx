@@ -42,15 +42,15 @@ export default async function AppLayout({ children }: Props) {
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
     { href: "/orders", label: t.nav.orders, icon: "orders" },
   ];
-  const adminNav =
-    session.user.role === "ADMIN"
-      ? [
-          { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
-          { href: "/admin/users", label: t.nav.adminUsers, icon: "admin-users" },
-          { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
-          { href: "/admin/fonts", label: t.nav.adminFonts, icon: "admin-fonts" },
-        ]
-      : [];
+  const isAdmin = session.user.role === "ADMIN";
+  const adminNav = isAdmin
+    ? [
+        { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
+        { href: "/admin/users", label: t.nav.adminUsers, icon: "admin-users" },
+        { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
+        { href: "/admin/fonts", label: t.nav.adminFonts, icon: "admin-fonts" },
+      ]
+    : [];
 
   const navGroups: NavGroup[] = [{ items: primaryNav }];
   if (adminNav.length > 0) {

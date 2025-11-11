@@ -12,6 +12,10 @@ export const messages = {
       adminBrands: "Brands",
       adminGroup: "Admin",
       logout: "Logout",
+      brandsView: "Brands",
+      templatesView: "Templates",
+      usersView: "Users",
+      fontsView: "Fonts",
     },
     layout: {
       brandTitle: "Omicron",
@@ -794,6 +798,10 @@ export const messages = {
       adminBrands: "Marken",
       adminGroup: "Admin",
       logout: "Abmelden",
+      brandsView: "Marken",
+      templatesView: "Vorlagen",
+      usersView: "Benutzer",
+      fontsView: "Schriften",
     },
     layout: {
       brandTitle: "Omicron",
