@@ -12,6 +12,9 @@ import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminUserSummary } from "@/lib/admin/users-data";
 import { LoadingButton } from "@/components/ui/loading-button";
 
+const ROLE_OPTIONS = ["USER", "ADMIN", "BRAND_ADMIN", "PRINTER"] as const;
+type RoleOption = typeof ROLE_OPTIONS[number];
+
 type BrandOption = {
   id: string;
   name: string;
@@ -31,6 +34,7 @@ const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
 export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUserUpdated }: Props) {
   const t = useTranslations("admin.users");
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<RoleOption>("USER");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -38,6 +42,7 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
   useEffect(() => {
     if (user) {
       setSelectedBrandId(user.brandId ?? null);
+      setSelectedRole((ROLE_OPTIONS.includes(user.role as RoleOption) ? user.role : "USER") as RoleOption);
     }
     setError(null);
     setSuccess(null);
@@ -54,7 +59,7 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
       const response = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandId: selectedBrandId }),
+        body: JSON.stringify({ brandId: selectedBrandId, role: selectedRole }),
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -104,6 +109,30 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
                     <dd>{new Date(user.updatedAt).toLocaleString()}</dd>
                   </div>
                 </dl>
+              </section>
+
+              <Separator />
+
+              <section className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">{t("detail.role.title")}</h3>
+                  <p className="text-xs text-slate-500">{t("detail.role.description")}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user-role-select">{t("detail.role.label")}</Label>
+                  <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as RoleOption)}>
+                    <SelectTrigger id="user-role-select" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {t(`detail.role.options.${role}` as const)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </section>
 
               <Separator />

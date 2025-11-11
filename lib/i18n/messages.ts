@@ -251,6 +251,17 @@ export const messages = {
             placeholder: "Select a brand…",
             unassigned: "Unassigned",
           },
+          role: {
+            title: "Permissions",
+            description: "Choose the level of access for this user.",
+            label: "Role",
+            options: {
+              USER: "User",
+              ADMIN: "Admin",
+              BRAND_ADMIN: "Brand admin",
+              PRINTER: "Printer",
+            } as Record<string, string>,
+          },
         },
         create: {
           title: "Add user",
@@ -1021,6 +1032,17 @@ export const messages = {
             brandLabel: "Marke",
             placeholder: "Marke auswählen…",
             unassigned: "Nicht zugewiesen",
+          },
+          role: {
+            title: "Berechtigungen",
+            description: "Lege die Zugriffsrechte für diesen Benutzer fest.",
+            label: "Rolle",
+            options: {
+              USER: "Benutzer",
+              ADMIN: "Admin",
+              BRAND_ADMIN: "Marken-Admin",
+              PRINTER: "Druckerei",
+            } as Record<string, string>,
           },
         },
         create: {
