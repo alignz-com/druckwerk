@@ -1,8 +1,7 @@
 const POSTMARK_API_URL = "https://api.postmarkapp.com/email";
-const POSTMARK_TEMPLATE_API_URL = "https://api.postmarkapp.com/email/withTemplate";
-const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 const PRODUCT_NAME = process.env.APP_PRODUCT_NAME || process.env.NEXT_PUBLIC_APP_NAME || "druckwerk";
-const SUPPORT_URL = process.env.SUPPORT_URL || APP_URL || "https://druckwerk.dth.at";
+const SUPPORT_URL =
+  process.env.SUPPORT_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://druckwerk.dth.at";
 
 export type PasswordResetEmailPayload = {
   to: string;
@@ -23,8 +22,6 @@ export async function sendPasswordResetEmail({
 }: PasswordResetEmailPayload) {
   const apiToken = process.env.POSTMARK_API_TOKEN;
   const fromEmail = process.env.POSTMARK_FROM_EMAIL;
-  const templateId = process.env.POSTMARK_PASSWORD_RESET_TEMPLATE_ID;
-  const templateAlias = process.env.POSTMARK_PASSWORD_RESET_TEMPLATE_ALIAS;
   const messageStream = process.env.POSTMARK_MESSAGE_STREAM || "outbound";
 
   if (!apiToken || !fromEmail) {
@@ -32,56 +29,45 @@ export async function sendPasswordResetEmail({
     return;
   }
 
-  let templateTarget: Record<string, number | string> | null = null;
-  if (templateId) {
-    const parsedId = Number(templateId);
-    if (Number.isNaN(parsedId)) {
-      console.error("[email] POSTMARK_PASSWORD_RESET_TEMPLATE_ID must be a number");
-    } else {
-      templateTarget = { TemplateId: parsedId };
-    }
-  } else if (templateAlias) {
-    templateTarget = { TemplateAlias: templateAlias };
-  }
+  const isGerman = locale?.toLowerCase().startsWith("de");
+  const namePart = name?.trim() ? ` ${name.trim()}` : "";
+  const osInfo = operatingSystem || "Unknown OS";
+  const browserInfo = browserName || "Unknown browser";
 
-  if (templateTarget) {
-    const templateConfig: Record<string, unknown> = {
-      From: fromEmail,
-      To: to,
-      MessageStream: messageStream,
-      ...templateTarget,
-      TemplateModel: {
-        name: name?.trim() || undefined,
-        product_name: PRODUCT_NAME,
-        action_url: resetUrl,
-        operating_system: operatingSystem || "Unknown",
-        browser_name: browserName || "Unknown",
-        support_url: SUPPORT_URL,
-        is_de: locale?.toLowerCase().startsWith("de") ?? false,
-      },
-    };
+  const subject = isGerman ? `${PRODUCT_NAME}: Passwort zurücksetzen` : `${PRODUCT_NAME}: Reset your password`;
+  const textBody = isGerman
+    ? `Hallo${namePart},
 
-    const response = await fetch(POSTMARK_TEMPLATE_API_URL, {
-      method: "POST",
-      headers: {
-        "X-Postmark-Server-Token": apiToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(templateConfig),
-    });
+du hast angefordert, dein Passwort für ${PRODUCT_NAME} zurückzusetzen. Öffne den folgenden Link (24 Stunden gültig):
 
-    if (!response.ok) {
-      const body = await response.text();
-      console.error("[email] Failed to send password reset email via template", response.status, body);
-    }
-    return;
-  }
+${resetUrl}
 
-  // Fallback to basic email API if no template is configured.
-  const subject = "Reset your druckwerk password";
-  const greeting = name?.trim() ? `Hello ${name.trim()},` : "Hello,";
-  const textBody = `${greeting}\n\nWe received a request to reset your password.\n\nReset password: ${resetUrl}\n\nIf you did not request this, you can ignore this email.`;
-  const htmlBody = `<p>${greeting}</p><p>We received a request to reset your password.</p><p><a href="${resetUrl}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`;
+Anfrage von Gerät: ${osInfo} / ${browserInfo}. Wenn du das nicht warst, ignoriere diese Nachricht oder kontaktiere uns unter ${SUPPORT_URL}.
+
+Viele Grüße
+${PRODUCT_NAME} Support`
+    : `Hi${namePart},
+
+You requested to reset your ${PRODUCT_NAME} password. Use this link (valid for 24 hours):
+
+${resetUrl}
+
+Request originated from: ${osInfo} / ${browserInfo}. If you didn’t make it, ignore this message or reach us at ${SUPPORT_URL}.
+
+Thanks,
+${PRODUCT_NAME} Support`;
+
+  const htmlBody = isGerman
+    ? `<p>Hallo${namePart},</p>
+<p>du hast angefordert, dein Passwort für ${PRODUCT_NAME} zurückzusetzen. Der Link gilt für 24&nbsp;Stunden.</p>
+<p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Passwort zurücksetzen</a></p>
+<p>Gerät: ${osInfo} / ${browserInfo}. Warst du das nicht? Ignoriere die E-Mail oder kontaktiere uns unter <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
+<p>Viele Grüße<br/>${PRODUCT_NAME} Support</p>`
+    : `<p>Hi${namePart},</p>
+<p>You requested to reset your ${PRODUCT_NAME} password. The link is valid for 24&nbsp;hours.</p>
+<p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Reset password</a></p>
+<p>Device: ${osInfo} / ${browserInfo}. Didn’t make this request? Ignore this email or contact us at <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
+<p>Thanks,<br/>${PRODUCT_NAME} Support</p>`;
 
   const response = await fetch(POSTMARK_API_URL, {
     method: "POST",
