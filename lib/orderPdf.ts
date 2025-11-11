@@ -12,6 +12,7 @@ import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
 import type {
   DesignElement,
+  QrElement,
   RectElement,
   StackElement,
   TemplateDesign,
@@ -403,7 +404,8 @@ function pickDesignFont(font: TextElement["font"], fonts: PdfFontPack) {
   return fonts.regular ?? fonts.bold ?? fonts.italic;
 }
 
-function renderDesignElementsToPdf(opts: {
+async function renderDesignElementsToPdf(opts: {
+  doc: PDFDocument;
   page: any;
   elements: DesignElement[];
   context: Record<string, unknown>;
@@ -415,10 +417,23 @@ function renderDesignElementsToPdf(opts: {
   offsetXMm: number;
   offsetYMm: number;
 }) {
-  const { page, elements, context, fonts, cardWidthMm, cardHeightMm, pageWidthMm, pageHeightMm, offsetXMm, offsetYMm } = opts;
+  const {
+    doc,
+    page,
+    elements,
+    context,
+    fonts,
+    cardWidthMm,
+    cardHeightMm,
+    pageWidthMm,
+    pageHeightMm,
+    offsetXMm,
+    offsetYMm,
+  } = opts;
   const mmToPt = mm2pt;
+  const imageCache = new Map<string, any>();
 
-  const renderElement = (element: DesignElement, offsetX = 0, offsetY = 0): number => {
+  const renderElement = async (element: DesignElement, offsetX = 0, offsetY = 0): Promise<number> => {
     switch (element.type) {
       case "rect": {
         if (element.visibility && !evaluateVisibility(element.visibility, context)) return 0;
@@ -501,19 +516,42 @@ function renderDesignElementsToPdf(opts: {
         const gapMm = element.gapMm ?? 0;
         let cursor = 0;
         for (const child of element.items) {
-          const childHeight = renderElement(child, offsetX + element.xMm, offsetY + element.yMm + cursor);
+          const childHeight = await renderElement(child, offsetX + element.xMm, offsetY + element.yMm + cursor);
           if (childHeight > 0) {
             cursor += childHeight + gapMm;
           }
         }
         return cursor;
       }
+      case "qr": {
+        if (element.visibility && !evaluateVisibility(element.visibility, context)) return 0;
+        const data = resolveField(context, element.dataBinding);
+        if (typeof data !== "string" || data.length === 0) return 0;
+        let img = imageCache.get(data);
+        if (!img) {
+          const base64 = data.includes(",") ? data.split(",")[1] : data;
+          const pngBytes = Buffer.from(base64, "base64");
+          img = await doc.embedPng(pngBytes);
+          imageCache.set(data, img);
+        }
+        const sizeMm = element.sizeMm;
+        const widthPt = mmToPt(sizeMm);
+        const heightPt = mmToPt(sizeMm);
+        const xMm = offsetXMm + offsetX + element.xMm;
+        const yMm = offsetYMm + offsetY + element.yMm;
+        const x = mmToPt(xMm);
+        const y = mmToPt(pageHeightMm - yMm - sizeMm);
+        page.drawImage(img, { x, y, width: widthPt, height: heightPt });
+        return sizeMm;
+      }
       default:
         return 0;
     }
   };
 
-  elements.forEach((element) => renderElement(element));
+  for (const element of elements) {
+    await renderElement(element);
+  }
 }
 
 export async function generateOrderPdf(fields: OrderPdfFields, template: ResolvedTemplate) {
@@ -620,7 +658,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
 
   const hasDesignFront = Array.isArray(template.design?.front) && template.design!.front.length > 0;
   if (hasDesignFront) {
-    renderDesignElementsToPdf({
+    await renderDesignElementsToPdf({
+      doc: tplDoc,
       page: front,
       elements: template.design!.front,
       context: sharedContext,
@@ -713,7 +752,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   }
 
   if (hasDesignBack) {
-    renderDesignElementsToPdf({
+    await renderDesignElementsToPdf({
+      doc: tplDoc,
       page: back,
       elements: template.design!.back,
       context: { ...sharedContext, qrData },
