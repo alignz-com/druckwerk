@@ -85,6 +85,7 @@ function SmoothSvgImage({
 }) {
   const [displaySrc, setDisplaySrc] = useState(src); // what SVG currently shows
   const [entering, setEntering] = useState(false); // drives opacity transition
+  const hasPaintedOnceRef = useRef(false);
 
   useEffect(() => {
     if (!src) return;
@@ -92,12 +93,16 @@ function SmoothSvgImage({
     const img = new Image();
     img.onload = () => {
       if (cancelled) return;
-      // swap to new source, then fade it in
       setDisplaySrc(src);
-      setEntering(true);                // start at opacity-0
-      requestAnimationFrame(() => {     // next tick -> opacity-100
+      if (hasPaintedOnceRef.current) {
+        setEntering(true);
+        requestAnimationFrame(() => {
+          setEntering(false);
+        });
+      } else {
+        hasPaintedOnceRef.current = true;
         setEntering(false);
-      });
+      }
       onLoad?.();
     };
     img.onerror = () => {/* keep old image on error */};
@@ -105,7 +110,8 @@ function SmoothSvgImage({
     return () => { cancelled = true; };
   }, [src]);
 
-  // Old image stays visible until new is loaded (because displaySrc only changes after load).
+  const animate = hasPaintedOnceRef.current;
+
   return (
     <image
       href={displaySrc}
@@ -114,7 +120,7 @@ function SmoothSvgImage({
       width={width}
       height={height}
       preserveAspectRatio={preserveAspectRatio as any}
-      className={`transition-opacity duration-300 ${entering ? "opacity-0" : "opacity-100"}`}
+      className={animate ? `transition-opacity duration-300 ${entering ? "opacity-0" : "opacity-100"}` : "opacity-100"}
       onError={onError ? () => onError() : undefined}
     />
   );

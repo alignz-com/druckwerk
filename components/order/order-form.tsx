@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
 import { ChevronDown, Info } from "lucide-react";
+import dynamic from "next/dynamic";
 
 import type { ResolvedTemplate, TemplateSummary } from "@/lib/templates";
 import { COUNTRY_CODES, getCountryLabel } from "@/lib/countries";
@@ -12,7 +13,6 @@ import { DELIVERY_OPTIONS, type DeliveryOption } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
-import FlipCard from "@/components/FlipCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingButton } from "@/components/ui/loading-button";
+
+function PreviewSkeleton() {
+  return <div className="h-full w-full rounded-2xl border border-slate-200 bg-slate-50" />;
+}
+
+const FlipCard = dynamic(() => import("@/components/FlipCard"), {
+  ssr: false,
+  loading: () => <PreviewSkeleton />,
+});
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 
