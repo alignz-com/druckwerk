@@ -1191,6 +1191,10 @@ export function BusinessCardBack({
   const addrCountry = structuredCountry || parsedCountry || undefined;
   const { preview: previewCfg } = getFrontConfig(template);
   const backConfig = useMemo(() => getBackConfig(template), [template]);
+  const design = template.design ?? DEFAULT_TEMPLATE_DESIGN;
+  const designBackHasQr = useMemo(() => designContainsQr(design.back), [design.back]);
+  const shouldRenderLegacyQr = backConfig.mode === "qr" && !designBackHasQr;
+  const requiresQrData = designBackHasQr || shouldRenderLegacyQr;
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: backBackground, onError: handleBackAssetError } = useTemplateAssetSource(
     template,
@@ -1212,8 +1216,6 @@ export function BusinessCardBack({
     handleBackAssetError?.();
     setBackgroundReady(true);
   }, [handleBackAssetError]);
-  const design = template.design ?? DEFAULT_TEMPLATE_DESIGN;
-
   const vcard = useMemo(
     () =>
       buildVCard3({
@@ -1240,7 +1242,7 @@ export function BusinessCardBack({
 
   useEffect(() => {
     let stop = false;
-    if (backConfig.mode !== "qr") {
+    if (!requiresQrData) {
       setQrData("");
       return;
     }
@@ -1255,7 +1257,7 @@ export function BusinessCardBack({
     return () => {
       stop = true;
     };
-  }, [vcard, backConfig.mode]);
+  }, [vcard, requiresQrData]);
 
   const qrConfig = backConfig.qr;
   const previewQrOverride = backConfig.preview?.qr;
@@ -1324,7 +1326,7 @@ export function BusinessCardBack({
         <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`}>
           {backNodes}
 
-          {backConfig.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
+          {shouldRenderLegacyQr && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
             <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
           ) : null}
 

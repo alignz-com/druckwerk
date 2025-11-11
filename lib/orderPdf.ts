@@ -28,6 +28,15 @@ type PdfFontPack = {
   boldItalic?: PDFFont;
 };
 
+function designContainsQr(elements: DesignElement[] | undefined): boolean {
+  if (!elements) return false;
+  for (const element of elements) {
+    if (element.type === "qr") return true;
+    if (element.type === "stack" && designContainsQr(element.items)) return true;
+  }
+  return false;
+}
+
 function parseColor(value: string | undefined) {
   if (!value) return undefined;
   let hex = value.trim();
@@ -676,8 +685,14 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   const orgName = address?.companyName || (company || "").split(/\r?\n/)[0] || "";
   const addrLabel = company || "";
 
+  const hasDesignBack = Array.isArray(template.design?.back) && template.design!.back.length > 0;
+  const designBackHasQr = hasDesignBack && designContainsQr(template.design!.back);
+  const legacyQrConfig = template.config.back?.mode === "qr" ? template.config.back.qr : undefined;
+  const shouldRenderLegacyQr = Boolean(legacyQrConfig) && !designBackHasQr;
+  const needsQrData = designBackHasQr || Boolean(legacyQrConfig);
+
   let qrData: string | null = null;
-  if (template.config.back.mode === "qr" && template.config.back.qr) {
+  if (needsQrData) {
     const vcard = buildVCard3({
       fullName: name,
       org: orgName,
@@ -697,7 +712,6 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     });
   }
 
-  const hasDesignBack = Array.isArray(template.design?.back) && template.design!.back.length > 0;
   if (hasDesignBack) {
     renderDesignElementsToPdf({
       page: back,
@@ -713,11 +727,11 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     });
   }
 
-  if (template.config.back.mode === "qr" && template.config.back.qr && qrData) {
+  if (shouldRenderLegacyQr && legacyQrConfig && qrData) {
     const pngBytes = Buffer.from(qrData.split(",")[1], "base64");
     const img = await tplDoc.embedPng(pngBytes);
 
-    const qrConfig = template.config.back.qr;
+    const qrConfig = legacyQrConfig;
     const qrSize = mm2pt(qrConfig.sizeMm);
     const qx = mm2pt(offsetXMm + qrConfig.xMm);
     const qy = mm2pt(offsetYMm + qrConfig.yMm);
