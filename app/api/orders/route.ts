@@ -282,7 +282,6 @@ export async function POST(req: Request) {
         cardHolderName: data.name,
         quantity: data.quantity,
         templateLabel: templateDefinition.label,
-        paperStockName: templateDefinition.paperStock?.name,
         deliveryDate: deliveryDueAt,
         addressSummary,
         orderUrl,

@@ -19,7 +19,6 @@ export type OrderConfirmationEmailPayload = {
   cardHolderName: string;
   quantity: number;
   templateLabel?: string | null;
-  paperStockName?: string | null;
   deliveryDate?: Date | string | null;
   addressSummary?: string | null;
   orderUrl?: string | null;
@@ -111,7 +110,6 @@ export async function sendOrderConfirmationEmail({
   cardHolderName,
   quantity,
   templateLabel,
-  paperStockName,
   deliveryDate,
   addressSummary,
   orderUrl,
@@ -134,7 +132,6 @@ export async function sendOrderConfirmationEmail({
     `Quantity: ${quantity}`,
   ];
   if (templateLabel) details.push(`Template: ${templateLabel}`);
-  if (paperStockName) details.push(`Paper stock: ${paperStockName}`);
   if (deliveryDate) details.push(`Target delivery: ${formatDateForEmail(deliveryDate)}`);
   if (addressSummary) details.push(`Shipping to: ${addressSummary}`);
 
@@ -146,7 +143,7 @@ export async function sendOrderConfirmationEmail({
 thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:
 
 ${summary}
-${orderLinkLine}We will let you know once production starts. Need help? ${SUPPORT_URL}
+${orderLinkLine}Need help? ${SUPPORT_URL}
 
 Best,
 ${PRODUCT_NAME} Team`;
@@ -155,7 +152,7 @@ ${PRODUCT_NAME} Team`;
 <p>thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:</p>
 <pre style="font-family:monospace;line-height:1.4;">${escapeHtml(summary)}</pre>
 ${orderUrl ? `<p><a href="${orderUrl}" target="_blank" rel="noopener noreferrer">View this order</a></p>` : ""}
-<p>We will let you know once production starts. Need help? <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a></p>
+<p>Need help? <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a></p>
 <p>Best,<br/>${PRODUCT_NAME} Team</p>`;
 
   const response = await fetch(POSTMARK_API_URL, {
