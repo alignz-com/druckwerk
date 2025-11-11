@@ -234,7 +234,7 @@ export async function POST(req: Request) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    const ftpResult = await uploadJdfToPrinterFtp(Buffer.from(jdfXml, "utf-8"), `${referenceCode}/${jdfFileName}`);
+    const ftpResult = await uploadJdfToPrinterFtp(Buffer.from(jdfXml, "utf-8"), jdfFileName);
 
     const order = await prisma.order.create({
       data: {
