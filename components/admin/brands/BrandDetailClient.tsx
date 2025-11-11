@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 
 export type BrandDetailClientProps = {
   brand?: AdminBrandSummary | null;
@@ -28,6 +29,7 @@ type BrandAddressForm = {
   postalCode: string;
   city: string;
   countryCode: string;
+  cardAddressText: string;
 };
 
 type BrandForm = {
@@ -63,6 +65,7 @@ const emptyAddress = (): BrandAddressForm => ({
   postalCode: "",
   city: "",
   countryCode: "",
+  cardAddressText: "",
 });
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -139,6 +142,7 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
         postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
+        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
       })),
     };
 
@@ -378,6 +382,19 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                             maxLength={200}
                           />
                         </div>
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <div className="flex items-center justify-between">
+                            <Label>{t("addresses.fields.cardAddressText")}</Label>
+                            <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
+                          </div>
+                          <Textarea
+                            value={address.cardAddressText}
+                            onChange={(event) =>
+                              handleAddressChange(address.clientKey, "cardAddressText", event.target.value)
+                            }
+                            rows={4}
+                          />
+                        </div>
                         <div className="space-y-1.5">
                           <Label>{t("addresses.fields.postalCode")}</Label>
                           <Input
@@ -500,6 +517,7 @@ function mapAddressToForm(address: AdminBrandAddress): BrandAddressForm {
     company: address.company ?? "",
     street: address.street ?? "",
     addressExtra: address.addressExtra ?? "",
+    cardAddressText: address.cardAddressText ?? "",
     postalCode: address.postalCode ?? "",
     city: address.city ?? "",
     countryCode: address.countryCode ?? "",

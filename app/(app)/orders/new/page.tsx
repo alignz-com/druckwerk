@@ -34,6 +34,7 @@ export default async function NewOrderPage() {
             postalCode: true,
             city: true,
             countryCode: true,
+            cardAddressText: true,
             url: true,
           },
         })
@@ -48,6 +49,7 @@ export default async function NewOrderPage() {
     postalCode: address.postalCode,
     city: address.city,
     countryCode: address.countryCode,
+    cardAddressText: address.cardAddressText,
     url: address.url,
   }));
 

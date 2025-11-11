@@ -25,6 +25,7 @@ type AddressForm = {
   postalCode: string;
   city: string;
   countryCode: string;
+  cardAddressText: string;
   url: string;
 };
 
@@ -51,6 +52,7 @@ const emptyAddress = (): AddressForm => ({
   postalCode: "",
   city: "",
   countryCode: "",
+  cardAddressText: "",
   url: "",
 });
 
@@ -137,6 +139,7 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
+        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
         url: address.url.trim() ? address.url.trim() : null,
       })),
     };
@@ -313,6 +316,17 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
                       <Input
                         value={address.addressExtra}
                         onChange={(event) => handleAddressChange(address.clientKey, "addressExtra", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <Label>{t("addresses.fields.cardAddressText")}</Label>
+                        <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
+                      </div>
+                      <Textarea
+                        value={address.cardAddressText}
+                        onChange={(event) => handleAddressChange(address.clientKey, "cardAddressText", event.target.value)}
+                        rows={4}
                       />
                     </div>
                     <div className="space-y-2">

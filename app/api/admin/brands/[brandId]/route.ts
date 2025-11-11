@@ -101,6 +101,7 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
             postalCode: address.postalCode ?? null,
             city: address.city ?? null,
             countryCode: address.countryCode ?? null,
+            cardAddressText: address.cardAddressText ?? null,
             url: address.url ?? null,
           };
 

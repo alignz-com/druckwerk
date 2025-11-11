@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
@@ -47,6 +47,7 @@ type BrandAddressEntry = {
   postalCode: string | null;
   city: string | null;
   countryCode: string | null;
+  cardAddressText?: string | null;
   url?: string | null;
 };
 
@@ -146,6 +147,7 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const [addressInputValue, setAddressInputValue] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
+  const [selectedAddressEntry, setSelectedAddressEntry] = useState<BrandAddressEntry | null>(null);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
   const [frontPreviewReady, setFrontPreviewReady] = useState(false);
@@ -153,6 +155,23 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
   const hasOverflow = frontOverflow || backOverflow;
   const previewReady = frontPreviewReady && backPreviewReady;
   const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
+
+  const getAddressBlockFromEntry = useCallback(
+    (entry?: BrandAddressEntry | null) => {
+      if (!entry) return "";
+      const stored = entry.cardAddressText?.trim();
+      if (stored) return stored;
+      return buildAddressBlock({
+        companyName: entry.company ?? undefined,
+        street: entry.street ?? undefined,
+        postalCode: entry.postalCode ?? undefined,
+        city: entry.city ?? undefined,
+        countryCode: entry.countryCode ?? undefined,
+        locale: localeShort,
+      });
+    },
+    [localeShort],
+  );
 
   useEffect(() => {
     setFrontPreviewReady(false);
@@ -179,18 +198,6 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
       a.label.localeCompare(b.label, localeShort === "de" ? "de" : "en"),
     );
   }, [localeShort]);
-
-  useEffect(() => {
-    const generated = buildAddressBlock({
-      companyName,
-      street,
-      postalCode,
-      city,
-      countryCode,
-      locale: localeShort,
-    });
-    setAddressBlock((current) => (current === generated ? current : generated));
-  }, [companyName, street, postalCode, city, countryCode, localeShort]);
 
   const previewAddressFields = useMemo(
     () => ({
@@ -231,6 +238,13 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
     setAddressInputValue(displayLabel);
     setAddressSearch("");
     setAddressDropdownOpen(false);
+    setSelectedAddressEntry(entry);
+    setAddressBlock(getAddressBlockFromEntry(entry));
+  };
+
+  const handleLoadAddressDefault = () => {
+    if (!selectedAddressEntry) return;
+    setAddressBlock(getAddressBlockFromEntry(selectedAddressEntry));
   };
 
   const estimatedDeliveryDate = useMemo(() => {
@@ -568,7 +582,18 @@ export default function OrderForm({ templates, addresses = [] }: OrderFormProps)
                   <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLoadAddressDefault}
+                      disabled={!selectedAddressEntry}
+                    >
+                      {tOrder("buttons.loadAddressDefault")}
+                    </Button>
+                  </div>
                   <Textarea
                     id="addressBlock"
                     value={addressBlock}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   brand: AdminBrandSummary | null;
@@ -39,6 +40,7 @@ type BrandAddressForm = {
   postalCode: string;
   city: string;
   countryCode: string;
+  cardAddressText: string;
   url: string;
 };
 
@@ -56,6 +58,7 @@ const emptyAddress = (): BrandAddressForm => ({
   postalCode: "",
   city: "",
   countryCode: "",
+  cardAddressText: "",
   url: "",
 });
 
@@ -151,6 +154,7 @@ export default function BrandDetailSheet({
         postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
+        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
         url: address.url.trim() ? address.url.trim() : null,
       })),
     };
@@ -410,6 +414,19 @@ export default function BrandDetailSheet({
                                 }
                               />
                             </div>
+                            <div className="space-y-2 sm:col-span-2">
+                              <div className="flex items-center justify-between">
+                                <Label>{t("addresses.fields.cardAddressText")}</Label>
+                                <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
+                              </div>
+                              <Textarea
+                                value={address.cardAddressText}
+                                onChange={(event) =>
+                                  handleAddressChange(address.clientKey, "cardAddressText", event.target.value)
+                                }
+                                rows={4}
+                              />
+                            </div>
                             <div className="space-y-2">
                               <Label>{t("addresses.fields.postalCode")}</Label>
                               <Input
@@ -613,6 +630,7 @@ function mapAddress(address: AdminBrandAddress): BrandAddressForm {
     company: address.company ?? "",
     street: address.street ?? "",
     addressExtra: address.addressExtra ?? "",
+    cardAddressText: address.cardAddressText ?? "",
     postalCode: address.postalCode ?? "",
     city: address.city ?? "",
     countryCode: address.countryCode ?? "",

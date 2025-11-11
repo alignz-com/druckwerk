@@ -86,7 +86,8 @@ export const messages = {
       },
       hints: {
         linkedin: "LinkedIn URL won’t be printed, but is available via the QR code.",
-        addressExtra: "Edit this block to control the printed layout. Structured fields still power the QR code.",
+        addressExtra:
+          "Use “Load default value” to insert the recommended text for the selected address. You can still edit it to control the printed layout while structured fields power the QR code.",
         addressSearch: "Choose an address saved for your brand to prefill the company data.",
       },
       addressSearch: {
@@ -99,6 +100,7 @@ export const messages = {
         loading: "Loading preview…",
       },
       buttons: {
+        loadAddressDefault: "Load default value",
         order: "Order Business Card",
       },
       confirm: {
@@ -730,12 +732,14 @@ export const messages = {
           empty: "No addresses yet.",
           remove: "Remove",
           countryHint: "Two-letter country code (ISO 3166-1 alpha-2).",
+          cardAddressHint: "Shown exactly on the card. Supports multiple lines.",
           fields: {
             label: "Label",
             company: "Company",
             url: "URL",
             street: "Street & number",
             addressExtra: "Address addition",
+            cardAddressText: "Card address block",
             postalCode: "Postal code",
             city: "City",
             countryCode: "Country code",
@@ -846,7 +850,8 @@ export const messages = {
       },
       hints: {
         linkedin: "Die LinkedIn-URL wird nicht aufgedruckt, ist aber über den QR-Code abrufbar.",
-        addressExtra: "Hier kannst du den Drucktext anpassen. Die strukturierten Felder oben steuern weiterhin den QR-Code.",
+        addressExtra:
+          "Nutze „Standardwert laden“, um den empfohlenen Text für die ausgewählte Adresse zu übernehmen. Du kannst ihn danach bearbeiten; die strukturierten Felder steuern weiterhin den QR-Code.",
         addressSearch: "Wähle eine gespeicherte Adresse deiner Marke, um die Felder automatisch zu füllen.",
       },
       addressSearch: {
@@ -859,6 +864,7 @@ export const messages = {
         loading: "Vorschau wird geladen…",
       },
       buttons: {
+        loadAddressDefault: "Standardwert laden",
         order: "Visitenkarte bestellen",
       },
       confirm: {
@@ -1490,12 +1496,14 @@ export const messages = {
           empty: "Noch keine Adressen hinterlegt.",
           remove: "Entfernen",
           countryHint: "Zweistelliger Ländercode (ISO 3166-1 alpha-2).",
+          cardAddressHint: "Wird 1:1 auf die Visitenkarte übernommen. Mehrzeilig möglich.",
           fields: {
             label: "Bezeichnung",
             company: "Firma",
             url: "URL",
             street: "Straße & Nummer",
             addressExtra: "Adresszusatz",
+            cardAddressText: "Adressblock (Visitenkarte)",
             postalCode: "Postleitzahl",
             city: "Ort",
             countryCode: "Ländercode",
