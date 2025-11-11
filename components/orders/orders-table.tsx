@@ -12,6 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
 import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PAGE_SIZE = 10;
 
@@ -86,7 +93,16 @@ type OrdersTableProps = {
     reset: string;
   };
   selectionLabelTemplate?: string;
-  renderActions?: (selectedIds: string[]) => ReactNode;
+  bulkStatus?: {
+    options: { value: string; label: string }[];
+    labels: {
+      label: string;
+      placeholder: string;
+      apply: string;
+      success: string;
+      error: string;
+    };
+  };
 };
 
 export function OrdersTable({
@@ -99,7 +115,7 @@ export function OrdersTable({
   noResults,
   pagination,
   selectionLabelTemplate,
-  renderActions,
+  bulkStatus,
 }: OrdersTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -111,6 +127,9 @@ export function OrdersTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailOrder, setDetailOrder] = useState<OrdersTableRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<string>("");
+  const [bulkStatusMessage, setBulkStatusMessage] = useState<{ text: string; tone: "success" | "error" } | null>(null);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   const orderById = useMemo(() => {
     const map = new Map<string, OrdersTableRow>();
@@ -365,6 +384,31 @@ export function OrdersTable({
     });
   }, [data]);
 
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkStatus || !bulkStatusValue || selected.size === 0) return;
+    setIsBulkUpdating(true);
+    setBulkStatusMessage(null);
+    try {
+      const response = await fetch("/api/admin/orders/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderIds: Array.from(selected), status: bulkStatusValue }),
+      });
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+      setBulkStatusMessage({ text: bulkStatus.labels.success, tone: "success" });
+      setSelected(new Set());
+      setBulkStatusValue("");
+      router.refresh();
+    } catch (error) {
+      console.error("[orders] bulk status update failed", error);
+      setBulkStatusMessage({ text: bulkStatus.labels.error, tone: "error" });
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -377,7 +421,7 @@ export function OrdersTable({
             className="pl-9"
           />
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           {sort ? (
             <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
               {pagination.reset}
@@ -386,9 +430,33 @@ export function OrdersTable({
           {selectedLabel ? (
             <div className="text-sm text-slate-500">{selectedLabel}</div>
           ) : null}
-          {renderActions ? renderActions(Array.from(selected)) : null}
+          {bulkStatus && selectedCount > 0 ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <span className="text-sm text-slate-500">{bulkStatus.labels.label}</span>
+              <Select value={bulkStatusValue || undefined} onValueChange={setBulkStatusValue}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={bulkStatus.labels.placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {bulkStatus.options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatusValue || isBulkUpdating}>
+                {isBulkUpdating ? "…" : bulkStatus.labels.apply}
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
+      {bulkStatusMessage ? (
+        <div className={`text-sm ${bulkStatusMessage.tone === "success" ? "text-emerald-600" : "text-red-600"}`}>
+          {bulkStatusMessage.text}
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-md border border-slate-200">
         <Table className="min-w-[720px]">

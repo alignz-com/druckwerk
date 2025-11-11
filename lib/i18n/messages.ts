@@ -147,6 +147,13 @@ export const messages = {
           next: "Next",
           reset: "Reset sorting",
         },
+        bulkActions: {
+          label: "Change status",
+          placeholder: "Select status",
+          apply: "Apply",
+          success: "Status updated.",
+          error: "Failed to update status.",
+        },
       },
       detail: {
         title: "Order details",
@@ -910,6 +917,13 @@ export const messages = {
           previous: "Zurück",
           next: "Weiter",
           reset: "Sortierung zurücksetzen",
+        },
+        bulkActions: {
+          label: "Status ändern",
+          placeholder: "Status auswählen",
+          apply: "Übernehmen",
+          success: "Status aktualisiert.",
+          error: "Status konnte nicht aktualisiert werden.",
         },
       },
       detail: {

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { OrderStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
@@ -38,6 +39,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const brandId = session.user.brandId ?? null;
   const isAdmin = role === "ADMIN";
   const isBrandAdmin = role === "BRAND_ADMIN";
+  const statusOptions = Object.values(OrderStatus).map((status) => ({
+    value: status,
+    label: t.statuses[status as keyof typeof t.statuses] ?? status,
+  }));
   const orders = await prisma.order.findMany({
     where: isAdmin ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
     orderBy: { createdAt: "desc" },
@@ -176,6 +181,20 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           reset: t.ordersPage.table.pagination.reset,
         }}
         selectionLabelTemplate={t.ordersPage.table.selection}
+        bulkStatus={
+          isAdmin
+            ? {
+                options: statusOptions,
+                labels: {
+                  label: t.ordersPage.table.bulkActions.label,
+                  placeholder: t.ordersPage.table.bulkActions.placeholder,
+                  apply: t.ordersPage.table.bulkActions.apply,
+                  success: t.ordersPage.table.bulkActions.success,
+                  error: t.ordersPage.table.bulkActions.error,
+                },
+              }
+            : undefined
+        }
       />
     </div>
   );
