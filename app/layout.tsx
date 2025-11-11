@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SessionProviderWrapper from "./SessionProviderWrapper"; // 👈 import
@@ -27,11 +27,20 @@ export default async function RootLayout({
   const localeCookie = cookieStore.get("locale")?.value;
   const session = await getServerAuthSession();
   const userLocale = session?.user?.locale;
+  const headersList = await headers();
+  const acceptLanguageHeader = headersList.get("accept-language") ?? "";
+  const inferredLocale = acceptLanguageHeader
+    .split(",")[0]
+    ?.trim()
+    .toLowerCase()
+    .startsWith("de")
+    ? "de"
+    : "en";
   const locale = isLocale(localeCookie)
     ? localeCookie
     : isLocale(userLocale)
       ? userLocale
-      : "en";
+      : inferredLocale;
 
   return (
     <html lang={locale}>

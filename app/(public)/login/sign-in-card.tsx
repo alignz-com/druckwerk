@@ -6,7 +6,6 @@ import { signIn } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/locale-provider";
 
 type SignInCardProps = {
@@ -123,9 +122,6 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
           </a>
         </p>
 
-        <div className="mt-8">
-          <LanguageSwitcher />
-        </div>
       </div>
     </div>
   );
