@@ -7,7 +7,11 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function SignInCard() {
+type SignInCardProps = {
+  successMessage?: string;
+};
+
+export default function SignInCard({ successMessage }: SignInCardProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,6 +51,12 @@ export default function SignInCard() {
             <p className="text-xs text-slate-500">Please sign in to continue</p>
           </div>
         </div>
+
+        {successMessage ? (
+          <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            {successMessage}
+          </div>
+        ) : null}
 
         <Button
           onClick={() => signIn("azure-ad", { callbackUrl: "/orders/new" })}
@@ -96,22 +106,22 @@ export default function SignInCard() {
             />
           </div>
 
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {error ? <p className="text-xs text-red-600">{error}</p> : null}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in…" : "Sign in"}
-        </Button>
-      </form>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in…" : "Sign in"}
+          </Button>
+        </form>
 
-      <p className="mt-3 text-center text-xs text-slate-500">
-        <a href="/password-reset" className="text-slate-700 underline-offset-2 hover:underline">
-          Forgot password?
-        </a>
-      </p>
+        <p className="mt-3 text-center text-xs text-slate-500">
+          <a href="/password-reset" className="text-slate-700 underline-offset-2 hover:underline">
+            Forgot password?
+          </a>
+        </p>
 
-      <p className="mt-6 text-center text-xs text-slate-500">
-        Printer accounts can use their email login once configured by an administrator.
-      </p>
+        <p className="mt-6 text-center text-xs text-slate-500">
+          Printer accounts can use their email login once configured by an administrator.
+        </p>
       </div>
     </div>
   );

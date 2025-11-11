@@ -1,19 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function PasswordResetConfirmForm({ token }: { token: string }) {
+  const router = useRouter();
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const passwordsFilled = password.length > 0 && confirmPassword.length > 0;
+  const passwordsMatch = passwordsFilled && password === confirmPassword;
+  const formValid = password.length >= 8 && confirmPassword.length >= 8 && passwordsMatch;
+
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
+    if (isSubmitting || !formValid) return;
     setIsSubmitting(true);
     setStatus("idle");
     setMessage("");
@@ -28,7 +36,7 @@ export default function PasswordResetConfirmForm({ token }: { token: string }) {
         throw new Error(payload?.error ?? "Reset failed");
       }
       setStatus("success");
-      setMessage("Password updated. You can now sign in.");
+      router.push("/login?reset=success");
     } catch (error: any) {
       setStatus("error");
       setMessage(error?.message ?? "Reset failed");
@@ -51,10 +59,27 @@ export default function PasswordResetConfirmForm({ token }: { token: string }) {
           placeholder="At least 8 characters"
         />
       </div>
-      {message ? (
-        <p className={`text-sm ${status === "error" ? "text-red-600" : "text-slate-600"}`}>{message}</p>
-      ) : null}
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <div className="space-y-2">
+        <Label htmlFor="reset-password-confirm">Confirm password</Label>
+        <Input
+          id="reset-password-confirm"
+          type="password"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          placeholder="Re-enter password"
+        />
+        {passwordsFilled ? (
+          <p className={`text-xs ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>
+            {passwordsMatch ? "Passwords match" : "Passwords do not match"}
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">Both fields must match and be at least 8 characters.</p>
+        )}
+      </div>
+      {message ? <p className={`text-sm ${status === "error" ? "text-red-600" : "text-slate-600"}`}>{message}</p> : null}
+      <Button type="submit" disabled={isSubmitting || !formValid} className="w-full">
         {isSubmitting ? "Updating…" : "Set new password"}
       </Button>
     </form>
