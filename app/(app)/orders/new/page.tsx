@@ -6,41 +6,48 @@ import { prisma } from "@/lib/prisma";
 import { getTemplateByKey, listTemplateSummariesForBrand } from "@/lib/templates";
 
 export default async function NewOrderPage() {
-  const session = await getServerAuthSession();
+  const sessionPromise = getServerAuthSession();
+  const session = await sessionPromise;
   if (!session) {
     redirect("/login");
   }
 
   const userId = session.user.id;
-  const dbUser = userId
-    ? await prisma.user.findUnique({
+  const userPromise = userId
+    ? prisma.user.findUnique({
         where: { id: userId },
         select: { brandId: true },
       })
-    : null;
+    : Promise.resolve(null);
+
+  const dbUser = await userPromise;
   const effectiveBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
-  const templates = await listTemplateSummariesForBrand(effectiveBrandId);
+
+  const templatesPromise = listTemplateSummariesForBrand(effectiveBrandId);
+  const addressesPromise = effectiveBrandId
+    ? prisma.brandAddress.findMany({
+        where: { brandId: effectiveBrandId },
+        orderBy: [{ label: "asc" }, { company: "asc" }],
+        select: {
+          id: true,
+          label: true,
+          company: true,
+          street: true,
+          addressExtra: true,
+          postalCode: true,
+          city: true,
+          countryCode: true,
+          cardAddressText: true,
+          url: true,
+        },
+      })
+    : Promise.resolve([]);
+
+  const [templates, addresses] = await Promise.all([templatesPromise, addressesPromise]);
   const initialTemplate =
-    templates[0]?.key ? await getTemplateByKey(templates[0]!.key, effectiveBrandId ?? null) : null;
-  const addresses =
-    effectiveBrandId
-      ? await prisma.brandAddress.findMany({
-          where: { brandId: effectiveBrandId },
-          orderBy: [{ label: "asc" }, { company: "asc" }],
-          select: {
-            id: true,
-            label: true,
-            company: true,
-            street: true,
-            addressExtra: true,
-            postalCode: true,
-            city: true,
-            countryCode: true,
-            cardAddressText: true,
-            url: true,
-          },
-        })
-      : [];
+    templates[0]?.key && effectiveBrandId !== undefined
+      ? await getTemplateByKey(templates[0]!.key, effectiveBrandId ?? null)
+      : null;
 
   const normalizedAddresses = addresses.map((address) => ({
     id: address.id,
