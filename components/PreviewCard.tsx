@@ -13,6 +13,36 @@ import type { DesignElement, TextElement, StackElement, RectElement, QrElement }
 import { useFontFaceLoader } from "@/lib/useFontFaceLoader";
 
 const ASSET_CACHE_GRACE_MS = 30_000;
+const FALLBACK_TEXT_FRAME = {
+  xMm: 20,
+  topMm: 18,
+  columnWidthMm: 60,
+  name: { font: "bold", sizePt: 10, lineGapMm: 2, letterSpacing: 0, color: "#000000" } as TemplateTextStyle,
+  role: { font: "light", sizePt: 8, lineGapMm: 2, letterSpacing: 0, color: "#4b5563" } as TemplateTextStyle,
+  contacts: { font: "light", sizePt: 8, lineGapMm: 2, letterSpacing: 0, color: "#1f2937" } as TemplateTextStyle,
+  company: { font: "light", sizePt: 8, lineGapMm: 2, letterSpacing: 0, color: "#1f2937" } as TemplateTextStyle,
+};
+const FALLBACK_BACK_CONFIG = {
+  mode: "qr" as const,
+  qr: { xMm: 10, yMm: 10, sizeMm: 32 },
+};
+
+function getFrontConfig(template: ResolvedTemplate) {
+  const front = (template.config as any)?.front ?? {};
+  return {
+    textFrame: front.textFrame ?? FALLBACK_TEXT_FRAME,
+    preview: front.preview ?? {},
+  };
+}
+
+function getBackConfig(template: ResolvedTemplate) {
+  const back = (template.config as any)?.back ?? {};
+  return {
+    mode: back.mode ?? FALLBACK_BACK_CONFIG.mode,
+    qr: back.qr ?? FALLBACK_BACK_CONFIG.qr,
+    preview: back.preview ?? undefined,
+  };
+}
 
 const assetCache = new Map<string, AssetState>();
 
@@ -112,8 +142,9 @@ function collectFrontLines({
   url?: string;
   linkedin?: string;
 }): FrontLine[] {
-  const frame = template.config.front.textFrame;
-  const previewCfg = template.config.front.preview ?? {};
+  const frontConfig = getFrontConfig(template);
+  const frame = frontConfig.textFrame;
+  const previewCfg = frontConfig.preview ?? {};
   const fontScale = previewCfg.fontScale ?? DEFAULT_FONT_SCALE;
   const lineHeightScale = previewCfg.lineHeightScale ?? 1;
   const linesOut: FrontLine[] = [];
@@ -917,7 +948,7 @@ export function BusinessCardFront({
   addressFields: _addressFields,
   onReadyChange,
 }: Props) {
-  const previewCfg = template.config.front.preview ?? {};
+  const { preview: previewCfg } = getFrontConfig(template);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: frontBackground, onError: handleFrontAssetError } = useTemplateAssetSource(
     template,
@@ -1149,7 +1180,8 @@ export function BusinessCardBack({
   const addrPostal = structuredPostal || parsedPostal || undefined;
   const addrCity = structuredCity || parsedCity || undefined;
   const addrCountry = structuredCountry || parsedCountry || undefined;
-  const previewCfg = template.config.front.preview ?? {};
+  const { preview: previewCfg } = getFrontConfig(template);
+  const backConfig = useMemo(() => getBackConfig(template), [template]);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: backBackground, onError: handleBackAssetError } = useTemplateAssetSource(
     template,
@@ -1199,7 +1231,7 @@ export function BusinessCardBack({
 
   useEffect(() => {
     let stop = false;
-    if (template.config.back.mode !== "qr") {
+    if (backConfig.mode !== "qr") {
       setQrData("");
       return;
     }
@@ -1214,10 +1246,10 @@ export function BusinessCardBack({
     return () => {
       stop = true;
     };
-  }, [vcard, template.config.back.mode]);
+  }, [vcard, backConfig.mode]);
 
-  const qrConfig = template.config.back.qr;
-  const previewQrOverride = template.config.back.preview?.qr;
+  const qrConfig = backConfig.qr;
+  const previewQrOverride = backConfig.preview?.qr;
   const qx = qrOverride?.xMm ?? previewQrOverride?.xMm ?? qrConfig?.xMm;
   const qy = qrOverride?.yMm ?? previewQrOverride?.yMm ?? qrConfig?.yMm;
   const qs = qrOverride?.sizeMm ?? previewQrOverride?.sizeMm ?? qrConfig?.sizeMm;
@@ -1283,11 +1315,11 @@ export function BusinessCardBack({
         <g transform={`translate(${CANVAS_OFFSET_X}, ${CANVAS_OFFSET_Y})`}>
           {backNodes}
 
-          {template.config.back.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
+          {backConfig.mode === "qr" && qrData && qx !== undefined && qy !== undefined && qs !== undefined ? (
             <image href={qrData} x={qx} y={qy} width={qs} height={qs} preserveAspectRatio="none" />
           ) : null}
 
-          {template.config.back.mode === "copyFront" ? (
+          {backConfig.mode === "copyFront" ? (
             <FrontTextOverlay
               template={template}
               name={name}
