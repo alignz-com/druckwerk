@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "@/components/providers/locale-provider";
 
 type SignInCardProps = {
   successMessage?: string;
@@ -14,6 +15,7 @@ type SignInCardProps = {
 
 export default function SignInCard({ successMessage }: SignInCardProps) {
   const router = useRouter();
+  const t = useTranslations("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +34,7 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
     });
 
     if (result?.error) {
-      setError("Login not possible with these credentials");
+      setError(t("error"));
       setIsSubmitting(false);
       return;
     }
@@ -49,7 +51,7 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-900 leading-tight">Druckwerk von Thurnher Druckerei</h1>
-            <p className="text-xs text-slate-500">Please sign in to continue</p>
+            <p className="text-xs text-slate-500">{t("subtitle")}</p>
           </div>
         </div>
 
@@ -70,18 +72,18 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
             <path fill="#00A4EF" d="M11 21H3v-8h8v8z" />
             <path fill="#ffb900" d="M21 21h-8v-8h8v8z" />
           </svg>
-          Sign in with Microsoft
+          {t("microsoft")}
         </Button>
 
         <div className="relative mb-6 text-center text-xs uppercase tracking-wide text-slate-400">
-          <span className="bg-white px-2">or</span>
+          <span className="bg-white px-2">{t("or")}</span>
           <span className="absolute inset-x-0 top-1/2 block h-px bg-slate-200" aria-hidden />
         </div>
 
         <form onSubmit={handleCredentialsSignIn} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-xs font-medium text-slate-600">
-              Email
+              {t("email")}
             </label>
             <Input
               id="email"
@@ -95,7 +97,7 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
 
           <div className="space-y-2">
             <label htmlFor="password" className="text-xs font-medium text-slate-600">
-              Password
+              {t("password")}
             </label>
             <Input
               id="password"
@@ -110,18 +112,14 @@ export default function SignInCard({ successMessage }: SignInCardProps) {
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? t("signingIn") : t("signIn")}
           </Button>
         </form>
 
         <p className="mt-3 text-center text-xs text-slate-500">
           <a href="/password-reset" className="text-slate-700 underline-offset-2 hover:underline">
-            Forgot password?
+            {t("forgot")}
           </a>
-        </p>
-
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Printer accounts can use their email login once configured by an administrator.
         </p>
 
         <div className="mt-8">
