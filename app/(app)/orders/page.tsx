@@ -42,6 +42,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const brandId = session.user.brandId ?? null;
   const isAdmin = role === "ADMIN";
   const isBrandAdmin = role === "BRAND_ADMIN";
+  const isPrinter = role === "PRINTER";
   const statusOptions = Object.values(OrderStatus).map((status) => ({
     value: status,
     label: t.statuses[status as keyof typeof t.statuses] ?? status,
@@ -139,7 +140,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
       <OrdersTable
         data={tableData}
-        showBrandColumn={isAdmin}
+        showBrandColumn={isAdmin || isPrinter}
         labels={{
           brand: t.ordersPage.table.brand,
           created: t.ordersPage.table.created,
@@ -187,7 +188,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         }}
         selectionLabelTemplate={t.ordersPage.table.selection}
         bulkStatus={
-          isAdmin
+          isAdmin || isPrinter
             ? {
                 options: statusOptions,
                 labels: {
