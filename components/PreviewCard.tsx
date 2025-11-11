@@ -23,8 +23,8 @@ const FALLBACK_TEXT_FRAME = {
   company: { font: "light", sizePt: 8, lineGapMm: 2, letterSpacing: 0, color: "#1f2937" } as TemplateTextStyle,
 };
 const FALLBACK_BACK_CONFIG = {
-  mode: "qr" as const,
-  qr: { xMm: 10, yMm: 10, sizeMm: 32 },
+  mode: "static" as const,
+  qr: undefined,
 };
 
 function getFrontConfig(template: ResolvedTemplate) {
@@ -42,6 +42,15 @@ function getBackConfig(template: ResolvedTemplate) {
     qr: back.qr ?? FALLBACK_BACK_CONFIG.qr,
     preview: back.preview ?? undefined,
   };
+}
+
+function designContainsQr(elements: DesignElement[] | undefined): boolean {
+  if (!elements) return false;
+  for (const element of elements) {
+    if (element.type === "qr") return true;
+    if (element.type === "stack" && designContainsQr(element.items)) return true;
+  }
+  return false;
 }
 
 const assetCache = new Map<string, AssetState>();
