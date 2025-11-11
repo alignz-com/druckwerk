@@ -7,16 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
-import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
-
-const ORDER_TIME_ZONE = "Europe/Vienna";
-
-const formatDate = (date: Date, locale: Locale) =>
-  new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: ORDER_TIME_ZONE,
-  }).format(date);
+import { getTranslations, isLocale } from "@/lib/i18n/messages";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 type OrdersPageProps = {
   searchParams?: Record<string, string | string[]>;
@@ -36,6 +28,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     : isLocale(userLocale)
       ? userLocale
       : "en";
+  const localeTag = locale === "de" ? "de-AT" : "en-GB";
   const t = getTranslations(locale);
 
   const role = session.user.role;
@@ -76,12 +69,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       (order.deliveryTime in t.orderForm.deliveryTimes
         ? t.orderForm.deliveryTimes[order.deliveryTime as "express" | "standard"]
         : order.deliveryTime) ?? order.deliveryTime;
-    const deliveryDueAtLabel = order.deliveryDueAt ? formatDate(order.deliveryDueAt, locale) : null;
+    const createdAtLabel = formatDateTime(order.createdAt, localeTag, { dateStyle: "medium" });
+    const deliveryDueAtLabel = order.deliveryDueAt ? formatDateTime(order.deliveryDueAt, localeTag, { dateStyle: "medium" }) : null;
+    const deliveryDueAtDetailLabel = order.deliveryDueAt ? formatDateTime(order.deliveryDueAt, localeTag) : null;
 
     return {
       id: order.id,
       referenceCode: order.referenceCode,
-      createdAtLabel: formatDate(order.createdAt, locale),
+      createdAtLabel,
       createdAtValue: order.createdAt.getTime(),
       userName: order.user?.name ?? null,
       userEmail: (order.user?.email ?? order.requesterEmail) ?? null,
@@ -115,7 +110,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         brandName: order.brand?.name ?? "–",
         templateLabel:
           order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
-        deliveryDueAtLabel,
+        deliveryDueAtLabel: deliveryDueAtDetailLabel,
       },
     };
   });
