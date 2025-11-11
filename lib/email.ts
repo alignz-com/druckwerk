@@ -2,6 +2,15 @@ const POSTMARK_API_URL = "https://api.postmarkapp.com/email";
 const PRODUCT_NAME = process.env.APP_PRODUCT_NAME || process.env.NEXT_PUBLIC_APP_NAME || "druckwerk";
 const SUPPORT_URL =
   process.env.SUPPORT_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://druckwerk.dth.at";
+const COMPANY_SIGNATURE = `Thurnher Druckerei GmbH
+Rankweil, Grundweg 4
+Tel.: +43 5522 44288
+office@dth.at
+www.dth.at
+
+UID-Nummer: ATU78808523
+Handelsgericht Feldkirch
+FN 594020i`;
 
 export type PasswordResetEmailPayload = {
   to: string;
@@ -57,7 +66,9 @@ ${resetUrl}
 Anfrage von Gerät: ${osInfo} / ${browserInfo}. Wenn du das nicht warst, ignoriere diese Nachricht oder kontaktiere uns unter ${SUPPORT_URL}.
 
 Viele Grüße
-${PRODUCT_NAME} Support`
+${PRODUCT_NAME} Support
+
+${COMPANY_SIGNATURE}`
     : `Hi${namePart},
 
 You requested to reset your ${PRODUCT_NAME} password. Use this link (valid for 24 hours):
@@ -67,19 +78,25 @@ ${resetUrl}
 Request originated from: ${osInfo} / ${browserInfo}. If you didn’t make it, ignore this message or reach us at ${SUPPORT_URL}.
 
 Thanks,
-${PRODUCT_NAME} Support`;
+${PRODUCT_NAME} Support
+
+${COMPANY_SIGNATURE}`;
 
   const htmlBody = isGerman
     ? `<p>Hallo${namePart},</p>
 <p>du hast angefordert, dein Passwort für ${PRODUCT_NAME} zurückzusetzen. Der Link gilt für 24&nbsp;Stunden.</p>
 <p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Passwort zurücksetzen</a></p>
 <p>Gerät: ${osInfo} / ${browserInfo}. Warst du das nicht? Ignoriere die E-Mail oder kontaktiere uns unter <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
-<p>Viele Grüße<br/>${PRODUCT_NAME} Support</p>`
+<p>Viele Grüße<br/>${PRODUCT_NAME} Support</p>
+<hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;" />
+<p style="font-size:13px;line-height:1.4;white-space:pre-line;">${COMPANY_SIGNATURE}</p>`
     : `<p>Hi${namePart},</p>
 <p>You requested to reset your ${PRODUCT_NAME} password. The link is valid for 24&nbsp;hours.</p>
 <p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Reset password</a></p>
 <p>Device: ${osInfo} / ${browserInfo}. Didn’t make this request? Ignore this email or contact us at <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
-<p>Thanks,<br/>${PRODUCT_NAME} Support</p>`;
+<p>Thanks,<br/>${PRODUCT_NAME} Support</p>
+<hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;" />
+<p style="font-size:13px;line-height:1.4;white-space:pre-line;">${COMPANY_SIGNATURE}</p>`;
 
   const response = await fetch(POSTMARK_API_URL, {
     method: "POST",
@@ -143,17 +160,18 @@ export async function sendOrderConfirmationEmail({
 thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:
 
 ${summary}
-${orderLinkLine}Need help? ${SUPPORT_URL}
+${orderLinkLine}Best,
+Thurnher Druckerei GmbH
 
-Best,
-${PRODUCT_NAME} Team`;
+${COMPANY_SIGNATURE}`;
 
   const htmlBody = `<p>${greeting}</p>
 <p>thank you for submitting your ${PRODUCT_NAME} order. Here is a quick summary:</p>
 <pre style="font-family:monospace;line-height:1.4;">${escapeHtml(summary)}</pre>
 ${orderUrl ? `<p><a href="${orderUrl}" target="_blank" rel="noopener noreferrer">View this order</a></p>` : ""}
-<p>Need help? <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a></p>
-<p>Best,<br/>${PRODUCT_NAME} Team</p>`;
+<p>Best,<br/>Thurnher Druckerei GmbH</p>
+<hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;" />
+<p style="font-size:13px;line-height:1.4;white-space:pre-line;">${COMPANY_SIGNATURE}</p>`;
 
   const response = await fetch(POSTMARK_API_URL, {
     method: "POST",
