@@ -208,6 +208,7 @@ function guessContentType(fileName: string) {
   if (lower.endsWith(".pdf")) return "application/pdf";
   if (lower.endsWith(".png")) return "image/png";
   if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".webp")) return "image/webp";
   if (lower.endsWith(".json")) return "application/json";
   return "application/octet-stream";
 }

@@ -17,10 +17,11 @@ import { useTranslations } from "@/components/providers/locale-provider";
 import { hasInlineDesignConfig } from "@/lib/template-design";
 import { PaperStockSelector } from "./PaperStockSelector";
 
+const IMAGE_ACCEPT = "image/png,image/svg+xml,image/webp";
 const assetUploadFields: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; accept: string }> = [
   { type: TemplateAssetType.PDF, field: "pdf", accept: "application/pdf" },
-  { type: TemplateAssetType.PREVIEW_FRONT, field: "front", accept: "image/png,image/svg+xml" },
-  { type: TemplateAssetType.PREVIEW_BACK, field: "back", accept: "image/png,image/svg+xml" },
+  { type: TemplateAssetType.PREVIEW_FRONT, field: "front", accept: IMAGE_ACCEPT },
+  { type: TemplateAssetType.PREVIEW_BACK, field: "back", accept: IMAGE_ACCEPT },
 ];
 
 const assetOverviewTypes: TemplateAssetType[] = [

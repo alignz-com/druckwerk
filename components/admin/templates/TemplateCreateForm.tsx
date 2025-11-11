@@ -254,7 +254,7 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             <Input
               id="template-preview-front-file"
               type="file"
-              accept="image/png,image/svg+xml"
+              accept="image/png,image/svg+xml,image/webp"
               onChange={(event) => setPreviewFrontFile(event.target.files?.[0] ?? null)}
             />
             {previewFrontFile ? <p className="text-xs text-slate-500 truncate">{previewFrontFile.name}</p> : null}
@@ -264,7 +264,7 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             <Input
               id="template-preview-back-file"
               type="file"
-              accept="image/png,image/svg+xml"
+              accept="image/png,image/svg+xml,image/webp"
               onChange={(event) => setPreviewBackFile(event.target.files?.[0] ?? null)}
             />
             {previewBackFile ? <p className="text-xs text-slate-500 truncate">{previewBackFile.name}</p> : null}
