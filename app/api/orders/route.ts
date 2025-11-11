@@ -13,8 +13,10 @@ import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
 import { uploadJdfToPrinterFtp } from "@/lib/printer-ftp";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
+const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
 const requestSchema = z.object({
   name: z.string().min(3),
@@ -82,6 +84,28 @@ function buildFileBaseName(brandName: string | null | undefined, requesterName: 
 function toStorageKey(referenceCode: string, baseName: string, extension: string) {
   const safeSegment = baseName.replace(/\s+/g, "_") || referenceCode;
   return `orders/${referenceCode}/${safeSegment}.${extension}`;
+}
+
+function formatAddressSummary(address?: {
+  companyName?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  addressExtra?: string;
+}) {
+  if (!address) return undefined;
+  const lines = [
+    address.companyName,
+    address.street,
+    address.addressExtra,
+    [address.postalCode, address.city].filter(Boolean).join(" "),
+    address.country,
+  ]
+    .filter((part) => !!part && part.trim().length > 0)
+    .map((part) => part?.trim());
+  if (!lines.length) return undefined;
+  return lines.join(", ");
 }
 
 export async function POST(req: Request) {
@@ -247,6 +271,25 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    if (session.user.email) {
+      const addressSummary = formatAddressSummary(addressMeta);
+      const orderUrl = APP_URL ? `${APP_URL}/orders/${order.id}` : undefined;
+      sendOrderConfirmationEmail({
+        to: session.user.email,
+        userName: session.user.name,
+        referenceCode,
+        cardHolderName: data.name,
+        quantity: data.quantity,
+        templateLabel: templateDefinition.label,
+        paperStockName: templateDefinition.paperStock?.name,
+        deliveryDate: deliveryDueAt,
+        addressSummary,
+        orderUrl,
+      }).catch((error) => {
+        console.error("[order] Failed to send confirmation email", error);
+      });
+    }
 
     return NextResponse.json({ success: true, orderId: order.id, referenceCode }, { status: 201 });
   } catch (err: any) {
