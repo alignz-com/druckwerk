@@ -138,7 +138,10 @@ async function processJob(supabase: SupabaseClient, job: JdfExportJob, config: J
     throw new Error("PDF not reachable within timeout");
   }
 
-  await uploadToFtp(job.jdfXml, `${job.orderId}.jdf`, config);
+  const reference = await getOrderReferenceCode(supabase, job.orderId);
+  const fileName = `${reference ?? job.orderId}.jdf`;
+
+  await uploadToFtp(job.jdfXml, fileName, config);
 
   const { error } = await supabase
     .from("JdfExportJob")
@@ -171,6 +174,20 @@ async function failJob(supabase: SupabaseClient, job: JdfExportJob, config: JdfW
   if (error) {
     console.error("[jdf-worker] failed to update failed job", job.id, error);
   }
+}
+
+async function getOrderReferenceCode(supabase: SupabaseClient, orderId: string) {
+  const { data, error } = await supabase
+    .from("Order")
+    .select("referenceCode")
+    .eq("id", orderId)
+    .single();
+
+  if (error) {
+    console.error("[jdf-worker] failed to load order reference", orderId, error);
+    return null;
+  }
+  return (data as { referenceCode: string | null }).referenceCode ?? null;
 }
 
 async function waitForPdf(url: string, config: JdfWorkerConfig) {
