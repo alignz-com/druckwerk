@@ -29,6 +29,7 @@ export type DeliveryAddress = {
 export type BuildJdfParams = {
   referenceCode: string;
   templateKey: string;
+  pcmCode?: string | null;
   brandName?: string | null;
   requester: JdfContact;
   administrator?: JdfContact;
@@ -152,7 +153,8 @@ export function buildJdfDocument(params: BuildJdfParams) {
     "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
   });
 
-  root.ele("GeneralID", { IDUsage: "CatalogID", IDValue: templateKey });
+  const catalogId = params.pcmCode?.trim() || templateKey;
+  root.ele("GeneralID", { IDUsage: "CatalogID", IDValue: catalogId });
   const auditPool = root.ele("AuditPool");
   auditPool.ele("Created", {
     AgentName: "druckwerk",

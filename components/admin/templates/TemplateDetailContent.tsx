@@ -58,6 +58,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     description: template.description ?? "",
     layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
     printDpi: template.printDpi ? String(template.printDpi) : "",
+    pcmCode: template.pcmCode ?? "",
     paperStockId: template.paperStock?.id ?? "",
     config: stringifyConfig(template.config),
   }));
@@ -130,6 +131,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       description: template.description ?? "",
       layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
       printDpi: template.printDpi ? String(template.printDpi) : "",
+      pcmCode: template.pcmCode ?? "",
       paperStockId: template.paperStock?.id ?? "",
       config: stringifyConfig(template.config),
     });
@@ -184,6 +186,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
 
     const layoutVersionInput = metadata.layoutVersion.trim();
     const printDpiInput = metadata.printDpi.trim();
+    const pcmCodeInput = metadata.pcmCode.trim();
     let layoutVersion: number | null = null;
     let printDpi: number | null = null;
 
@@ -223,6 +226,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           description: metadata.description.trim(),
           layoutVersion,
           printDpi,
+          pcmCode: pcmCodeInput || null,
           paperStockId: metadata.paperStockId || null,
           config: parsedConfig,
         }),
@@ -446,19 +450,32 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               }}
             />
           </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
-          <Input
-            id="template-print-dpi"
-            type="number"
-            min={0}
-            value={metadata.printDpi}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, printDpi: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
+            <Input
+              id="template-print-dpi"
+              type="number"
+              min={0}
+              value={metadata.printDpi}
+              onChange={(event) => {
+                setMetadata((current) => ({ ...current, printDpi: event.target.value }));
+                setMetadataSuccess(null);
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="template-pcm-code">{t("create.fields.pcmCode")}</Label>
+            <Input
+              id="template-pcm-code"
+              value={metadata.pcmCode}
+              onChange={(event) => {
+                setMetadata((current) => ({ ...current, pcmCode: event.target.value }));
+                setMetadataSuccess(null);
+              }}
+              placeholder="pcm_vk_template"
+            />
+            <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
+          </div>
         <div className="md:col-span-2">
           <PaperStockSelector
             value={metadata.paperStockId}

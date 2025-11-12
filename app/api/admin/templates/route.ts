@@ -19,8 +19,16 @@ export async function POST(req: NextRequest) {
   const key = String(form.get("key") ?? "").trim();
   const label = String(form.get("label") ?? "").trim();
   const descriptionRaw = form.get("description");
+  const pcmCodeRaw = form.get("pcmCode");
   const description =
     descriptionRaw === null || String(descriptionRaw).trim().length === 0 ? null : String(descriptionRaw).trim();
+  const pcmCodeValue =
+    pcmCodeRaw === null || pcmCodeRaw === undefined
+      ? null
+      : (() => {
+          const value = String(pcmCodeRaw).trim();
+          return value.length > 0 ? value : null;
+        })();
   const layoutVersionRaw = form.get("layoutVersion");
   const printDpiRaw = form.get("printDpi");
   const paperStockIdRaw = form.get("paperStockId");
@@ -87,6 +95,7 @@ export async function POST(req: NextRequest) {
         previewBackPath: "",
         layoutVersion,
         printDpi,
+        pcmCode: pcmCodeValue,
         config,
         paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
       },

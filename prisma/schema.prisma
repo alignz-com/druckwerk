@@ -172,6 +172,7 @@ model Template {
   config           Json
   layoutVersion    Int?
   printDpi         Int?
+  pcmCode          String?
   orders           Order[]
   assignments      BrandTemplate[]
   assets           TemplateAsset[]

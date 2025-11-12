@@ -58,6 +58,7 @@ export type TemplateDefinition = {
   key: string;
   label: string;
   description?: string;
+  pcmCode?: string | null;
   pdfPath: string;
   previewFrontPath: string;
   previewBackPath: string;

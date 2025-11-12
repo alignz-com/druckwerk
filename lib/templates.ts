@@ -272,6 +272,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     key: tpl.key,
     label: tpl.label ?? fallback?.label ?? tpl.key,
     description: tpl.description ?? fallback?.description,
+    pcmCode: tpl.pcmCode ?? fallback?.pcmCode ?? null,
     pdfPath: pdfAsset?.publicUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",
     previewFrontPath: previewFrontAsset?.publicUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
     previewBackPath: previewBackAsset?.publicUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",

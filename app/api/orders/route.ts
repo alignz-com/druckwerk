@@ -228,6 +228,7 @@ export async function POST(req: Request) {
     const jdfXml = buildJdfDocument({
       referenceCode,
       templateKey: data.template,
+      pcmCode: templateDefinition.pcmCode ?? null,
       brandName: brand?.name,
       requester: requesterContact,
       administrator: administratorContact,

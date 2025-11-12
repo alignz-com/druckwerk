@@ -26,6 +26,7 @@ type FormState = {
   description: string;
   layoutVersion: string;
   printDpi: string;
+  pcmCode: string;
   paperStockId: string;
   config: string;
 };
@@ -36,6 +37,7 @@ const emptyForm: FormState = {
   description: "",
   layoutVersion: "",
   printDpi: "",
+  pcmCode: "",
   paperStockId: "",
   config: defaultConfig,
 };
@@ -116,6 +118,9 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       payload.append("printDpi", String(printDpi));
     }
     payload.append("config", JSON.stringify(configObject));
+    if (form.pcmCode.trim()) {
+      payload.append("pcmCode", form.pcmCode.trim());
+    }
     if (form.paperStockId) {
       payload.append("paperStockId", form.paperStockId);
     }
@@ -211,6 +216,16 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             onChange={(event) => handleChange("printDpi")(event.target.value)}
             placeholder="300"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="template-pcm-code">{t("create.fields.pcmCode")}</Label>
+          <Input
+            id="template-pcm-code"
+            value={form.pcmCode}
+            onChange={(event) => handleChange("pcmCode")(event.target.value)}
+            placeholder="pcm_vk_template"
+          />
+          <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
         </div>
         <div className="md:col-span-2">
           <PaperStockSelector

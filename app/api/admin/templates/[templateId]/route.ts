@@ -70,6 +70,11 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     }
   }
 
+  if (payload?.pcmCode !== undefined) {
+    const value = payload.pcmCode === null ? "" : String(payload.pcmCode).trim();
+    updateData.pcmCode = value.length > 0 ? value : null;
+  }
+
   if (payload?.paperStockId !== undefined) {
     const value = payload.paperStockId === null ? "" : String(payload.paperStockId).trim();
     if (!value) {

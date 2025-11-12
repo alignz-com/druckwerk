@@ -43,6 +43,7 @@ export type AdminTemplateSummary = {
   description: string | null;
   layoutVersion: number | null;
   printDpi: number | null;
+  pcmCode: string | null;
   paperStock: AdminPaperStockSummary | null;
   createdAt: string;
   updatedAt: string;
@@ -122,6 +123,7 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     description: template.description,
     layoutVersion: template.layoutVersion,
     printDpi: template.printDpi,
+    pcmCode: template.pcmCode ?? null,
     paperStock: template.paperStock
       ? {
           id: template.paperStock.id,

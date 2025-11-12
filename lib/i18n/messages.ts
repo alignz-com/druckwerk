@@ -319,6 +319,7 @@ export const messages = {
             description: "Description",
             layoutVersion: "Layout version",
             printDpi: "Print DPI",
+            pcmCode: "PCM code",
             paperStock: "Paper stock",
             config: "Config (JSON)",
             pdfFile: "PDF file",
@@ -328,6 +329,7 @@ export const messages = {
           hints: {
             key: "Lowercase letters, digits, dashes, underscores, or dots.",
             config: "Provide the JSON layout configuration used for rendering.",
+            pcmCode: "Optional: override the CatalogID used in JDF exports (e.g. pcm_vk_template).",
             paperStock: "Optional: specify the substrate this template should use.",
           },
           placeholders: {
@@ -1112,6 +1114,7 @@ export const messages = {
             description: "Beschreibung",
             layoutVersion: "Layout-Version",
             printDpi: "Druck-DPI",
+            pcmCode: "PCM-Code",
             paperStock: "Papier",
             config: "Konfiguration (JSON)",
             pdfFile: "PDF-Datei",
@@ -1121,6 +1124,7 @@ export const messages = {
           hints: {
             key: "Kleinbuchstaben, Ziffern, Bindestriche, Unterstriche oder Punkte.",
             config: "JSON-Konfiguration für das Layout hinterlegen.",
+            pcmCode: "Optional: Katalog-ID für die JDF-Ausgabe (z. B. pcm_vk_template).",
             paperStock: "Optional: Welches Papier bzw. welcher Karton soll verwendet werden?",
           },
           placeholders: {
