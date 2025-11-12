@@ -300,13 +300,19 @@ export async function POST(req: Request) {
       },
     });
 
+    const addressSummary = formatAddressSummary(addressMeta);
+    const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
+    const recipients: Array<{ to: string; userName: string | null | undefined }> = [];
     if (session.user.email) {
-      const addressSummary = formatAddressSummary(addressMeta);
-      const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
-      try {
-        await sendOrderConfirmationEmail({
-          to: session.user.email,
-          userName: session.user.name,
+      recipients.push({ to: session.user.email, userName: session.user.name });
+    }
+    recipients.push({ to: "webshop@dth.at", userName: null });
+
+    await Promise.allSettled(
+      recipients.map(({ to, userName }) =>
+        sendOrderConfirmationEmail({
+          to,
+          userName,
           referenceCode,
           cardHolderName: data.name,
           quantity: data.quantity,
@@ -316,11 +322,9 @@ export async function POST(req: Request) {
           addressSummary,
           orderUrl,
           customerReference: data.customerReference || null,
-        });
-      } catch (error) {
-        console.error("[order] Failed to send confirmation email", error);
-      }
-    }
+        }),
+      ),
+    );
 
     return NextResponse.json({ success: true, orderId: order.id, referenceCode }, { status: 201 });
   } catch (err: any) {
