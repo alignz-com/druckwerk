@@ -102,6 +102,10 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
+      if (user?.id) {
+        await ensureBrandAssignment(user, domain);
+      }
+
       if (account.provider === "azure-ad" && account.access_token && user?.id) {
         try {
           const graphRes = await fetch(
@@ -215,6 +219,37 @@ export const authOptions: NextAuthOptions = {
 };
 
 export const getServerAuthSession = () => getServerSession(authOptions);
+
+async function ensureBrandAssignment(user: any, domain: string) {
+  const normalizedDomain = domain?.toLowerCase?.().trim();
+  if (!user?.id || !normalizedDomain) {
+    return;
+  }
+
+  if ((user as any).brandId) {
+    return;
+  }
+
+  try {
+    const brandDomain = await prisma.brandDomain.findFirst({
+      where: { domain: normalizedDomain },
+      select: { brandId: true },
+    });
+
+    if (!brandDomain?.brandId) {
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { brandId: brandDomain.brandId },
+    });
+
+    (user as any).brandId = brandDomain.brandId;
+  } catch (error) {
+    console.error("[auth] failed to assign brand by domain", { userId: user.id, normalizedDomain }, error);
+  }
+}
 
 
 function buildWebsiteFromEmail(email: string | null | undefined) {
