@@ -1,14 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles";
+import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 
 type Props = {
   open: boolean;
@@ -16,18 +23,7 @@ type Props = {
   onBrandCreated: (brand: AdminBrandSummary) => void;
 };
 
-type AddressForm = {
-  clientKey: string;
-  label: string;
-  company: string;
-  street: string;
-  addressExtra: string;
-  postalCode: string;
-  city: string;
-  countryCode: string;
-  cardAddressText: string;
-  url: string;
-};
+type AddressForm = BrandAddressDraft;
 
 type FormState = {
   name: string;
@@ -54,6 +50,8 @@ const emptyAddress = (): AddressForm => ({
   countryCode: "",
   cardAddressText: "",
   url: "",
+  createdAt: null,
+  updatedAt: null,
 });
 
 const emptyForm = (): FormState => ({
@@ -72,6 +70,8 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
   const [domainInput, setDomainInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSheetState, setAddressSheetState] = useState<AddressSheetState | null>(null);
 
   const addressesCount = form.addresses.length;
 
@@ -87,20 +87,33 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleAddressChange = (clientKey: string, field: keyof AddressForm, value: string) => {
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.map((address) =>
-        address.clientKey === clientKey ? { ...address, [field]: value } : address,
-      ),
-    }));
+  const openCreateAddress = () => {
+    setAddressSheetState({ mode: "create", address: emptyAddress() });
   };
 
-  const addAddress = () => {
-    setForm((current) => ({ ...current, addresses: [...current.addresses, emptyAddress()] }));
+  const openEditAddress = (clientKey: string) => {
+    const target = form.addresses.find((address) => address.clientKey === clientKey);
+    if (target) {
+      setAddressSheetState({ mode: "edit", address: target });
+    }
   };
 
-  const removeAddress = (clientKey: string) => {
+  const handleAddressSaved = (draft: AddressForm) => {
+    setForm((current) => {
+      const exists = current.addresses.some((address) => address.clientKey === draft.clientKey);
+      const addresses = exists
+        ? current.addresses.map((address) => (address.clientKey === draft.clientKey ? draft : address))
+        : [...current.addresses, draft];
+      return { ...current, addresses };
+    });
+    setAddressSheetState(null);
+  };
+
+  const closeAddressSheet = () => setAddressSheetState(null);
+
+  const handleAddressDelete = (clientKey: string) => {
+    const confirmed = window.confirm(t("addresses.confirmDelete"));
+    if (!confirmed) return;
     setForm((current) => ({
       ...current,
       addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
@@ -195,18 +208,38 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
     }
   };
 
-  const addressRows = useMemo(() => form.addresses, [form.addresses]);
+  const normalizedAddressSearch = addressSearch.trim().toLowerCase();
+  const addressRows = useMemo(() => {
+    if (!normalizedAddressSearch) return form.addresses;
+    return form.addresses.filter((address) => {
+      const haystack = [
+        address.label,
+        address.company,
+        address.street,
+        address.addressExtra,
+        address.cardAddressText,
+        address.postalCode,
+        address.city,
+        address.countryCode,
+        address.url,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedAddressSearch);
+    });
+  }, [form.addresses, normalizedAddressSearch]);
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          reset();
-        }
-        onOpenChange(next);
-      }}
-    >
+    <>
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) {
+            reset();
+          }
+          onOpenChange(next);
+        }}
+      >
       <SheetContent className="flex h-full max-w-4xl flex-col p-0">
         <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
           <SheetTitle>{t("dialog.createTitle")}</SheetTitle>
@@ -265,101 +298,90 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
             </div>
           </section>
 
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">{t("addresses.title")}</h3>
-                <p className="text-xs text-slate-500">{t("addresses.description")}</p>
+                <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.addresses.title")}</h3>
+                <p className="text-xs text-slate-500">{t("detail.sections.addresses.description")}</p>
               </div>
-              <Button variant="secondary" type="button" onClick={addAddress}>
+              <Button type="button" onClick={openCreateAddress} className="self-start sm:self-auto">
+                <Plus className="mr-2 h-4 w-4" />
                 {t("addresses.add")}
               </Button>
             </div>
-            {addressRows.length === 0 ? (
-              <p className="text-xs text-slate-500">{t("addresses.empty")}</p>
-            ) : null}
-            <div className="space-y-4">
-              {addressRows.map((address) => (
-                <div key={address.clientKey} className="rounded-lg border border-slate-200 p-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.label")}</Label>
-                      <Input
-                        value={address.label}
-                        onChange={(event) => handleAddressChange(address.clientKey, "label", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.company")}</Label>
-                      <Input
-                        value={address.company}
-                        onChange={(event) => handleAddressChange(address.clientKey, "company", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.url")}</Label>
-                      <Input
-                        value={address.url}
-                        onChange={(event) => handleAddressChange(address.clientKey, "url", event.target.value)}
-                        placeholder="https://"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>{t("addresses.fields.street")}</Label>
-                      <Input
-                        value={address.street}
-                        onChange={(event) => handleAddressChange(address.clientKey, "street", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.addressExtra")}</Label>
-                      <Input
-                        value={address.addressExtra}
-                        onChange={(event) => handleAddressChange(address.clientKey, "addressExtra", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <div className="flex items-center justify-between">
-                        <Label>{t("addresses.fields.cardAddressText")}</Label>
-                        <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
-                      </div>
-                      <Textarea
-                        value={address.cardAddressText}
-                        onChange={(event) => handleAddressChange(address.clientKey, "cardAddressText", event.target.value)}
-                        rows={4}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.postalCode")}</Label>
-                      <Input
-                        value={address.postalCode}
-                        onChange={(event) => handleAddressChange(address.clientKey, "postalCode", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.city")}</Label>
-                      <Input
-                        value={address.city}
-                        onChange={(event) => handleAddressChange(address.clientKey, "city", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("addresses.fields.countryCode")}</Label>
-                      <Input
-                        value={address.countryCode}
-                        onChange={(event) => handleAddressChange(address.clientKey, "countryCode", event.target.value)}
-                        placeholder={t("addresses.countryHint")}
-                        maxLength={2}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3 text-right">
-                    <Button variant="ghost" type="button" onClick={() => removeAddress(address.clientKey)}>
-                      {t("addresses.remove")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={addressSearch}
+                onChange={(event) => setAddressSearch(event.target.value)}
+                placeholder={t("addresses.searchPlaceholder")}
+                className="pl-9"
+              />
+            </div>
+            <div className={dataTableContainerClass}>
+              <Table>
+                <TableHeader className={dataTableHeaderClass}>
+                  <TableRow>
+                    <TableHead>{t("addresses.table.columns.label")}</TableHead>
+                    <TableHead>{t("addresses.table.columns.address")}</TableHead>
+                    <TableHead className="w-24">{t("addresses.table.columns.country")}</TableHead>
+                    <TableHead className="w-32">{t("addresses.table.columns.updated")}</TableHead>
+                    <TableHead className="w-28 text-right">{t("addresses.table.columns.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {addressRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-6 text-center text-sm text-slate-500">
+                        {addressSearch ? t("addresses.noResults") : t("addresses.empty")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    addressRows.map((address) => (
+                      <TableRow key={address.clientKey} className={dataTableRowClass}>
+                        <TableCell className="align-top">
+                          <div className="font-medium text-slate-900">
+                            {address.label || t("addresses.fields.label")}
+                          </div>
+                          <div className="text-sm text-slate-500">{address.company || "—"}</div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="text-sm text-slate-700">{formatAddressPreview(address)}</div>
+                          {address.cardAddressText ? (
+                            <p className="mt-1 whitespace-pre-line text-xs text-slate-500">{address.cardAddressText}</p>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="align-top text-sm text-slate-600">
+                          {address.countryCode ? address.countryCode.toUpperCase() : "—"}
+                        </TableCell>
+                        <TableCell className="align-top text-sm text-slate-600">—</TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("addresses.actions.edit")}
+                              onClick={() => openEditAddress(address.clientKey)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("addresses.actions.delete")}
+                              onClick={() => handleAddressDelete(address.clientKey)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </section>
 
@@ -420,5 +442,18 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         </form>
       </SheetContent>
     </Sheet>
+      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} />
+    </>
   );
+}
+
+function formatAddressPreview(address: AddressForm) {
+  const parts = [
+    address.street,
+    address.addressExtra,
+    [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
+    address.url,
+  ].filter((value) => value && value.trim().length > 0);
+
+  return parts.length > 0 ? parts.join(" · ") : "—";
 }
