@@ -3,34 +3,29 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import type { AdminBrandAddress, AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles";
+import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 
 export type BrandDetailClientProps = {
   brand?: AdminBrandSummary | null;
 };
 
-type BrandAddressForm = {
-  id?: string;
-  clientKey: string;
-  label: string;
-  company: string;
-  street: string;
-  addressExtra: string;
-  postalCode: string;
-  city: string;
-  countryCode: string;
-  cardAddressText: string;
-};
+type BrandAddressForm = BrandAddressDraft;
 
 type BrandForm = {
   id?: string;
@@ -66,6 +61,9 @@ const emptyAddress = (): BrandAddressForm => ({
   city: "",
   countryCode: "",
   cardAddressText: "",
+  url: "",
+  createdAt: null,
+  updatedAt: null,
 });
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -80,6 +78,8 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   const [form, setForm] = useState<BrandForm>(() => (brand ? mapBrandToForm(brand) : emptyForm()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSheetState, setAddressSheetState] = useState<AddressSheetState | null>(null);
 
   useEffect(() => {
     if (brand) {
@@ -98,20 +98,33 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleAddressChange = (clientKey: string, field: keyof BrandAddressForm, value: string) => {
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.map((address) =>
-        address.clientKey === clientKey ? { ...address, [field]: value } : address,
-      ),
-    }));
+  const openCreateAddress = () => {
+    setAddressSheetState({ mode: "create", address: emptyAddress() });
   };
 
-  const addAddress = () => {
-    setForm((current) => ({ ...current, addresses: [...current.addresses, emptyAddress()] }));
+  const openEditAddress = (clientKey: string) => {
+    const target = form.addresses.find((address) => address.clientKey === clientKey);
+    if (target) {
+      setAddressSheetState({ mode: "edit", address: target });
+    }
   };
 
-  const removeAddress = (clientKey: string) => {
+  const handleAddressSaved = (draft: BrandAddressForm) => {
+    setForm((current) => {
+      const exists = current.addresses.some((address) => address.clientKey === draft.clientKey);
+      const addresses = exists
+        ? current.addresses.map((address) => (address.clientKey === draft.clientKey ? draft : address))
+        : [...current.addresses, draft];
+      return { ...current, addresses };
+    });
+    setAddressSheetState(null);
+  };
+
+  const closeAddressSheet = () => setAddressSheetState(null);
+
+  const handleAddressDelete = (clientKey: string) => {
+    const confirmed = window.confirm(t("addresses.confirmDelete"));
+    if (!confirmed) return;
     setForm((current) => ({
       ...current,
       addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
@@ -143,6 +156,7 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
         city: address.city.trim() ? address.city.trim() : null,
         countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
         cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
+        url: address.url?.trim() ? address.url.trim() : null,
       })),
     };
 
@@ -214,6 +228,29 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
     }
   };
 
+  const normalizedAddressSearch = addressSearch.trim().toLowerCase();
+  const filteredAddresses = useMemo(() => {
+    if (!normalizedAddressSearch) {
+      return form.addresses;
+    }
+    return form.addresses.filter((address) => {
+      const haystack = [
+        address.label,
+        address.company,
+        address.street,
+        address.addressExtra,
+        address.cardAddressText,
+        address.postalCode,
+        address.city,
+        address.countryCode,
+        address.url,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedAddressSearch);
+    });
+  }, [form.addresses, normalizedAddressSearch]);
+
   const stats = useMemo(() => {
     if (!brand) return null;
     return [
@@ -257,204 +294,178 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6">
+        <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-6">
           {error ? (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("detail.sections.general.title")}</CardTitle>
-              <CardDescription>{t("detail.sections.general.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="brand-name">{t("form.name")}</Label>
-                  <Input
-                    id="brand-name"
-                    value={form.name}
-                    onChange={(event) => handleFieldChange("name", event.target.value)}
-                    maxLength={200}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="brand-slug">{t("form.slug")}</Label>
-                  <Input
-                    id="brand-slug"
-                    value={form.slug}
-                    onChange={(event) => handleFieldChange("slug", event.target.value)}
-                    maxLength={200}
-                  />
-                  <p className="text-xs text-slate-500">{t("form.slugHint")}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="brand-contact-name">{t("form.contactName")}</Label>
-                  <Input
-                    id="brand-contact-name"
-                    value={form.contactName}
-                    onChange={(event) => handleFieldChange("contactName", event.target.value)}
-                    maxLength={200}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="brand-contact-email">{t("form.contactEmail")}</Label>
-                  <Input
-                    id="brand-contact-email"
-                    type="email"
-                    value={form.contactEmail}
-                    onChange={(event) => handleFieldChange("contactEmail", event.target.value)}
-                    maxLength={200}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="brand-contact-phone">{t("form.contactPhone")}</Label>
-                  <Input
-                    id="brand-contact-phone"
-                    value={form.contactPhone}
-                    onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
-                    maxLength={100}
-                  />
-                </div>
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h2>
+              <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="brand-name">{t("form.name")}</Label>
+                <Input
+                  id="brand-name"
+                  value={form.name}
+                  onChange={(event) => handleFieldChange("name", event.target.value)}
+                  maxLength={200}
+                  required
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1.5">
+                <Label htmlFor="brand-slug">{t("form.slug")}</Label>
+                <Input
+                  id="brand-slug"
+                  value={form.slug}
+                  onChange={(event) => handleFieldChange("slug", event.target.value)}
+                  maxLength={200}
+                />
+                <p className="text-xs text-slate-500">{t("form.slugHint")}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="brand-contact-name">{t("form.contactName")}</Label>
+                <Input
+                  id="brand-contact-name"
+                  value={form.contactName}
+                  onChange={(event) => handleFieldChange("contactName", event.target.value)}
+                  maxLength={200}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="brand-contact-email">{t("form.contactEmail")}</Label>
+                <Input
+                  id="brand-contact-email"
+                  type="email"
+                  value={form.contactEmail}
+                  onChange={(event) => handleFieldChange("contactEmail", event.target.value)}
+                  maxLength={200}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="brand-contact-phone">{t("form.contactPhone")}</Label>
+                <Input
+                  id="brand-contact-phone"
+                  value={form.contactPhone}
+                  onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
+                  maxLength={100}
+                />
+              </div>
+            </div>
+          </section>
 
-          <Card>
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <Separator />
+
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>{t("detail.sections.addresses.title")}</CardTitle>
-                <CardDescription>{t("detail.sections.addresses.description")}</CardDescription>
+                <h2 className="text-sm font-semibold text-slate-900">{t("detail.sections.addresses.title")}</h2>
+                <p className="text-xs text-slate-500">{t("detail.sections.addresses.description")}</p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addAddress}>
+              <Button type="button" onClick={openCreateAddress} className="self-start sm:self-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 {t("addresses.add")}
               </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {form.addresses.length === 0 ? (
-                <p className="text-sm text-slate-500">{t("addresses.empty")}</p>
-              ) : (
-                form.addresses.map((address) => (
-                  <div key={address.clientKey} className="rounded-lg border border-slate-200 p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-1.5">
-                          <Label>{t("addresses.fields.label")}</Label>
-                          <Input
-                            value={address.label}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "label", event.target.value)
-                            }
-                            maxLength={120}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>{t("addresses.fields.company")}</Label>
-                          <Input
-                            value={address.company}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "company", event.target.value)
-                            }
-                            maxLength={200}
-                          />
-                        </div>
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <Label>{t("addresses.fields.street")}</Label>
-                          <Input
-                            value={address.street}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "street", event.target.value)
-                            }
-                            maxLength={200}
-                          />
-                        </div>
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <Label>{t("addresses.fields.addressExtra")}</Label>
-                          <Input
-                            value={address.addressExtra}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "addressExtra", event.target.value)
-                            }
-                            maxLength={200}
-                          />
-                        </div>
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <div className="flex items-center justify-between">
-                            <Label>{t("addresses.fields.cardAddressText")}</Label>
-                            <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={addressSearch}
+                  onChange={(event) => setAddressSearch(event.target.value)}
+                  placeholder={t("addresses.searchPlaceholder")}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div className={dataTableContainerClass}>
+              <Table>
+                <TableHeader className={dataTableHeaderClass}>
+                  <TableRow>
+                    <TableHead>{t("addresses.table.columns.label")}</TableHead>
+                    <TableHead>{t("addresses.table.columns.address")}</TableHead>
+                    <TableHead className="w-24">{t("addresses.table.columns.country")}</TableHead>
+                    <TableHead className="w-32">{t("addresses.table.columns.updated")}</TableHead>
+                    <TableHead className="w-28 text-right">{t("addresses.table.columns.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAddresses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-6 text-center text-sm text-slate-500">
+                        {addressSearch ? t("addresses.noResults") : t("addresses.empty")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAddresses.map((address) => (
+                      <TableRow key={address.clientKey} className={dataTableRowClass}>
+                        <TableCell className="align-top">
+                          <div className="font-medium text-slate-900">
+                            {address.label || t("addresses.fields.label")}
                           </div>
-                          <Textarea
-                            value={address.cardAddressText}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "cardAddressText", event.target.value)
-                            }
-                            rows={4}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>{t("addresses.fields.postalCode")}</Label>
-                          <Input
-                            value={address.postalCode}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "postalCode", event.target.value)
-                            }
-                            maxLength={40}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>{t("addresses.fields.city")}</Label>
-                          <Input
-                            value={address.city}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "city", event.target.value)
-                            }
-                            maxLength={120}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>{t("addresses.fields.countryCode")}</Label>
-                          <Input
-                            value={address.countryCode}
-                            onChange={(event) =>
-                              handleAddressChange(address.clientKey, "countryCode", event.target.value)
-                            }
-                            maxLength={2}
-                            placeholder="AT"
-                          />
-                          <p className="text-xs text-slate-500">{t("addresses.countryHint")}</p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="self-start text-red-600 hover:text-red-700"
-                        onClick={() => removeAddress(address.clientKey)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t("addresses.remove")}
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                          <div className="text-sm text-slate-500">{address.company || "—"}</div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="text-sm text-slate-700">{formatAddressPreview(address)}</div>
+                          {address.cardAddressText ? (
+                            <p className="mt-1 whitespace-pre-line text-xs text-slate-500">{address.cardAddressText}</p>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="align-top text-sm text-slate-600">
+                          {address.countryCode ? address.countryCode.toUpperCase() : "—"}
+                        </TableCell>
+                        <TableCell className="align-top text-sm text-slate-600">
+                          {address.updatedAt ? dateFormatter.format(new Date(address.updatedAt)) : "—"}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("addresses.actions.edit")}
+                              onClick={() => openEditAddress(address.clientKey)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("addresses.actions.delete")}
+                              onClick={() => handleAddressDelete(address.clientKey)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
 
           {brand ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("detail.sections.metadata.title")}</CardTitle>
-                <CardDescription>{t("detail.sections.metadata.description")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            <>
+              <Separator />
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">{t("detail.sections.metadata.title")}</h2>
+                  <p className="text-xs text-slate-500">{t("detail.sections.metadata.description")}</p>
+                </div>
                 {stats ? (
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     {stats.map((item) => (
-                      <div key={item.label} className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                      <div
+                        key={item.label}
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center"
+                      >
                         <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
                           {item.label}
                         </div>
@@ -483,28 +494,30 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                   </span>
                   <Badge variant="outline">{brand.slug}</Badge>
                 </div>
-              </CardContent>
-            </Card>
+              </section>
+            </>
           ) : null}
 
           {mode === "edit" ? (
-            <Card className="border-red-200 bg-red-50">
-              <CardHeader>
-                <CardTitle className="text-red-700">{t("detail.sections.danger.title")}</CardTitle>
-                <CardDescription className="text-red-600">
-                  {t("detail.sections.danger.description")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-red-700">{t("detail.sections.danger.helper")}</p>
-                <Button type="button" variant="destructive" onClick={deleteBrand} disabled={isSubmitting}>
-                  {t("actions.delete")}
-                </Button>
-              </CardContent>
-            </Card>
+            <>
+              <Separator />
+              <section>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-red-900">{t("detail.sections.danger.title")}</h2>
+                    <p className="text-xs text-red-700">{t("detail.sections.danger.description")}</p>
+                    <p className="text-xs text-red-700">{t("detail.sections.danger.helper")}</p>
+                  </div>
+                  <Button type="button" variant="destructive" onClick={deleteBrand} disabled={isSubmitting}>
+                    {t("actions.delete")}
+                  </Button>
+                </div>
+              </section>
+            </>
           ) : null}
         </div>
       </ScrollArea>
+      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} />
     </form>
   );
 }
@@ -517,10 +530,13 @@ function mapAddressToForm(address: AdminBrandAddress): BrandAddressForm {
     company: address.company ?? "",
     street: address.street ?? "",
     addressExtra: address.addressExtra ?? "",
-    cardAddressText: address.cardAddressText ?? "",
     postalCode: address.postalCode ?? "",
     city: address.city ?? "",
     countryCode: address.countryCode ?? "",
+    cardAddressText: address.cardAddressText ?? "",
+    url: address.url ?? "",
+    createdAt: address.createdAt ?? null,
+    updatedAt: address.updatedAt ?? null,
   };
 }
 
@@ -534,4 +550,15 @@ function mapBrandToForm(brand: AdminBrandSummary): BrandForm {
     contactPhone: brand.contactPhone ?? "",
     addresses: brand.addresses.map((address) => mapAddressToForm(address)),
   };
+}
+
+function formatAddressPreview(address: BrandAddressForm) {
+  const parts = [
+    address.street,
+    address.addressExtra,
+    [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
+    address.url ?? "",
+  ].filter((value) => value && value.trim().length > 0);
+
+  return parts.length > 0 ? parts.join(" · ") : "—";
 }
