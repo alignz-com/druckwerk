@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import type { FormEvent } from "react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import type { AdminBrandAddress, AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
@@ -11,7 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles";
 
 type Props = {
   brand: AdminBrandSummary | null;
@@ -43,6 +51,13 @@ type BrandAddressForm = {
   countryCode: string;
   cardAddressText: string;
   url: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+type AddressSheetState = {
+  mode: "create" | "edit";
+  address: BrandAddressForm;
 };
 
 const generateKey = () =>
@@ -61,6 +76,8 @@ const emptyAddress = (): BrandAddressForm => ({
   countryCode: "",
   cardAddressText: "",
   url: "",
+  createdAt: null,
+  updatedAt: null,
 });
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -105,34 +122,72 @@ export default function BrandDetailSheet({
     }
   }, [open, brand]);
 
-  const addresses = useMemo(() => form.addresses, [form.addresses]);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSheetState, setAddressSheetState] = useState<AddressSheetState | null>(null);
+
   const statItems =
     brand?.id
       ? [
           { label: t("detail.stats.templates"), value: brand.templateCount },
           { label: t("detail.stats.orders"), value: brand.orderCount },
-          { label: t("detail.stats.addresses"), value: addresses.length },
+          { label: t("detail.stats.addresses"), value: form.addresses.length },
         ]
       : [];
+
+  const normalizedAddressSearch = addressSearch.trim().toLowerCase();
+  const filteredAddresses = useMemo(() => {
+    if (!normalizedAddressSearch) {
+      return form.addresses;
+    }
+    return form.addresses.filter((address) => {
+      const haystack = [
+        address.label,
+        address.company,
+        address.street,
+        address.addressExtra,
+        address.postalCode,
+        address.city,
+        address.countryCode,
+        address.cardAddressText,
+        address.url,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedAddressSearch);
+    });
+  }, [form.addresses, normalizedAddressSearch]);
 
   const handleFieldChange = (field: keyof Omit<BrandForm, "id" | "addresses">, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleAddressChange = (clientKey: string, field: keyof BrandAddressForm, value: string) => {
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.map((address) =>
-        address.clientKey === clientKey ? { ...address, [field]: value } : address,
-      ),
-    }));
+  const openCreateAddress = () => {
+    setAddressSheetState({ mode: "create", address: emptyAddress() });
   };
 
-  const addAddress = () => {
-    setForm((current) => ({ ...current, addresses: [...current.addresses, emptyAddress()] }));
+  const openEditAddress = (clientKey: string) => {
+    const target = form.addresses.find((address) => address.clientKey === clientKey);
+    if (target) {
+      setAddressSheetState({ mode: "edit", address: { ...target } });
+    }
   };
 
-  const removeAddress = (clientKey: string) => {
+  const handleAddressSaved = (value: BrandAddressForm) => {
+    setForm((current) => {
+      const exists = current.addresses.some((address) => address.clientKey === value.clientKey);
+      const addresses = exists
+        ? current.addresses.map((address) => (address.clientKey === value.clientKey ? value : address))
+        : [...current.addresses, value];
+      return { ...current, addresses };
+    });
+    setAddressSheetState(null);
+  };
+
+  const closeAddressSheet = () => setAddressSheetState(null);
+
+  const handleAddressDelete = (clientKey: string) => {
+    const confirmed = window.confirm(t("addresses.confirmDelete"));
+    if (!confirmed) return;
     setForm((current) => ({
       ...current,
       addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
@@ -285,237 +340,214 @@ export default function BrandDetailSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-      <SheetContent className="flex h-full max-w-4xl flex-col p-0">
-        {brand ? (
-          <>
-            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-              <SheetTitle>{brand.name}</SheetTitle>
-              <SheetDescription>{t("dialog.description")}</SheetDescription>
-            </SheetHeader>
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-                {error ? (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
-                  </div>
-                ) : null}
-                {feedback ? (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {feedback}
-                  </div>
-                ) : null}
+    <>
+      <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+        <SheetContent className="flex h-full max-w-4xl flex-col p-0">
+          {brand ? (
+            <>
+              <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                <SheetTitle>{brand.name}</SheetTitle>
+                <SheetDescription>{t("dialog.description")}</SheetDescription>
+              </SheetHeader>
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="mx-auto w-full max-w-3xl space-y-8">
+                  {error ? (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
+                  {feedback ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      {feedback}
+                    </div>
+                  ) : null}
 
-                {statItems.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {statItems.map((item) => (
-                      <Card key={item.label}>
-                        <CardHeader className="pb-2">
-                          <CardDescription>{item.label}</CardDescription>
-                          <CardTitle className="text-2xl">{item.value}</CardTitle>
-                        </CardHeader>
-                      </Card>
-                    ))}
-                  </div>
-                ) : null}
+                  {statItems.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {statItems.map((item) => (
+                        <Card key={item.label}>
+                          <CardHeader className="pb-2">
+                            <CardDescription>{item.label}</CardDescription>
+                            <CardTitle className="text-2xl">{item.value}</CardTitle>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : null}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">{t("detail.sections.general.title")}</CardTitle>
-                    <CardDescription>{t("detail.sections.general.description")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="brand-name-detail">{t("form.name")}</Label>
-                      <Input
-                        id="brand-name-detail"
-                        value={form.name}
-                        onChange={(event) => handleFieldChange("name", event.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="brand-slug-detail">{t("form.slug")}</Label>
-                      <Input
-                        id="brand-slug-detail"
-                        value={form.slug}
-                        onChange={(event) => handleFieldChange("slug", event.target.value)}
-                      />
-                      <p className="text-xs text-slate-500">{t("form.slugHint")}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="brand-contact-name-detail">{t("form.contactName")}</Label>
-                      <Input
-                        id="brand-contact-name-detail"
-                        value={form.contactName}
-                        onChange={(event) => handleFieldChange("contactName", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="brand-contact-email-detail">{t("form.contactEmail")}</Label>
-                      <Input
-                        id="brand-contact-email-detail"
-                        type="email"
-                        value={form.contactEmail}
-                        onChange={(event) => handleFieldChange("contactEmail", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="brand-contact-phone-detail">{t("form.contactPhone")}</Label>
-                      <Input
-                        id="brand-contact-phone-detail"
-                        value={form.contactPhone}
-                        onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <section className="space-y-4">
                     <div>
-                      <CardTitle className="text-base">{t("addresses.title")}</CardTitle>
-                      <CardDescription>{t("addresses.description")}</CardDescription>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
+                      <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={addAddress} disabled={disableActions}>
-                      {t("addresses.add")}
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {addresses.length === 0 ? (
-                      <p className="text-xs text-slate-500">{t("addresses.empty")}</p>
-                    ) : (
-                      addresses.map((address) => (
-                        <div key={address.clientKey} className="space-y-4 rounded-lg border border-slate-200 p-4">
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.label")}</Label>
-                              <Input
-                                value={address.label}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "label", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.company")}</Label>
-                              <Input
-                                value={address.company}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "company", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.url")}</Label>
-                              <Input
-                                value={address.url}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "url", event.target.value)
-                                }
-                                placeholder="https://"
-                              />
-                            </div>
-                            <div className="space-y-1.5 sm:col-span-2">
-                              <Label>{t("addresses.fields.street")}</Label>
-                              <Input
-                                value={address.street}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "street", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.addressExtra")}</Label>
-                              <Input
-                                value={address.addressExtra}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "addressExtra", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5 sm:col-span-2">
-                              <div className="flex items-center justify-between">
-                                <Label>{t("addresses.fields.cardAddressText")}</Label>
-                                <span className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</span>
-                              </div>
-                              <Textarea
-                                value={address.cardAddressText}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "cardAddressText", event.target.value)
-                                }
-                                rows={4}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.postalCode")}</Label>
-                              <Input
-                                value={address.postalCode}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "postalCode", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.city")}</Label>
-                              <Input
-                                value={address.city}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "city", event.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>{t("addresses.fields.countryCode")}</Label>
-                              <Input
-                                value={address.countryCode}
-                                onChange={(event) =>
-                                  handleAddressChange(address.clientKey, "countryCode", event.target.value)
-                                }
-                                maxLength={2}
-                                placeholder="AT"
-                              />
-                              <p className="text-xs text-slate-500">{t("addresses.countryHint")}</p>
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              disabled={disableActions}
-                              onClick={() => removeAddress(address.clientKey)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              {t("addresses.remove")}
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="brand-name-detail">{t("form.name")}</Label>
+                        <Input
+                          id="brand-name-detail"
+                          value={form.name}
+                          onChange={(event) => handleFieldChange("name", event.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="brand-slug-detail">{t("form.slug")}</Label>
+                        <Input
+                          id="brand-slug-detail"
+                          value={form.slug}
+                          onChange={(event) => handleFieldChange("slug", event.target.value)}
+                        />
+                        <p className="text-xs text-slate-500">{t("form.slugHint")}</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="brand-contact-name-detail">{t("form.contactName")}</Label>
+                        <Input
+                          id="brand-contact-name-detail"
+                          value={form.contactName}
+                          onChange={(event) => handleFieldChange("contactName", event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="brand-contact-email-detail">{t("form.contactEmail")}</Label>
+                        <Input
+                          id="brand-contact-email-detail"
+                          type="email"
+                          value={form.contactEmail}
+                          onChange={(event) => handleFieldChange("contactEmail", event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="brand-contact-phone-detail">{t("form.contactPhone")}</Label>
+                        <Input
+                          id="brand-contact-phone-detail"
+                          value={form.contactPhone}
+                          onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </section>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">{t("domains.title")}</CardTitle>
-                    <CardDescription>{t("domains.description")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Separator />
+
+                  <section className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.addresses.title")}</h3>
+                      <p className="text-xs text-slate-500">{t("detail.sections.addresses.description")}</p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="relative w-full sm:max-w-xs">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          value={addressSearch}
+                          onChange={(event) => setAddressSearch(event.target.value)}
+                          placeholder={t("addresses.searchPlaceholder")}
+                          className="pl-9"
+                        />
+                      </div>
+                      <Button type="button" onClick={openCreateAddress} disabled={disableActions} className="self-end sm:self-auto">
+                        <Plus className="mr-2 h-4 w-4" />
+                        {t("addresses.add")}
+                      </Button>
+                    </div>
+                    <div className={dataTableContainerClass}>
+                      <Table>
+                        <TableHeader className={dataTableHeaderClass}>
+                          <TableRow>
+                            <TableHead>{t("addresses.table.columns.label")}</TableHead>
+                            <TableHead>{t("addresses.table.columns.address")}</TableHead>
+                            <TableHead className="w-24">{t("addresses.table.columns.country")}</TableHead>
+                            <TableHead className="w-32">{t("addresses.table.columns.updated")}</TableHead>
+                            <TableHead className="w-24 text-right">{t("addresses.table.columns.actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAddresses.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="py-6 text-center text-sm text-slate-500">
+                                {addressSearch ? t("addresses.noResults") : t("addresses.empty")}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredAddresses.map((address) => (
+                              <TableRow key={address.clientKey} className={dataTableRowClass}>
+                                <TableCell className="align-top">
+                                  <div className="font-medium text-slate-900">
+                                    {address.label || t("addresses.fields.label")}
+                                  </div>
+                                  <div className="text-sm text-slate-500">{address.company || "—"}</div>
+                                </TableCell>
+                                <TableCell className="align-top">
+                                  <div className="text-sm text-slate-700">{formatAddressPreview(address)}</div>
+                                  {address.cardAddressText ? (
+                                    <p className="mt-1 text-xs text-slate-500 whitespace-pre-line">
+                                      {address.cardAddressText}
+                                    </p>
+                                  ) : null}
+                                </TableCell>
+                                <TableCell className="align-top text-sm text-slate-600">
+                                  {address.countryCode ? address.countryCode.toUpperCase() : "—"}
+                                </TableCell>
+                                <TableCell className="align-top text-sm text-slate-600">
+                                  {address.updatedAt ? dateFormatter.format(new Date(address.updatedAt)) : "—"}
+                                </TableCell>
+                                <TableCell className="align-top">
+                                  <div className="flex justify-end gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={t("addresses.actions.edit")}
+                                      onClick={() => openEditAddress(address.clientKey)}
+                                      disabled={disableActions}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={t("addresses.actions.delete")}
+                                      onClick={() => handleAddressDelete(address.clientKey)}
+                                      disabled={disableActions}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+
+                  <Separator />
+
+                  <section className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h3>
+                      <p className="text-xs text-slate-500">{t("domains.description")}</p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
                       <Input
                         value={domainInput}
                         onChange={(event) => setDomainInput(event.target.value)}
                         placeholder={t("domains.placeholder")}
-                        className="sm:w-64"
-                        disabled={disableActions}
+                        className="w-full"
                       />
-                      <Button type="button" variant="secondary" disabled={disableActions} onClick={submitDomain}>
+                      <Button
+                        type="button"
+                        onClick={submitDomain}
+                        disabled={disableActions || !domainInput.trim()}
+                        className="sm:w-auto"
+                      >
                         {isDomainSubmitting ? t("domains.saving") : t("domains.add")}
                       </Button>
                     </div>
-                    {domainError ? <p className="text-xs text-red-600">{domainError}</p> : null}
+                    {domainError ? <p className="text-sm text-red-600">{domainError}</p> : null}
                     {brand.domains.length === 0 ? (
-                      <p className="text-xs text-slate-500">{t("domains.empty")}</p>
+                      <p className="text-sm text-slate-500">{t("domains.empty")}</p>
                     ) : (
                       <ul className="flex flex-wrap gap-2 text-sm text-slate-600">
                         {brand.domains.map((domain) => (
@@ -539,15 +571,15 @@ export default function BrandDetailSheet({
                         ))}
                       </ul>
                     )}
-                  </CardContent>
-                </Card>
+                  </section>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">{t("detail.sections.metadata.title")}</CardTitle>
-                    <CardDescription>{t("detail.sections.metadata.description")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <Separator />
+
+                  <section className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.metadata.title")}</h3>
+                      <p className="text-xs text-slate-500">{t("detail.sections.metadata.description")}</p>
+                    </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
                         <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -568,47 +600,204 @@ export default function BrandDetailSheet({
                       </span>
                       <Badge variant="outline">{brand.slug}</Badge>
                     </div>
-                  </CardContent>
-                </Card>
+                  </section>
 
-                <Card className="border border-red-200 bg-red-50/70">
-                  <CardHeader>
-                    <CardTitle className="text-base text-red-900">
-                      {t("detail.sections.danger.title")}
-                    </CardTitle>
-                    <CardDescription className="text-red-800">
-                      {t("detail.sections.danger.description")}
-                    </CardDescription>
-                    <p className="text-xs text-red-700">{t("detail.sections.danger.helper")}</p>
-                  </CardHeader>
-                  <CardFooter className="justify-end">
-                    <Button type="button" variant="destructive" onClick={handleDelete} disabled={disableActions}>
-                      {t("actions.delete")}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </div>
-              <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={disableActions}
-                >
-                  {t("actions.close")}
-                </Button>
-                <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <Button type="submit" disabled={disableActions || !form.name.trim()}>
-                    {isSaving ? t("actions.saving") : t("actions.save")}
-                  </Button>
+                  <Separator />
+
+                  <section>
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-red-900">{t("detail.sections.danger.title")}</h3>
+                        <p className="text-xs text-red-700">{t("detail.sections.danger.description")}</p>
+                        <p className="text-xs text-red-700">{t("detail.sections.danger.helper")}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={disableActions}
+                        className="self-start"
+                      >
+                        {t("actions.delete")}
+                      </Button>
+                    </div>
+                  </section>
                 </div>
+                <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={disableActions}
+                  >
+                    {t("actions.close")}
+                  </Button>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Button type="submit" disabled={disableActions || !form.name.trim()}>
+                      {isSaving ? t("actions.saving") : t("actions.save")}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} t={t} />
+    </>
+  );
+}
+
+type AddressSheetProps = {
+  state: AddressSheetState | null;
+  onClose: () => void;
+  onSave: (address: BrandAddressForm) => void;
+  t: ReturnType<typeof useTranslations>;
+};
+
+function AddressSheet({ state, onClose, onSave, t }: AddressSheetProps) {
+  const open = Boolean(state);
+  const [draft, setDraft] = useState<BrandAddressForm>(state?.address ?? emptyAddress());
+
+  useEffect(() => {
+    if (state?.address) {
+      setDraft(state.address);
+    } else if (!state) {
+      setDraft(emptyAddress());
+    }
+  }, [state]);
+
+  if (!state) {
+    return null;
+  }
+
+  const title =
+    state.mode === "edit" ? t("addresses.sheet.editTitle") : t("addresses.sheet.createTitle");
+  const primaryLabel =
+    state.mode === "edit" ? t("addresses.sheet.saveButton") : t("addresses.sheet.createButton");
+
+  const handleChange = (
+    field: keyof Omit<BrandAddressForm, "clientKey" | "id" | "createdAt" | "updatedAt">,
+    value: string,
+  ) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSave(draft);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(next) => (!next ? onClose() : null)}>
+      <SheetContent className="flex h-full max-w-md flex-col p-0">
+        <form onSubmit={handleSubmit} className="flex h-full flex-col">
+          <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+            <SheetTitle>{title}</SheetTitle>
+            <SheetDescription>{t("addresses.sheet.description")}</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+            <div className="space-y-1.5">
+              <Label htmlFor="address-label-field">{t("addresses.fields.label")}</Label>
+              <Input
+                id="address-label-field"
+                value={draft.label}
+                onChange={(event) => handleChange("label", event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-company-field">{t("addresses.fields.company")}</Label>
+              <Input
+                id="address-company-field"
+                value={draft.company}
+                onChange={(event) => handleChange("company", event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-url-field">{t("addresses.fields.url")}</Label>
+              <Input
+                id="address-url-field"
+                value={draft.url}
+                onChange={(event) => handleChange("url", event.target.value)}
+                placeholder="https://"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-street-field">{t("addresses.fields.street")}</Label>
+              <Input
+                id="address-street-field"
+                value={draft.street}
+                onChange={(event) => handleChange("street", event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-extra-field">{t("addresses.fields.addressExtra")}</Label>
+              <Input
+                id="address-extra-field"
+                value={draft.addressExtra}
+                onChange={(event) => handleChange("addressExtra", event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-card-field">{t("addresses.fields.cardAddressText")}</Label>
+              <Textarea
+                id="address-card-field"
+                value={draft.cardAddressText}
+                onChange={(event) => handleChange("cardAddressText", event.target.value)}
+                rows={4}
+              />
+              <p className="text-xs text-slate-500">{t("addresses.cardAddressHint")}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="address-postal-field">{t("addresses.fields.postalCode")}</Label>
+                <Input
+                  id="address-postal-field"
+                  value={draft.postalCode}
+                  onChange={(event) => handleChange("postalCode", event.target.value)}
+                />
               </div>
-            </form>
-          </>
-        ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="address-city-field">{t("addresses.fields.city")}</Label>
+                <Input
+                  id="address-city-field"
+                  value={draft.city}
+                  onChange={(event) => handleChange("city", event.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="address-country-field">{t("addresses.fields.countryCode")}</Label>
+              <Input
+                id="address-country-field"
+                value={draft.countryCode}
+                onChange={(event) => handleChange("countryCode", event.target.value)}
+                placeholder="AT"
+              />
+              <p className="text-xs text-slate-500">{t("addresses.countryHint")}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              {t("addresses.sheet.cancelButton")}
+            </Button>
+            <Button type="submit">{primaryLabel}</Button>
+          </div>
+        </form>
       </SheetContent>
     </Sheet>
   );
+}
+
+function formatAddressPreview(address: BrandAddressForm) {
+  const parts = [
+    address.street,
+    address.addressExtra,
+    [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
+    address.url,
+  ].filter((value) => value && value.trim().length > 0);
+
+  return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
 function emptyForm(): BrandForm {
@@ -647,5 +836,7 @@ function mapAddress(address: AdminBrandAddress): BrandAddressForm {
     city: address.city ?? "",
     countryCode: address.countryCode ?? "",
     url: address.url ?? "",
+    createdAt: address.createdAt,
+    updatedAt: address.updatedAt,
   };
 }

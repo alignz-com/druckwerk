@@ -760,8 +760,11 @@ export const messages = {
           title: "Addresses",
           description: "Create reusable shipping or billing addresses linked to this brand.",
           add: "Add address",
+          searchPlaceholder: "Search addresses…",
+          noResults: "No addresses match your search.",
           empty: "No addresses yet.",
           remove: "Remove",
+          confirmDelete: "Remove this address?",
           countryHint: "Two-letter country code (ISO 3166-1 alpha-2).",
           cardAddressHint: "Shown exactly on the card. Supports multiple lines.",
           fields: {
@@ -774,6 +777,27 @@ export const messages = {
             postalCode: "Postal code",
             city: "City",
             countryCode: "Country code",
+          },
+          actions: {
+            edit: "Edit address",
+            delete: "Delete address",
+          },
+          table: {
+            columns: {
+              label: "Label / Company",
+              address: "Address",
+              country: "Country",
+              updated: "Updated",
+              actions: "Actions",
+            },
+          },
+          sheet: {
+            createTitle: "Add address",
+            editTitle: "Edit address",
+            description: "Saved addresses can be reused for future orders.",
+            createButton: "Add address",
+            saveButton: "Save address",
+            cancelButton: "Cancel",
           },
         },
         domains: {
@@ -1555,8 +1579,11 @@ export const messages = {
           title: "Adressen",
           description: "Lege wiederverwendbare Versand- oder Rechnungsadressen für diese Marke an.",
           add: "Adresse hinzufügen",
+          searchPlaceholder: "Adressen durchsuchen…",
+          noResults: "Keine Adressen passen zu deiner Suche.",
           empty: "Noch keine Adressen hinterlegt.",
           remove: "Entfernen",
+          confirmDelete: "Diese Adresse entfernen?",
           countryHint: "Zweistelliger Ländercode (ISO 3166-1 alpha-2).",
           cardAddressHint: "Wird 1:1 auf die Visitenkarte übernommen. Mehrzeilig möglich.",
           fields: {
@@ -1569,6 +1596,27 @@ export const messages = {
             postalCode: "Postleitzahl",
             city: "Ort",
             countryCode: "Ländercode",
+          },
+          actions: {
+            edit: "Adresse bearbeiten",
+            delete: "Adresse löschen",
+          },
+          table: {
+            columns: {
+              label: "Bezeichnung / Firma",
+              address: "Adresse",
+              country: "Land",
+              updated: "Aktualisiert",
+              actions: "Aktionen",
+            },
+          },
+          sheet: {
+            createTitle: "Adresse hinzufügen",
+            editTitle: "Adresse bearbeiten",
+            description: "Gespeicherte Adressen können für zukünftige Bestellungen genutzt werden.",
+            createButton: "Adresse hinzufügen",
+            saveButton: "Adresse speichern",
+            cancelButton: "Abbrechen",
           },
         },
         domains: {
