@@ -8,6 +8,7 @@ import { isLocale } from "@/lib/i18n/messages";
 import { getServerAuthSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { fontMono, fontSans } from "@/lib/fonts";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
   title: "Druckwerk - Druckerei Thurnher",
@@ -46,7 +47,9 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className={cn("antialiased font-sans", fontSans.variable, fontMono.variable)}>
         <SessionProviderWrapper>
-          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+          <LocaleProvider initialLocale={locale}>
+            <QueryProvider>{children}</QueryProvider>
+          </LocaleProvider>
         </SessionProviderWrapper>
         <SpeedInsights />
       </body>

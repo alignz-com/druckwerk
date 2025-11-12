@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
 import { ChevronDown, Info } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { ResolvedTemplate, TemplateSummary } from "@/lib/templates";
 import { COUNTRY_CODES, getCountryLabel } from "@/lib/countries";
@@ -110,10 +111,20 @@ type BrandOption = {
   name: string;
 };
 
-type BrandDataResponse = {
+type BrandResourcePayload = {
   templates: TemplateSummary[];
   addresses: BrandAddressEntry[];
-  initialTemplate?: ResolvedTemplate | null;
+  initialTemplate: ResolvedTemplate | null;
+};
+
+const brandResourcesFetcher = async (brandId: string): Promise<BrandResourcePayload> => {
+  const params = new URLSearchParams({ brandId });
+  const response = await fetch(`/api/orders/brand-data?${params.toString()}`, { cache: "no-store" });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.error ?? "Failed to load brand data");
+  }
+  return (await response.json()) as BrandResourcePayload;
 };
 
 export type OrderFormProps = {
@@ -140,10 +151,6 @@ export default function OrderForm({
   const t = useTranslations();
   const tOrder = useTranslations("orderForm");
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(initialBrandId ?? null);
-  const [templates, setTemplates] = useState<TemplateSummary[]>(initialTemplateSummaries);
-  const [addresses, setAddresses] = useState<BrandAddressEntry[]>(initialAddresses);
-  const [isBrandLoading, setIsBrandLoading] = useState(false);
-  const [brandError, setBrandError] = useState<string | null>(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(initialTemplateSummaries[0]?.key ?? "");
   const [templateDetails, setTemplateDetails] = useState<Record<string, ResolvedTemplate>>(() => {
     if (initialTemplate) {
@@ -162,6 +169,47 @@ export default function OrderForm({
       });
     }
   }, [initialTemplate]);
+
+  const queryClient = useQueryClient();
+  const initialBrandData = useMemo(
+    () => ({
+      templates: initialTemplateSummaries,
+      addresses: initialAddresses,
+      initialTemplate: initialTemplate ?? null,
+    }),
+    [initialTemplateSummaries, initialAddresses, initialTemplate],
+  );
+
+  useEffect(() => {
+    if (initialBrandId && initialBrandData.templates.length >= 0) {
+      queryClient.setQueryData(["brand-resources", initialBrandId], initialBrandData);
+    }
+  }, [initialBrandId, initialBrandData, queryClient]);
+
+  const brandQuery = useQuery<BrandResourcePayload>({
+    queryKey: ["brand-resources", currentBrandId ?? "none"],
+    queryFn: () => brandResourcesFetcher(currentBrandId!),
+    enabled: Boolean(currentBrandId),
+  });
+
+  const brandData: BrandResourcePayload = currentBrandId
+    ? brandQuery.data ?? { templates: [], addresses: [], initialTemplate: null }
+    : initialBrandData;
+
+  const templates = brandData.templates;
+  const addresses = brandData.addresses;
+  const derivedInitialTemplate = brandData.initialTemplate;
+  const isBrandLoading = currentBrandId ? brandQuery.isFetching : false;
+  const brandError = currentBrandId ? (brandQuery.error instanceof Error ? brandQuery.error.message : null) : null;
+
+  useEffect(() => {
+    if (derivedInitialTemplate) {
+      setTemplateDetails((current) => {
+        if (current[derivedInitialTemplate.key]) return current;
+        return { ...current, [derivedInitialTemplate.key]: derivedInitialTemplate };
+      });
+    }
+  }, [derivedInitialTemplate]);
 
   const selectedSummary = useMemo(() => {
     if (templates.length === 0) return null;
@@ -263,58 +311,20 @@ export default function OrderForm({
   );
 
   const handleBrandChange = useCallback(
-    async (nextBrandId: string) => {
+    (nextBrandId: string) => {
       if (!nextBrandId || nextBrandId === currentBrandId) return;
       setCurrentBrandId(nextBrandId);
-      setIsBrandLoading(true);
-      setBrandError(null);
       setTemplateError(null);
-      try {
-        const params = new URLSearchParams({ brandId: nextBrandId });
-        const response = await fetch(`/api/orders/brand-data?${params.toString()}`, {
-          cache: "no-store",
-        });
-        const payload = (await response.json().catch(() => null)) as BrandDataResponse | null;
-        if (!response.ok || !payload) {
-          const errorMessage =
-            (payload as any)?.error && typeof (payload as any).error === "string"
-              ? (payload as any).error
-              : tOrder("errors.brandLoadFailed");
-          throw new Error(errorMessage);
-        }
-        const nextTemplates = Array.isArray(payload.templates) ? payload.templates : [];
-        const nextAddresses = Array.isArray(payload.addresses) ? payload.addresses : [];
-
-        setTemplates(nextTemplates);
-        setAddresses(nextAddresses);
-        setSelectedAddressEntry(null);
-        setAddressInputValue("");
-        setAddressSearch("");
-        setAddressBlock("");
-
-        const nextKey = nextTemplates[0]?.key ?? "";
-        setSelectedTemplateKey(nextKey);
-        setTemplateDetails((current) => {
-          const nextMap: typeof current = {};
-          for (const summary of nextTemplates) {
-            if (current[summary.key]) {
-              nextMap[summary.key] = current[summary.key];
-            }
-          }
-          if (payload.initialTemplate) {
-            nextMap[payload.initialTemplate.key] = payload.initialTemplate;
-          }
-          return nextMap;
-        });
-      } catch (error) {
-        console.error("[order-form] failed to load brand data", error);
-        setBrandError(error instanceof Error ? error.message : tOrder("errors.brandLoadFailed"));
-      } finally {
-        setIsBrandLoading(false);
-      }
     },
-    [currentBrandId, tOrder],
+    [currentBrandId],
   );
+
+  useEffect(() => {
+    setSelectedAddressEntry(null);
+    setAddressInputValue("");
+    setAddressSearch("");
+    setAddressBlock("");
+  }, [currentBrandId]);
 
   useEffect(() => {
     setFrontPreviewReady(false);
