@@ -28,9 +28,9 @@ export async function GET(request: Request) {
 export const POST = GET;
 
 function authorize(request: Request) {
-  const secret = process.env.JDF_WORKER_SECRET;
+  const secret = process.env.CRON_SECRET ?? process.env.JDF_WORKER_SECRET;
   if (!secret) {
-    console.error("[api/jdf-worker] missing JDF_WORKER_SECRET env");
+    console.error("[api/jdf-worker] missing CRON_SECRET env");
     return new Response("Server misconfigured", { status: 500 });
   }
   const header = request.headers.get("authorization");
