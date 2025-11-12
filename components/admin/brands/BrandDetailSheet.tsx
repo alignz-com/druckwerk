@@ -345,12 +345,12 @@ export default function BrandDetailSheet({
         <SheetContent className="flex h-full max-w-4xl flex-col p-0">
           {brand ? (
             <>
-              <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+              <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left shadow-[0_12px_20px_-18px_rgba(15,23,42,0.4)]">
                 <SheetTitle>{brand.name}</SheetTitle>
                 <SheetDescription>{t("dialog.description")}</SheetDescription>
               </SheetHeader>
               <form onSubmit={handleSubmit} className="flex h-full flex-col">
-                <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex-1 overflow-y-auto px-6 py-6 pb-24">
                   <div className="w-full space-y-8">
                   {error ? (
                     <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
