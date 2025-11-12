@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/jdf-worker",
+      "schedule": "*/1 * * * *"
+    }
+  ]
+}
