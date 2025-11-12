@@ -345,7 +345,7 @@ export default function BrandDetailSheet({
         <SheetContent className="flex h-full max-w-4xl flex-col p-0">
           {brand ? (
             <>
-              <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left shadow-[0_12px_20px_-18px_rgba(15,23,42,0.4)]">
+              <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left">
                 <SheetTitle>{brand.name}</SheetTitle>
                 <SheetDescription>{t("dialog.description")}</SheetDescription>
               </SheetHeader>
@@ -625,7 +625,7 @@ export default function BrandDetailSheet({
                   </section>
                   </div>
                 </div>
-              <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-4 shadow-[0_-12px_20px_-18px_rgba(15,23,42,0.4)] sm:flex sm:items-center sm:justify-between">
+              <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex sm:items-center sm:justify-between">
                 <Button
                   type="button"
                   variant="outline"
