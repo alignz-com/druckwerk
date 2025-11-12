@@ -349,8 +349,8 @@ export default function BrandDetailSheet({
                 <SheetTitle>{brand.name}</SheetTitle>
                 <SheetDescription>{t("dialog.description")}</SheetDescription>
               </SheetHeader>
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6">
-                <div className="mx-auto w-full max-w-3xl space-y-8">
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24">
+                <div className="w-full space-y-8">
                   {error ? (
                     <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                       {error}
@@ -623,21 +623,21 @@ export default function BrandDetailSheet({
                     </div>
                   </section>
                 </div>
-                <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    disabled={disableActions}
-                  >
-                    {t("actions.close")}
+              <div className="sticky bottom-0 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={disableActions}
+                >
+                  {t("actions.close")}
+                </Button>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <Button type="submit" disabled={disableActions || !form.name.trim()}>
+                    {isSaving ? t("actions.saving") : t("actions.save")}
                   </Button>
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <Button type="submit" disabled={disableActions || !form.name.trim()}>
-                      {isSaving ? t("actions.saving") : t("actions.save")}
-                    </Button>
-                  </div>
                 </div>
+              </div>
               </form>
             </>
           ) : null}
