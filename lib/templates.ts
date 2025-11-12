@@ -308,56 +308,6 @@ async function loadTemplateDesign(assets: TemplateWithAssets["assets"], fallback
   }
 }
 
-type ListTemplatesOptions = {
-  fallbackToDefaults?: boolean;
-};
-
-export async function listTemplatesForBrand(
-  brandId?: string | null,
-  options?: ListTemplatesOptions,
-): Promise<ResolvedTemplate[]> {
-  const fallbackToDefaults = options?.fallbackToDefaults !== false;
-  try {
-    if (brandId) {
-      const assignments = await prisma.brandTemplate.findMany({
-        where: { brandId },
-        include: { template: { include: templateInclude } },
-      });
-
-      const resolvedAssignments = await Promise.all(
-        assignments.map(async (assignment) => {
-          const tpl = assignment.template;
-          if (!tpl) return null;
-          const resolved = await resolveTemplateFromDb(tpl, fallbackToDefaults ? DEFAULT_TEMPLATES[tpl.key] : undefined);
-          return {
-            key: resolved.key,
-            template: {
-              ...resolved,
-              config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
-            },
-          };
-        }),
-      );
-
-      const filtered = resolvedAssignments.filter((item): item is { key: string; template: ResolvedTemplate } => Boolean(item));
-      const map = new Map<string, ResolvedTemplate>();
-      for (const entry of filtered) {
-        map.set(entry.key, entry.template);
-      }
-
-      return sortTemplates(map.values());
-    }
-
-    const dbTemplates = await prisma.template.findMany({ include: templateInclude });
-    const resolvedTemplates = await Promise.all(
-      dbTemplates.map((tpl) => resolveTemplateFromDb(tpl, fallbackToDefaults ? DEFAULT_TEMPLATES[tpl.key] : undefined)),
-    );
-    return sortTemplates(resolvedTemplates);
-  } catch (error) {
-    console.warn("[templates] Failed to load templates", error);
-    return [];
-  }
-}
 
 export async function getTemplateByKey(key: string, brandId?: string | null): Promise<ResolvedTemplate> {
   if (brandId) {

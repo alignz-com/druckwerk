@@ -726,9 +726,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
 
   const hasDesignBack = Array.isArray(template.design?.back) && template.design!.back.length > 0;
   const designBackHasQr = hasDesignBack && designContainsQr(template.design!.back);
-  const legacyQrConfig = template.config.back?.mode === "qr" ? template.config.back.qr : undefined;
-  const shouldRenderLegacyQr = Boolean(legacyQrConfig) && !designBackHasQr;
-  const needsQrData = designBackHasQr || Boolean(legacyQrConfig);
+  const needsQrData = designBackHasQr;
 
   let qrData: string | null = null;
   if (needsQrData) {
@@ -765,27 +763,6 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       offsetXMm,
       offsetYMm,
     });
-  }
-
-  if (shouldRenderLegacyQr && legacyQrConfig && qrData) {
-    const pngBytes = Buffer.from(qrData.split(",")[1], "base64");
-    const img = await tplDoc.embedPng(pngBytes);
-
-    const qrConfig = legacyQrConfig;
-    const qrSize = mm2pt(qrConfig.sizeMm);
-    const qx = mm2pt(offsetXMm + qrConfig.xMm);
-    const qy = mm2pt(offsetYMm + qrConfig.yMm);
-    back.drawImage(img, { x: qx, y: qy, width: qrSize, height: qrSize });
-
-    const captionFont = pickFont(frame.contacts ?? frame.company ?? frame.name, Frutiger) ?? Frutiger.Light;
-    if (captionFont) {
-      back.drawText("Scan to save contact", {
-        x: qx,
-        y: qy - mm2pt(4),
-        size: 8,
-        font: captionFont,
-      });
-    }
   }
 
   const pdfBytes = await tplDoc.save();
