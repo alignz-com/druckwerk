@@ -241,11 +241,12 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         }}
       >
       <SheetContent className="flex h-full max-w-4xl flex-col p-0">
-        <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+        <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left">
           <SheetTitle>{t("dialog.createTitle")}</SheetTitle>
           <SheetDescription>{t("dialog.description")}</SheetDescription>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           <section className="space-y-3">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
@@ -430,8 +431,8 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
           </section>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-          <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
+          </div>
+          <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("actions.cancel")}
             </Button>
