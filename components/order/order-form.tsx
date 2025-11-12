@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingButton } from "@/components/ui/loading-button";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 function PreviewSkeleton() {
   return <div className="h-full w-full rounded-2xl border border-slate-200 bg-slate-50" />;
@@ -325,6 +326,28 @@ export default function OrderForm({
     setAddressSearch("");
     setAddressBlock("");
   }, [currentBrandId]);
+
+  const formatPhoneValue = useCallback((value: string) => {
+    if (!value || !value.trim()) return value;
+    try {
+      const parsed = parsePhoneNumberFromString(value);
+      if (parsed) return parsed.formatInternational();
+    } catch (error) {
+      console.warn("[order-form] phone format failed", error);
+    }
+    return value.trim();
+  }, []);
+
+  const handleFormatPhone = useCallback(
+    (type: "phone" | "mobile") => {
+      if (type === "phone") {
+        setPhone((prev) => formatPhoneValue(prev));
+      } else {
+        setMobile((prev) => formatPhoneValue(prev));
+      }
+    },
+    [formatPhoneValue],
+  );
 
   useEffect(() => {
     setFrontPreviewReady(false);
@@ -642,11 +665,33 @@ export default function OrderForm({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <div className="relative">
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="pr-16" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
+                    onClick={() => handleFormatPhone("phone")}
+                  >
+                    {tOrder("buttons.format")}
+                  </Button>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
-                <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+                <div className="relative">
+                  <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} className="pr-16" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
+                    onClick={() => handleFormatPhone("mobile")}
+                  >
+                    {tOrder("buttons.format")}
+                  </Button>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">{tOrder("fields.email")}</Label>

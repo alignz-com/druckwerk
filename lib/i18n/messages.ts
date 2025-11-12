@@ -108,6 +108,7 @@ export const messages = {
       buttons: {
         loadAddressDefault: "Load default value",
         order: "Order Business Card",
+        format: "Format",
       },
       selectBrandPrompt: "Please pick a brand to continue.",
       noTemplatesForBrand: "No templates are assigned to this brand.",
@@ -900,6 +901,7 @@ export const messages = {
       buttons: {
         loadAddressDefault: "Standardwert laden",
         order: "Visitenkarte bestellen",
+        format: "Formatieren",
       },
       selectBrandPrompt: "Bitte wähle zuerst eine Marke aus.",
       noTemplatesForBrand: "Dieser Marke ist keine Vorlage zugewiesen.",
