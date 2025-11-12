@@ -12,7 +12,6 @@ import { getTemplateForBrandOrGlobal } from "@/lib/templates";
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
-import { uploadJdfToPrinterFtp } from "@/lib/printer-ftp";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { getBrandsForUser } from "@/lib/brand-access";
 
@@ -282,12 +281,17 @@ export async function POST(req: Request) {
           ...(data.customerReference ? { customerReference: data.customerReference } : {}),
           ...(addressMeta ? { address: addressMeta } : {}),
           ...(fontReport?.length ? { fontReport } : {}),
-          jdfFtp: { status: "scheduled" },
         },
       },
     });
 
-    scheduleJdfFtpUpload({ orderId: order.id, jdfXml, jdfFileName });
+    await prisma.jdfExportJob.create({
+      data: {
+        orderId: order.id,
+        pdfUrl: upload.url,
+        jdfXml,
+      },
+    });
 
     const addressSummary = formatAddressSummary(addressMeta);
     const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
@@ -320,40 +324,4 @@ export async function POST(req: Request) {
     console.error("❌ Order API Fehler:", err);
     return NextResponse.json({ error: err?.message || "Interner Fehler" }, { status: 500 });
   }
-}
-
-function scheduleJdfFtpUpload({ orderId, jdfXml, jdfFileName }: { orderId: string; jdfXml: string; jdfFileName: string }) {
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  void (async () => {
-    try {
-      await sleep(5000);
-      const ftpResult = await uploadJdfToPrinterFtp(Buffer.from(jdfXml, "utf-8"), jdfFileName);
-      const currentMeta = await prisma.order.findUnique({ where: { id: orderId }, select: { meta: true } });
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          meta: {
-            ...((currentMeta?.meta as Record<string, unknown> | null) ?? {}),
-            jdfFtp: ftpResult,
-          },
-        },
-      });
-      if (ftpResult.status !== "uploaded") {
-        console.error("[order] JDF FTP upload failed", ftpResult);
-      }
-    } catch (error) {
-      console.error("[order] background JDF FTP upload error", error);
-      const currentMeta = await prisma.order.findUnique({ where: { id: orderId }, select: { meta: true } });
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          meta: {
-            ...((currentMeta?.meta as Record<string, unknown> | null) ?? {}),
-            jdfFtp: { status: "failed", error: error instanceof Error ? error.message : String(error) },
-          },
-        },
-      });
-    }
-  })();
 }
