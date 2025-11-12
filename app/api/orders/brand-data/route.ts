@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { getBrandsForUser } from "@/lib/brand-access";
-import { prisma } from "@/lib/prisma";
-import { getTemplateForBrandOrGlobal, listTemplateSummariesForBrand } from "@/lib/templates";
+import { getBrandResources } from "@/lib/brand-resources";
 
 export async function GET(req: Request) {
   const session = await getServerAuthSession();
@@ -35,47 +34,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const [templates, addressRecords] = await Promise.all([
-    listTemplateSummariesForBrand(resolvedBrandId),
-    prisma.brandAddress.findMany({
-      where: { brandId: resolvedBrandId },
-      orderBy: [{ label: "asc" }, { company: "asc" }],
-      select: {
-        id: true,
-        label: true,
-        company: true,
-        street: true,
-        addressExtra: true,
-        postalCode: true,
-        city: true,
-        countryCode: true,
-        cardAddressText: true,
-        url: true,
-      },
-    }),
-  ]);
-
-  let initialTemplate = null;
-  if (templates[0]?.key) {
-    try {
-      initialTemplate = await getTemplateForBrandOrGlobal(templates[0]!.key, resolvedBrandId);
-    } catch (error) {
-      console.warn("[orders] failed to preload template for brand", resolvedBrandId, error);
-    }
-  }
-
-  const addresses = addressRecords.map((address) => ({
-    id: address.id,
-    label: address.label,
-    company: address.company,
-    street: address.street,
-    addressExtra: address.addressExtra,
-    postalCode: address.postalCode,
-    city: address.city,
-    countryCode: address.countryCode,
-    cardAddressText: address.cardAddressText,
-    url: address.url,
-  }));
+  const { templates, addresses, initialTemplate } = await getBrandResources(resolvedBrandId);
 
   return NextResponse.json({
     templates,

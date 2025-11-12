@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import OrderForm from "@/components/order/order-form";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getTemplateForBrandOrGlobal, listTemplateSummariesForBrand } from "@/lib/templates";
 import { getBrandsForUser } from "@/lib/brand-access";
+import { getBrandResources } from "@/lib/brand-resources";
 
 export default async function NewOrderPage() {
   const sessionPromise = getServerAuthSession();
@@ -40,43 +40,7 @@ export default async function NewOrderPage() {
     initialBrandId = brandOptions[0]!.id;
   }
 
-  const templatesPromise = initialBrandId ? listTemplateSummariesForBrand(initialBrandId) : Promise.resolve([]);
-  const addressesPromise = initialBrandId
-    ? prisma.brandAddress.findMany({
-        where: { brandId: initialBrandId },
-        orderBy: [{ label: "asc" }, { company: "asc" }],
-        select: {
-          id: true,
-          label: true,
-          company: true,
-          street: true,
-          addressExtra: true,
-          postalCode: true,
-          city: true,
-          countryCode: true,
-          cardAddressText: true,
-          url: true,
-        },
-      })
-    : Promise.resolve([]);
-
-  const [templates, addresses] = await Promise.all([templatesPromise, addressesPromise]);
-  const initialTemplate = templates[0]?.key && initialBrandId
-    ? await getTemplateForBrandOrGlobal(templates[0]!.key, initialBrandId)
-    : null;
-
-  const normalizedAddresses = addresses.map((address) => ({
-    id: address.id,
-    label: address.label,
-    company: address.company,
-    street: address.street,
-    addressExtra: address.addressExtra,
-    postalCode: address.postalCode,
-    city: address.city,
-    countryCode: address.countryCode,
-    cardAddressText: address.cardAddressText,
-    url: address.url,
-  }));
+  const { templates, addresses: normalizedAddresses, initialTemplate } = await getBrandResources(initialBrandId ?? null);
 
   return (
     <OrderForm
