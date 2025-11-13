@@ -21,6 +21,7 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import { cn } from "@/lib/utils";
 
 type Props = {
   brand: AdminBrandSummary | null;
@@ -432,7 +433,7 @@ export default function BrandDetailSheet({
                         {t("addresses.add")}
                       </Button>
                     </div>
-                    <div className={dataTableContainerClass}>
+                    <div className={cn(dataTableContainerClass, "mt-4")}>
                       <Table>
                         <TableHeader className={dataTableHeaderClass}>
                           <TableRow>

@@ -16,6 +16,7 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -319,7 +320,7 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
                 className="pl-9"
               />
             </div>
-            <div className={dataTableContainerClass}>
+            <div className={cn(dataTableContainerClass, "mt-4")}>
               <Table>
                 <TableHeader className={dataTableHeaderClass}>
                   <TableRow>
