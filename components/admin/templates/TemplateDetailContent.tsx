@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { TemplateAssetType } from "@prisma/client";
 import { FileWarning, Trash2, X } from "lucide-react";
 
-import type { AdminTemplateSummary, AdminFontFamily } from "@/lib/admin/templates-data";
+import type { AdminTemplateSummary, AdminFontFamily, AdminTemplateFontLink } from "@/lib/admin/templates-data";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,11 +40,7 @@ type Props = {
 
 type BrandOption = Pick<AdminBrandSummary, "id" | "name" | "slug">;
 
-type FontVariantOption = {
-  id: string;
-  variantId: string;
-  label: string;
-};
+type FontSlot = "regular" | "bold" | "italic" | "boldItalic";
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
   const router = useRouter();
@@ -70,10 +67,16 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [removingBrandId, setRemovingBrandId] = useState<string | null>(null);
 
   const [fontFamilies, setFontFamilies] = useState<AdminFontFamily[]>([]);
-  const [fontSearch, setFontSearch] = useState("");
-  const [selectedFontVariantId, setSelectedFontVariantId] = useState<string>("");
-  const [isLinkingFont, setIsLinkingFont] = useState(false);
-  const [removingFontVariantId, setRemovingFontVariantId] = useState<string | null>(null);
+  const [familySearch, setFamilySearch] = useState("");
+  const [assigningFamilyId, setAssigningFamilyId] = useState<string | null>(null);
+  const [removingFamilyId, setRemovingFamilyId] = useState<string | null>(null);
+  const [defaultSelections, setDefaultSelections] = useState<Record<FontSlot, string>>({
+    regular: "",
+    bold: "",
+    italic: "",
+    boldItalic: "",
+  });
+  const [savingSlot, setSavingSlot] = useState<FontSlot | null>(null);
 
   const [assetFiles, setAssetFiles] = useState<{ pdf: File | null; front: File | null; back: File | null }>({
     pdf: null,
@@ -89,10 +92,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     () => new Set(template.brandAssignments.map((assignment) => assignment.brandId)),
     [template.brandAssignments],
   );
-  const assignedFontVariantIds = useMemo(
-    () => new Set(template.fonts.map((font) => font.fontVariantId)),
-    [template.fonts],
-  );
 
   const brandResults = useMemo(() => {
     const query = brandSearch.trim().toLowerCase();
@@ -103,27 +102,33 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         return brand.name.toLowerCase().includes(query) || brand.slug.toLowerCase().includes(query);
       });
   }, [brandOptions, brandSearch, assignedBrandIds]);
-
-  const fontOptions = useMemo<FontVariantOption[]>(() => {
-    const options: FontVariantOption[] = [];
-    for (const family of fontFamilies) {
-      for (const variant of family.variants) {
-        options.push({
-          id: `${family.id}-${variant.id}`,
-          variantId: variant.id,
-          label: `${family.name} • ${variant.weight} / ${variant.style.toLowerCase()} / ${variant.format}`,
-        });
-      }
+  const linkedFontsById = useMemo(() => {
+    const map = new Map<string, AdminTemplateFontLink>();
+    for (const font of template.fonts) {
+      map.set(font.fontVariantId, font);
     }
-    return options;
-  }, [fontFamilies]);
-
-  const fontResults = useMemo(() => {
-    const query = fontSearch.trim().toLowerCase();
-    return fontOptions
-      .filter((option) => !assignedFontVariantIds.has(option.variantId))
-      .filter((option) => (query ? option.label.toLowerCase().includes(query) : true));
-  }, [fontOptions, fontSearch, assignedFontVariantIds]);
+    return map;
+  }, [template.fonts]);
+  const filteredFamilies = useMemo(() => {
+    const query = familySearch.trim().toLowerCase();
+    if (!query) return fontFamilies;
+    return fontFamilies.filter(
+      (family) => family.name.toLowerCase().includes(query) || family.slug.toLowerCase().includes(query),
+    );
+  }, [fontFamilies, familySearch]);
+  const assignedVariantsSorted = useMemo(
+    () =>
+      [...template.fonts].sort((a, b) => {
+        if (a.fontFamilyName === b.fontFamilyName) {
+          if (a.weight === b.weight) {
+            return a.style.localeCompare(b.style);
+          }
+          return a.weight - b.weight;
+        }
+        return a.fontFamilyName.localeCompare(b.fontFamilyName);
+      }),
+    [template.fonts],
+  );
 
   useEffect(() => {
     setMetadata({
@@ -140,6 +145,15 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     setAssetMessage(null);
     setAssetError(null);
   }, [template]);
+
+  useEffect(() => {
+    setDefaultSelections({
+      regular: template.fonts.find((font) => font.usage === "regular")?.fontVariantId ?? "",
+      bold: template.fonts.find((font) => font.usage === "bold")?.fontVariantId ?? "",
+      italic: template.fonts.find((font) => font.usage === "italic")?.fontVariantId ?? "",
+      boldItalic: template.fonts.find((font) => font.usage === "boldItalic")?.fontVariantId ?? "",
+    });
+  }, [template.fonts]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -295,51 +309,101 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
-  const handleLinkFont = async () => {
-    if (!selectedFontVariantId) return;
-    setIsLinkingFont(true);
-    setMetadataSuccess(null);
+  const requestFontLink = async (fontVariantId: string) => {
+    const response = await fetch(`/api/admin/templates/${template.id}/fonts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fontVariantId }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error ?? t("detail.fonts.linkFailed"));
+    }
+  };
+
+  const requestFontUnlink = async (fontVariantId: string) => {
+    const response = await fetch(`/api/admin/templates/${template.id}/fonts`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fontVariantId }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error ?? t("detail.fonts.unlinkFailed"));
+    }
+  };
+
+  const handleAssignFamily = async (familyId: string) => {
+    const family = fontFamilies.find((item) => item.id === familyId);
+    if (!family) return;
+    const missing = family.variants.filter((variant) => !linkedFontsById.has(variant.id));
+    if (missing.length === 0) {
+      setMetadataSuccess(t("detail.fonts.familyUpToDate", { name: family.name }));
+      return;
+    }
+
+    setAssigningFamilyId(familyId);
     setMetadataError(null);
+    setMetadataSuccess(null);
     try {
-      const response = await fetch(`/api/admin/templates/${template.id}/fonts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fontVariantId: selectedFontVariantId }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error ?? t("detail.fonts.linkFailed"));
+      for (const variant of missing) {
+        await requestFontLink(variant.id);
       }
-      setSelectedFontVariantId("");
-      setMetadataSuccess(t("detail.fonts.linkSuccess"));
+      setMetadataSuccess(t("detail.fonts.assignSuccess", { name: family.name, count: missing.length }));
       router.refresh();
     } catch (error) {
       setMetadataError(error instanceof Error ? error.message : t("detail.fonts.linkFailed"));
     } finally {
-      setIsLinkingFont(false);
+      setAssigningFamilyId(null);
     }
   };
 
-  const handleRemoveFont = async (fontVariantId: string) => {
-    setRemovingFontVariantId(fontVariantId);
+  const handleRemoveFamily = async (familyId: string) => {
+    const family = fontFamilies.find((item) => item.id === familyId);
+    if (!family) return;
+    const assigned = family.variants.filter((variant) => linkedFontsById.has(variant.id));
+    if (assigned.length === 0) return;
+    const confirmed = window.confirm(t("detail.fonts.removeConfirm", { name: family.name }));
+    if (!confirmed) return;
+
+    setRemovingFamilyId(familyId);
     setMetadataError(null);
     setMetadataSuccess(null);
     try {
-      const response = await fetch(`/api/admin/templates/${template.id}/fonts`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fontVariantId }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error ?? t("detail.fonts.unlinkFailed"));
+      for (const variant of assigned) {
+        await requestFontUnlink(variant.id);
       }
       setMetadataSuccess(t("detail.fonts.unlinkSuccess"));
       router.refresh();
     } catch (error) {
       setMetadataError(error instanceof Error ? error.message : t("detail.fonts.unlinkFailed"));
     } finally {
-      setRemovingFontVariantId(null);
+      setRemovingFamilyId(null);
+    }
+  };
+
+  const handleDefaultChange = async (slot: FontSlot, value: string) => {
+    const nextValue = value === "" ? null : value;
+    setSavingSlot(slot);
+    setMetadataError(null);
+    setMetadataSuccess(null);
+    try {
+      const response = await fetch(`/api/admin/templates/${template.id}/fonts/defaults`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [slot]: nextValue }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error ?? t("detail.fonts.defaultsFailed"));
+      }
+      setDefaultSelections((current) => ({ ...current, [slot]: nextValue ?? "" }));
+      setMetadataSuccess(t("detail.fonts.defaultsUpdated"));
+      router.refresh();
+    } catch (error) {
+      setMetadataError(error instanceof Error ? error.message : t("detail.fonts.defaultsFailed"));
+    } finally {
+      setSavingSlot(null);
     }
   };
 
@@ -609,69 +673,117 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-slate-900">{t("detail.fonts.assignHeading")}</h3>
           <p className="text-xs text-slate-500">{t("detail.fonts.assignDescription")}</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <div className="space-y-2">
-            <Input
-              placeholder={t("detail.fonts.searchPlaceholder")}
-              value={fontSearch}
-              onChange={(event) => setFontSearch(event.target.value)}
-            />
-            <Select value={selectedFontVariantId || undefined} onValueChange={setSelectedFontVariantId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t("detail.fonts.selectPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent className="max-h-64">
-                {fontResults.length === 0 ? (
-                  <SelectItem value="__no_fonts" disabled>
-                    {t("detail.fonts.empty")}
-                  </SelectItem>
-                ) : (
-                  fontResults.map((option) => (
-                    <SelectItem key={option.id} value={option.variantId}>
-                      {option.label}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            className="sm:self-end"
-            type="button"
-            onClick={handleLinkFont}
-            disabled={!selectedFontVariantId || isLinkingFont}
-          >
-            {isLinkingFont ? t("detail.fonts.linkProgress") : t("detail.fonts.linkButton")}
-          </Button>
+        <Input
+          placeholder={t("detail.fonts.searchPlaceholder")}
+          value={familySearch}
+          onChange={(event) => setFamilySearch(event.target.value)}
+          className="max-w-sm"
+        />
+        <div className="space-y-3">
+          {filteredFamilies.length === 0 ? (
+            <p className="text-xs text-slate-500">{t("detail.fonts.empty")}</p>
+          ) : (
+            filteredFamilies.map((family) => {
+              const assigned = family.variants
+                .map((variant) => linkedFontsById.get(variant.id))
+                .filter(Boolean) as AdminTemplateFontLink[];
+              const missingCount = family.variants.length - assigned.length;
+              const assigning = assigningFamilyId === family.id;
+              const removing = removingFamilyId === family.id;
+              return (
+                <Card key={family.id}>
+                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <CardTitle>{family.name}</CardTitle>
+                      <CardDescription>
+                        {t("detail.fonts.assignedCount", { count: assigned.length, total: family.variants.length })}
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={assigning || missingCount === 0}
+                        onClick={() => handleAssignFamily(family.id)}
+                      >
+                        {assigning ? t("detail.fonts.assignProgress") : t("detail.fonts.assignFamily")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={removing || assigned.length === 0}
+                        onClick={() => handleRemoveFamily(family.id)}
+                      >
+                        {removing ? t("detail.fonts.removeProgress") : t("detail.fonts.removeFamily")}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {assigned.length > 0 ? (
+                      <ul className="space-y-2 text-xs text-slate-600">
+                        {assigned.map((font) => (
+                          <li key={font.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <span>
+                              {font.weight} / {font.style.toLowerCase()} ({font.format})
+                            </span>
+                            {font.usage ? (
+                              <Badge variant="secondary" className="mt-1 w-fit sm:mt-0">
+                                {t(`detail.fonts.defaults.labels.${font.usage}` as any)}
+                              </Badge>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-slate-500">{t("detail.fonts.noneLinked")}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
+      </section>
 
-        {template.fonts.length > 0 ? (
-          <ul className="flex flex-wrap gap-2 text-xs text-slate-600">
-            {template.fonts.map((font) => (
-              <li key={font.id} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                <span>
-                  {font.fontFamilyName} • {font.weight} / {font.style.toLowerCase()} / {font.format}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleRemoveFont(font.fontVariantId)}
-                  disabled={removingFontVariantId === font.fontVariantId}
-                  type="button"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+      <section className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-slate-900">{t("detail.fonts.defaultsHeading")}</h3>
+          <p className="text-xs text-slate-500">{t("detail.fonts.defaultsDescription")}</p>
+        </div>
+        {template.fonts.length === 0 ? (
+          <p className="text-xs text-slate-500">{t("detail.fonts.defaultsEmpty")}</p>
         ) : (
-          <p className="text-xs text-slate-500">{t("detail.fontsEmpty")}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(["regular", "bold", "italic", "boldItalic"] as FontSlot[]).map((slot) => (
+              <div key={slot} className="space-y-2">
+                <Label>{t(`detail.fonts.defaults.labels.${slot}` as const)}</Label>
+                <Select
+                  value={defaultSelections[slot] || undefined}
+                  onValueChange={(value) => handleDefaultChange(slot, value === "__none__" ? "" : value)}
+                  disabled={savingSlot === slot}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("detail.fonts.defaults.placeholder")} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="__none__">{t("detail.fonts.defaults.placeholder")}</SelectItem>
+                    {assignedVariantsSorted.map((font) => (
+                      <SelectItem key={font.id} value={font.fontVariantId}>
+                        {font.fontFamilyName} • {font.weight} / {font.style.toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
         )}
       </section>
 
