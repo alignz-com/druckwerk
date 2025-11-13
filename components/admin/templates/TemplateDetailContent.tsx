@@ -118,13 +118,17 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   }, [template.fonts]);
   const linkedFamilies = useMemo(() => {
     return Array.from(linkedFamilyMap.entries())
-      .map(([familyId, variants]) => ({
-        familyId,
-        name: variants[0]?.fontFamilyName ?? "",
-        variants,
-      }))
+      .map(([familyId, variants]) => {
+        const fullFamily = fontFamilies.find((family) => family.id === familyId) ?? null;
+        return {
+          familyId,
+          name: fullFamily?.name ?? variants[0]?.fontFamilyName ?? "",
+          variants,
+          fullFamily,
+        };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [linkedFamilyMap]);
+  }, [linkedFamilyMap, fontFamilies]);
   const variantTotals = useMemo(() => {
     const map = new Map<string, number>();
     fontFamilies.forEach((family) => map.set(family.id, family.variants.length));
@@ -735,7 +739,15 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="font-medium text-slate-900">{family.name}</p>
+                      {family.fullFamily ? (
+                        <FontPreviewName
+                          family={family.fullFamily}
+                          enabled
+                          className="text-base font-medium text-slate-900"
+                        />
+                      ) : (
+                        <p className="font-medium text-slate-900">{family.name}</p>
+                      )}
                       <p className="text-xs text-slate-500">
                         {t("detail.fonts.assignedCount", { count: family.variants.length, total })}
                       </p>
@@ -970,16 +982,43 @@ type FontPreviewNameProps = {
 };
 
 function FontPreviewName({ family, enabled, className }: FontPreviewNameProps) {
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
-    if (!enabled) return;
-    void loadFontPreviewFace(family);
+    let ignore = false;
+    if (!enabled) {
+      setLoaded(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    const promise = loadFontPreviewFace(family);
+    if (!promise) {
+      setLoaded(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    promise
+      .then(() => {
+        if (!ignore) setLoaded(true);
+      })
+      .catch(() => {
+        if (!ignore) setLoaded(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [family, enabled]);
 
+  const fontFamilyValue =
+    loaded && enabled ? `"${family.name}", var(--font-heading, var(--font-sans))` : undefined;
+
   return (
-    <span
-      className={cn("font-semibold text-slate-900", className)}
-      style={enabled ? { fontFamily: `"${family.name}", var(--font-heading, var(--font-sans))` } : undefined}
-    >
+    <span className={cn("font-semibold text-slate-900", className)} style={fontFamilyValue ? { fontFamily: fontFamilyValue } : undefined}>
       {family.name}
     </span>
   );
@@ -1011,7 +1050,7 @@ async function loadFontPreviewFace(family: AdminFontFamily) {
   if (!variant?.storageKey) return;
   const cacheKey = `${family.id}:${variant.storageKey}:${variant.updatedAt}`;
   if (fontPreviewLoaders.has(cacheKey)) {
-    return fontPreviewLoaders.get(cacheKey);
+    return fontPreviewLoaders.get(cacheKey)!;
   }
   const loader = (async () => {
     const response = await fetch(
