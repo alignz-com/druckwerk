@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
@@ -87,7 +88,11 @@ export default function AdminBrandsClient({ brands }: Props) {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
         </div>
-        <Button onClick={() => setSheetState({ mode: "create" })} className="self-start sm:self-auto">
+        <Button
+          onClick={() => setSheetState({ mode: "create" })}
+          className="inline-flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Plus className="size-4" aria-hidden="true" />
           {t("actions.newBrand")}
         </Button>
       </header>
