@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { formatDateTime } from "@/lib/formatDateTime";
+import { Plus } from "lucide-react";
 
 type OrdersPageProps = {
   searchParams?: Record<string, string | string[]>;
@@ -122,8 +123,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t.ordersPage.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{t.ordersPage.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/orders/new">{t.ordersPage.buttonNew}</Link>
+        <Button asChild className="inline-flex items-center gap-2">
+          <Link href="/orders/new">
+            <Plus className="size-4" aria-hidden="true" />
+            {t.ordersPage.buttonNew}
+          </Link>
         </Button>
       </div>
 
