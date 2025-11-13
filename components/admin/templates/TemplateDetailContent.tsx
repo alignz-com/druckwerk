@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateAssetType } from "@prisma/client";
-import { FileWarning, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 import type { AdminTemplateSummary, AdminFontFamily, AdminTemplateFontLink } from "@/lib/admin/templates-data";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
@@ -13,11 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { hasInlineDesignConfig } from "@/lib/template-design";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { PaperStockSelector } from "./PaperStockSelector";
+import { cn } from "@/lib/utils";
 
 const IMAGE_ACCEPT = "image/png,image/svg+xml,image/webp";
 const assetUploadFields: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; accept: string }> = [
@@ -40,7 +42,6 @@ type Props = {
 
 type BrandOption = Pick<AdminBrandSummary, "id" | "name" | "slug">;
 
-type FontSlot = "regular" | "bold" | "italic" | "boldItalic";
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
   const router = useRouter();
@@ -67,16 +68,12 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [removingBrandId, setRemovingBrandId] = useState<string | null>(null);
 
   const [fontFamilies, setFontFamilies] = useState<AdminFontFamily[]>([]);
-  const [familySearch, setFamilySearch] = useState("");
   const [assigningFamilyId, setAssigningFamilyId] = useState<string | null>(null);
   const [removingFamilyId, setRemovingFamilyId] = useState<string | null>(null);
-  const [defaultSelections, setDefaultSelections] = useState<Record<FontSlot, string>>({
-    regular: "",
-    bold: "",
-    italic: "",
-    boldItalic: "",
-  });
-  const [savingSlot, setSavingSlot] = useState<FontSlot | null>(null);
+  const [fontSheetOpen, setFontSheetOpen] = useState(false);
+  const [fontSheetSearch, setFontSheetSearch] = useState("");
+  const [selectedFamilyIdInSheet, setSelectedFamilyIdInSheet] = useState<string>("");
+  const [pendingRemovalFamily, setPendingRemovalFamily] = useState<{ id: string; name: string } | null>(null);
 
   const [assetFiles, setAssetFiles] = useState<{ pdf: File | null; front: File | null; back: File | null }>({
     pdf: null,
@@ -109,26 +106,65 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
     return map;
   }, [template.fonts]);
-  const filteredFamilies = useMemo(() => {
-    const query = familySearch.trim().toLowerCase();
-    if (!query) return fontFamilies;
+  const linkedFamilyMap = useMemo(() => {
+    const map = new Map<string, AdminTemplateFontLink[]>();
+    for (const font of template.fonts) {
+      if (!map.has(font.fontFamilyId)) {
+        map.set(font.fontFamilyId, []);
+      }
+      map.get(font.fontFamilyId)!.push(font);
+    }
+    return map;
+  }, [template.fonts]);
+  const linkedFamilies = useMemo(() => {
+    return Array.from(linkedFamilyMap.entries())
+      .map(([familyId, variants]) => ({
+        familyId,
+        name: variants[0]?.fontFamilyName ?? "",
+        variants,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [linkedFamilyMap]);
+  const variantTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    fontFamilies.forEach((family) => map.set(family.id, family.variants.length));
+    return map;
+  }, [fontFamilies]);
+  const filteredFontFamilies = useMemo(() => {
+    const query = fontSheetSearch.trim().toLowerCase();
+    if (!query) {
+      return fontFamilies;
+    }
     return fontFamilies.filter(
-      (family) => family.name.toLowerCase().includes(query) || family.slug.toLowerCase().includes(query),
+      (family) =>
+        family.name.toLowerCase().includes(query) || family.slug.toLowerCase().includes(query),
     );
-  }, [fontFamilies, familySearch]);
-  const assignedVariantsSorted = useMemo(
-    () =>
-      [...template.fonts].sort((a, b) => {
-        if (a.fontFamilyName === b.fontFamilyName) {
-          if (a.weight === b.weight) {
-            return a.style.localeCompare(b.style);
-          }
-          return a.weight - b.weight;
-        }
-        return a.fontFamilyName.localeCompare(b.fontFamilyName);
-      }),
-    [template.fonts],
-  );
+  }, [fontFamilies, fontSheetSearch]);
+  const selectedFamilyInSheet = useMemo(() => {
+    if (!selectedFamilyIdInSheet) return null;
+    return fontFamilies.find((family) => family.id === selectedFamilyIdInSheet) ?? null;
+  }, [fontFamilies, selectedFamilyIdInSheet]);
+  const selectedFamilyMissingCount = useMemo(() => {
+    if (!selectedFamilyInSheet) return 0;
+    const assigned = linkedFamilyMap.get(selectedFamilyInSheet.id)?.length ?? 0;
+    const total = selectedFamilyInSheet.variants.length;
+    return Math.max(total - assigned, 0);
+  }, [linkedFamilyMap, selectedFamilyInSheet]);
+
+  useEffect(() => {
+    if (!fontSheetOpen) return;
+    if (
+      selectedFamilyIdInSheet &&
+      filteredFontFamilies.some((family) => family.id === selectedFamilyIdInSheet)
+    ) {
+      return;
+    }
+    if (filteredFontFamilies.length > 0) {
+      setSelectedFamilyIdInSheet(filteredFontFamilies[0].id);
+    } else {
+      setSelectedFamilyIdInSheet("");
+    }
+  }, [fontSheetOpen, filteredFontFamilies, selectedFamilyIdInSheet]);
 
   useEffect(() => {
     setMetadata({
@@ -146,14 +182,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     setAssetError(null);
   }, [template]);
 
-  useEffect(() => {
-    setDefaultSelections({
-      regular: template.fonts.find((font) => font.usage === "regular")?.fontVariantId ?? "",
-      bold: template.fonts.find((font) => font.usage === "bold")?.fontVariantId ?? "",
-      italic: template.fonts.find((font) => font.usage === "italic")?.fontVariantId ?? "",
-      boldItalic: template.fonts.find((font) => font.usage === "boldItalic")?.fontVariantId ?? "",
-    });
-  }, [template.fonts]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -286,6 +314,14 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
+  const handleFontSheetOpenChange = (open: boolean) => {
+    if (!open) {
+      setFontSheetSearch("");
+      setSelectedFamilyIdInSheet("");
+    }
+    setFontSheetOpen(open);
+  };
+
   const handleRemoveBrand = async (brandId: string) => {
     setRemovingBrandId(brandId);
     setMetadataError(null);
@@ -333,12 +369,15 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
-  const handleAssignFamily = async (familyId: string) => {
+  const handleAssignFamily = async (familyId: string, options?: { closeSheet?: boolean }) => {
     const family = fontFamilies.find((item) => item.id === familyId);
     if (!family) return;
     const missing = family.variants.filter((variant) => !linkedFontsById.has(variant.id));
     if (missing.length === 0) {
       setMetadataSuccess(t("detail.fonts.familyUpToDate", { name: family.name }));
+      if (options?.closeSheet) {
+        handleFontSheetOpenChange(false);
+      }
       return;
     }
 
@@ -351,6 +390,9 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       }
       setMetadataSuccess(t("detail.fonts.assignSuccess", { name: family.name, count: missing.length }));
       router.refresh();
+      if (options?.closeSheet) {
+        handleFontSheetOpenChange(false);
+      }
     } catch (error) {
       setMetadataError(error instanceof Error ? error.message : t("detail.fonts.linkFailed"));
     } finally {
@@ -358,20 +400,20 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
-  const handleRemoveFamily = async (familyId: string) => {
-    const family = fontFamilies.find((item) => item.id === familyId);
-    if (!family) return;
-    const assigned = family.variants.filter((variant) => linkedFontsById.has(variant.id));
-    if (assigned.length === 0) return;
-    const confirmed = window.confirm(t("detail.fonts.removeConfirm", { name: family.name }));
-    if (!confirmed) return;
+  const handleAssignSelectedFamily = async () => {
+    if (!selectedFamilyInSheet) return;
+    await handleAssignFamily(selectedFamilyInSheet.id, { closeSheet: true });
+  };
 
+  const handleRemoveFamily = async (familyId: string) => {
+    const assigned = linkedFamilyMap.get(familyId) ?? [];
+    if (assigned.length === 0) return;
     setRemovingFamilyId(familyId);
     setMetadataError(null);
     setMetadataSuccess(null);
     try {
       for (const variant of assigned) {
-        await requestFontUnlink(variant.id);
+        await requestFontUnlink(variant.fontVariantId);
       }
       setMetadataSuccess(t("detail.fonts.unlinkSuccess"));
       router.refresh();
@@ -382,30 +424,19 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     }
   };
 
-  const handleDefaultChange = async (slot: FontSlot, value: string) => {
-    const nextValue = value === "" ? null : value;
-    setSavingSlot(slot);
-    setMetadataError(null);
-    setMetadataSuccess(null);
-    try {
-      const response = await fetch(`/api/admin/templates/${template.id}/fonts/defaults`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [slot]: nextValue }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error ?? t("detail.fonts.defaultsFailed"));
-      }
-      setDefaultSelections((current) => ({ ...current, [slot]: nextValue ?? "" }));
-      setMetadataSuccess(t("detail.fonts.defaultsUpdated"));
-      router.refresh();
-    } catch (error) {
-      setMetadataError(error instanceof Error ? error.message : t("detail.fonts.defaultsFailed"));
-    } finally {
-      setSavingSlot(null);
+  const confirmPendingFamilyRemoval = async () => {
+    if (!pendingRemovalFamily) return;
+    await handleRemoveFamily(pendingRemovalFamily.id);
+    setPendingRemovalFamily(null);
+  };
+
+  const handleRemovalDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      if (removingFamilyId) return;
+      setPendingRemovalFamily(null);
     }
   };
+
 
   const handleUploadAssets = async () => {
     const filesToUpload: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; file: File }> = [];
@@ -470,7 +501,8 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   };
 
   return (
-    <div className="space-y-8">
+    <>
+      <div className="space-y-8">
       <form onSubmit={handleSaveMetadata} className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
@@ -674,128 +706,206 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       </section>
 
       <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-slate-900">{t("detail.fonts.assignHeading")}</h3>
-          <p className="text-xs text-slate-500">{t("detail.fonts.assignDescription")}</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{t("detail.fonts.heading")}</h3>
+            <p className="text-xs text-slate-500">{t("detail.fonts.description")}</p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => handleFontSheetOpenChange(true)}
+            className="gap-2 self-start"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            {t("detail.fonts.addButton")}
+          </Button>
         </div>
-        <Input
-          placeholder={t("detail.fonts.searchPlaceholder")}
-          value={familySearch}
-          onChange={(event) => setFamilySearch(event.target.value)}
-          className="max-w-sm"
-        />
-        <div className="space-y-3">
-          {filteredFamilies.length === 0 ? (
-            <p className="text-xs text-slate-500">{t("detail.fonts.empty")}</p>
-          ) : (
-            filteredFamilies.map((family) => {
-              const assigned = family.variants
-                .map((variant) => linkedFontsById.get(variant.id))
-                .filter(Boolean) as AdminTemplateFontLink[];
-              const missingCount = family.variants.length - assigned.length;
-              const assigning = assigningFamilyId === family.id;
-              const removing = removingFamilyId === family.id;
-              return (
-                <Card key={family.id}>
-                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <CardTitle>{family.name}</CardTitle>
-                      <CardDescription>
-                        {t("detail.fonts.assignedCount", { count: assigned.length, total: family.variants.length })}
-                      </CardDescription>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={assigning || missingCount === 0}
-                        onClick={() => handleAssignFamily(family.id)}
-                      >
-                        {assigning ? t("detail.fonts.assignProgress") : t("detail.fonts.assignFamily")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={removing || assigned.length === 0}
-                        onClick={() => handleRemoveFamily(family.id)}
-                      >
-                        {removing ? t("detail.fonts.removeProgress") : t("detail.fonts.removeFamily")}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {assigned.length > 0 ? (
-                      <ul className="space-y-2 text-xs text-slate-600">
-                        {assigned.map((font) => (
-                          <li key={font.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <span>
-                              {font.weight} / {font.style.toLowerCase()} ({font.format})
-                            </span>
-                            {font.usage ? (
-                              <Badge variant="secondary" className="mt-1 w-fit sm:mt-0">
-                                {t(`detail.fonts.defaults.labels.${font.usage}` as any)}
-                              </Badge>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-slate-500">{t("detail.fonts.noneLinked")}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-slate-900">{t("detail.fonts.defaultsHeading")}</h3>
-          <p className="text-xs text-slate-500">{t("detail.fonts.defaultsDescription")}</p>
-        </div>
-        {template.fonts.length === 0 ? (
-          <p className="text-xs text-slate-500">{t("detail.fonts.defaultsEmpty")}</p>
+        {linkedFamilies.length === 0 ? (
+          <p className="text-xs text-slate-500">{t("detail.fonts.noneLinked")}</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(["regular", "bold", "italic", "boldItalic"] as FontSlot[]).map((slot) => (
-              <div key={slot} className="space-y-2">
-                <Label>{t(`detail.fonts.defaults.labels.${slot}` as const)}</Label>
-                <Select
-                  value={defaultSelections[slot] || undefined}
-                  onValueChange={(value) => handleDefaultChange(slot, value === "__none__" ? "" : value)}
-                  disabled={savingSlot === slot}
+          <div className="space-y-3">
+            {linkedFamilies.map((family) => {
+              const total = variantTotals.get(family.familyId) ?? family.variants.length;
+              const missingCount = Math.max(total - family.variants.length, 0);
+              const isRemoving = removingFamilyId === family.familyId;
+              return (
+                <div
+                  key={family.familyId}
+                  className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("detail.fonts.defaults.placeholder")} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    <SelectItem value="__none__">{t("detail.fonts.defaults.placeholder")}</SelectItem>
-                    {assignedVariantsSorted.map((font) => (
-                      <SelectItem key={font.id} value={font.fontVariantId}>
-                        {font.fontFamilyName} • {font.weight} / {font.style.toLowerCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{family.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {t("detail.fonts.assignedCount", { count: family.variants.length, total })}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 self-start text-red-600 hover:text-red-600"
+                      disabled={isRemoving}
+                      onClick={() => setPendingRemovalFamily({ id: family.familyId, name: family.name })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {isRemoving ? t("detail.fonts.removeProgress") : t("detail.fonts.removeFamily")}
+                    </Button>
+                  </div>
+                  {family.variants.length > 0 ? (
+                    <ul className="mt-4 flex flex-wrap gap-2 text-xs text-slate-700">
+                      {family.variants.map((font) => (
+                        <li
+                          key={font.id}
+                          className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
+                        >
+                          {font.weight} / {font.style.toLowerCase()} · {font.format}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 text-xs text-slate-500">{t("detail.fonts.noneLinked")}</p>
+                  )}
+                  {missingCount > 0 ? (
+                    <p className="mt-2 text-xs text-amber-600">
+                      {t("detail.fonts.missingVariants", { count: missingCount })}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {onDelete ? (
-        <div className="flex justify-end border-t border-slate-200 pt-4">
-          <Button variant="destructive" disabled={isDeleting} onClick={handleDeleteTemplate} className="gap-2">
-            <Trash2 className="size-4" />
-            {t("detail.deleteButton")}
-          </Button>
-        </div>
-      ) : null}
-    </div>
+        {onDelete ? (
+          <div className="flex justify-end border-t border-slate-200 pt-4">
+            <Button variant="destructive" disabled={isDeleting} onClick={handleDeleteTemplate} className="gap-2">
+              <Trash2 className="size-4" />
+              {t("detail.deleteButton")}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+
+      <Dialog open={fontSheetOpen} onOpenChange={handleFontSheetOpenChange}>
+        <DialogContent className="flex h-[80vh] flex-col overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="border-b border-slate-200 px-6 py-4 text-left">
+            <DialogTitle>{t("detail.fonts.picker.title")}</DialogTitle>
+            <DialogDescription>{t("detail.fonts.picker.description")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <Input
+              placeholder={t("detail.fonts.picker.searchPlaceholder")}
+              value={fontSheetSearch}
+              onChange={(event) => setFontSheetSearch(event.target.value)}
+            />
+            <div className="mt-4 space-y-2">
+              {filteredFontFamilies.length === 0 ? (
+                <p className="text-sm text-slate-500">{t("detail.fonts.picker.empty")}</p>
+              ) : (
+                filteredFontFamilies.map((family) => {
+                  const assigned = linkedFamilyMap.get(family.id)?.length ?? 0;
+                  const total = family.variants.length;
+                  const missing = Math.max(total - assigned, 0);
+                  const isSelected = selectedFamilyIdInSheet === family.id;
+                  return (
+                    <button
+                      key={family.id}
+                      type="button"
+                      onClick={() => setSelectedFamilyIdInSheet(family.id)}
+                      className={cn(
+                        "w-full rounded-lg border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400",
+                        isSelected ? "border-slate-900 bg-slate-50 shadow-sm" : "border-slate-200 hover:border-slate-300",
+                      )}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <FontPreviewName
+                          family={family}
+                          enabled={fontSheetOpen}
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-slate-500">
+                          {t("detail.fonts.assignedCount", { count: assigned, total })}
+                        </p>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {missing === 0 ? (
+                          <Badge variant="secondary">{t("detail.fonts.picker.assigned")}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-amber-600">
+                            {t("detail.fonts.picker.missing", { count: missing })}
+                          </Badge>
+                        )}
+                      </div>
+                      {family.variants.length === 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">{t("detail.fonts.picker.noVariants")}</p>
+                      ) : null}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+          <DialogFooter className="border-t border-slate-200 bg-white px-6 py-4">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => handleFontSheetOpenChange(false)}
+                disabled={assigningFamilyId !== null}
+              >
+                {t("detail.fonts.picker.cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAssignSelectedFamily}
+                disabled={
+                  !selectedFamilyInSheet || selectedFamilyMissingCount === 0 || assigningFamilyId !== null
+                }
+              >
+                {assigningFamilyId
+                  ? t("detail.fonts.assignProgress")
+                  : !selectedFamilyInSheet
+                    ? t("detail.fonts.picker.actionDisabled")
+                    : selectedFamilyMissingCount === 0
+                      ? t("detail.fonts.picker.assigned")
+                      : t("detail.fonts.picker.action")}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingRemovalFamily)} onOpenChange={handleRemovalDialogOpenChange}>
+        <DialogContent className="max-w-md space-y-4">
+          <DialogHeader>
+            <DialogTitle>{t("detail.fonts.removeDialogTitle", { name: pendingRemovalFamily?.name ?? "" })}</DialogTitle>
+            <DialogDescription>{t("detail.fonts.removeDialogDescription")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setPendingRemovalFamily(null)}
+              disabled={Boolean(removingFamilyId)}
+            >
+              {t("detail.fonts.removeDialogCancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmPendingFamilyRemoval}
+              disabled={!pendingRemovalFamily || removingFamilyId === pendingRemovalFamily.id}
+            >
+              {removingFamilyId === pendingRemovalFamily?.id
+                ? t("detail.fonts.removeProgress")
+                : t("detail.fonts.removeDialogConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -851,4 +961,77 @@ function toAssetTypeKey(type: TemplateAssetType) {
     default:
       return type.toLowerCase();
   }
+}
+
+type FontPreviewNameProps = {
+  family: AdminFontFamily;
+  enabled: boolean;
+  className?: string;
+};
+
+function FontPreviewName({ family, enabled, className }: FontPreviewNameProps) {
+  useEffect(() => {
+    if (!enabled) return;
+    void loadFontPreviewFace(family);
+  }, [family, enabled]);
+
+  return (
+    <span
+      className={cn("font-semibold text-slate-900", className)}
+      style={enabled ? { fontFamily: `"${family.name}", var(--font-heading, var(--font-sans))` } : undefined}
+    >
+      {family.name}
+    </span>
+  );
+}
+
+const FONT_PREVIEW_PRIORITY: Array<AdminFontFamily["variants"][number]["format"]> = [
+  "WOFF2",
+  "WOFF",
+  "OTF",
+  "TTF",
+];
+
+const fontPreviewLoaders = new Map<string, Promise<void>>();
+
+function pickPreviewVariant(family: AdminFontFamily) {
+  if (!family.variants.length) return null;
+  for (const format of FONT_PREVIEW_PRIORITY) {
+    const variant = family.variants.find((item) => item.format === format);
+    if (variant) return variant;
+  }
+  return family.variants[0];
+}
+
+async function loadFontPreviewFace(family: AdminFontFamily) {
+  if (typeof window === "undefined" || typeof document === "undefined" || typeof FontFace === "undefined") {
+    return;
+  }
+  const variant = pickPreviewVariant(family);
+  if (!variant?.storageKey) return;
+  const cacheKey = `${family.id}:${variant.storageKey}:${variant.updatedAt}`;
+  if (fontPreviewLoaders.has(cacheKey)) {
+    return fontPreviewLoaders.get(cacheKey);
+  }
+  const loader = (async () => {
+    const response = await fetch(
+      `/api/admin/templates/fonts/url?storageKey=${encodeURIComponent(variant.storageKey)}`,
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to sign preview font ${variant.storageKey}`);
+    }
+    const data = (await response.json().catch(() => null)) as { url?: string } | null;
+    const url = data?.url;
+    if (!url) return;
+    const face = new FontFace(family.name, `url(${url})`, {
+      weight: variant.weight ? String(variant.weight) : undefined,
+      style: variant.style === "ITALIC" ? "italic" : "normal",
+    });
+    await face.load();
+    document.fonts.add(face);
+  })().catch((error) => {
+    console.warn("[admin] failed to load font preview", error);
+  });
+  fontPreviewLoaders.set(cacheKey, loader);
+  return loader;
 }
