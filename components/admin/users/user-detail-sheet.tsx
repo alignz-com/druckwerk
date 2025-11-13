@@ -37,6 +37,7 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleOption>("USER");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -77,12 +78,37 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
     }
   };
 
+  const handleDelete = async () => {
+    if (!user) return;
+    const confirmed = window.confirm(t("detail.deleteConfirm", { name: user.name ?? user.email }));
+    if (!confirmed) return;
+    setIsDeleting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error ?? t("detail.errors.deleteFailed"));
+      }
+      onOpenChange(false);
+      onUserUpdated({ ...user, deleted: true } as AdminUserSummary); // parent should refetch
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("detail.errors.deleteFailed"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const disableFooter = isSaving || isDeleting;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex h-full max-w-xl flex-col p-0">
         {user ? (
           <>
-            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+            <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left">
               <SheetTitle>{user.name ?? user.email}</SheetTitle>
               <SheetDescription>{user.email}</SheetDescription>
             </SheetHeader>
@@ -167,18 +193,28 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
               {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
             </div>
-            <div className="flex justify-between border-t border-slate-200 px-6 py-4">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSaving}>
+            <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={disableFooter}>
                 {t("detail.close")}
               </Button>
-              <LoadingButton
-                onClick={handleSave}
-                loading={isSaving}
-                loadingText={t("detail.saving")}
-                minWidthClassName="min-w-[180px]"
-              >
-                {t("detail.saveButton")}
-              </LoadingButton>
+              <div className="flex flex-1 items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={disableFooter}
+                >
+                  {isDeleting ? t("detail.deleting") : t("detail.deleteButton")}
+                </Button>
+                <LoadingButton
+                  onClick={handleSave}
+                  loading={isSaving}
+                  loadingText={t("detail.saving")}
+                  minWidthClassName="min-w-[160px]"
+                >
+                  {t("detail.saveButton")}
+                </LoadingButton>
+              </div>
             </div>
           </>
         ) : null}
