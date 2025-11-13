@@ -33,7 +33,14 @@ type Props = {
 
 const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
 
-export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUserUpdated, onUserDeleted }: Props) {
+export function UserDetailSheet({
+  user,
+  brandOptions,
+  open,
+  onOpenChange,
+  onUserUpdated,
+  onUserDeleted,
+}: Props) {
   const t = useTranslations("admin.users");
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleOption>("USER");
@@ -81,7 +88,8 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
 
   const handleDelete = async () => {
     if (!user) return;
-    const confirmed = window.confirm(t("detail.deleteConfirm", { name: user.name ?? user.email }));
+    const displayName = user.name?.trim() ? user.name : user.email;
+    const confirmed = window.confirm(t("detail.deleteConfirm", { name: displayName }));
     if (!confirmed) return;
     setIsDeleting(true);
     setError(null);
@@ -194,24 +202,28 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
               {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
             </div>
-            <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={disableFooter}>
                 {t("detail.close")}
               </Button>
-              <div className="flex flex-1 items-center justify-end gap-2">
-                <Button
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <LoadingButton
                   type="button"
                   variant="destructive"
                   onClick={handleDelete}
-                  disabled={disableFooter}
+                  loading={isDeleting}
+                  loadingText={t("detail.deleting")}
+                  minWidthClassName="min-w-[160px]"
+                  disabled={isSaving}
                 >
-                  {isDeleting ? t("detail.deleting") : t("detail.deleteButton")}
-                </Button>
+                  {t("detail.deleteButton")}
+                </LoadingButton>
                 <LoadingButton
                   onClick={handleSave}
                   loading={isSaving}
                   loadingText={t("detail.saving")}
                   minWidthClassName="min-w-[160px]"
+                  disabled={isDeleting}
                 >
                   {t("detail.saveButton")}
                 </LoadingButton>
