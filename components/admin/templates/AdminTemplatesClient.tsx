@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { TemplateAssetType } from "@prisma/client";
 
-import { useTranslations } from "@/components/providers/locale-provider";
+import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -13,6 +13,7 @@ import TemplateDetailContent from "./TemplateDetailContent";
 import { hasInlineDesignConfig } from "@/lib/template-design";
 import { TemplatesTable } from "./templates-table";
 import TemplateCreateForm from "./TemplateCreateForm";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 type Props = {
   templates: AdminTemplateSummary[];
@@ -37,6 +38,7 @@ export default function AdminTemplatesClient({ templates }: Props) {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const router = useRouter();
   const t = useTranslations("admin.templates");
+  const { locale } = useLocale();
 
   useEffect(() => {
     setEntries(templates);
@@ -67,12 +69,12 @@ export default function AdminTemplatesClient({ templates }: Props) {
           message: assetStatus.message,
           tone: assetStatus.missing > 0 ? "warning" : "ok",
         } as const,
-        updatedAtLabel: formatDate(template.updatedAt),
+        updatedAtLabel: formatDateTime(template.updatedAt, locale, { dateStyle: "medium" }),
         updatedAtValue: new Date(template.updatedAt).getTime(),
         brandCount: template.brandAssignments.length,
       };
     });
-  }, [entries, t]);
+  }, [entries, t, locale]);
 
   const deleteTemplates = async (ids: string[]) => {
     if (ids.length === 0) return false;
@@ -242,12 +244,4 @@ function computeAssetStatus(
     missing: missing.length,
     message: missingMessage(missing.length, list),
   };
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("de-AT", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }

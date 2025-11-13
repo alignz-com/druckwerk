@@ -32,6 +32,7 @@ export type OrdersTableRow = {
   userEmail: string | null;
   templateLabel: string;
   quantity: number;
+  quantityLabel: string;
   status: string;
   statusLabel: string;
   deliveryTime: string;
@@ -236,7 +237,7 @@ export function OrdersTable({
         align: "right",
         enableSorting: true,
         sortAccessor: (row) => row.quantity,
-        renderCell: (row) => <span className="text-slate-600">{row.quantity.toLocaleString()}</span>,
+        renderCell: (row) => <span className="text-slate-600">{row.quantityLabel}</span>,
       },
       {
         id: "created",

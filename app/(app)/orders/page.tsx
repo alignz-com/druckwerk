@@ -94,6 +94,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       userEmail: (order.user?.email ?? order.requesterEmail) ?? null,
       templateLabel: order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
       quantity: order.quantity,
+      quantityLabel: order.quantity.toLocaleString(localeTag),
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryTime: order.deliveryTime,

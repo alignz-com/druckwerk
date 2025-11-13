@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import type { AdminFontFamily } from "@/lib/admin/templates-data";
-import { useTranslations } from "@/components/providers/locale-provider";
+import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { FontsTable } from "./fonts-table";
 import { FontCreateSheet } from "./FontCreateSheet";
 import { FontDetailSheet } from "./FontDetailSheet";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 type Props = {
   fontFamilies: AdminFontFamily[];
@@ -18,6 +19,7 @@ type SheetState = { mode: "create" } | { mode: "view"; familyId: string } | null
 
 export default function AdminFontsClient({ fontFamilies }: Props) {
   const t = useTranslations("admin.fonts");
+  const { locale } = useLocale();
   const [families, setFamilies] = useState<AdminFontFamily[]>(fontFamilies);
   const [sheetState, setSheetState] = useState<SheetState>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -47,11 +49,11 @@ export default function AdminFontsClient({ fontFamilies }: Props) {
         slug: family.slug,
         variantCount: family.variants.length,
         variantSummary,
-        updatedAtLabel: new Date(family.updatedAt).toLocaleDateString(),
+        updatedAtLabel: formatDateTime(family.updatedAt, locale, { dateStyle: "medium" }),
         updatedAtValue: new Date(family.updatedAt).getTime(),
       };
     });
-  }, [families, t]);
+  }, [families, t, locale]);
 
   const handleFamilyCreated = (family: AdminFontFamily) => {
     setFamilies((current) => {

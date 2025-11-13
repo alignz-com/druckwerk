@@ -110,7 +110,7 @@ export function OrderDetailSheet({ open, onOpenChange, order, labels }: OrderDet
                   </span>
                   <span>•</span>
                   <span>
-                    {labels.quantity}: {order.quantity.toLocaleString()}
+                    {labels.quantity}: {order.quantityLabel}
                   </span>
                 </SheetDescription>
               </SheetHeader>

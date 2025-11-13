@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 
 import type { AdminUserSummary } from "@/lib/admin/users-data";
-import { useTranslations } from "@/components/providers/locale-provider";
+import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 import { UsersTable } from "./users-table";
 import { UserDetailSheet } from "./user-detail-sheet";
@@ -27,6 +28,7 @@ type SheetState = { mode: "view"; userId: string } | { mode: "create" } | null;
 export default function AdminUsersClient({ users, brands }: Props) {
   const t = useTranslations("admin.users");
   const roleT = useTranslations("layout.roles");
+  const { locale } = useLocale();
   const [entries, setEntries] = useState(users);
   const [sheetState, setSheetState] = useState<SheetState>(null);
 
@@ -63,8 +65,9 @@ export default function AdminUsersClient({ users, brands }: Props) {
         brandName: user.brandName,
         brandId: user.brandId,
         createdAtValue: new Date(user.createdAt).getTime(),
+        createdAtLabel: formatDateTime(user.createdAt, locale, { dateStyle: "medium" }),
       })),
-    [entries],
+    [entries, roleT, locale],
   );
 
   return (

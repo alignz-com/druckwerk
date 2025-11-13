@@ -137,7 +137,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.quantity}</dt>
-              <dd className="mt-1 text-base text-slate-900">{order.quantity.toLocaleString(locale)}</dd>
+              <dd className="mt-1 text-base text-slate-900">
+                {Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(order.quantity)}
+              </dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.delivery}</dt>

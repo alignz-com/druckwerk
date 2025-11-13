@@ -23,6 +23,7 @@ type TableRowData = {
   brandName: string | null;
   brandId: string | null;
   createdAtValue: number;
+  createdAtLabel: string;
 };
 
 type UsersTableProps = {
@@ -245,7 +246,7 @@ export function UsersTable({
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-semibold text-slate-900">{row.displayName}</div>
-                      <div className="text-xs text-slate-500">{new Date(row.createdAtValue).toLocaleDateString()}</div>
+                      <div className="text-xs text-slate-500">{row.createdAtLabel}</div>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">{row.email}</TableCell>
