@@ -10,6 +10,7 @@ import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-tab
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { Plus } from "lucide-react";
+import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 
 type OrdersPageProps = {
   searchParams?: Record<string, string | string[]>;
@@ -33,7 +34,17 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const t = getTranslations(locale);
 
   const role = session.user.role;
-  const brandId = session.user.brandId ?? null;
+  let brandId = session.user.brandId ?? null;
+  if (!brandId && session.user.email) {
+    const ensured = await ensureBrandAssignmentForUser({
+      userId: session.user.id,
+      email: session.user.email,
+    });
+    if (ensured) {
+      brandId = ensured;
+      session.user.brandId = ensured;
+    }
+  }
   const isAdmin = role === "ADMIN";
   const isBrandAdmin = role === "BRAND_ADMIN";
   const isPrinter = role === "PRINTER";

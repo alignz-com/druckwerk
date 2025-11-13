@@ -5,6 +5,7 @@ import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { getBrandResources } from "@/lib/brand-resources";
+import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 
 export default async function NewOrderPage() {
   const sessionPromise = getServerAuthSession();
@@ -25,7 +26,18 @@ export default async function NewOrderPage() {
     : Promise.resolve(null);
 
   const dbUser = await userPromise;
-  const preferredBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+  let preferredBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
+
+  if (!preferredBrandId && session.user.email) {
+    const ensured = await ensureBrandAssignmentForUser({
+      userId,
+      email: session.user.email,
+    });
+    if (ensured) {
+      preferredBrandId = ensured;
+      session.user.brandId = ensured;
+    }
+  }
 
   const brandOptions = await getBrandsForUser({
     userId,
