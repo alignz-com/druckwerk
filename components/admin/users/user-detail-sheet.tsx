@@ -28,11 +28,12 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUserUpdated: (user: AdminUserSummary) => void;
+  onUserDeleted?: (userId: string) => void;
 };
 
 const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
 
-export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUserUpdated }: Props) {
+export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUserUpdated, onUserDeleted }: Props) {
   const t = useTranslations("admin.users");
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleOption>("USER");
@@ -93,7 +94,7 @@ export function UserDetailSheet({ user, brandOptions, open, onOpenChange, onUser
         throw new Error(payload?.error ?? t("detail.errors.deleteFailed"));
       }
       onOpenChange(false);
-      onUserUpdated({ ...user, deleted: true } as AdminUserSummary); // parent should refetch
+      onUserDeleted?.(user.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("detail.errors.deleteFailed"));
     } finally {

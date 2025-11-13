@@ -242,9 +242,13 @@ export const messages = {
           close: "Close",
           saveButton: "Save changes",
           saving: "Saving…",
+          deleteButton: "Delete user",
+          deleting: "Deleting…",
+          deleteConfirm: "Delete user \"{name}\"?",
           success: "User updated.",
           errors: {
             updateFailed: "User update failed.",
+            deleteFailed: "User deletion failed.",
           },
           metadata: {
             title: "Profile",
@@ -1061,9 +1065,13 @@ export const messages = {
           close: "Schließen",
           saveButton: "Änderungen speichern",
           saving: "Speichern…",
+          deleteButton: "Benutzer löschen",
+          deleting: "Lösche…",
+          deleteConfirm: "Benutzer \"{name}\" wirklich löschen?",
           success: "Benutzer wurde aktualisiert.",
           errors: {
             updateFailed: "Benutzer konnte nicht aktualisiert werden.",
+            deleteFailed: "Benutzer konnte nicht gelöscht werden.",
           },
           metadata: {
             title: "Profil",

@@ -47,6 +47,11 @@ export default function AdminUsersClient({ users, brands }: Props) {
     setSheetState({ mode: "view", userId: createdUser.id });
   };
 
+  const handleUserDeleted = (userId: string) => {
+    setEntries((current) => current.filter((user) => user.id !== userId));
+    setSheetState(null);
+  };
+
   const tableData = useMemo(
     () =>
       entries.map((user) => ({
@@ -101,6 +106,7 @@ export default function AdminUsersClient({ users, brands }: Props) {
         open={sheetState?.mode === "view" && Boolean(activeUser)}
         onOpenChange={(open) => (!open ? setSheetState(null) : null)}
         onUserUpdated={handleBrandUpdate}
+        onUserDeleted={handleUserDeleted}
       />
 
       <UserCreateSheet
