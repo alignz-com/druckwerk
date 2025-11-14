@@ -11,6 +11,7 @@ import type { ResolvedTemplate } from "@/lib/templates";
 import { DEFAULT_TEMPLATE_DESIGN } from "@/lib/template-design";
 import type { DesignElement, TextElement, StackElement, RectElement, QrElement } from "@/lib/template-design";
 import { useFontFaceLoader } from "@/lib/useFontFaceLoader";
+import { normalizeWebUrl } from "@/lib/normalize-url";
 
 const ASSET_CACHE_GRACE_MS = 30_000;
 const FALLBACK_TEXT_FRAME = {
@@ -732,6 +733,8 @@ function buildVCard3(o: {
   };
 }) {
   const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel, address } = o;
+  const normalizedUrl = normalizeWebUrl(url);
+  const normalizedLinkedin = normalizeWebUrl(linkedin);
 
   // N + FN zuerst!
   const { given, family } = splitName(fullName);
@@ -747,8 +750,8 @@ function buildVCard3(o: {
   if (phone)  lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email)  lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url)    lines.push(`URL;TYPE=Work:${vEscape(url)}`);
-  if (linkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(linkedin)}`);
+  if (normalizedUrl) lines.push(`URL;TYPE=Work:${vEscape(normalizedUrl)}`);
+  if (normalizedLinkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(normalizedLinkedin)}`);
 
   const structuredLabelLines: string[] = [];
   if (address?.street) structuredLabelLines.push(address.street);
@@ -854,6 +857,8 @@ export function BusinessCardFront({
     }),
     [companyPrimary, normalizedFrontAddress],
   );
+  const normalizedFrontUrl = useMemo(() => normalizeWebUrl(url), [url]);
+  const normalizedFrontLinkedin = useMemo(() => normalizeWebUrl(linkedin), [linkedin]);
   const frontContext = useMemo(
     () => ({
       name,
@@ -866,10 +871,10 @@ export function BusinessCardFront({
       companySecondary,
       companyLines,
       address: frontAddressContext,
-      url,
-      linkedin,
+      url: normalizedFrontUrl,
+      linkedin: normalizedFrontLinkedin,
     }),
-    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, url, linkedin],
+    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, normalizedFrontUrl, normalizedFrontLinkedin],
   );
   const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
     let hasOverflow = false;
@@ -966,6 +971,8 @@ export function BusinessCardBack({
     handleBackAssetError?.();
     setBackgroundReady(true);
   }, [handleBackAssetError]);
+  const normalizedBackUrl = useMemo(() => normalizeWebUrl(url), [url]);
+  const normalizedBackLinkedin = useMemo(() => normalizeWebUrl(linkedin), [linkedin]);
   const vcard = useMemo(
     () =>
       buildVCard3({
@@ -975,8 +982,8 @@ export function BusinessCardBack({
         email: email || undefined,
         phone: phone || undefined,
         mobile: mobile || undefined,
-        url: url || undefined,
-        linkedin: linkedin || undefined,
+        url: normalizedBackUrl || undefined,
+        linkedin: normalizedBackLinkedin || undefined,
         addrLabel,
         address: {
           street: addrStreet,
@@ -985,7 +992,7 @@ export function BusinessCardBack({
           country: addrCountry,
         },
       }),
-    [name, role, email, phone, mobile, url, linkedin, orgForVcard, addrLabel, addrStreet, addrPostal, addrCity, addrCountry],
+    [name, role, email, phone, mobile, normalizedBackUrl, normalizedBackLinkedin, orgForVcard, addrLabel, addrStreet, addrPostal, addrCity, addrCountry],
   );
 
   const [qrData, setQrData] = useState<string>("");
@@ -1026,12 +1033,12 @@ export function BusinessCardBack({
       phone,
       mobile,
       company,
-      url,
-      linkedin,
+      url: normalizedBackUrl,
+      linkedin: normalizedBackLinkedin,
       qrData,
       address: backAddressContext,
     }),
-    [name, role, email, phone, mobile, company, url, linkedin, qrData, backAddressContext],
+    [name, role, email, phone, mobile, company, normalizedBackUrl, normalizedBackLinkedin, qrData, backAddressContext],
   );
   const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
     let hasOverflow = false;

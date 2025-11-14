@@ -10,6 +10,7 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import { getCountryLabel } from "@/lib/countries";
 import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
+import { normalizeWebUrl } from "./normalize-url";
 import type {
   DesignElement,
   QrElement,
@@ -176,6 +177,8 @@ function buildVCard3(opts: {
   };
 }) {
   const { fullName, org, title, email, phone, mobile, url, linkedin, addrLabel, address } = opts;
+  const normalizedUrl = normalizeWebUrl(url);
+  const normalizedLinkedin = normalizeWebUrl(linkedin);
   const { given, family } = splitName(fullName);
   const lines: string[] = [
     "BEGIN:VCARD",
@@ -189,8 +192,8 @@ function buildVCard3(opts: {
   if (phone) lines.push(`TEL;TYPE=WORK,VOICE:${vEscape(phone)}`);
   if (mobile) lines.push(`TEL;TYPE=CELL,MOBILE:${vEscape(mobile)}`);
   if (email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${vEscape(email)}`);
-  if (url) lines.push(`URL;TYPE=Work:${vEscape(url)}`);
-  if (linkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(linkedin)}`);
+  if (normalizedUrl) lines.push(`URL;TYPE=Work:${vEscape(normalizedUrl)}`);
+  if (normalizedLinkedin) lines.push(`URL;TYPE=LinkedIn:${vEscape(normalizedLinkedin)}`);
 
   const structuredLabelLines: string[] = [];
   if (address?.street) structuredLabelLines.push(address.street);
@@ -569,6 +572,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     linkedin = "",
     address,
   } = fields;
+  const normalizedUrl = normalizeWebUrl(url);
+  const normalizedLinkedin = normalizeWebUrl(linkedin);
 
   const companyFirstLine = (company || "").split(/\r?\n/)[0]?.trim() || "";
 
@@ -654,8 +659,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       if (candidate) return candidate;
       return "";
     })(),
-    url,
-    linkedin,
+    url: normalizedUrl,
+    linkedin: normalizedLinkedin,
     address: resolvedAddress,
   };
 
@@ -703,8 +708,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     const phoneLine = formatPhones(phone, mobile);
     if (phoneLine) contactLines.push(phoneLine);
     if (email) contactLines.push(email);
-    if (url) contactLines.push(url);
-    if (linkedin) contactLines.push(linkedin);
+    if (normalizedUrl) contactLines.push(normalizedUrl);
+    if (normalizedLinkedin) contactLines.push(normalizedLinkedin);
 
     if (frame.contacts) {
       const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
@@ -740,8 +745,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       email: email || undefined,
       phone: phone || undefined,
       mobile: mobile || undefined,
-      url: url || undefined,
-      linkedin: linkedin || undefined,
+      url: normalizedUrl || undefined,
+      linkedin: normalizedLinkedin || undefined,
       addrLabel,
       address: resolvedAddress,
     });

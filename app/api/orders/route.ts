@@ -14,6 +14,7 @@ import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { getBrandsForUser } from "@/lib/brand-access";
+import { normalizeWebUrl } from "@/lib/normalize-url";
 
 export const runtime = "nodejs";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
@@ -126,6 +127,8 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
+    const normalizedUrl = normalizeWebUrl(data.url);
+    const normalizedLinkedin = normalizeWebUrl(data.linkedin);
     const requestedBrandId = data.brandId?.trim() || null;
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -171,8 +174,8 @@ export async function POST(req: Request) {
         phone: data.phone,
         mobile: data.mobile,
         company: data.company,
-        url: data.url,
-        linkedin: data.linkedin,
+        url: normalizedUrl,
+        linkedin: normalizedLinkedin,
         address: addressMeta,
       },
       templateDefinition,
@@ -268,8 +271,8 @@ export async function POST(req: Request) {
         phone: data.phone || null,
         mobile: data.mobile || null,
         company: data.company || null,
-        url: data.url || null,
-        linkedin: data.linkedin || null,
+        url: normalizedUrl || null,
+        linkedin: normalizedLinkedin || null,
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
         pdfFileName,
