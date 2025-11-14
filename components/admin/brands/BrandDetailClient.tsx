@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import type { AdminBrandAddress, AdminBrandSummary } from "@/lib/admin/brands-data";
-import { useTranslations } from "@/components/providers/locale-provider";
+import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import { formatDateTime } from "@/lib/formatDateTime";
 
 export type BrandDetailClientProps = {
   brand?: AdminBrandSummary | null;
@@ -66,14 +67,13 @@ const emptyAddress = (): BrandAddressForm => ({
   updatedAt: null,
 });
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   const router = useRouter();
   const t = useTranslations("admin.brands");
+  const { locale } = useLocale();
+  const dateLocale = locale === "de" ? "de-AT" : "en-GB";
+  const formatTimestamp = (value: string | Date | null | undefined) =>
+    value ? formatDateTime(value, dateLocale, { dateStyle: "medium", timeStyle: "short" }) : "—";
   const mode: "create" | "edit" = brand ? "edit" : "create";
   const [form, setForm] = useState<BrandForm>(() => (brand ? mapBrandToForm(brand) : emptyForm()));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -419,7 +419,7 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                           {address.countryCode ? address.countryCode.toUpperCase() : "—"}
                         </TableCell>
                         <TableCell className="align-top text-sm text-slate-600">
-                          {address.updatedAt ? dateFormatter.format(new Date(address.updatedAt)) : "—"}
+                          {formatTimestamp(address.updatedAt)}
                         </TableCell>
                         <TableCell className="align-top">
                           <div className="flex justify-end gap-1">
@@ -479,13 +479,13 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                     <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       {t("detail.metadata.createdAt")}
                     </span>
-                    <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.createdAt))}</p>
+                    <p className="text-sm text-slate-700">{formatTimestamp(brand.createdAt)}</p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       {t("detail.metadata.updatedAt")}
                     </span>
-                    <p className="text-sm text-slate-700">{dateFormatter.format(new Date(brand.updatedAt))}</p>
+                    <p className="text-sm text-slate-700">{formatTimestamp(brand.updatedAt)}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
