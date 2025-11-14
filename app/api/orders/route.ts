@@ -127,8 +127,10 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
-    const normalizedUrl = normalizeWebUrl(data.url);
-    const normalizedLinkedin = normalizeWebUrl(data.linkedin);
+    const rawUrl = data.url?.trim() ?? "";
+    const rawLinkedin = data.linkedin?.trim() ?? "";
+    const normalizedUrl = normalizeWebUrl(rawUrl);
+    const normalizedLinkedin = normalizeWebUrl(rawLinkedin);
     const requestedBrandId = data.brandId?.trim() || null;
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -174,8 +176,8 @@ export async function POST(req: Request) {
         phone: data.phone,
         mobile: data.mobile,
         company: data.company,
-        url: normalizedUrl,
-        linkedin: normalizedLinkedin,
+        url: rawUrl,
+        linkedin: rawLinkedin,
         address: addressMeta,
       },
       templateDefinition,

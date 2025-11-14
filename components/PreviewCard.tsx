@@ -857,8 +857,8 @@ export function BusinessCardFront({
     }),
     [companyPrimary, normalizedFrontAddress],
   );
-  const normalizedFrontUrl = useMemo(() => normalizeWebUrl(url), [url]);
-  const normalizedFrontLinkedin = useMemo(() => normalizeWebUrl(linkedin), [linkedin]);
+  const displayFrontUrl = useMemo(() => formatUrlForDisplay(url), [url]);
+  const displayFrontLinkedin = useMemo(() => formatUrlForDisplay(linkedin), [linkedin]);
   const frontContext = useMemo(
     () => ({
       name,
@@ -871,12 +871,10 @@ export function BusinessCardFront({
       companySecondary,
       companyLines,
       address: frontAddressContext,
-      url: normalizedFrontUrl,
-      linkedin: normalizedFrontLinkedin,
-      displayUrl: formatUrlForDisplay(url),
-      displayLinkedin: formatUrlForDisplay(linkedin),
+      url: displayFrontUrl,
+      linkedin: displayFrontLinkedin,
     }),
-    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, normalizedFrontUrl, normalizedFrontLinkedin],
+    [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, displayFrontUrl, displayFrontLinkedin],
   );
   const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
     let hasOverflow = false;
@@ -975,6 +973,8 @@ export function BusinessCardBack({
   }, [handleBackAssetError]);
   const normalizedBackUrl = useMemo(() => normalizeWebUrl(url), [url]);
   const normalizedBackLinkedin = useMemo(() => normalizeWebUrl(linkedin), [linkedin]);
+  const displayBackUrl = useMemo(() => formatUrlForDisplay(url), [url]);
+  const displayBackLinkedin = useMemo(() => formatUrlForDisplay(linkedin), [linkedin]);
   const vcard = useMemo(
     () =>
       buildVCard3({
@@ -1035,12 +1035,12 @@ export function BusinessCardBack({
       phone,
       mobile,
       company,
-      url: normalizedBackUrl,
-      linkedin: normalizedBackLinkedin,
+      url: displayBackUrl,
+      linkedin: displayBackLinkedin,
       qrData,
       address: backAddressContext,
     }),
-    [name, role, email, phone, mobile, company, normalizedBackUrl, normalizedBackLinkedin, qrData, backAddressContext],
+    [name, role, email, phone, mobile, company, displayBackUrl, displayBackLinkedin, qrData, backAddressContext],
   );
   const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
     let hasOverflow = false;
