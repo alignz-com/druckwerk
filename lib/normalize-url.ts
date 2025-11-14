@@ -11,3 +11,10 @@ export function normalizeWebUrl(value?: string | null) {
 
   return trimmed;
 }
+
+export function formatUrlForDisplay(value?: string | null) {
+  if (!value) return "";
+  const normalized = normalizeWebUrl(value);
+  if (!normalized) return "";
+  return normalized.replace(/^https?:\/\//i, "");
+}

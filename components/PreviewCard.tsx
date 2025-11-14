@@ -11,7 +11,7 @@ import type { ResolvedTemplate } from "@/lib/templates";
 import { DEFAULT_TEMPLATE_DESIGN } from "@/lib/template-design";
 import type { DesignElement, TextElement, StackElement, RectElement, QrElement } from "@/lib/template-design";
 import { useFontFaceLoader } from "@/lib/useFontFaceLoader";
-import { normalizeWebUrl } from "@/lib/normalize-url";
+import { formatUrlForDisplay, normalizeWebUrl } from "@/lib/normalize-url";
 
 const ASSET_CACHE_GRACE_MS = 30_000;
 const FALLBACK_TEXT_FRAME = {
@@ -873,6 +873,8 @@ export function BusinessCardFront({
       address: frontAddressContext,
       url: normalizedFrontUrl,
       linkedin: normalizedFrontLinkedin,
+      displayUrl: formatUrlForDisplay(url),
+      displayLinkedin: formatUrlForDisplay(linkedin),
     }),
     [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, normalizedFrontUrl, normalizedFrontLinkedin],
   );

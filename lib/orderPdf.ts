@@ -10,7 +10,7 @@ import { normalizeAddress } from "@/lib/normalizeAddress";
 import { getCountryLabel } from "@/lib/countries";
 import type { TemplateTextStyle } from "@/lib/templates-defaults";
 import type { ResolvedTemplate } from "@/lib/templates";
-import { normalizeWebUrl } from "./normalize-url";
+import { formatUrlForDisplay, normalizeWebUrl } from "./normalize-url";
 import type {
   DesignElement,
   QrElement,
@@ -574,6 +574,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   } = fields;
   const normalizedUrl = normalizeWebUrl(url);
   const normalizedLinkedin = normalizeWebUrl(linkedin);
+  const displayUrl = formatUrlForDisplay(url);
+  const displayLinkedin = formatUrlForDisplay(linkedin);
 
   const companyFirstLine = (company || "").split(/\r?\n/)[0]?.trim() || "";
 
@@ -659,8 +661,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       if (candidate) return candidate;
       return "";
     })(),
-    url: normalizedUrl,
-    linkedin: normalizedLinkedin,
+    url: displayUrl,
+    linkedin: displayLinkedin,
     address: resolvedAddress,
   };
 
@@ -708,8 +710,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     const phoneLine = formatPhones(phone, mobile);
     if (phoneLine) contactLines.push(phoneLine);
     if (email) contactLines.push(email);
-    if (normalizedUrl) contactLines.push(normalizedUrl);
-    if (normalizedLinkedin) contactLines.push(normalizedLinkedin);
+    if (displayUrl) contactLines.push(displayUrl);
+    if (displayLinkedin) contactLines.push(displayLinkedin);
 
     if (frame.contacts) {
       const contactsFont = pickFont(frame.contacts, Frutiger) ?? Frutiger.Light ?? Frutiger.Bold;
