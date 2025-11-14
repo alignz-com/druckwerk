@@ -205,10 +205,13 @@ function buildVCard3(opts: {
     const postalLine = vEscape(address?.postalCode ?? "");
     const countryLine = vEscape(address?.country ?? "");
     const extraLine = vEscape(address?.addressExtra ?? "");
-    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(resolvedLabel)}":;${extraLine};${streetLine};${cityLine};;${postalLine};${countryLine}`);
+    const adr = `ADR;TYPE=WORK:;${extraLine};${streetLine};${cityLine};;${postalLine};${countryLine}`;
+    lines.push(adr);
+    lines.push(`LABEL;TYPE=WORK:${vEscape(resolvedLabel)}`);
   } else if (addrLabel) {
     const adr = ["", "", vEscape(addrLabel), "", "", "", ""].join(";");
-    lines.push(`ADR;TYPE=WORK;LABEL="${vEscape(addrLabel)}":${adr}`);
+    lines.push(`ADR;TYPE=WORK:${adr}`);
+    lines.push(`LABEL;TYPE=WORK:${vEscape(addrLabel)}`);
   }
 
   lines.push("END:VCARD");
