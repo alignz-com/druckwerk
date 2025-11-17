@@ -133,6 +133,7 @@ export type Props = {
     country?: string;
   };
   onReadyChange?: (ready: boolean) => void;
+  forceErrorState?: boolean;
 };
 
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
@@ -491,10 +492,11 @@ function renderTextElement(
   offsetX = 0,
   offsetY = 0,
   reportOverflow?: () => void,
+  forceErrorColor = false,
 ) {
   const { element, fontSizeMm, content, isTruncated } = prepared;
   const baseColor = element.font.color ?? "#1f2937";
-  const fillColor = isTruncated ? "#ef4444" : baseColor;
+  const fillColor = forceErrorColor || isTruncated ? "#ef4444" : baseColor;
   if (isTruncated) reportOverflow?.();
   return (
     <text
@@ -549,6 +551,7 @@ function renderStackElement(
   context: RenderContext,
   key: string,
   reportOverflow?: () => void,
+  forceErrorColor = false,
 ): ReactNode | null {
   if (element.visibility && element.visibility.binding) {
     if (!evaluateVisibility(element.visibility, context)) return null;
@@ -582,6 +585,7 @@ function renderStackElement(
         0,
         cursorY,
         reportOverflow,
+        forceErrorColor,
       );
       cursorY += item.prepared.lineHeightMm + (idx < preparedItems.length - 1 ? gap : 0);
       return rendered;
@@ -622,7 +626,9 @@ function renderDesignElements(
   context: RenderContext,
   keyPrefix = "el",
   reportOverflow?: (hasOverflow: boolean) => void,
+  options?: { forceErrorColor?: boolean },
 ): ReactNode[] {
+  const forceErrorColor = options?.forceErrorColor ?? false;
   if (!elements?.length) {
     reportOverflow?.(false);
     return [];
@@ -644,12 +650,12 @@ function renderDesignElements(
       case "text": {
         const prepared = prepareTextElement(element, context);
         if (prepared) {
-          nodes.push(renderTextElement(prepared, context, key, 0, 0, markOverflow));
+          nodes.push(renderTextElement(prepared, context, key, 0, 0, markOverflow, forceErrorColor));
         }
         break;
       }
       case "stack": {
-        const stackNode = renderStackElement(element, context, key, markOverflow);
+        const stackNode = renderStackElement(element, context, key, markOverflow, forceErrorColor);
         if (stackNode) nodes.push(stackNode);
         break;
       }
@@ -793,6 +799,7 @@ export function BusinessCardFront({
   onOverflowChange,
   addressFields: _addressFields,
   onReadyChange,
+  forceErrorState = false,
 }: Props) {
   const { preview: previewCfg } = getFrontConfig(template);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
@@ -878,11 +885,17 @@ export function BusinessCardFront({
   );
   const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
     let hasOverflow = false;
-    const nodes = renderDesignElements(design.front, frontContext, "front", (flag) => {
-      hasOverflow = flag;
-    });
+    const nodes = renderDesignElements(
+      design.front,
+      frontContext,
+      "front",
+      (flag) => {
+        hasOverflow = flag;
+      },
+      { forceErrorColor: forceErrorState },
+    );
     return { nodes, overflow: hasOverflow };
-  }, [design.front, frontContext]);
+  }, [design.front, frontContext, forceErrorState]);
   useEffect(() => {
     onOverflowChange?.(frontOverflow);
   }, [frontOverflow, onOverflowChange]);
@@ -932,6 +945,7 @@ export function BusinessCardBack({
   onOverflowChange,
   addressFields,
   onReadyChange,
+  forceErrorState = false,
 }: Props) {
   const normalized = useMemo(() => normalizeAddress(company), [company]);
   const { org: parsedOrg, label, street: parsedStreet, postalCode: parsedPostal, city: parsedCity, country: parsedCountry } = normalized;
@@ -1044,11 +1058,17 @@ export function BusinessCardBack({
   );
   const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
     let hasOverflow = false;
-    const nodes = renderDesignElements(design.back, backContext, "back", (flag) => {
-      hasOverflow = flag;
-    });
+    const nodes = renderDesignElements(
+      design.back,
+      backContext,
+      "back",
+      (flag) => {
+        hasOverflow = flag;
+      },
+      { forceErrorColor: forceErrorState },
+    );
     return { nodes, overflow: hasOverflow };
-  }, [design.back, backContext]);
+  }, [design.back, backContext, forceErrorState]);
   useEffect(() => {
     onOverflowChange?.(backOverflow);
   }, [backOverflow, onOverflowChange]);

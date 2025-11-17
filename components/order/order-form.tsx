@@ -48,6 +48,7 @@ const FlipCard = dynamic(() => import("@/components/FlipCard"), {
 });
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
+const MAX_ADDRESS_BLOCK_LINES = 4;
 
 type BrandAddressEntry = {
   id: string;
@@ -358,6 +359,11 @@ export default function OrderForm({
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
   const [addressBlock, setAddressBlock] = useState("");
+  const addressBlockLineCount = useMemo(() => {
+    if (!addressBlock) return 0;
+    return addressBlock.replace(/\r\n/g, "\n").split("\n").length;
+  }, [addressBlock]);
+  const addressBlockHasOverflow = addressBlockLineCount > MAX_ADDRESS_BLOCK_LINES;
   const [addressInputValue, setAddressInputValue] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [isAddressDropdownOpen, setAddressDropdownOpen] = useState(false);
@@ -366,7 +372,7 @@ export default function OrderForm({
   const [backOverflow, setBackOverflow] = useState(false);
   const [frontPreviewReady, setFrontPreviewReady] = useState(false);
   const [backPreviewReady, setBackPreviewReady] = useState(false);
-  const hasOverflow = frontOverflow || backOverflow;
+  const hasOverflow = frontOverflow || backOverflow || addressBlockHasOverflow;
   const previewReady = frontPreviewReady && backPreviewReady;
   const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
 
@@ -1029,9 +1035,12 @@ export default function OrderForm({
                     onChange={(e) => setAddressBlock(e.target.value)}
                     rows={4}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
+                    className={addressBlockHasOverflow ? "border-red-300 focus-visible:ring-red-200" : undefined}
                   />
-                  <p className="text-xs text-slate-500">
-                    {tOrder("hints.addressExtra")}
+                  <p className={`text-xs ${addressBlockHasOverflow ? "text-red-600" : "text-slate-500"}`}>
+                    {addressBlockHasOverflow
+                      ? tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES })
+                      : tOrder("hints.addressExtra")}
                   </p>
                 </div>
                 </div>
@@ -1111,6 +1120,7 @@ export default function OrderForm({
                             onOverflowChange={setFrontOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setFrontPreviewReady}
+                            forceErrorState={addressBlockHasOverflow}
                           />
                         }
                         back={
@@ -1127,11 +1137,17 @@ export default function OrderForm({
                             onOverflowChange={setBackOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setBackPreviewReady}
+                            forceErrorState={addressBlockHasOverflow}
                           />
                         }
                         className="h-full w-full"
                       />
                     )}
+                    {addressBlockHasOverflow ? (
+                      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl border-2 border-red-400 bg-red-50/70 px-4 text-center text-sm font-semibold text-red-700">
+                        {tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES })}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 {templateError ? (
@@ -1201,6 +1217,7 @@ export default function OrderForm({
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setFrontOverflow}
                           addressFields={previewAddressFields}
+                          forceErrorState={addressBlockHasOverflow}
                         />
                       }
                       back={
@@ -1216,6 +1233,7 @@ export default function OrderForm({
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setBackOverflow}
                           addressFields={previewAddressFields}
+                          forceErrorState={addressBlockHasOverflow}
                         />
                       }
                     />

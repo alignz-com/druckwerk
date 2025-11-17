@@ -127,6 +127,7 @@ export const messages = {
       errors: {
         generic: "Unexpected error while saving order",
         brandLoadFailed: "Failed to load brand data.",
+        addressBlockLines: "The address block can only contain up to {count} lines.",
       },
       noTemplatesTitle: "No templates available",
       noTemplatesDescription:
@@ -991,6 +992,7 @@ export const messages = {
       errors: {
         generic: "Unerwarteter Fehler beim Speichern der Bestellung",
         brandLoadFailed: "Markendaten konnten nicht geladen werden.",
+        addressBlockLines: "Im Adressblock sind maximal {count} Zeilen möglich.",
       },
       noTemplatesTitle: "Keine Vorlagen verfügbar",
       noTemplatesDescription:
