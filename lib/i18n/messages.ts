@@ -104,6 +104,8 @@ export const messages = {
       previewTitle: "Preview",
       preview: {
         loading: "Loading preview…",
+        selectTemplate: "Select a template to view the preview.",
+        noTemplates: "No templates are available for this brand.",
       },
       buttons: {
         loadAddressDefault: "Load default value",
@@ -962,6 +964,8 @@ export const messages = {
       previewTitle: "Vorschau",
       preview: {
         loading: "Vorschau wird geladen…",
+        selectTemplate: "Bitte ein Template auswählen, um die Vorschau zu sehen.",
+        noTemplates: "Für diese Marke sind keine Templates verfügbar.",
       },
       buttons: {
         loadAddressDefault: "Standardwert laden",

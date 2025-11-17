@@ -246,7 +246,7 @@ export default function OrderForm({
     const brandIdentity = brandData.brandId ?? currentBrandId ?? null;
     const availableKeys = templates.map((tpl) => tpl.key);
     const defaultKey =
-      (brandData.initialTemplateKey && availableKeys.includes(brandData.initialTemplateKey))
+      brandData.initialTemplateKey && availableKeys.includes(brandData.initialTemplateKey)
         ? brandData.initialTemplateKey
         : availableKeys[0] ?? "";
 
@@ -900,15 +900,27 @@ export default function OrderForm({
             <CardContent className="flex items-center justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px]">
                 <div className="relative aspect-[85/55] w-full">
-                  {showPreviewSkeleton && (
+                  {showPreviewSkeleton && selectedTemplate ? (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
                       <div className="animate-pulse text-xs font-medium text-slate-500">
                         {tOrder("preview.loading")}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                   <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
-                    {selectedTemplate ? (
+                    {!currentBrandId ? (
+                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                        {tOrder("selectBrandPrompt")}
+                      </div>
+                    ) : templates.length === 0 ? (
+                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                        {tOrder("preview.noTemplates")}
+                      </div>
+                    ) : !selectedTemplate ? (
+                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                        {templateError ?? tOrder("preview.selectTemplate")}
+                      </div>
+                    ) : (
                       <FlipCard
                         activeSide={previewView}
                         front={
@@ -945,10 +957,6 @@ export default function OrderForm({
                         }
                         className="h-full w-full"
                       />
-                    ) : (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-                        {templateError ?? tOrder("preview.loading")}
-                      </div>
                     )}
                   </div>
                 </div>
