@@ -9,6 +9,7 @@ import {
   TemplateConfig,
   TemplateDefinition,
   TemplateAssetSummary,
+  TemplatePhotoSlotConfig,
 } from "./templates-defaults";
 import {
   DEFAULT_TEMPLATE_DESIGN,
@@ -66,10 +67,17 @@ export type TemplatePaperStock = {
   weightGsm?: number | null;
 };
 
-export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock" | "hasQrCode"> & {
+export type TemplatePhotoSlot = TemplatePhotoSlotConfig & {
+  side: "front" | "back";
+  shape: "circle" | "square" | "rounded";
+};
+
+export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock" | "hasQrCode" | "hasPhotoSlot"> & {
   fonts: ResolvedTemplateFont[];
   paperStock: TemplatePaperStock | null;
   hasQrCode: boolean;
+  hasPhotoSlot: boolean;
+  photoSlot: TemplatePhotoSlot | null;
 };
 
 export type TemplateSummary = {
@@ -79,6 +87,7 @@ export type TemplateSummary = {
   description: string | null;
   orderIndex: number;
   hasQrCode: boolean;
+  hasPhotoSlot: boolean;
 };
 
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
@@ -91,6 +100,8 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
     fonts: [],
     paperStock: paperStock ? { ...paperStock } : null,
     hasQrCode: detectHasQrCode(def.hasQrCode ?? null, def.config),
+    hasPhotoSlot: Boolean(def.hasPhotoSlot ?? Boolean(def.config?.photo)),
+    photoSlot: normalizePhotoSlot(def.config?.photo ?? null),
   };
 }
 
@@ -124,6 +135,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
             label: true,
             description: true,
             hasQrCode: true,
+            hasPhotoSlot: true,
           },
         },
       },
@@ -139,6 +151,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
         description: assignment.template!.description ?? null,
         orderIndex: assignment.orderIndex ?? 0,
         hasQrCode: assignment.template!.hasQrCode,
+        hasPhotoSlot: assignment.template!.hasPhotoSlot ?? false,
       }));
   }
 
@@ -149,6 +162,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       label: true,
       description: true,
       hasQrCode: true,
+      hasPhotoSlot: true,
     },
     orderBy: [{ label: "asc" }],
   });
@@ -161,6 +175,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       description: tpl.description ?? null,
       orderIndex: index,
       hasQrCode: tpl.hasQrCode,
+      hasPhotoSlot: tpl.hasPhotoSlot ?? false,
     }));
   }
 
@@ -172,6 +187,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       description: tpl.description ?? null,
       orderIndex: 0,
       hasQrCode: detectHasQrCode(tpl.hasQrCode, tpl.config),
+      hasPhotoSlot: Boolean(tpl.hasPhotoSlot ?? tpl.config?.photo),
     })),
   );
 }
@@ -382,4 +398,28 @@ export async function getTemplateForBrandOrGlobal(key: string, brandId?: string 
     }
     throw error;
   }
+}
+function normalizePhotoSlot(config?: TemplatePhotoSlotConfig | null): TemplatePhotoSlot | null {
+  if (!config) return null;
+  const { xMm, yMm, widthMm, heightMm } = config;
+  if (
+    typeof xMm !== "number" ||
+    typeof yMm !== "number" ||
+    typeof widthMm !== "number" ||
+    typeof heightMm !== "number"
+  ) {
+    return null;
+  }
+  const side = config.side === "back" ? "back" : "front";
+  const shape = config.shape === "square" ? "square" : config.shape === "rounded" ? "rounded" : "circle";
+  return {
+    side,
+    shape,
+    xMm,
+    yMm,
+    widthMm,
+    heightMm,
+    borderColor: config.borderColor,
+    borderWidthMm: config.borderWidthMm,
+  };
 }

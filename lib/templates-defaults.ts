@@ -10,6 +10,17 @@ export type TemplateTextStyle = {
   spacingAfterMm?: number;
 };
 
+export type TemplatePhotoSlotConfig = {
+  side?: "front" | "back";
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  heightMm: number;
+  shape?: "circle" | "square" | "rounded";
+  borderColor?: string;
+  borderWidthMm?: number;
+};
+
 export type TemplateConfig = {
   front: {
     textFrame: {
@@ -43,6 +54,7 @@ export type TemplateConfig = {
       };
     };
   };
+  photo?: TemplatePhotoSlotConfig | null;
 };
 
 export type TemplatePaperStockDefinition = {
@@ -67,6 +79,7 @@ export type TemplateDefinition = {
   design?: TemplateDesign;
   paperStock?: TemplatePaperStockDefinition | null;
   hasQrCode?: boolean;
+  hasPhotoSlot?: boolean;
 };
 
 export type TemplateAssetSummary = {

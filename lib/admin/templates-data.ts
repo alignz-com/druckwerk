@@ -46,6 +46,7 @@ export type AdminTemplateSummary = {
   pcmCode: string | null;
   paperStock: AdminPaperStockSummary | null;
   hasQrCode: boolean;
+  hasPhotoSlot: boolean;
   createdAt: string;
   updatedAt: string;
   config: Prisma.JsonValue | null;
@@ -126,6 +127,7 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     printDpi: template.printDpi,
     pcmCode: template.pcmCode ?? null,
     hasQrCode: template.hasQrCode,
+    hasPhotoSlot: template.hasPhotoSlot,
     paperStock: template.paperStock
       ? {
           id: template.paperStock.id,

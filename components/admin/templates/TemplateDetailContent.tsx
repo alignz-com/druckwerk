@@ -61,6 +61,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     paperStockId: template.paperStock?.id ?? "",
     config: stringifyConfig(template.config),
     hasQrCode: template.hasQrCode,
+    hasPhotoSlot: template.hasPhotoSlot,
   }));
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
@@ -182,6 +183,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       paperStockId: template.paperStock?.id ?? "",
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
+      hasPhotoSlot: template.hasPhotoSlot,
     });
     setMetadataError(null);
     setMetadataSuccess(null);
@@ -279,6 +281,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           paperStockId: metadata.paperStockId || null,
           config: parsedConfig,
           hasQrCode: metadata.hasQrCode,
+          hasPhotoSlot: metadata.hasPhotoSlot,
         }),
       });
 
@@ -597,6 +600,27 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
                 </Label>
                 <p id="template-has-qr-hint" className="text-xs text-slate-500">
                   {t("detail.hasQrCodeHint")}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
+            <div className="flex items-start gap-4">
+              <Checkbox
+                id="template-has-photo"
+                checked={metadata.hasPhotoSlot}
+                onCheckedChange={(checked) => {
+                  setMetadata((current) => ({ ...current, hasPhotoSlot: Boolean(checked) }));
+                  setMetadataSuccess(null);
+                }}
+                aria-describedby="template-has-photo-hint"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="template-has-photo" className="text-sm font-medium text-slate-900">
+                  {t("detail.hasPhotoSlotLabel")}
+                </Label>
+                <p id="template-has-photo-hint" className="text-xs text-slate-500">
+                  {t("detail.hasPhotoSlotHint")}
                 </p>
               </div>
             </div>
