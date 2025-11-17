@@ -76,6 +76,7 @@ model User {
   sessions       Session[]
   passwordResetTokens PasswordResetToken[]
   orders         Order[]
+  orderProfiles  UserOrderProfile[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -133,6 +134,7 @@ model Brand {
   defaultTemplate   Template?      @relation("BrandDefaultTemplate", fields: [defaultTemplateId], references: [id])
   addresses BrandAddress[]
   domains   BrandDomain[]
+  orderProfiles UserOrderProfile[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
@@ -168,6 +170,34 @@ model BrandDomain {
 
   @@unique([brandId, domain])
   @@index([domain])
+}
+
+model UserOrderProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  brandId      String
+  name         String?
+  jobTitle     String?
+  email        String?
+  phone        String?
+  mobile       String?
+  url          String?
+  linkedin     String?
+  addressId    String?
+  addressLabel String?
+  companyName  String?
+  street       String?
+  postalCode   String?
+  city         String?
+  countryCode  String?
+  addressBlock String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, brandId])
 }
 
 model Template {

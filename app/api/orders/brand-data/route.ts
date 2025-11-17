@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { getBrandResources } from "@/lib/brand-resources";
+import { getUserOrderProfile } from "@/lib/user-order-profile";
 
 export async function GET(req: Request) {
   const session = await getServerAuthSession();
@@ -36,6 +37,7 @@ export async function GET(req: Request) {
 
   const { templates, addresses, initialTemplate, initialTemplateKey, brandId } =
     await getBrandResources(resolvedBrandId);
+  const profile = await getUserOrderProfile(session.user.id, resolvedBrandId);
 
   return NextResponse.json({
     templates,
@@ -43,5 +45,6 @@ export async function GET(req: Request) {
     initialTemplate,
     initialTemplateKey,
     brandId,
+    profile,
   });
 }

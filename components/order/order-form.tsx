@@ -112,12 +112,32 @@ type BrandOption = {
   name: string;
 };
 
+type BrandProfilePayload = {
+  name?: string | null;
+  jobTitle?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  url?: string | null;
+  linkedin?: string | null;
+  addressId?: string | null;
+  addressLabel?: string | null;
+  companyName?: string | null;
+  street?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  countryCode?: string | null;
+  addressBlock?: string | null;
+  updatedAt?: string | null;
+};
+
 type BrandResourcePayload = {
   templates: TemplateSummary[];
   addresses: BrandAddressEntry[];
   initialTemplate: ResolvedTemplate | null;
   initialTemplateKey: string | null;
   brandId: string | null;
+  profile: BrandProfilePayload | null;
 };
 
 type ProfilePrefill = {
@@ -127,6 +147,7 @@ type ProfilePrefill = {
   businessPhone?: string | null;
   mobilePhone?: string | null;
   url?: string | null;
+  linkedin?: string | null;
 };
 
 const brandResourcesFetcher = async (brandId: string): Promise<BrandResourcePayload> => {
@@ -147,6 +168,7 @@ export type OrderFormProps = {
   initialAddresses?: BrandAddressEntry[];
   initialTemplateKey?: string | null;
   initialProfile?: ProfilePrefill | null;
+  initialBrandProfile?: BrandProfilePayload | null;
 };
 
 export default function OrderForm({
@@ -157,6 +179,7 @@ export default function OrderForm({
   initialAddresses = [],
   initialTemplateKey = null,
   initialProfile = null,
+  initialBrandProfile = null,
 }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -195,8 +218,16 @@ export default function OrderForm({
       initialTemplate: initialTemplate ?? null,
       initialTemplateKey: initialTemplateKey ?? initialTemplateSummaries[0]?.key ?? null,
       brandId: initialBrandId ?? null,
+      profile: initialBrandProfile ?? null,
     }),
-    [initialTemplateSummaries, initialAddresses, initialTemplate, initialTemplateKey, initialBrandId],
+    [
+      initialTemplateSummaries,
+      initialAddresses,
+      initialTemplate,
+      initialTemplateKey,
+      initialBrandId,
+      initialBrandProfile,
+    ],
   );
 
   useEffect(() => {
@@ -218,6 +249,7 @@ export default function OrderForm({
         initialTemplate: null,
         initialTemplateKey: null,
         brandId: currentBrandId,
+        profile: null,
       }
     : initialBrandData;
 
@@ -247,6 +279,7 @@ export default function OrderForm({
   const templateIsLoading = selectedSummaryKey ? templateLoadingKey === selectedSummaryKey : false;
 
   const lastBrandIdRef = useRef<string | null>(initialBrandData.brandId ?? null);
+  const lastBrandProfileSignatureRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (templates.length === 0) {
@@ -361,13 +394,6 @@ export default function OrderForm({
     },
     [currentBrandId],
   );
-
-  useEffect(() => {
-    setSelectedAddressEntry(null);
-    setAddressInputValue("");
-    setAddressSearch("");
-    setAddressBlock("");
-  }, [currentBrandId]);
 
   const formatPhoneValue = useCallback((value: string) => {
     if (!value || !value.trim()) return value;
@@ -486,6 +512,8 @@ export default function OrderForm({
       merged[key] = normalized;
     };
 
+    assignIfMissing("linkedin", initialProfile?.linkedin ?? null);
+
     if (sessionUser) {
       assignIfMissing("name", sessionUser.name ?? null);
       assignIfMissing("jobTitle", sessionUser.jobTitle ?? null);
@@ -495,7 +523,9 @@ export default function OrderForm({
       assignIfMissing("url", sessionUser.url ?? null);
     }
 
-    const hasValue = (["name", "jobTitle", "email", "businessPhone", "mobilePhone", "url"] as (keyof ProfilePrefill)[]).some(
+    const hasValue = (
+      ["name", "jobTitle", "email", "businessPhone", "mobilePhone", "url", "linkedin"] as (keyof ProfilePrefill)[]
+    ).some(
       (field) => {
         const value = merged[field];
         if (typeof value === "string") return value.trim().length > 0;
@@ -506,18 +536,91 @@ export default function OrderForm({
     return hasValue ? merged : null;
   }, [initialProfile, sessionUser]);
 
-  useEffect(() => {
-    if (!resolvedProfile || hasPrefilledProfile.current) return;
+  const applyGeneralProfileValues = useCallback(() => {
+    if (!resolvedProfile) return;
     if (resolvedProfile.name) setName(resolvedProfile.name);
     if (resolvedProfile.jobTitle) setRole(resolvedProfile.jobTitle);
     if (resolvedProfile.email) setEmail(resolvedProfile.email);
     if (resolvedProfile.businessPhone) setPhone(resolvedProfile.businessPhone);
     if (resolvedProfile.mobilePhone) setMobile(resolvedProfile.mobilePhone);
-    if (resolvedProfile.url) {
-      setUrl((prev) => (prev ? prev : resolvedProfile.url ?? ""));
-    }
-    hasPrefilledProfile.current = true;
+    if (resolvedProfile.url) setUrl(resolvedProfile.url);
+    if (resolvedProfile.linkedin) setLinkedin(resolvedProfile.linkedin);
   }, [resolvedProfile]);
+
+  useEffect(() => {
+    if (!resolvedProfile || hasPrefilledProfile.current) return;
+    applyGeneralProfileValues();
+    hasPrefilledProfile.current = true;
+  }, [resolvedProfile, applyGeneralProfileValues]);
+
+  const applyBrandProfile = useCallback(
+    (profile: BrandProfilePayload | null) => {
+      if (!profile) {
+        setSelectedAddressEntry(null);
+        setAddressInputValue("");
+        setAddressSearch("");
+        setAddressDropdownOpen(false);
+        setCompanyName("");
+        setStreet("");
+        setPostalCode("");
+        setCity("");
+        setCountryCode("");
+        setAddressBlock("");
+        return;
+      }
+
+      if (profile.name) setName(profile.name);
+      if (profile.jobTitle) setRole(profile.jobTitle);
+      if (profile.email) setEmail(profile.email);
+      if (profile.phone) setPhone(profile.phone);
+      if (profile.mobile) setMobile(profile.mobile);
+      if (profile.url) setUrl(profile.url);
+      if (profile.linkedin) setLinkedin(profile.linkedin);
+
+      const matchedAddress =
+        profile.addressId && addresses.length > 0
+          ? addresses.find((entry) => entry.id === profile.addressId)
+          : null;
+
+      setSelectedAddressEntry(matchedAddress ?? null);
+      setAddressInputValue(
+        profile.addressLabel ??
+          matchedAddress?.label ??
+          matchedAddress?.company ??
+          "",
+      );
+      setAddressSearch("");
+      setAddressDropdownOpen(false);
+      setCompanyName(profile.companyName ?? matchedAddress?.company ?? "");
+      setStreet(profile.street ?? matchedAddress?.street ?? "");
+      setPostalCode(profile.postalCode ?? matchedAddress?.postalCode ?? "");
+      setCity(profile.city ?? matchedAddress?.city ?? "");
+      setCountryCode(profile.countryCode ?? matchedAddress?.countryCode ?? "");
+
+      if (profile.addressBlock) {
+        setAddressBlock(profile.addressBlock);
+      } else if (matchedAddress) {
+        setAddressBlock(getAddressBlockFromEntry(matchedAddress));
+      } else {
+        setAddressBlock("");
+      }
+    },
+    [addresses, getAddressBlockFromEntry],
+  );
+
+  useEffect(() => {
+    if (!brandData.brandId) return;
+    const signature = `${brandData.brandId}:${brandData.profile?.updatedAt ?? "none"}:${brandData.profile ? "has" : "none"}`;
+    if (signature === lastBrandProfileSignatureRef.current) return;
+    lastBrandProfileSignatureRef.current = signature;
+
+    if (brandData.profile) {
+      applyBrandProfile(brandData.profile);
+    } else {
+      applyBrandProfile(null);
+      applyGeneralProfileValues();
+    }
+  }, [brandData.brandId, brandData.profile, applyBrandProfile, applyGeneralProfileValues]);
 
   useEffect(() => {
     if (!email) return;
@@ -564,6 +667,8 @@ export default function OrderForm({
           quantity: Number(quantity),
           deliveryTime,
           customerReference,
+          addressId: selectedAddressEntry?.id ?? null,
+          addressLabel: addressInputValue,
           address: {
             companyName,
             street,

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { getBrandResources } from "@/lib/brand-resources";
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
+import { getUserOrderProfile } from "@/lib/user-order-profile";
 
 export default async function NewOrderPage() {
   const sessionPromise = getServerAuthSession();
@@ -67,6 +68,10 @@ export default async function NewOrderPage() {
     initialTemplateKey,
   } = await getBrandResources(initialBrandId ?? null);
 
+  const initialBrandProfile = initialBrandId
+    ? await getUserOrderProfile(userId, initialBrandId)
+    : null;
+
   const initialProfile = {
     name: dbUser?.name ?? session.user.name ?? null,
     jobTitle: dbUser?.jobTitle ?? session.user.jobTitle ?? null,
@@ -85,6 +90,7 @@ export default async function NewOrderPage() {
       initialTemplateKey={initialTemplateKey}
       initialAddresses={normalizedAddresses}
       initialProfile={initialProfile}
+      initialBrandProfile={initialBrandProfile}
     />
   );
 }

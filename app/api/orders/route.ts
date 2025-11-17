@@ -15,6 +15,7 @@ import { buildJdfDocument } from "@/lib/jdf";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { normalizeWebUrl } from "@/lib/normalize-url";
+import { saveUserOrderProfile } from "@/lib/user-order-profile";
 
 export const runtime = "nodejs";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
@@ -33,6 +34,8 @@ const requestSchema = z.object({
   quantity: z.number().int().positive(),
   deliveryTime: z.enum(["express", "standard"]),
   customerReference: z.string().optional().default(""),
+  addressId: z.string().optional().nullable(),
+  addressLabel: z.string().optional().nullable(),
   address: z
     .object({
       companyName: z.string().optional().default(""),
@@ -131,6 +134,8 @@ export async function POST(req: Request) {
     const rawLinkedin = data.linkedin?.trim() ?? "";
     const normalizedUrl = normalizeWebUrl(rawUrl);
     const normalizedLinkedin = normalizeWebUrl(rawLinkedin);
+    const normalizedAddressId = data.addressId?.trim() || null;
+    const normalizedAddressLabel = data.addressLabel?.trim() ?? "";
     const requestedBrandId = data.brandId?.trim() || null;
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -297,6 +302,30 @@ export async function POST(req: Request) {
         jdfXml,
       },
     });
+
+    if (effectiveBrandId) {
+      await saveUserOrderProfile({
+        userId: session.user.id,
+        brandId: effectiveBrandId,
+        data: {
+          name: data.name,
+          jobTitle: data.role,
+          email: data.email,
+          phone: data.phone,
+          mobile: data.mobile,
+          url: rawUrl,
+          linkedin: rawLinkedin,
+          addressId: normalizedAddressId,
+          addressLabel: normalizedAddressLabel,
+          companyName: data.address?.companyName ?? null,
+          street: data.address?.street ?? null,
+          postalCode: data.address?.postalCode ?? null,
+          city: data.address?.city ?? null,
+          countryCode: data.address?.countryCode ?? null,
+          addressBlock: data.company ?? null,
+        },
+      });
+    }
 
     const addressSummary = formatAddressSummary(addressMeta);
     const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
