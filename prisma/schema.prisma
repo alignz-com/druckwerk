@@ -67,6 +67,7 @@ model User {
   department     String?
   mobilePhone    String?
   businessPhone  String?
+  url            String?
   locale         String    @default("en")
   hashedPassword String?
   brandId        String?
