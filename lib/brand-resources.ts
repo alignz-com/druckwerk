@@ -1,5 +1,3 @@
-import { cache } from "react";
-
 import { prisma } from "@/lib/prisma";
 import { getTemplateForBrandOrGlobal, listTemplateSummariesForBrand } from "@/lib/templates";
 
@@ -16,7 +14,7 @@ type BrandAddressEntry = {
   url?: string | null;
 };
 
-export const getBrandResources = cache(async (brandId: string | null) => {
+export async function getBrandResources(brandId: string | null) {
   if (!brandId) {
     return {
       templates: [],
@@ -79,4 +77,4 @@ export const getBrandResources = cache(async (brandId: string | null) => {
     initialTemplate,
     initialTemplateKey: initialSummary?.key ?? null,
   };
-});
+}
