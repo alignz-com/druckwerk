@@ -962,6 +962,10 @@ export default function OrderForm({
                     <p className="text-xs text-slate-500">{tOrder("hints.addressSearch")}</p>
                   </div>
                 <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="url">{tOrder("fields.url")}</Label>
+                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
                   <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 </div>
@@ -991,10 +995,6 @@ export default function OrderForm({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="url">{tOrder("fields.url")}</Label>
-                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <div className="flex items-center justify-between gap-2">
