@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Analytics } from "@vercel/analytics/next";
-import { ChevronDown, Info } from "lucide-react";
+import { AlertCircle, ChevronDown, Info } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -59,10 +59,12 @@ const bindingFieldMap: Record<string, OverflowFieldKey> = {
   mobile: "mobile",
   url: "url",
   linkedin: "linkedin",
-  company: "addressBlock",
-  companyPrimary: "addressBlock",
-  companySecondary: "addressBlock",
-  companyLines: "addressBlock",
+};
+
+const mapBindingToField = (binding: string): OverflowFieldKey | null => {
+  if (!binding) return null;
+  if (binding.startsWith("company")) return "addressBlock";
+  return bindingFieldMap[binding as keyof typeof bindingFieldMap] ?? null;
 };
 
 type BrandAddressEntry = {
@@ -403,7 +405,7 @@ export default function OrderForm({
     const set = new Set<OverflowFieldKey>();
     const register = (fields: string[]) => {
       fields.forEach((field) => {
-        const mapped = bindingFieldMap[field];
+        const mapped = mapBindingToField(field);
         if (mapped) set.add(mapped);
       });
     };
@@ -415,13 +417,21 @@ export default function OrderForm({
   const fieldOverflowMessage = tOrder("errors.fieldOverflow");
   const fieldErrorClass = "border-red-400 focus-visible:ring-red-200 focus-visible:border-red-400";
   const getFieldTitle = (field: OverflowFieldKey) => (overflowFieldSet.has(field) ? fieldOverflowMessage : undefined);
-  const nameOverflow = overflowFieldSet.has("name");
-  const roleOverflow = overflowFieldSet.has("role");
-  const emailOverflow = overflowFieldSet.has("email");
-  const phoneOverflow = overflowFieldSet.has("phone");
-  const mobileOverflow = overflowFieldSet.has("mobile");
-  const urlOverflow = overflowFieldSet.has("url");
-  const linkedinOverflow = overflowFieldSet.has("linkedin");
+const nameOverflow = overflowFieldSet.has("name");
+const roleOverflow = overflowFieldSet.has("role");
+const emailOverflow = overflowFieldSet.has("email");
+const phoneOverflow = overflowFieldSet.has("phone");
+const mobileOverflow = overflowFieldSet.has("mobile");
+const urlOverflow = overflowFieldSet.has("url");
+const linkedinOverflow = overflowFieldSet.has("linkedin");
+const forcedBindingPrefixes = useMemo(() => {
+  const prefixes: string[] = [];
+  if (overflowFieldSet.has("addressBlock")) {
+    prefixes.push("company", "companyPrimary", "companySecondary", "companyLines");
+  }
+  return prefixes;
+}, [overflowFieldSet]);
+const addressBlockOverflow = overflowFieldSet.has("addressBlock");
   const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
 
   const getAddressBlockFromEntry = useCallback(
@@ -907,7 +917,14 @@ export default function OrderForm({
             <CardContent className="space-y-6">
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">{tOrder("fields.name")}</Label>
+                  <Label htmlFor="name" className="flex items-center gap-1">
+                    {tOrder("fields.name")}
+                    {nameOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <Input
                     id="name"
                     value={name}
@@ -918,7 +935,14 @@ export default function OrderForm({
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="role">{tOrder("fields.role")}</Label>
+                  <Label htmlFor="role" className="flex items-center gap-1">
+                    {tOrder("fields.role")}
+                    {roleOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <Input
                     id="role"
                     value={role}
@@ -929,7 +953,14 @@ export default function OrderForm({
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
+                  <Label htmlFor="phone" className="flex items-center gap-1">
+                    {tOrder("fields.phone")}
+                    {phoneOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="phone"
@@ -951,7 +982,14 @@ export default function OrderForm({
                 </div>
               </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
+                  <Label htmlFor="mobile" className="flex items-center gap-1">
+                    {tOrder("fields.mobile")}
+                    {mobileOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="mobile"
@@ -973,7 +1011,14 @@ export default function OrderForm({
                 </div>
               </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email">{tOrder("fields.email")}</Label>
+                  <Label htmlFor="email" className="flex items-center gap-1">
+                    {tOrder("fields.email")}
+                    {emailOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -987,8 +1032,13 @@ export default function OrderForm({
                 {templateHasQrCode ? (
                   <div className="grid gap-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="linkedin" className="mb-0">
+                      <Label htmlFor="linkedin" className="mb-0 flex items-center gap-1">
                         {tOrder("fields.linkedin")}
+                        {linkedinOverflow ? (
+                          <span className="inline-flex" title={fieldOverflowMessage}>
+                            <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                          </span>
+                        ) : null}
                       </Label>
                       <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
                         <Info className="h-4 w-4 text-slate-400" />
@@ -1071,7 +1121,14 @@ export default function OrderForm({
                     <p className="text-xs text-slate-500">{tOrder("hints.addressSearch")}</p>
                   </div>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="url">{tOrder("fields.url")}</Label>
+                  <Label htmlFor="url" className="flex items-center gap-1">
+                    {tOrder("fields.url")}
+                    {urlOverflow ? (
+                      <span className="inline-flex" title={fieldOverflowMessage}>
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </Label>
                   <Input
                     id="url"
                     value={url}
@@ -1118,7 +1175,14 @@ export default function OrderForm({
                 ) : null}
                 <div className="grid gap-2 sm:col-span-2">
                   <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
+                      {addressBlockOverflow ? (
+                        <span className="inline-flex" title={fieldOverflowMessage}>
+                          <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                        </span>
+                      ) : null}
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
@@ -1135,8 +1199,14 @@ export default function OrderForm({
                     onChange={(e) => setAddressBlock(e.target.value)}
                     rows={4}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
-                    className={addressBlockHasOverflow ? "border-red-300 focus-visible:ring-red-200" : undefined}
-                    title={addressBlockHasOverflow ? tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES }) : undefined}
+                    className={addressBlockOverflow ? "border-red-300 focus-visible:ring-red-200" : undefined}
+                    title={
+                      addressBlockHasOverflow
+                        ? tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES })
+                        : addressBlockOverflow
+                          ? fieldOverflowMessage
+                          : undefined
+                    }
                   />
                   <p className={`text-xs ${addressBlockHasOverflow ? "text-red-600" : "text-slate-500"}`}>
                     {addressBlockHasOverflow
@@ -1222,7 +1292,7 @@ export default function OrderForm({
                             addressFields={previewAddressFields}
                             onReadyChange={setFrontPreviewReady}
                             onFieldOverflowChange={setFrontOverflowFields}
-                            forceErrorState={addressBlockHasOverflow}
+                            forcedBindingPrefixes={forcedBindingPrefixes}
                           />
                         }
                         back={
@@ -1240,7 +1310,7 @@ export default function OrderForm({
                             addressFields={previewAddressFields}
                             onReadyChange={setBackPreviewReady}
                             onFieldOverflowChange={setBackOverflowFields}
-                            forceErrorState={addressBlockHasOverflow}
+                            forcedBindingPrefixes={forcedBindingPrefixes}
                           />
                         }
                         className="h-full w-full"
@@ -1316,7 +1386,7 @@ export default function OrderForm({
                           onOverflowChange={setFrontOverflow}
                           addressFields={previewAddressFields}
                           onFieldOverflowChange={setFrontOverflowFields}
-                          forceErrorState={addressBlockHasOverflow}
+                          forcedBindingPrefixes={forcedBindingPrefixes}
                         />
                       }
                       back={
@@ -1333,7 +1403,7 @@ export default function OrderForm({
                           onOverflowChange={setBackOverflow}
                           addressFields={previewAddressFields}
                           onFieldOverflowChange={setBackOverflowFields}
-                          forceErrorState={addressBlockHasOverflow}
+                          forcedBindingPrefixes={forcedBindingPrefixes}
                         />
                       }
                     />

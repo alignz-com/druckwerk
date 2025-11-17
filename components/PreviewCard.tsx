@@ -134,7 +134,7 @@ export type Props = {
   };
   onReadyChange?: (ready: boolean) => void;
   onFieldOverflowChange?: (fields: string[]) => void;
-  forceErrorState?: boolean;
+  forcedBindingPrefixes?: string[];
 };
 
 /* ---------- Geometrie exakt wie im PDF (mm) ---------- */
@@ -555,7 +555,7 @@ function renderStackElement(
   context: RenderContext,
   key: string,
   reportOverflow?: (fields?: string[]) => void,
-  forceErrorColor = false,
+  shouldForceBinding?: (binding: string) => boolean,
 ): ReactNode | null {
   if (element.visibility && element.visibility.binding) {
     if (!evaluateVisibility(element.visibility, context)) return null;
@@ -582,6 +582,9 @@ function renderStackElement(
   let cursorY = 0;
   const nodes = preparedItems.map((item, idx) => {
     if (item.kind === "text") {
+      const forceColor =
+        shouldForceBinding &&
+        item.prepared.bindings.some((binding) => shouldForceBinding(binding));
       const rendered = renderTextElement(
         item.prepared,
         context,
@@ -589,7 +592,7 @@ function renderStackElement(
         0,
         cursorY,
         reportOverflow,
-        forceErrorColor,
+        Boolean(forceColor),
       );
       cursorY += item.prepared.lineHeightMm + (idx < preparedItems.length - 1 ? gap : 0);
       return rendered;
@@ -629,9 +632,9 @@ function renderDesignElements(
   elements: DesignElement[] | undefined,
   context: RenderContext,
   keyPrefix = "el",
-  options?: { forceErrorColor?: boolean },
+  options?: { forceBindingPrefixes?: string[] },
 ): { nodes: ReactNode[]; overflowFields: string[] } {
-  const forceErrorColor = options?.forceErrorColor ?? false;
+  const forceBindingPrefixes = options?.forceBindingPrefixes ?? [];
   const nodes: ReactNode[] = [];
   if (!elements?.length) {
     return { nodes, overflowFields: [] };
@@ -659,12 +662,21 @@ function renderDesignElements(
       case "text": {
         const prepared = prepareTextElement(element, context);
         if (prepared) {
-          nodes.push(renderTextElement(prepared, context, key, 0, 0, markOverflow, forceErrorColor));
+          const shouldForce = prepared.bindings.some((binding) =>
+            forceBindingPrefixes.some((prefix) => binding === prefix || binding.startsWith(`${prefix}.`)),
+          );
+          nodes.push(renderTextElement(prepared, context, key, 0, 0, markOverflow, shouldForce));
         }
         break;
       }
       case "stack": {
-        const stackNode = renderStackElement(element, context, key, markOverflow, forceErrorColor);
+        const stackNode = renderStackElement(
+          element,
+          context,
+          key,
+          markOverflow,
+          (binding) => forceBindingPrefixes.some((prefix) => binding === prefix || binding.startsWith(`${prefix}.`)),
+        );
         if (stackNode) nodes.push(stackNode);
         break;
       }
@@ -805,7 +817,7 @@ export function BusinessCardFront({
   addressFields: _addressFields,
   onReadyChange,
   onFieldOverflowChange,
-  forceErrorState = false,
+  forcedBindingPrefixes = [],
 }: Props) {
   const { preview: previewCfg } = getFrontConfig(template);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
@@ -890,14 +902,11 @@ export function BusinessCardFront({
     [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, displayFrontUrl, displayFrontLinkedin],
   );
   const { nodes: frontNodes, overflowFields: frontOverflowFields } = useMemo(() => {
-    const result = renderDesignElements(
-      design.front,
-      frontContext,
-      "front",
-      { forceErrorColor: forceErrorState },
-    );
+    const result = renderDesignElements(design.front, frontContext, "front", {
+      forceBindingPrefixes: forcedBindingPrefixes,
+    });
     return result;
-  }, [design.front, frontContext, forceErrorState]);
+  }, [design.front, frontContext, forcedBindingPrefixes]);
   const frontOverflow = frontOverflowFields.length > 0;
   useEffect(() => {
     onOverflowChange?.(frontOverflow);
@@ -953,7 +962,7 @@ export function BusinessCardBack({
   addressFields,
   onReadyChange,
   onFieldOverflowChange,
-  forceErrorState = false,
+  forcedBindingPrefixes = [],
 }: Props) {
   const normalized = useMemo(() => normalizeAddress(company), [company]);
   const { org: parsedOrg, label, street: parsedStreet, postalCode: parsedPostal, city: parsedCity, country: parsedCountry } = normalized;
@@ -1065,14 +1074,11 @@ export function BusinessCardBack({
     [name, role, email, phone, mobile, company, displayBackUrl, displayBackLinkedin, qrData, backAddressContext],
   );
   const { nodes: backNodes, overflowFields: backOverflowFields } = useMemo(() => {
-    const result = renderDesignElements(
-      design.back,
-      backContext,
-      "back",
-      { forceErrorColor: forceErrorState },
-    );
+    const result = renderDesignElements(design.back, backContext, "back", {
+      forceBindingPrefixes: forcedBindingPrefixes,
+    });
     return result;
-  }, [design.back, backContext, forceErrorState]);
+  }, [design.back, backContext, forcedBindingPrefixes]);
   const backOverflow = backOverflowFields.length > 0;
   useEffect(() => {
     onOverflowChange?.(backOverflow);
