@@ -120,6 +120,15 @@ type BrandResourcePayload = {
   brandId: string | null;
 };
 
+type ProfilePrefill = {
+  name?: string | null;
+  jobTitle?: string | null;
+  email?: string | null;
+  businessPhone?: string | null;
+  mobilePhone?: string | null;
+  url?: string | null;
+};
+
 const brandResourcesFetcher = async (brandId: string): Promise<BrandResourcePayload> => {
   const params = new URLSearchParams({ brandId });
   const response = await fetch(`/api/orders/brand-data?${params.toString()}`, { cache: "no-store" });
@@ -137,6 +146,7 @@ export type OrderFormProps = {
   initialTemplate?: ResolvedTemplate | null;
   initialAddresses?: BrandAddressEntry[];
   initialTemplateKey?: string | null;
+  initialProfile?: ProfilePrefill | null;
 };
 
 export default function OrderForm({
@@ -146,6 +156,7 @@ export default function OrderForm({
   initialTemplate,
   initialAddresses = [],
   initialTemplateKey = null,
+  initialProfile = null,
 }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -461,16 +472,52 @@ export default function OrderForm({
     return formatDeliveryDate(target, deliveryLocale);
   }, [deliveryTime, deliveryLocale]);
 
+  const resolvedProfile = useMemo<ProfilePrefill | null>(() => {
+    const merged: ProfilePrefill = { ...(initialProfile ?? {}) };
+
+    const assignIfMissing = (key: keyof ProfilePrefill, value?: string | null) => {
+      const existing = merged[key];
+      const hasExistingValue =
+        typeof existing === "string" ? existing.trim().length > 0 : Boolean(existing);
+      if (hasExistingValue) return;
+      if (!value) return;
+      const normalized = typeof value === "string" ? value.trim() : value;
+      if (!normalized) return;
+      merged[key] = normalized;
+    };
+
+    if (sessionUser) {
+      assignIfMissing("name", sessionUser.name ?? null);
+      assignIfMissing("jobTitle", sessionUser.jobTitle ?? null);
+      assignIfMissing("email", sessionUser.email ?? null);
+      assignIfMissing("businessPhone", sessionUser.businessPhone ?? null);
+      assignIfMissing("mobilePhone", sessionUser.mobilePhone ?? null);
+      assignIfMissing("url", sessionUser.url ?? null);
+    }
+
+    const hasValue = (["name", "jobTitle", "email", "businessPhone", "mobilePhone", "url"] as (keyof ProfilePrefill)[]).some(
+      (field) => {
+        const value = merged[field];
+        if (typeof value === "string") return value.trim().length > 0;
+        return Boolean(value);
+      },
+    );
+
+    return hasValue ? merged : null;
+  }, [initialProfile, sessionUser]);
+
   useEffect(() => {
-    if (!sessionUser || hasPrefilledProfile.current) return;
-    if (sessionUser.name) setName(sessionUser.name);
-    if (sessionUser.jobTitle) setRole(sessionUser.jobTitle);
-    if (sessionUser.email) setEmail(sessionUser.email);
-    if (sessionUser.businessPhone) setPhone(sessionUser.businessPhone);
-    if (sessionUser.mobilePhone) setMobile(sessionUser.mobilePhone);
-    if (sessionUser.url) setUrl((prev) => prev || sessionUser.url || "");
+    if (!resolvedProfile || hasPrefilledProfile.current) return;
+    if (resolvedProfile.name) setName(resolvedProfile.name);
+    if (resolvedProfile.jobTitle) setRole(resolvedProfile.jobTitle);
+    if (resolvedProfile.email) setEmail(resolvedProfile.email);
+    if (resolvedProfile.businessPhone) setPhone(resolvedProfile.businessPhone);
+    if (resolvedProfile.mobilePhone) setMobile(resolvedProfile.mobilePhone);
+    if (resolvedProfile.url) {
+      setUrl((prev) => (prev ? prev : resolvedProfile.url ?? ""));
+    }
     hasPrefilledProfile.current = true;
-  }, [sessionUser]);
+  }, [resolvedProfile]);
 
   useEffect(() => {
     if (!email) return;

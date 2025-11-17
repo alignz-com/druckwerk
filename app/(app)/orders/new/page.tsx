@@ -21,17 +21,25 @@ export default async function NewOrderPage() {
   const userPromise = userId
     ? prisma.user.findUnique({
         where: { id: userId },
-        select: { brandId: true },
+        select: {
+          brandId: true,
+          name: true,
+          email: true,
+          jobTitle: true,
+          mobilePhone: true,
+          businessPhone: true,
+        },
       })
     : Promise.resolve(null);
 
   const dbUser = await userPromise;
   let preferredBrandId = dbUser?.brandId ?? session.user.brandId ?? null;
 
-  if (!preferredBrandId && session.user.email) {
+  const normalizedEmail = dbUser?.email ?? session.user.email ?? null;
+  if (!preferredBrandId && normalizedEmail) {
     const ensured = await ensureBrandAssignmentForUser({
       userId,
-      email: session.user.email,
+      email: normalizedEmail,
     });
     if (ensured) {
       preferredBrandId = ensured;
@@ -59,6 +67,15 @@ export default async function NewOrderPage() {
     initialTemplateKey,
   } = await getBrandResources(initialBrandId ?? null);
 
+  const initialProfile = {
+    name: dbUser?.name ?? session.user.name ?? null,
+    jobTitle: dbUser?.jobTitle ?? session.user.jobTitle ?? null,
+    email: normalizedEmail,
+    businessPhone: dbUser?.businessPhone ?? session.user.businessPhone ?? null,
+    mobilePhone: dbUser?.mobilePhone ?? session.user.mobilePhone ?? null,
+    url: session.user.url ?? null,
+  };
+
   return (
     <OrderForm
       availableBrands={brandOptions}
@@ -67,6 +84,7 @@ export default async function NewOrderPage() {
       initialTemplate={initialTemplate}
       initialTemplateKey={initialTemplateKey}
       initialAddresses={normalizedAddresses}
+      initialProfile={initialProfile}
     />
   );
 }
