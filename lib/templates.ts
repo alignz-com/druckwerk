@@ -93,6 +93,7 @@ export type TemplateSummary = {
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
   const cloned = clone(def) as TemplateDefinition;
   const { paperStock, ...rest } = cloned;
+  const normalizedPhoto = normalizePhotoSlot(def.config?.photo ?? null);
   return {
     ...rest,
     assets: rest.assets ? clone(rest.assets) : [],
@@ -100,8 +101,8 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
     fonts: [],
     paperStock: paperStock ? { ...paperStock } : null,
     hasQrCode: detectHasQrCode(def.hasQrCode ?? null, def.config),
-    hasPhotoSlot: Boolean(def.hasPhotoSlot ?? Boolean(def.config?.photo)),
-    photoSlot: normalizePhotoSlot(def.config?.photo ?? null),
+    hasPhotoSlot: detectHasPhotoSlot(def.hasPhotoSlot ?? null, def.config),
+    photoSlot: normalizedPhoto,
   };
 }
 
@@ -112,6 +113,11 @@ function sortTemplates(templates: Iterable<ResolvedTemplate>) {
 function detectHasQrCode(explicit?: boolean | null, config?: TemplateConfig | null): boolean {
   if (typeof explicit === "boolean") return explicit;
   return (config?.back?.mode ?? null) === "qr";
+}
+
+function detectHasPhotoSlot(explicit?: boolean | null, config?: TemplateConfig | null): boolean {
+  if (typeof explicit === "boolean") return explicit;
+  return Boolean(normalizePhotoSlot(config?.photo ?? null));
 }
 
 function sortSummaries(summaries: Iterable<TemplateSummary>) {
@@ -187,7 +193,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       description: tpl.description ?? null,
       orderIndex: 0,
       hasQrCode: detectHasQrCode(tpl.hasQrCode, tpl.config),
-      hasPhotoSlot: Boolean(tpl.hasPhotoSlot ?? tpl.config?.photo),
+      hasPhotoSlot: detectHasPhotoSlot(tpl.hasPhotoSlot, tpl.config),
     })),
   );
 }
@@ -260,6 +266,8 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   const previewBackAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_BACK);
   const designFromConfig = extractDesignFromConfigSource(tpl.config);
   const design = designFromConfig ?? (await loadTemplateDesign(tpl.assets, fallback?.design));
+  const photoSlot = normalizePhotoSlot(mergedConfig.photo ?? null);
+  const hasPhotoSlot = detectHasPhotoSlot(tpl.hasPhotoSlot ?? null, mergedConfig);
   const fonts: ResolvedTemplateFont[] = await Promise.all(
     tpl.fonts
       .filter((link) => link.fontVariant && link.fontVariant.fontFamily)
@@ -320,6 +328,8 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     fonts,
     paperStock: paperStockFromDb ?? (fallback?.paperStock ? { ...fallback.paperStock } : null),
     hasQrCode: detectHasQrCode(tpl.hasQrCode, mergedConfig),
+    hasPhotoSlot,
+    photoSlot,
   };
 
   if (!resolved.pdfPath) {
@@ -361,9 +371,12 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
 
     if (assignment?.template) {
       const resolved = await resolveTemplateFromDb(assignment.template, DEFAULT_TEMPLATES[key]);
+      const config = mergeConfigs(resolved.config, assignment.configOverride ?? undefined);
       return {
         ...resolved,
-        config: mergeConfigs(resolved.config, assignment.configOverride ?? undefined),
+        config,
+        hasPhotoSlot: detectHasPhotoSlot(assignment.template.hasPhotoSlot ?? resolved.hasPhotoSlot, config),
+        photoSlot: normalizePhotoSlot(config.photo ?? null),
       };
     }
 
