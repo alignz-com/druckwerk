@@ -262,7 +262,7 @@ export default function OrderForm({
     if (!exists && defaultKey) {
       setSelectedTemplateKey(defaultKey);
     }
-  }, [brandData.initialTemplateKey, brandData.brandId, templates, currentBrandId, selectedTemplateKey]);
+  }, [brandData.initialTemplateKey, brandData.brandId, templates, currentBrandId]);
 
   useEffect(() => {
     if (!selectedSummaryKey || templateLoaded) return;
