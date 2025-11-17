@@ -72,9 +72,11 @@ export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock"> & {
 };
 
 export type TemplateSummary = {
+  id: string;
   key: string;
   label: string;
   description: string | null;
+  orderIndex: number;
 };
 
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
@@ -94,7 +96,12 @@ function sortTemplates(templates: Iterable<ResolvedTemplate>) {
 }
 
 function sortSummaries(summaries: Iterable<TemplateSummary>) {
-  return Array.from(summaries).sort((a, b) => a.label.localeCompare(b.label));
+  return Array.from(summaries).sort((a, b) => {
+    if (a.orderIndex !== b.orderIndex) {
+      return a.orderIndex - b.orderIndex;
+    }
+    return a.label.localeCompare(b.label);
+  });
 }
 
 export async function listTemplateSummariesForBrand(brandId?: string | null): Promise<TemplateSummary[]> {
@@ -104,33 +111,30 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       include: {
         template: {
           select: {
+            id: true,
             key: true,
             label: true,
             description: true,
           },
         },
       },
+      orderBy: [{ orderIndex: "asc" }, { assignedAt: "asc" }],
     });
 
-    const map = new Map<string, TemplateSummary>();
-    for (const assignment of assignments) {
-      const tpl = assignment.template;
-      if (!tpl) continue;
-      map.set(tpl.key, {
-        key: tpl.key,
-        label: tpl.label,
-        description: tpl.description ?? null,
-      });
-    }
-    if (map.size > 0) {
-      return sortSummaries(map.values());
-    }
-
-    return [];
+    return assignments
+      .filter((assignment) => assignment.template)
+      .map((assignment) => ({
+        id: assignment.template!.id,
+        key: assignment.template!.key,
+        label: assignment.template!.label,
+        description: assignment.template!.description ?? null,
+        orderIndex: assignment.orderIndex ?? 0,
+      }));
   }
 
   const dbTemplates = await prisma.template.findMany({
     select: {
+      id: true,
       key: true,
       label: true,
       description: true,
@@ -139,18 +143,22 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
   });
 
   if (dbTemplates.length > 0) {
-    return dbTemplates.map((tpl) => ({
+    return dbTemplates.map((tpl, index) => ({
+      id: tpl.id,
       key: tpl.key,
       label: tpl.label,
       description: tpl.description ?? null,
+      orderIndex: index,
     }));
   }
 
   return sortSummaries(
     DEFAULT_TEMPLATE_LIST.map((tpl) => ({
+      id: tpl.key,
       key: tpl.key,
       label: tpl.label,
       description: tpl.description ?? null,
+      orderIndex: 0,
     })),
   );
 }

@@ -116,6 +116,8 @@ type BrandResourcePayload = {
   templates: TemplateSummary[];
   addresses: BrandAddressEntry[];
   initialTemplate: ResolvedTemplate | null;
+  initialTemplateKey: string | null;
+  brandId: string | null;
 };
 
 const brandResourcesFetcher = async (brandId: string): Promise<BrandResourcePayload> => {
@@ -134,6 +136,7 @@ export type OrderFormProps = {
   initialTemplateSummaries: TemplateSummary[];
   initialTemplate?: ResolvedTemplate | null;
   initialAddresses?: BrandAddressEntry[];
+  initialTemplateKey?: string | null;
 };
 
 export default function OrderForm({
@@ -142,6 +145,7 @@ export default function OrderForm({
   initialTemplateSummaries,
   initialTemplate,
   initialAddresses = [],
+  initialTemplateKey = null,
 }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -152,7 +156,8 @@ export default function OrderForm({
   const t = useTranslations();
   const tOrder = useTranslations("orderForm");
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(initialBrandId ?? null);
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(initialTemplateSummaries[0]?.key ?? "");
+  const initialKey = initialTemplateKey ?? initialTemplateSummaries[0]?.key ?? "";
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(initialKey);
   const [templateDetails, setTemplateDetails] = useState<Record<string, ResolvedTemplate>>(() => {
     if (initialTemplate) {
       return { [initialTemplate.key]: initialTemplate };
@@ -177,15 +182,17 @@ export default function OrderForm({
       templates: initialTemplateSummaries,
       addresses: initialAddresses,
       initialTemplate: initialTemplate ?? null,
+      initialTemplateKey: initialTemplateKey ?? initialTemplateSummaries[0]?.key ?? null,
+      brandId: initialBrandId ?? null,
     }),
-    [initialTemplateSummaries, initialAddresses, initialTemplate],
+    [initialTemplateSummaries, initialAddresses, initialTemplate, initialTemplateKey, initialBrandId],
   );
 
   useEffect(() => {
-    if (initialBrandId && initialBrandData.templates.length >= 0) {
-      queryClient.setQueryData(["brand-resources", initialBrandId], initialBrandData);
+    if (initialBrandData.brandId) {
+      queryClient.setQueryData(["brand-resources", initialBrandData.brandId], initialBrandData);
     }
-  }, [initialBrandId, initialBrandData, queryClient]);
+  }, [initialBrandData, queryClient]);
 
   const brandQuery = useQuery<BrandResourcePayload>({
     queryKey: ["brand-resources", currentBrandId ?? "none"],
@@ -194,7 +201,13 @@ export default function OrderForm({
   });
 
   const brandData: BrandResourcePayload = currentBrandId
-    ? brandQuery.data ?? { templates: [], addresses: [], initialTemplate: null }
+    ? brandQuery.data ?? {
+        templates: [],
+        addresses: [],
+        initialTemplate: null,
+        initialTemplateKey: null,
+        brandId: currentBrandId,
+      }
     : initialBrandData;
 
   const templates = brandData.templates;
@@ -222,16 +235,34 @@ export default function OrderForm({
   const templateLoaded = selectedSummaryKey ? Boolean(templateDetails[selectedSummaryKey]) : false;
   const templateIsLoading = selectedSummaryKey ? templateLoadingKey === selectedSummaryKey : false;
 
+  const lastBrandIdRef = useRef<string | null>(initialBrandData.brandId ?? null);
+
   useEffect(() => {
     if (templates.length === 0) {
       if (selectedTemplateKey) setSelectedTemplateKey("");
       return;
     }
-    const exists = templates.some((tpl) => tpl.key === selectedTemplateKey);
-    if (!exists) {
-      setSelectedTemplateKey(templates[0]!.key);
+
+    const brandIdentity = brandData.brandId ?? currentBrandId ?? null;
+    const availableKeys = templates.map((tpl) => tpl.key);
+    const defaultKey =
+      (brandData.initialTemplateKey && availableKeys.includes(brandData.initialTemplateKey))
+        ? brandData.initialTemplateKey
+        : availableKeys[0] ?? "";
+
+    if (brandIdentity && brandIdentity !== lastBrandIdRef.current) {
+      lastBrandIdRef.current = brandIdentity;
+      if (defaultKey) {
+        setSelectedTemplateKey(defaultKey);
+      }
+      return;
     }
-  }, [templates, selectedTemplateKey]);
+
+    const exists = availableKeys.includes(selectedTemplateKey);
+    if (!exists && defaultKey) {
+      setSelectedTemplateKey(defaultKey);
+    }
+  }, [brandData.initialTemplateKey, brandData.brandId, templates, currentBrandId, selectedTemplateKey]);
 
   useEffect(() => {
     if (!selectedSummaryKey || templateLoaded) return;

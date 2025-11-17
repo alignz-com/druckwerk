@@ -746,6 +746,10 @@ export const messages = {
               title: "Brand details",
               description: "Update core information used throughout the admin portal.",
             },
+            templates: {
+              title: "Templates",
+              description: "Order the assigned templates and pick the default selection for the order form.",
+            },
             addresses: {
               title: "Addresses",
               description: "Configure reusable shipping and billing destinations.",
@@ -764,6 +768,19 @@ export const messages = {
             templates: "Templates",
             orders: "Orders",
             addresses: "Addresses",
+          },
+          templates: {
+            disabled: "Save the brand before managing templates.",
+            empty: "No templates linked yet.",
+            defaultLabel: "Default",
+            noDefault: "Clear default",
+            moveUp: "Move up",
+            moveDown: "Move down",
+            save: "Save template order",
+            saving: "Saving…",
+            saveSuccess: "Template settings updated.",
+            saveError: "Could not update template settings.",
+            reset: "Reset",
           },
           metadata: {
             createdAt: "Created",
@@ -1587,6 +1604,10 @@ export const messages = {
               title: "Markendetails",
               description: "Aktualisiere die wichtigsten Informationen dieser Marke.",
             },
+            templates: {
+              title: "Templates",
+              description: "Lege fest, in welcher Reihenfolge die Templates erscheinen und welches vorausgewählt wird.",
+            },
             addresses: {
               title: "Adressen",
               description: "Verwalte wiederverwendbare Liefer- und Rechnungsadressen.",
@@ -1605,6 +1626,19 @@ export const messages = {
             templates: "Templates",
             orders: "Bestellungen",
             addresses: "Adressen",
+          },
+          templates: {
+            disabled: "Speichere die Marke, bevor du Templates verwaltest.",
+            empty: "Noch keine Templates verknüpft.",
+            defaultLabel: "Standard",
+            noDefault: "Kein Standard",
+            moveUp: "Nach oben",
+            moveDown: "Nach unten",
+            save: "Template-Reihenfolge speichern",
+            saving: "Speichern…",
+            saveSuccess: "Template-Einstellungen aktualisiert.",
+            saveError: "Templates konnten nicht aktualisiert werden.",
+            reset: "Zurücksetzen",
           },
           metadata: {
             createdAt: "Erstellt",

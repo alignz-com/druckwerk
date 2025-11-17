@@ -21,6 +21,7 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import BrandTemplateSection from "./BrandTemplateSection";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +66,7 @@ const emptyAddress = (): BrandAddressForm => ({
 });
 
 export default function BrandDetailSheet({
-  brand,
+  brand: initialBrand,
   open,
   onOpenChange,
   onBrandUpdated,
@@ -78,13 +79,18 @@ export default function BrandDetailSheet({
     if (!value) return "—";
     return formatDateTime(value, dateLocale, { dateStyle: "medium", timeStyle: "short" });
   };
-  const [form, setForm] = useState<BrandForm>(() => (brand ? mapBrandToForm(brand) : emptyForm()));
+  const [brand, setBrand] = useState(initialBrand);
+  const [form, setForm] = useState<BrandForm>(() => (initialBrand ? mapBrandToForm(initialBrand) : emptyForm()));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [domainInput, setDomainInput] = useState("");
   const [isDomainSubmitting, setIsDomainSubmitting] = useState(false);
   const [domainError, setDomainError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBrand(initialBrand);
+  }, [initialBrand]);
 
   useEffect(() => {
     if (!open) {
@@ -109,6 +115,11 @@ export default function BrandDetailSheet({
 
   const [addressSearch, setAddressSearch] = useState("");
   const [addressSheetState, setAddressSheetState] = useState<AddressSheetState | null>(null);
+
+  const applyBrandUpdate = (updated: AdminBrandSummary) => {
+    setBrand(updated);
+    onBrandUpdated(updated);
+  };
 
   const statItems =
     brand?.id
@@ -222,7 +233,7 @@ export default function BrandDetailSheet({
 
       const updatedBrand = data.brand as AdminBrandSummary;
       setForm(mapBrandToForm(updatedBrand));
-      onBrandUpdated(updatedBrand);
+      applyBrandUpdate(updatedBrand);
       setFeedback(t("toast.updated", { name: updatedBrand.name }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("toast.updateFailed"));
@@ -276,7 +287,7 @@ export default function BrandDetailSheet({
       }
 
       const updatedBrand = data.brand as AdminBrandSummary;
-      onBrandUpdated(updatedBrand);
+      applyBrandUpdate(updatedBrand);
       setForm(mapBrandToForm(updatedBrand));
       setFeedback(t("domains.success.added", { domain: value }));
       setDomainInput("");
@@ -305,7 +316,7 @@ export default function BrandDetailSheet({
       }
 
       const updatedBrand = data.brand as AdminBrandSummary;
-      onBrandUpdated(updatedBrand);
+      applyBrandUpdate(updatedBrand);
       setForm(mapBrandToForm(updatedBrand));
       setFeedback(t("domains.success.removed"));
     } catch (err) {
@@ -361,11 +372,11 @@ export default function BrandDetailSheet({
                     </div>
                   ) : null}
 
-                  <section className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
-                      <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
-                    </div>
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
+          <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
+        </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="brand-name-detail">{t("form.name")}</Label>
@@ -410,8 +421,17 @@ export default function BrandDetailSheet({
                           onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
                         />
                       </div>
-                    </div>
-                  </section>
+        </div>
+      </section>
+
+      {brand ? (
+        <BrandTemplateSection
+          brandId={brand.id}
+          templates={brand.templates}
+          defaultTemplateId={brand.defaultTemplateId}
+          onBrandUpdated={onBrandUpdated}
+        />
+      ) : null}
 
                   <Separator />
 
@@ -506,11 +526,23 @@ export default function BrandDetailSheet({
                         </TableBody>
                       </Table>
                     </div>
-                  </section>
+          </section>
 
-                  <Separator />
+          {brand ? (
+            <>
+              <BrandTemplateSection
+                brandId={brand.id}
+                templates={brand.templates}
+                defaultTemplateId={brand.defaultTemplateId}
+                onBrandUpdated={applyBrandUpdate}
+              />
+              <Separator />
+            </>
+          ) : (
+            <Separator />
+          )}
 
-                  <section className="space-y-4">
+          <section className="space-y-4">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h3>
                       <p className="text-xs text-slate-500">{t("domains.description")}</p>

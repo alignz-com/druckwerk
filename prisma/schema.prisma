@@ -128,6 +128,8 @@ model Brand {
   users     User[]
   orders    Order[]
   templates BrandTemplate[]
+  defaultTemplateId String?
+  defaultTemplate   Template?      @relation("BrandDefaultTemplate", fields: [defaultTemplateId], references: [id])
   addresses BrandAddress[]
   domains   BrandDomain[]
   createdAt DateTime        @default(now())
@@ -182,6 +184,7 @@ model Template {
   pcmCode          String?
   orders           Order[]
   assignments      BrandTemplate[]
+  brandDefaults    Brand[]         @relation("BrandDefaultTemplate")
   assets           TemplateAsset[]
   fonts            TemplateFont[]
   paperStock       PaperStock?     @relation(fields: [paperStockId], references: [id])
@@ -207,11 +210,13 @@ model BrandTemplate {
   templateId     String
   assignedAt     DateTime @default(now())
   configOverride Json?
+  orderIndex     Int      @default(0)
 
   brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([brandId, templateId])
+  @@index([brandId, orderIndex])
 }
 
 model Order {

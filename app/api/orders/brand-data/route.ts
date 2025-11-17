@@ -34,11 +34,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { templates, addresses, initialTemplate } = await getBrandResources(resolvedBrandId);
+  const { templates, addresses, initialTemplate, initialTemplateKey, brandId } =
+    await getBrandResources(resolvedBrandId);
 
   return NextResponse.json({
     templates,
     addresses,
     initialTemplate,
+    initialTemplateKey,
+    brandId,
   });
 }

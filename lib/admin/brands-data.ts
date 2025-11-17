@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
+export type AdminBrandTemplateLink = {
+  assignmentId: string;
+  templateId: string;
+  templateKey: string;
+  templateLabel: string;
+  orderIndex: number;
+};
+
 export type AdminBrandAddress = {
   id: string;
   label: string | null;
@@ -24,6 +32,8 @@ export type AdminBrandSummary = {
   contactPhone: string | null;
   templateCount: number;
   orderCount: number;
+  defaultTemplateId: string | null;
+  templates: AdminBrandTemplateLink[];
   addresses: AdminBrandAddress[];
   domains: { id: string; domain: string }[];
   createdAt: string;
@@ -31,7 +41,18 @@ export type AdminBrandSummary = {
 };
 
 const brandInclude = {
-  templates: true,
+  templates: {
+    include: {
+      template: {
+        select: {
+          id: true,
+          key: true,
+          label: true,
+        },
+      },
+    },
+    orderBy: [{ orderIndex: "asc" as const }, { assignedAt: "asc" as const }],
+  },
   orders: { select: { id: true } },
   addresses: {
     orderBy: [{ createdAt: "asc" as const }],
@@ -42,7 +63,12 @@ const brandInclude = {
 };
 
 type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
-  templates: { id: string }[];
+  templates: {
+    id: string;
+    templateId: string;
+    orderIndex: number;
+    template: { id: string; key: string; label: string | null } | null;
+  }[];
   orders: { id: string }[];
   addresses: {
     id: string;
@@ -76,6 +102,16 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
     contactPhone: brand.contactPhone ?? null,
     templateCount: brand.templates.length,
     orderCount: brand.orders.length,
+    defaultTemplateId: brand.defaultTemplateId ?? null,
+    templates: brand.templates
+      .map((assignment) => ({
+        assignmentId: assignment.id,
+        templateId: assignment.templateId,
+        templateKey: assignment.template?.key ?? "",
+        templateLabel: assignment.template?.label ?? assignment.template?.key ?? assignment.templateId,
+        orderIndex: assignment.orderIndex ?? 0,
+      }))
+      .sort((a, b) => a.orderIndex - b.orderIndex),
     addresses: brand.addresses.map((address) => ({
       id: address.id,
       label: address.label ?? null,

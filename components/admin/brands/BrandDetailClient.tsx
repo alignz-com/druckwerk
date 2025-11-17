@@ -20,6 +20,7 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import BrandTemplateSection from "./BrandTemplateSection";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 export type BrandDetailClientProps = {
@@ -70,12 +71,13 @@ const emptyAddress = (): BrandAddressForm => ({
 export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   const router = useRouter();
   const t = useTranslations("admin.brands");
+  const [brandSnapshot, setBrandSnapshot] = useState(brand);
   const { locale } = useLocale();
   const dateLocale = locale === "de" ? "de-AT" : "en-GB";
   const formatTimestamp = (value: string | Date | null | undefined) =>
     value ? formatDateTime(value, dateLocale, { dateStyle: "medium", timeStyle: "short" }) : "—";
-  const mode: "create" | "edit" = brand ? "edit" : "create";
-  const [form, setForm] = useState<BrandForm>(() => (brand ? mapBrandToForm(brand) : emptyForm()));
+  const mode: "create" | "edit" = brandSnapshot ? "edit" : "create";
+  const [form, setForm] = useState<BrandForm>(() => (brandSnapshot ? mapBrandToForm(brandSnapshot) : emptyForm()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addressSearch, setAddressSearch] = useState("");
@@ -84,15 +86,17 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   useEffect(() => {
     if (brand) {
       setForm(mapBrandToForm(brand));
+      setBrandSnapshot(brand);
     } else {
       setForm(emptyForm());
+      setBrandSnapshot(null);
     }
   }, [brand]);
 
   const addressesCount = form.addresses.length;
 
   const headerTitle =
-    mode === "create" ? t("dialog.createTitle") : t("dialog.editTitle", { name: brand?.name ?? "" });
+    mode === "create" ? t("dialog.createTitle") : t("dialog.editTitle", { name: brandSnapshot?.name ?? "" });
 
   const handleFieldChange = (field: keyof Omit<BrandForm, "id" | "addresses">, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -209,12 +213,12 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   };
 
   const deleteBrand = async () => {
-    if (!brand?.id) return;
+    if (!brandSnapshot?.id) return;
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/brands/${brand.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/admin/brands/${brandSnapshot.id}`, { method: "DELETE" });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data?.error ?? "Delete failed");
@@ -252,13 +256,13 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
   }, [form.addresses, normalizedAddressSearch]);
 
   const stats = useMemo(() => {
-    if (!brand) return null;
+    if (!brandSnapshot) return null;
     return [
-      { label: t("detail.stats.templates"), value: brand.templateCount },
-      { label: t("detail.stats.orders"), value: brand.orderCount },
+      { label: t("detail.stats.templates"), value: brandSnapshot.templateCount },
+      { label: t("detail.stats.orders"), value: brandSnapshot.orderCount },
       { label: t("detail.stats.addresses"), value: addressesCount },
     ];
-  }, [addressesCount, brand, t]);
+  }, [addressesCount, brandSnapshot, t]);
 
   return (
     <form
@@ -358,7 +362,19 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
             </div>
           </section>
 
-          <Separator />
+          {brandSnapshot ? (
+            <>
+              <BrandTemplateSection
+                brandId={brandSnapshot.id}
+                templates={brandSnapshot.templates}
+                defaultTemplateId={brandSnapshot.defaultTemplateId}
+                onBrandUpdated={(next) => setBrandSnapshot(next)}
+              />
+              <Separator />
+            </>
+          ) : (
+            <Separator />
+          )}
 
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -479,20 +495,20 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                     <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       {t("detail.metadata.createdAt")}
                     </span>
-                    <p className="text-sm text-slate-700">{formatTimestamp(brand.createdAt)}</p>
+                    <p className="text-sm text-slate-700">{brandSnapshot ? formatTimestamp(brandSnapshot.createdAt) : "—"}</p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       {t("detail.metadata.updatedAt")}
                     </span>
-                    <p className="text-sm text-slate-700">{formatTimestamp(brand.updatedAt)}</p>
+                    <p className="text-sm text-slate-700">{brandSnapshot ? formatTimestamp(brandSnapshot.updatedAt) : "—"}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     {t("form.slug")}
                   </span>
-                  <Badge variant="outline">{brand.slug}</Badge>
+                      <Badge variant="outline">{brandSnapshot?.slug ?? "—"}</Badge>
                 </div>
               </section>
             </>

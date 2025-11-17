@@ -52,7 +52,12 @@ export default async function NewOrderPage() {
     initialBrandId = brandOptions[0]!.id;
   }
 
-  const { templates, addresses: normalizedAddresses, initialTemplate } = await getBrandResources(initialBrandId ?? null);
+  const {
+    templates,
+    addresses: normalizedAddresses,
+    initialTemplate,
+    initialTemplateKey,
+  } = await getBrandResources(initialBrandId ?? null);
 
   return (
     <OrderForm
@@ -60,6 +65,7 @@ export default async function NewOrderPage() {
       initialBrandId={initialBrandId}
       initialTemplateSummaries={templates}
       initialTemplate={initialTemplate}
+      initialTemplateKey={initialTemplateKey}
       initialAddresses={normalizedAddresses}
     />
   );

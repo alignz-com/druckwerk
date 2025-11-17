@@ -22,10 +22,12 @@ export const getBrandResources = cache(async (brandId: string | null) => {
       templates: [],
       addresses: [] as BrandAddressEntry[],
       initialTemplate: null,
+      initialTemplateKey: null,
+      brandId: null as string | null,
     };
   }
 
-  const [templates, addressRecords] = await Promise.all([
+  const [templates, addressRecords, brand] = await Promise.all([
     listTemplateSummariesForBrand(brandId),
     prisma.brandAddress.findMany({
       where: { brandId },
@@ -43,10 +45,19 @@ export const getBrandResources = cache(async (brandId: string | null) => {
         url: true,
       },
     }),
+    prisma.brand.findUnique({
+      where: { id: brandId },
+      select: { defaultTemplateId: true },
+    }),
   ]);
 
+  const initialSummary =
+    (brand?.defaultTemplateId
+      ? templates.find((tpl) => tpl.id === brand.defaultTemplateId)
+      : undefined) ?? templates[0] ?? null;
+
   const initialTemplate =
-    templates[0]?.key && brandId ? await getTemplateForBrandOrGlobal(templates[0]!.key, brandId) : null;
+    initialSummary && brandId ? await getTemplateForBrandOrGlobal(initialSummary.key, brandId) : null;
 
   const addresses: BrandAddressEntry[] = addressRecords.map((address) => ({
     id: address.id,
@@ -62,8 +73,10 @@ export const getBrandResources = cache(async (brandId: string | null) => {
   }));
 
   return {
+    brandId,
     templates,
     addresses,
     initialTemplate,
+    initialTemplateKey: initialSummary?.key ?? null,
   };
 });
