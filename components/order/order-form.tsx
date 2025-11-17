@@ -386,6 +386,22 @@ export default function OrderForm({
   const [addressBlock, setAddressBlock] = useState("");
   const [frontOverflowFields, setFrontOverflowFields] = useState<string[]>([]);
   const [backOverflowFields, setBackOverflowFields] = useState<string[]>([]);
+  const handleFrontOverflowFields = useCallback((fields: string[]) => {
+    setFrontOverflowFields((previous) => {
+      if (previous.length === fields.length && previous.every((value, index) => value === fields[index])) {
+        return previous;
+      }
+      return fields;
+    });
+  }, []);
+  const handleBackOverflowFields = useCallback((fields: string[]) => {
+    setBackOverflowFields((previous) => {
+      if (previous.length === fields.length && previous.every((value, index) => value === fields[index])) {
+        return previous;
+      }
+      return fields;
+    });
+  }, []);
   const addressBlockLineCount = useMemo(() => {
     if (!addressBlock) return 0;
     return addressBlock.replace(/\r\n/g, "\n").split("\n").length;
@@ -399,7 +415,6 @@ export default function OrderForm({
   const [backOverflow, setBackOverflow] = useState(false);
   const [frontPreviewReady, setFrontPreviewReady] = useState(false);
   const [backPreviewReady, setBackPreviewReady] = useState(false);
-  const hasOverflow = frontOverflow || backOverflow || addressBlockHasOverflow;
   const previewReady = frontPreviewReady && backPreviewReady;
   const overflowFieldSet = useMemo(() => {
     const set = new Set<OverflowFieldKey>();
@@ -414,24 +429,25 @@ export default function OrderForm({
     if (addressBlockHasOverflow) set.add("addressBlock");
     return set;
   }, [frontOverflowFields, backOverflowFields, addressBlockHasOverflow]);
+  const forcedBindingPrefixes = useMemo(() => {
+    const prefixes: string[] = [];
+    if (overflowFieldSet.has("addressBlock") || addressBlockHasOverflow) {
+      prefixes.push("company", "companyPrimary", "companySecondary", "companyLines");
+    }
+    return prefixes;
+  }, [overflowFieldSet, addressBlockHasOverflow]);
   const fieldOverflowMessage = tOrder("errors.fieldOverflow");
   const fieldErrorClass = "border-red-400 focus-visible:ring-red-200 focus-visible:border-red-400";
   const getFieldTitle = (field: OverflowFieldKey) => (overflowFieldSet.has(field) ? fieldOverflowMessage : undefined);
-const nameOverflow = overflowFieldSet.has("name");
-const roleOverflow = overflowFieldSet.has("role");
-const emailOverflow = overflowFieldSet.has("email");
-const phoneOverflow = overflowFieldSet.has("phone");
-const mobileOverflow = overflowFieldSet.has("mobile");
-const urlOverflow = overflowFieldSet.has("url");
-const linkedinOverflow = overflowFieldSet.has("linkedin");
-const forcedBindingPrefixes = useMemo(() => {
-  const prefixes: string[] = [];
-  if (overflowFieldSet.has("addressBlock")) {
-    prefixes.push("company", "companyPrimary", "companySecondary", "companyLines");
-  }
-  return prefixes;
-}, [overflowFieldSet]);
-const addressBlockOverflow = overflowFieldSet.has("addressBlock");
+  const nameOverflow = overflowFieldSet.has("name");
+  const roleOverflow = overflowFieldSet.has("role");
+  const emailOverflow = overflowFieldSet.has("email");
+  const phoneOverflow = overflowFieldSet.has("phone");
+  const mobileOverflow = overflowFieldSet.has("mobile");
+  const urlOverflow = overflowFieldSet.has("url");
+  const linkedinOverflow = overflowFieldSet.has("linkedin");
+  const addressBlockOverflow = overflowFieldSet.has("addressBlock") || addressBlockHasOverflow;
+  const hasOverflow = frontOverflow || backOverflow || addressBlockOverflow;
   const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
 
   const getAddressBlockFromEntry = useCallback(
@@ -1291,7 +1307,7 @@ const addressBlockOverflow = overflowFieldSet.has("addressBlock");
                             onOverflowChange={setFrontOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setFrontPreviewReady}
-                            onFieldOverflowChange={setFrontOverflowFields}
+                            onFieldOverflowChange={handleFrontOverflowFields}
                             forcedBindingPrefixes={forcedBindingPrefixes}
                           />
                         }
@@ -1309,7 +1325,7 @@ const addressBlockOverflow = overflowFieldSet.has("addressBlock");
                             onOverflowChange={setBackOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setBackPreviewReady}
-                            onFieldOverflowChange={setBackOverflowFields}
+                            onFieldOverflowChange={handleBackOverflowFields}
                             forcedBindingPrefixes={forcedBindingPrefixes}
                           />
                         }
@@ -1385,7 +1401,7 @@ const addressBlockOverflow = overflowFieldSet.has("addressBlock");
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setFrontOverflow}
                           addressFields={previewAddressFields}
-                          onFieldOverflowChange={setFrontOverflowFields}
+                          onFieldOverflowChange={handleFrontOverflowFields}
                           forcedBindingPrefixes={forcedBindingPrefixes}
                         />
                       }
@@ -1402,7 +1418,7 @@ const addressBlockOverflow = overflowFieldSet.has("addressBlock");
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setBackOverflow}
                           addressFields={previewAddressFields}
-                          onFieldOverflowChange={setBackOverflowFields}
+                          onFieldOverflowChange={handleBackOverflowFields}
                           forcedBindingPrefixes={forcedBindingPrefixes}
                         />
                       }
