@@ -133,6 +133,7 @@ export type Props = {
     country?: string;
   };
   onReadyChange?: (ready: boolean) => void;
+  onFieldOverflowChange?: (fields: string[]) => void;
   forceErrorState?: boolean;
 };
 
@@ -371,7 +372,7 @@ function evaluateVisibility(visibility: NonNullable<TextElement["visibility"]>, 
 
 function evaluateTextContent(element: TextElement, context: RenderContext) {
   const parts = element.parts ?? (element.binding ? [{ type: "binding" as const, field: element.binding }] : []);
-  if (parts.length === 0) return "";
+  if (parts.length === 0) return { text: "", bindings: [] };
 
   const bindingStates = new Map<string, { text: string; hasValue: boolean }>();
   const resolved = parts.map((part) => {
@@ -412,9 +413,9 @@ function evaluateTextContent(element: TextElement, context: RenderContext) {
 
   const joined = pieces.join("");
   if (joined.trim().length === 0) {
-    return "";
+    return { text: "", bindings: [] };
   }
-  return joined;
+  return { text: joined, bindings: Array.from(bindingStates.keys()) };
 }
 
 function getLineHeightMm(font: TextElement["font"]) {
@@ -430,6 +431,7 @@ type PreparedText = {
   fontSizeMm: number;
   lineHeightMm: number;
   isTruncated: boolean;
+  bindings: string[];
 };
 
 function prepareTextElement(element: TextElement, context: RenderContext): PreparedText | null {
@@ -438,7 +440,8 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
   }
   const fontSizeMm = ptToMm(element.font.sizePt);
   const fontStyle = element.font.style === "italic" ? "italic" : "normal";
-  const content = evaluateTextContent(element, context);
+  const { text: evaluated, bindings } = evaluateTextContent(element, context);
+  const content = evaluated;
   if (!content) return null;
   let finalContent = content;
   let isTruncated = false;
@@ -461,6 +464,7 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
     fontSizeMm,
     lineHeightMm,
     isTruncated,
+    bindings,
   };
 }
 
@@ -491,13 +495,13 @@ function renderTextElement(
   key: string,
   offsetX = 0,
   offsetY = 0,
-  reportOverflow?: () => void,
+  reportOverflow?: (fields?: string[]) => void,
   forceErrorColor = false,
 ) {
-  const { element, fontSizeMm, content, isTruncated } = prepared;
+  const { element, fontSizeMm, content, isTruncated, bindings } = prepared;
   const baseColor = element.font.color ?? "#1f2937";
   const fillColor = forceErrorColor || isTruncated ? "#ef4444" : baseColor;
-  if (isTruncated) reportOverflow?.();
+  if (isTruncated) reportOverflow?.(bindings);
   return (
     <text
       key={key}
@@ -550,7 +554,7 @@ function renderStackElement(
   element: StackElement,
   context: RenderContext,
   key: string,
-  reportOverflow?: () => void,
+  reportOverflow?: (fields?: string[]) => void,
   forceErrorColor = false,
 ): ReactNode | null {
   if (element.visibility && element.visibility.binding) {
@@ -625,18 +629,23 @@ function renderDesignElements(
   elements: DesignElement[] | undefined,
   context: RenderContext,
   keyPrefix = "el",
-  reportOverflow?: (hasOverflow: boolean) => void,
   options?: { forceErrorColor?: boolean },
-): ReactNode[] {
+): { nodes: ReactNode[]; overflowFields: string[] } {
   const forceErrorColor = options?.forceErrorColor ?? false;
-  if (!elements?.length) {
-    reportOverflow?.(false);
-    return [];
-  }
   const nodes: ReactNode[] = [];
-  let overflow = false;
-  const markOverflow = () => {
-    overflow = true;
+  if (!elements?.length) {
+    return { nodes, overflowFields: [] };
+  }
+  const overflowFields = new Set<string>();
+
+  const markOverflow = (fields?: string[]) => {
+    if (fields && fields.length > 0) {
+      fields.forEach((field) => {
+        if (field) overflowFields.add(field);
+      });
+    } else {
+      overflowFields.add("__unknown__");
+    }
   };
 
   elements.forEach((element, index) => {
@@ -669,13 +678,9 @@ function renderDesignElements(
     }
   });
 
-  if (overflow) {
-    reportOverflow?.(true);
-  } else {
-    reportOverflow?.(false);
-  }
-
-  return nodes;
+  const overflowArray = Array.from(overflowFields).filter((field) => field !== "__unknown__");
+  overflowArray.sort();
+  return { nodes, overflowFields: overflowArray };
 }
 
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
@@ -799,6 +804,7 @@ export function BusinessCardFront({
   onOverflowChange,
   addressFields: _addressFields,
   onReadyChange,
+  onFieldOverflowChange,
   forceErrorState = false,
 }: Props) {
   const { preview: previewCfg } = getFrontConfig(template);
@@ -883,22 +889,23 @@ export function BusinessCardFront({
     }),
     [name, role, email, phone, mobile, company, companyPrimary, companySecondary, companyLines, frontAddressContext, displayFrontUrl, displayFrontLinkedin],
   );
-  const { nodes: frontNodes, overflow: frontOverflow } = useMemo(() => {
-    let hasOverflow = false;
-    const nodes = renderDesignElements(
+  const { nodes: frontNodes, overflowFields: frontOverflowFields } = useMemo(() => {
+    const result = renderDesignElements(
       design.front,
       frontContext,
       "front",
-      (flag) => {
-        hasOverflow = flag;
-      },
       { forceErrorColor: forceErrorState },
     );
-    return { nodes, overflow: hasOverflow };
+    return result;
   }, [design.front, frontContext, forceErrorState]);
+  const frontOverflow = frontOverflowFields.length > 0;
   useEffect(() => {
     onOverflowChange?.(frontOverflow);
   }, [frontOverflow, onOverflowChange]);
+  const frontOverflowKey = useMemo(() => frontOverflowFields.join("|"), [frontOverflowFields]);
+  useEffect(() => {
+    onFieldOverflowChange?.(frontOverflowFields);
+  }, [frontOverflowKey, frontOverflowFields, onFieldOverflowChange]);
   useFontFaceLoader(template.fonts);
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
@@ -945,6 +952,7 @@ export function BusinessCardBack({
   onOverflowChange,
   addressFields,
   onReadyChange,
+  onFieldOverflowChange,
   forceErrorState = false,
 }: Props) {
   const normalized = useMemo(() => normalizeAddress(company), [company]);
@@ -1056,22 +1064,23 @@ export function BusinessCardBack({
     }),
     [name, role, email, phone, mobile, company, displayBackUrl, displayBackLinkedin, qrData, backAddressContext],
   );
-  const { nodes: backNodes, overflow: backOverflow } = useMemo(() => {
-    let hasOverflow = false;
-    const nodes = renderDesignElements(
+  const { nodes: backNodes, overflowFields: backOverflowFields } = useMemo(() => {
+    const result = renderDesignElements(
       design.back,
       backContext,
       "back",
-      (flag) => {
-        hasOverflow = flag;
-      },
       { forceErrorColor: forceErrorState },
     );
-    return { nodes, overflow: hasOverflow };
+    return result;
   }, [design.back, backContext, forceErrorState]);
+  const backOverflow = backOverflowFields.length > 0;
   useEffect(() => {
     onOverflowChange?.(backOverflow);
   }, [backOverflow, onOverflowChange]);
+  const backOverflowKey = useMemo(() => backOverflowFields.join("|"), [backOverflowFields]);
+  useEffect(() => {
+    onFieldOverflowChange?.(backOverflowFields);
+  }, [backOverflowKey, backOverflowFields, onFieldOverflowChange]);
   useFontFaceLoader(template.fonts);
 
   return (

@@ -128,6 +128,7 @@ export const messages = {
         generic: "Unexpected error while saving order",
         brandLoadFailed: "Failed to load brand data.",
         addressBlockLines: "The address block can only contain up to {count} lines.",
+        fieldOverflow: "This value is too long for the selected template.",
       },
       noTemplatesTitle: "No templates available",
       noTemplatesDescription:
@@ -993,6 +994,7 @@ export const messages = {
         generic: "Unerwarteter Fehler beim Speichern der Bestellung",
         brandLoadFailed: "Markendaten konnten nicht geladen werden.",
         addressBlockLines: "Im Adressblock sind maximal {count} Zeilen möglich.",
+        fieldOverflow: "Dieser Wert ist zu lang für die gewählte Vorlage.",
       },
       noTemplatesTitle: "Keine Vorlagen verfügbar",
       noTemplatesDescription:

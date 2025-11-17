@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingButton } from "@/components/ui/loading-button";
+import { cn } from "@/lib/utils";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 function PreviewSkeleton() {
@@ -49,6 +50,20 @@ const FlipCard = dynamic(() => import("@/components/FlipCard"), {
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 const MAX_ADDRESS_BLOCK_LINES = 4;
+type OverflowFieldKey = "name" | "role" | "email" | "phone" | "mobile" | "url" | "linkedin" | "addressBlock";
+const bindingFieldMap: Record<string, OverflowFieldKey> = {
+  name: "name",
+  role: "role",
+  email: "email",
+  phone: "phone",
+  mobile: "mobile",
+  url: "url",
+  linkedin: "linkedin",
+  company: "addressBlock",
+  companyPrimary: "addressBlock",
+  companySecondary: "addressBlock",
+  companyLines: "addressBlock",
+};
 
 type BrandAddressEntry = {
   id: string;
@@ -241,7 +256,14 @@ export default function OrderForm({
     queryKey: ["brand-resources", currentBrandId ?? "none"],
     queryFn: () => brandResourcesFetcher(currentBrandId!),
     enabled: Boolean(currentBrandId),
+    gcTime: 0,
   });
+
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ["brand-resources"] });
+    };
+  }, [queryClient]);
 
   const brandData: BrandResourcePayload = currentBrandId
     ? brandQuery.data ?? {
@@ -282,6 +304,7 @@ export default function OrderForm({
 
   const lastBrandIdRef = useRef<string | null>(initialBrandData.brandId ?? null);
   const lastBrandProfileSignatureRef = useRef<string | null>(null);
+  const brandProfileCacheRef = useRef<Map<string, BrandProfilePayload>>(new Map());
 
   useEffect(() => {
     if (templates.length === 0) {
@@ -359,6 +382,8 @@ export default function OrderForm({
   const [linkedin, setLinkedin] = useState("");
   const [customerReference, setCustomerReference] = useState("");
   const [addressBlock, setAddressBlock] = useState("");
+  const [frontOverflowFields, setFrontOverflowFields] = useState<string[]>([]);
+  const [backOverflowFields, setBackOverflowFields] = useState<string[]>([]);
   const addressBlockLineCount = useMemo(() => {
     if (!addressBlock) return 0;
     return addressBlock.replace(/\r\n/g, "\n").split("\n").length;
@@ -374,6 +399,29 @@ export default function OrderForm({
   const [backPreviewReady, setBackPreviewReady] = useState(false);
   const hasOverflow = frontOverflow || backOverflow || addressBlockHasOverflow;
   const previewReady = frontPreviewReady && backPreviewReady;
+  const overflowFieldSet = useMemo(() => {
+    const set = new Set<OverflowFieldKey>();
+    const register = (fields: string[]) => {
+      fields.forEach((field) => {
+        const mapped = bindingFieldMap[field];
+        if (mapped) set.add(mapped);
+      });
+    };
+    register(frontOverflowFields);
+    register(backOverflowFields);
+    if (addressBlockHasOverflow) set.add("addressBlock");
+    return set;
+  }, [frontOverflowFields, backOverflowFields, addressBlockHasOverflow]);
+  const fieldOverflowMessage = tOrder("errors.fieldOverflow");
+  const fieldErrorClass = "border-red-400 focus-visible:ring-red-200 focus-visible:border-red-400";
+  const getFieldTitle = (field: OverflowFieldKey) => (overflowFieldSet.has(field) ? fieldOverflowMessage : undefined);
+  const nameOverflow = overflowFieldSet.has("name");
+  const roleOverflow = overflowFieldSet.has("role");
+  const emailOverflow = overflowFieldSet.has("email");
+  const phoneOverflow = overflowFieldSet.has("phone");
+  const mobileOverflow = overflowFieldSet.has("mobile");
+  const urlOverflow = overflowFieldSet.has("url");
+  const linkedinOverflow = overflowFieldSet.has("linkedin");
   const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
 
   const getAddressBlockFromEntry = useCallback(
@@ -622,8 +670,14 @@ export default function OrderForm({
     lastBrandProfileSignatureRef.current = signature;
 
     if (brandData.profile) {
+      brandProfileCacheRef.current.set(brandData.brandId, brandData.profile);
       applyBrandProfile(brandData.profile);
     } else {
+      const cached = brandProfileCacheRef.current.get(brandData.brandId);
+      if (cached) {
+        applyBrandProfile(cached);
+        return;
+      }
       applyBrandProfile(null);
       applyGeneralProfileValues();
     }
@@ -852,22 +906,43 @@ export default function OrderForm({
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">{tOrder("fields.name")}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">{tOrder("fields.role")}</Label>
-                <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
-                <div className="relative">
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="pr-16" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                <div className="grid gap-2">
+                  <Label htmlFor="name">{tOrder("fields.name")}</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={cn(nameOverflow && fieldErrorClass)}
+                    aria-invalid={nameOverflow || undefined}
+                    title={getFieldTitle("name")}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">{tOrder("fields.role")}</Label>
+                  <Input
+                    id="role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className={cn(roleOverflow && fieldErrorClass)}
+                    aria-invalid={roleOverflow || undefined}
+                    title={getFieldTitle("role")}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">{tOrder("fields.phone")}</Label>
+                  <div className="relative">
+                    <Input
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className={cn("pr-16", phoneOverflow && fieldErrorClass)}
+                      aria-invalid={phoneOverflow || undefined}
+                      title={getFieldTitle("phone")}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                     className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
                     onClick={() => handleFormatPhone("phone")}
                   >
@@ -875,13 +950,20 @@ export default function OrderForm({
                   </Button>
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
-                <div className="relative">
-                  <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} className="pr-16" />
-                  <Button
-                    type="button"
-                    variant="ghost"
+                <div className="grid gap-2">
+                  <Label htmlFor="mobile">{tOrder("fields.mobile")}</Label>
+                  <div className="relative">
+                    <Input
+                      id="mobile"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      className={cn("pr-16", mobileOverflow && fieldErrorClass)}
+                      aria-invalid={mobileOverflow || undefined}
+                      title={getFieldTitle("mobile")}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
                     size="sm"
                     className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
                     onClick={() => handleFormatPhone("mobile")}
@@ -890,33 +972,44 @@ export default function OrderForm({
                   </Button>
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">{tOrder("fields.email")}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              {templateHasQrCode ? (
                 <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="linkedin" className="mb-0">
-                      {tOrder("fields.linkedin")}
-                    </Label>
-                    <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
-                      <Info className="h-4 w-4 text-slate-400" />
-                    </span>
-                  </div>
+                  <Label htmlFor="email">{tOrder("fields.email")}</Label>
                   <Input
-                    id="linkedin"
-                    type="url"
-                    placeholder={tOrder("fields.linkedinPlaceholder")}
-                    value={linkedin}
-                    onChange={(e) => setLinkedin(e.target.value)}
-                    aria-describedby="linkedin-hint"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={cn(emailOverflow && fieldErrorClass)}
+                    aria-invalid={emailOverflow || undefined}
+                    title={getFieldTitle("email")}
                   />
-                  <p id="linkedin-hint" className="text-xs text-slate-500">
-                    {tOrder("hints.linkedin")}
-                  </p>
                 </div>
-              ) : null}
+                {templateHasQrCode ? (
+                  <div className="grid gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="linkedin" className="mb-0">
+                        {tOrder("fields.linkedin")}
+                      </Label>
+                      <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
+                        <Info className="h-4 w-4 text-slate-400" />
+                      </span>
+                    </div>
+                    <Input
+                      id="linkedin"
+                      type="url"
+                      placeholder={tOrder("fields.linkedinPlaceholder")}
+                      value={linkedin}
+                      onChange={(e) => setLinkedin(e.target.value)}
+                      aria-describedby="linkedin-hint"
+                      className={cn(linkedinOverflow && fieldErrorClass)}
+                      aria-invalid={linkedinOverflow || undefined}
+                      title={getFieldTitle("linkedin")}
+                    />
+                    <p id="linkedin-hint" className="text-xs text-slate-500">
+                      {tOrder("hints.linkedin")}
+                    </p>
+                  </div>
+                ) : null}
               </div>
               <Separator />
               <div className="space-y-4">
@@ -979,7 +1072,14 @@ export default function OrderForm({
                   </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <Label htmlFor="url">{tOrder("fields.url")}</Label>
-                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+                  <Input
+                    id="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className={cn(urlOverflow && fieldErrorClass)}
+                    aria-invalid={urlOverflow || undefined}
+                    title={getFieldTitle("url")}
+                  />
                 </div>
                 {templateHasQrCode ? (
                   <>
@@ -1036,6 +1136,7 @@ export default function OrderForm({
                     rows={4}
                     placeholder={tOrder("placeholders.addressExtra") ?? ""}
                     className={addressBlockHasOverflow ? "border-red-300 focus-visible:ring-red-200" : undefined}
+                    title={addressBlockHasOverflow ? tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES }) : undefined}
                   />
                   <p className={`text-xs ${addressBlockHasOverflow ? "text-red-600" : "text-slate-500"}`}>
                     {addressBlockHasOverflow
@@ -1120,6 +1221,7 @@ export default function OrderForm({
                             onOverflowChange={setFrontOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setFrontPreviewReady}
+                            onFieldOverflowChange={setFrontOverflowFields}
                             forceErrorState={addressBlockHasOverflow}
                           />
                         }
@@ -1137,17 +1239,13 @@ export default function OrderForm({
                             onOverflowChange={setBackOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setBackPreviewReady}
+                            onFieldOverflowChange={setBackOverflowFields}
                             forceErrorState={addressBlockHasOverflow}
                           />
                         }
                         className="h-full w-full"
                       />
                     )}
-                    {addressBlockHasOverflow ? (
-                      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl border-2 border-red-400 bg-red-50/70 px-4 text-center text-sm font-semibold text-red-700">
-                        {tOrder("errors.addressBlockLines", { count: MAX_ADDRESS_BLOCK_LINES })}
-                      </div>
-                    ) : null}
                   </div>
                 </div>
                 {templateError ? (
@@ -1217,6 +1315,7 @@ export default function OrderForm({
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setFrontOverflow}
                           addressFields={previewAddressFields}
+                          onFieldOverflowChange={setFrontOverflowFields}
                           forceErrorState={addressBlockHasOverflow}
                         />
                       }
@@ -1233,6 +1332,7 @@ export default function OrderForm({
                           linkedin={effectiveLinkedin}
                           onOverflowChange={setBackOverflow}
                           addressFields={previewAddressFields}
+                          onFieldOverflowChange={setBackOverflowFields}
                           forceErrorState={addressBlockHasOverflow}
                         />
                       }
