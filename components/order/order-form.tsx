@@ -486,7 +486,7 @@ export default function OrderForm({
   const mustSelectBrand = availableBrands.length > 1 && !currentBrandId;
   const noTemplatesForBrand = Boolean(currentBrandId) && templates.length === 0 && !templateIsLoading && !isBrandLoading;
 
-  const canSubmitOrder = Boolean(selectedTemplate) && !templateIsLoading && !mustSelectBrand;
+  const canSubmitOrder = Boolean(selectedSummary) && !templateIsLoading && !mustSelectBrand;
 
   const openConfirm = () => {
     if (isSubmitting || !canSubmitOrder) return;
@@ -907,7 +907,11 @@ export default function OrderForm({
                       </div>
                     </div>
                   ) : null}
-                  <div className={`h-full w-full transition-opacity duration-300 ${previewReady ? "opacity-100" : "opacity-0"}`}>
+                  <div
+                    className={`h-full w-full transition-opacity duration-300 ${
+                      selectedTemplate ? (previewReady ? "opacity-100" : "opacity-0") : "opacity-100"
+                    }`}
+                  >
                     {!currentBrandId ? (
                       <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
                         {tOrder("selectBrandPrompt")}
@@ -916,9 +920,13 @@ export default function OrderForm({
                       <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
                         {tOrder("preview.noTemplates")}
                       </div>
+                    ) : !selectedSummary ? (
+                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                        {tOrder("preview.selectTemplate")}
+                      </div>
                     ) : !selectedTemplate ? (
                       <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
-                        {templateError ?? tOrder("preview.selectTemplate")}
+                        {templateError ?? tOrder("preview.loading")}
                       </div>
                     ) : (
                       <FlipCard
