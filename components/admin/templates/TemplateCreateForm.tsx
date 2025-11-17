@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DEFAULT_TEMPLATES } from "@/lib/templates-defaults";
 import { PaperStockSelector } from "./PaperStockSelector";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const defaultConfig = JSON.stringify(Object.values(DEFAULT_TEMPLATES)[0]?.config ?? {}, null, 2);
 
@@ -29,6 +30,7 @@ type FormState = {
   pcmCode: string;
   paperStockId: string;
   config: string;
+  hasQrCode: boolean;
 };
 
 const emptyForm: FormState = {
@@ -40,6 +42,7 @@ const emptyForm: FormState = {
   pcmCode: "",
   paperStockId: "",
   config: defaultConfig,
+  hasQrCode: false,
 };
 
 export default function TemplateCreateForm({ onCreated, onCancel, className }: TemplateCreateFormProps) {
@@ -124,6 +127,7 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
     if (form.paperStockId) {
       payload.append("paperStockId", form.paperStockId);
     }
+    payload.append("hasQrCode", form.hasQrCode ? "true" : "false");
 
     if (pdfFile) {
       payload.append("pdfFile", pdfFile);
@@ -226,6 +230,24 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             placeholder="pcm_vk_template"
           />
           <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
+        </div>
+        <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
+          <div className="flex items-start gap-4">
+            <Checkbox
+              id="template-create-has-qr"
+              checked={form.hasQrCode}
+              onCheckedChange={(checked) => setForm((current) => ({ ...current, hasQrCode: Boolean(checked) }))}
+              aria-describedby="template-create-has-qr-hint"
+            />
+            <div className="space-y-1">
+              <Label htmlFor="template-create-has-qr" className="text-sm font-medium text-slate-900">
+                {t("create.fields.hasQrCode")}
+              </Label>
+              <p id="template-create-has-qr-hint" className="text-xs text-slate-500">
+                {t("create.hints.hasQrCode")}
+              </p>
+            </div>
+          </div>
         </div>
         <div className="md:col-span-2">
           <PaperStockSelector

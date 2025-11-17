@@ -134,8 +134,6 @@ export async function POST(req: Request) {
     const rawLinkedin = data.linkedin?.trim() ?? "";
     const normalizedUrl = normalizeWebUrl(rawUrl);
     const normalizedLinkedin = normalizeWebUrl(rawLinkedin);
-    const normalizedAddressId = data.addressId?.trim() || null;
-    const normalizedAddressLabel = data.addressLabel?.trim() ?? "";
     const requestedBrandId = data.brandId?.trim() || null;
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -162,14 +160,18 @@ export async function POST(req: Request) {
         })
       : null;
 
+    const templateDefinition = await getTemplateForBrandOrGlobal(data.template, effectiveBrandId);
+    const templateHasQrCode = Boolean(templateDefinition.hasQrCode);
     const localeShort = session.user.locale === "de" ? "de" : "en";
-    const addressMeta = data.address
+    const normalizedAddressId = templateHasQrCode ? data.addressId?.trim() || null : null;
+    const normalizedAddressLabel = templateHasQrCode ? data.addressLabel?.trim() ?? "" : "";
+    const structuredAddress = templateHasQrCode ? data.address : undefined;
+    const addressMeta = structuredAddress
       ? {
-          ...data.address,
-          country: data.address.countryCode ? getCountryLabel(localeShort, data.address.countryCode) : undefined,
+          ...structuredAddress,
+          country: structuredAddress.countryCode ? getCountryLabel(localeShort, structuredAddress.countryCode) : undefined,
         }
       : undefined;
-    const templateDefinition = await getTemplateForBrandOrGlobal(data.template, effectiveBrandId);
     const deliveryConfig = DELIVERY_OPTIONS[data.deliveryTime] ?? DELIVERY_OPTIONS.standard;
     const deliveryDueAt = addBusinessDays(new Date(), deliveryConfig.businessDays);
 
@@ -182,7 +184,7 @@ export async function POST(req: Request) {
         mobile: data.mobile,
         company: data.company,
         url: rawUrl,
-        linkedin: rawLinkedin,
+        linkedin: templateHasQrCode ? rawLinkedin : "",
         address: addressMeta,
       },
       templateDefinition,
@@ -199,7 +201,8 @@ export async function POST(req: Request) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    const requesterCompany = data.address?.companyName?.trim() || data.company?.split("\n")[0]?.trim() || brand?.name || null;
+    const requesterCompany =
+      structuredAddress?.companyName?.trim() || data.company?.split("\n")[0]?.trim() || brand?.name || null;
     const requesterContact = {
       company: requesterCompany,
       personName: data.name,
@@ -279,7 +282,7 @@ export async function POST(req: Request) {
         mobile: data.mobile || null,
         company: data.company || null,
         url: normalizedUrl || null,
-        linkedin: normalizedLinkedin || null,
+        linkedin: templateHasQrCode ? normalizedLinkedin || null : null,
         pdfUrl: upload.url,
         blobId: upload.pathname ?? upload.url,
         pdfFileName,
@@ -314,14 +317,14 @@ export async function POST(req: Request) {
           phone: data.phone,
           mobile: data.mobile,
           url: rawUrl,
-          linkedin: rawLinkedin,
-          addressId: normalizedAddressId,
-          addressLabel: normalizedAddressLabel,
-          companyName: data.address?.companyName ?? null,
-          street: data.address?.street ?? null,
-          postalCode: data.address?.postalCode ?? null,
-          city: data.address?.city ?? null,
-          countryCode: data.address?.countryCode ?? null,
+          linkedin: templateHasQrCode ? rawLinkedin : undefined,
+          addressId: templateHasQrCode ? normalizedAddressId : undefined,
+          addressLabel: templateHasQrCode ? normalizedAddressLabel : undefined,
+          companyName: templateHasQrCode ? structuredAddress?.companyName ?? null : undefined,
+          street: templateHasQrCode ? structuredAddress?.street ?? null : undefined,
+          postalCode: templateHasQrCode ? structuredAddress?.postalCode ?? null : undefined,
+          city: templateHasQrCode ? structuredAddress?.city ?? null : undefined,
+          countryCode: templateHasQrCode ? structuredAddress?.countryCode ?? null : undefined,
           addressBlock: data.company ?? null,
         },
       });

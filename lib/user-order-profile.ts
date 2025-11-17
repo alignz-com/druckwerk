@@ -40,7 +40,9 @@ type OrderProfileInput = {
 
 function normalizeValue(value?: string | null) {
   if (value === null || value === undefined) return null;
-  return typeof value === "string" && value.trim().length === 0 ? null : value;
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }
 
 function serializeProfile(profile: Awaited<ReturnType<typeof prisma.userOrderProfile.findUnique>>) {
@@ -94,23 +96,11 @@ export async function saveUserOrderProfile({
 }) {
   if (!userId || !brandId) return null;
 
-  const payload = {
-    name: normalizeValue(data.name),
-    jobTitle: normalizeValue(data.jobTitle),
-    email: normalizeValue(data.email),
-    phone: normalizeValue(data.phone),
-    mobile: normalizeValue(data.mobile),
-    url: normalizeValue(data.url),
-    linkedin: normalizeValue(data.linkedin),
-    addressId: normalizeValue(data.addressId),
-    addressLabel: normalizeValue(data.addressLabel),
-    companyName: normalizeValue(data.companyName),
-    street: normalizeValue(data.street),
-    postalCode: normalizeValue(data.postalCode),
-    city: normalizeValue(data.city),
-    countryCode: normalizeValue(data.countryCode),
-    addressBlock: normalizeValue(data.addressBlock),
-  };
+  const payload = Object.fromEntries(
+    Object.entries(data)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, normalizeValue(value as string | null)]),
+  );
 
   const record = await prisma.userOrderProfile.upsert({
     where: {

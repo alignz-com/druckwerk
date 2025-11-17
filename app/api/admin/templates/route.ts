@@ -36,6 +36,13 @@ export async function POST(req: NextRequest) {
   const pdfFile = form.get("pdfFile");
   const previewFrontFile = form.get("previewFrontFile");
   const previewBackFile = form.get("previewBackFile");
+  const hasQrCodeRaw = form.get("hasQrCode");
+  const hasQrCode =
+    typeof hasQrCodeRaw === "string"
+      ? hasQrCodeRaw === "true" || hasQrCodeRaw === "on"
+      : hasQrCodeRaw === null
+        ? false
+        : Boolean(hasQrCodeRaw);
 
   if (!key) {
     return NextResponse.json({ error: "key is required" }, { status: 400 });
@@ -97,6 +104,7 @@ export async function POST(req: NextRequest) {
         printDpi,
         pcmCode: pcmCodeValue,
         config,
+        hasQrCode,
         paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
       },
     });

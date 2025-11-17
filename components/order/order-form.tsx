@@ -277,6 +277,7 @@ export default function OrderForm({
   const selectedSummaryKey = selectedSummary?.key ?? "";
   const templateLoaded = selectedSummaryKey ? Boolean(templateDetails[selectedSummaryKey]) : false;
   const templateIsLoading = selectedSummaryKey ? templateLoadingKey === selectedSummaryKey : false;
+  const templateHasQrCode = Boolean(selectedSummary?.hasQrCode ?? selectedTemplate?.hasQrCode ?? false);
 
   const lastBrandIdRef = useRef<string | null>(initialBrandData.brandId ?? null);
   const lastBrandProfileSignatureRef = useRef<string | null>(null);
@@ -637,6 +638,7 @@ export default function OrderForm({
   const noTemplatesForBrand = Boolean(currentBrandId) && templates.length === 0 && !templateIsLoading && !isBrandLoading;
 
   const canSubmitOrder = Boolean(selectedSummary) && !templateIsLoading && !mustSelectBrand;
+  const effectiveLinkedin = templateHasQrCode ? linkedin : "";
 
   const openConfirm = () => {
     if (isSubmitting || !canSubmitOrder) return;
@@ -650,6 +652,18 @@ export default function OrderForm({
     setIsSubmitting(true);
     setSubmitError(null);
     try {
+      const qrAddressPayload = templateHasQrCode
+        ? {
+            companyName,
+            street,
+            postalCode,
+            city,
+            countryCode,
+          }
+        : undefined;
+      const qrAddressId = templateHasQrCode ? selectedAddressEntry?.id ?? null : null;
+      const qrAddressLabel = templateHasQrCode ? addressInputValue : null;
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -661,21 +675,15 @@ export default function OrderForm({
           mobile,
           company: addressBlock,
           url,
-          linkedin,
+          linkedin: effectiveLinkedin,
           brandId: currentBrandId,
           template: selectedSummary.key,
           quantity: Number(quantity),
           deliveryTime,
           customerReference,
-          addressId: selectedAddressEntry?.id ?? null,
-          addressLabel: addressInputValue,
-          address: {
-            companyName,
-            street,
-            postalCode,
-            city,
-            countryCode,
-          },
+          addressId: qrAddressId,
+          addressLabel: qrAddressLabel,
+          address: qrAddressPayload,
         }),
       });
 
@@ -880,27 +888,29 @@ export default function OrderForm({
                 <Label htmlFor="email">{tOrder("fields.email")}</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="linkedin" className="mb-0">
-                    {tOrder("fields.linkedin")}
-                  </Label>
-                  <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
-                    <Info className="h-4 w-4 text-slate-400" />
-                  </span>
+              {templateHasQrCode ? (
+                <div className="grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="linkedin" className="mb-0">
+                      {tOrder("fields.linkedin")}
+                    </Label>
+                    <span className="inline-flex" title={tOrder("hints.linkedin")} aria-hidden="true">
+                      <Info className="h-4 w-4 text-slate-400" />
+                    </span>
+                  </div>
+                  <Input
+                    id="linkedin"
+                    type="url"
+                    placeholder={tOrder("fields.linkedinPlaceholder")}
+                    value={linkedin}
+                    onChange={(e) => setLinkedin(e.target.value)}
+                    aria-describedby="linkedin-hint"
+                  />
+                  <p id="linkedin-hint" className="text-xs text-slate-500">
+                    {tOrder("hints.linkedin")}
+                  </p>
                 </div>
-                <Input
-                  id="linkedin"
-                  type="url"
-                  placeholder={tOrder("fields.linkedinPlaceholder")}
-                  value={linkedin}
-                  onChange={(e) => setLinkedin(e.target.value)}
-                  aria-describedby="linkedin-hint"
-                />
-                <p id="linkedin-hint" className="text-xs text-slate-500">
-                  {tOrder("hints.linkedin")}
-                </p>
-              </div>
+              ) : null}
               </div>
               <Separator />
               <div className="space-y-4">
@@ -965,37 +975,41 @@ export default function OrderForm({
                   <Label htmlFor="url">{tOrder("fields.url")}</Label>
                   <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
-                <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
-                  <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-                </div>
-                <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="street">{tOrder("fields.street")}</Label>
-                  <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="postalCode">{tOrder("fields.postalCode")}</Label>
-                  <Input id="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="city">{tOrder("fields.city")}</Label>
-                  <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-                </div>
-                <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="country">{tOrder("fields.country")}</Label>
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger id="country">
-                      <SelectValue placeholder={tOrder("placeholders.country")} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      {countryOptions.map(({ code, label }) => (
-                        <SelectItem key={code} value={code}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {templateHasQrCode ? (
+                  <>
+                    <div className="grid gap-2 sm:col-span-2">
+                      <Label htmlFor="companyName">{tOrder("fields.companyName")}</Label>
+                      <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                    </div>
+                    <div className="grid gap-2 sm:col-span-2">
+                      <Label htmlFor="street">{tOrder("fields.street")}</Label>
+                      <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="postalCode">{tOrder("fields.postalCode")}</Label>
+                      <Input id="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="city">{tOrder("fields.city")}</Label>
+                      <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+                    </div>
+                    <div className="grid gap-2 sm:col-span-2">
+                      <Label htmlFor="country">{tOrder("fields.country")}</Label>
+                      <Select value={countryCode} onValueChange={setCountryCode}>
+                        <SelectTrigger id="country">
+                          <SelectValue placeholder={tOrder("placeholders.country")} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {countryOptions.map(({ code, label }) => (
+                            <SelectItem key={code} value={code}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                ) : null}
                 <div className="grid gap-2 sm:col-span-2">
                   <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="addressBlock">{tOrder("fields.addressExtra")}</Label>
@@ -1093,7 +1107,7 @@ export default function OrderForm({
                             mobile={mobile}
                             company={addressBlock}
                             url={url}
-                            linkedin={linkedin}
+                            linkedin={effectiveLinkedin}
                             onOverflowChange={setFrontOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setFrontPreviewReady}
@@ -1109,7 +1123,7 @@ export default function OrderForm({
                             mobile={mobile}
                             company={addressBlock}
                             url={url}
-                            linkedin={linkedin}
+                            linkedin={effectiveLinkedin}
                             onOverflowChange={setBackOverflow}
                             addressFields={previewAddressFields}
                             onReadyChange={setBackPreviewReady}
@@ -1184,7 +1198,7 @@ export default function OrderForm({
                           mobile={mobile}
                           company={addressBlock}
                           url={url}
-                          linkedin={linkedin}
+                          linkedin={effectiveLinkedin}
                           onOverflowChange={setFrontOverflow}
                           addressFields={previewAddressFields}
                         />
@@ -1199,7 +1213,7 @@ export default function OrderForm({
                           mobile={mobile}
                           company={addressBlock}
                           url={url}
-                          linkedin={linkedin}
+                          linkedin={effectiveLinkedin}
                           onOverflowChange={setBackOverflow}
                           addressFields={previewAddressFields}
                         />

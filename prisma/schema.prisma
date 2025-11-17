@@ -213,6 +213,7 @@ model Template {
   layoutVersion    Int?
   printDpi         Int?
   pcmCode          String?
+  hasQrCode        Boolean         @default(false)
   orders           Order[]
   assignments      BrandTemplate[]
   brandDefaults    Brand[]         @relation("BrandDefaultTemplate")

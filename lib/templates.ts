@@ -66,9 +66,10 @@ export type TemplatePaperStock = {
   weightGsm?: number | null;
 };
 
-export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock"> & {
+export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock" | "hasQrCode"> & {
   fonts: ResolvedTemplateFont[];
   paperStock: TemplatePaperStock | null;
+  hasQrCode: boolean;
 };
 
 export type TemplateSummary = {
@@ -77,6 +78,7 @@ export type TemplateSummary = {
   label: string;
   description: string | null;
   orderIndex: number;
+  hasQrCode: boolean;
 };
 
 function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
@@ -88,11 +90,17 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
     design: rest.design ? clone(rest.design) : DEFAULT_TEMPLATE_DESIGN,
     fonts: [],
     paperStock: paperStock ? { ...paperStock } : null,
+    hasQrCode: detectHasQrCode(def.hasQrCode ?? null, def.config),
   };
 }
 
 function sortTemplates(templates: Iterable<ResolvedTemplate>) {
   return Array.from(templates).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function detectHasQrCode(explicit?: boolean | null, config?: TemplateConfig | null): boolean {
+  if (typeof explicit === "boolean") return explicit;
+  return (config?.back?.mode ?? null) === "qr";
 }
 
 function sortSummaries(summaries: Iterable<TemplateSummary>) {
@@ -115,6 +123,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
             key: true,
             label: true,
             description: true,
+            hasQrCode: true,
           },
         },
       },
@@ -129,6 +138,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
         label: assignment.template!.label,
         description: assignment.template!.description ?? null,
         orderIndex: assignment.orderIndex ?? 0,
+        hasQrCode: assignment.template!.hasQrCode,
       }));
   }
 
@@ -138,6 +148,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       key: true,
       label: true,
       description: true,
+      hasQrCode: true,
     },
     orderBy: [{ label: "asc" }],
   });
@@ -149,6 +160,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       label: tpl.label,
       description: tpl.description ?? null,
       orderIndex: index,
+      hasQrCode: tpl.hasQrCode,
     }));
   }
 
@@ -159,6 +171,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
       label: tpl.label,
       description: tpl.description ?? null,
       orderIndex: 0,
+      hasQrCode: detectHasQrCode(tpl.hasQrCode, tpl.config),
     })),
   );
 }
@@ -203,6 +216,7 @@ function buildTemplateAssetPublicUrl(storageKey: string | null | undefined) {
 
 async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): Promise<ResolvedTemplate> {
   const baseConfig = fallback?.config ?? ((tpl.config ?? {}) as TemplateConfig);
+  const mergedConfig = mergeConfigs(baseConfig, tpl.config ?? undefined);
   const assets: TemplateAssetSummary[] = await Promise.all(
     tpl.assets.map(async (asset) => {
       const directUrl = buildTemplateAssetPublicUrl(asset.storageKey);
@@ -284,11 +298,12 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     pdfPath: pdfAsset?.publicUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",
     previewFrontPath: previewFrontAsset?.publicUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
     previewBackPath: previewBackAsset?.publicUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",
-    config: mergeConfigs(baseConfig, tpl.config ?? undefined),
+    config: mergedConfig,
     assets,
     design,
     fonts,
     paperStock: paperStockFromDb ?? (fallback?.paperStock ? { ...fallback.paperStock } : null),
+    hasQrCode: detectHasQrCode(tpl.hasQrCode, mergedConfig),
   };
 
   if (!resolved.pdfPath) {

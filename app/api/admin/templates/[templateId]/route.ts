@@ -75,6 +75,14 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     updateData.pcmCode = value.length > 0 ? value : null;
   }
 
+  if (payload?.hasQrCode !== undefined) {
+    const qrValue =
+      typeof payload.hasQrCode === "string"
+        ? payload.hasQrCode === "true" || payload.hasQrCode === "on"
+        : Boolean(payload.hasQrCode);
+    updateData.hasQrCode = qrValue;
+  }
+
   if (payload?.paperStockId !== undefined) {
     const value = payload.paperStockId === null ? "" : String(payload.paperStockId).trim();
     if (!value) {

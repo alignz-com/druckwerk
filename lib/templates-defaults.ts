@@ -66,6 +66,7 @@ export type TemplateDefinition = {
   assets?: TemplateAssetSummary[];
   design?: TemplateDesign;
   paperStock?: TemplatePaperStockDefinition | null;
+  hasQrCode?: boolean;
 };
 
 export type TemplateAssetSummary = {
@@ -101,6 +102,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     pdfPath: "templates/omicron.pdf",
     previewFrontPath: "/templates/omicron-front.png",
     previewBackPath: "/templates/omicron-back.png",
+    hasQrCode: true,
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
@@ -123,6 +125,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     pdfPath: "templates/omicron.pdf",
     previewFrontPath: "/templates/omicron-front.png",
     previewBackPath: "/templates/claim-back.png",
+    hasQrCode: false,
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,
@@ -141,6 +144,7 @@ export const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     pdfPath: "templates/omicron.pdf",
     previewFrontPath: "/templates/omicron-lab-front.png",
     previewBackPath: "/templates/omicron-back.png",
+    hasQrCode: true,
     config: {
       front: {
         textFrame: BASE_TEXT_FRAME,

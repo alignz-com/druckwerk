@@ -20,6 +20,7 @@ import { hasInlineDesignConfig } from "@/lib/template-design";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { PaperStockSelector } from "./PaperStockSelector";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const IMAGE_ACCEPT = "image/png,image/svg+xml,image/webp";
 const assetUploadFields: Array<{ type: TemplateAssetType; field: "pdf" | "front" | "back"; accept: string }> = [
@@ -59,6 +60,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     pcmCode: template.pcmCode ?? "",
     paperStockId: template.paperStock?.id ?? "",
     config: stringifyConfig(template.config),
+    hasQrCode: template.hasQrCode,
   }));
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
@@ -179,6 +181,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       pcmCode: template.pcmCode ?? "",
       paperStockId: template.paperStock?.id ?? "",
       config: stringifyConfig(template.config),
+      hasQrCode: template.hasQrCode,
     });
     setMetadataError(null);
     setMetadataSuccess(null);
@@ -275,6 +278,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           pcmCode: pcmCodeInput || null,
           paperStockId: metadata.paperStockId || null,
           config: parsedConfig,
+          hasQrCode: metadata.hasQrCode,
         }),
       });
 
@@ -575,6 +579,27 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               placeholder="pcm_vk_template"
             />
             <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
+          </div>
+          <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
+            <div className="flex items-start gap-4">
+              <Checkbox
+                id="template-has-qr"
+                checked={metadata.hasQrCode}
+                onCheckedChange={(checked) => {
+                  setMetadata((current) => ({ ...current, hasQrCode: Boolean(checked) }));
+                  setMetadataSuccess(null);
+                }}
+                aria-describedby="template-has-qr-hint"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="template-has-qr" className="text-sm font-medium text-slate-900">
+                  {t("detail.hasQrCodeLabel")}
+                </Label>
+                <p id="template-has-qr-hint" className="text-xs text-slate-500">
+                  {t("detail.hasQrCodeHint")}
+                </p>
+              </div>
+            </div>
           </div>
         <div className="md:col-span-2">
           <PaperStockSelector
