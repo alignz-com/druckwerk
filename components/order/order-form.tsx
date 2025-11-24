@@ -1329,7 +1329,7 @@ export default function OrderForm({
                 <div className="relative aspect-[85/55] w-full">
                   {showPreviewSkeleton && selectedTemplate ? (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
-                      <div className="animate-pulse text-xs font-medium text-slate-500">
+                      <div className="animate-pulse text-sm font-medium text-slate-500">
                         {tOrder("preview.loading")}
                       </div>
                     </div>
