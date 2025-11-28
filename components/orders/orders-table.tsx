@@ -183,8 +183,8 @@ export function OrdersTable({
     Array<{ id: string; label: string; street?: string | null; city?: string | null; postalCode?: string | null }>
   >([]);
   const [deliveryAddressesLoading, setDeliveryAddressesLoading] = useState(false);
-  const [brandFilter, setBrandFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const orderById = useMemo(() => {
     const map = new Map<string, OrdersTableRow>();
@@ -344,8 +344,8 @@ export function OrdersTable({
 
   const filteredData = useMemo(() => {
     return data.filter((order) => {
-      if (brandFilter && order.brandId !== brandFilter) return false;
-      if (statusFilter && order.status !== statusFilter) return false;
+      if (brandFilter !== "all" && order.brandId !== brandFilter) return false;
+      if (statusFilter !== "all" && order.status !== statusFilter) return false;
 
       if (!normalizedSearch) return true;
 
@@ -570,12 +570,12 @@ export function OrdersTable({
               {filters.brand ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">{filters.brand.label}</span>
-                  <Select value={brandFilter || ""} onValueChange={setBrandFilter}>
+                  <Select value={brandFilter} onValueChange={setBrandFilter}>
                     <SelectTrigger className="w-44">
                       <SelectValue placeholder={filters.brand.allLabel} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{filters.brand.allLabel}</SelectItem>
+                      <SelectItem value="all">{filters.brand.allLabel}</SelectItem>
                       {filters.brand.options.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -588,12 +588,12 @@ export function OrdersTable({
               {filters.status ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">{filters.status.label}</span>
-                  <Select value={statusFilter || ""} onValueChange={setStatusFilter}>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-44">
                       <SelectValue placeholder={filters.status.allLabel} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{filters.status.allLabel}</SelectItem>
+                      <SelectItem value="all">{filters.status.allLabel}</SelectItem>
                       {filters.status.options.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
