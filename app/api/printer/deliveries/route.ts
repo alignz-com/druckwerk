@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let payload: { orderIds?: unknown; note?: unknown };
+  let payload: { orderIds?: unknown; note?: unknown; addressId?: unknown };
   try {
     payload = await req.json();
   } catch {
@@ -50,6 +50,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "orderIds must be a non-empty array of strings" }, { status: 400 });
   }
   const note = typeof payload.note === "string" ? payload.note : null;
+  const addressId = typeof payload.addressId === "string" ? payload.addressId.trim() : "";
 
   const orders = await prisma.order.findMany({
     where: { id: { in: orderIds } },
@@ -63,13 +64,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No matching orders" }, { status: 400 });
   }
 
+  const brandIds = new Set(orders.map((o) => o.brandId).filter((id): id is string => Boolean(id)));
+  if (brandIds.size !== 1) {
+    return NextResponse.json({ error: "All orders must belong to the same brand" }, { status: 400 });
+  }
+  const brandId = Array.from(brandIds)[0];
+  if (!addressId) {
+    return NextResponse.json({ error: "addressId is required" }, { status: 400 });
+  }
+
+  const address = await prisma.brandAddress.findFirst({
+    where: { id: addressId, brandId },
+  });
+  if (!address) {
+    return NextResponse.json({ error: "Address not found for brand" }, { status: 404 });
+  }
+
   const { deliveryNumber } = await reserveDeliveryNumber();
 
   const delivery = await prisma.$transaction(async (tx) => {
-    const created = await tx.delivery.create({
+    const created = await (tx as any).delivery.create({
       data: {
         number: deliveryNumber,
         note,
+        brandId,
+        shippingName: address.label ?? null,
+        shippingCompany: address.company ?? null,
+        shippingStreet: address.street ?? null,
+        shippingPostalCode: address.postalCode ?? null,
+        shippingCity: address.city ?? null,
+        shippingCountryCode: address.countryCode ?? null,
+        shippingAddressExtra: address.addressExtra ?? null,
         createdByUserId: session.user.id!,
         items: {
           createMany: {
@@ -96,6 +121,16 @@ export async function POST(req: Request) {
     createdAt: new Date(delivery.createdAt),
     note,
     locale: locale === "de" ? "de" : "en",
+    shippingAddress: [
+      address.label,
+      address.company,
+      address.street,
+      address.addressExtra,
+      [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
+      address.countryCode,
+    ]
+      .filter((line) => line && line.toString().trim().length > 0)
+      .join("\n"),
     orders: orders.map((order) => ({
       referenceCode: order.referenceCode,
       requesterName: order.requesterName,

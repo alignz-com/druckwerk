@@ -14,6 +14,7 @@ export type DeliveryNotePayload = {
   createdAt: Date;
   note?: string | null;
   locale: "en" | "de";
+  shippingAddress?: string | null;
   orders: DeliveryNoteOrder[];
 };
 
@@ -25,8 +26,8 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   const titleFont = await doc.embedFont(StandardFonts.HelveticaBold);
   const bodyFont = await doc.embedFont(StandardFonts.Helvetica);
   const titleSize = 18;
-  const bodySize = 11;
-  const rowHeight = 20;
+  const bodySize = 10;
+  const rowHeight = 16;
   const maxContentWidth = 595.28 - margin * 2;
 
   const drawText = (
@@ -63,6 +64,17 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 16;
   drawText(`Created: ${formatDate}`, margin, cursorY);
 
+  if (payload.shippingAddress && payload.shippingAddress.trim()) {
+    cursorY -= 14;
+    drawText("Ship to:", margin, cursorY, { bold: true });
+    cursorY -= 12;
+    const lines = payload.shippingAddress.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    lines.forEach((line) => {
+      drawText(line, margin + 12, cursorY);
+      cursorY -= 12;
+    });
+  }
+
   cursorY -= 28;
   if (payload.note && payload.note.trim()) {
     drawText("Note:", margin, cursorY, { bold: true });
@@ -80,17 +92,13 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
   const colRef = margin;
   const colName = margin + 120;
-  const colRole = margin + 300;
-  const colTemplate = margin + 420;
-  const colBrand = margin + 520;
-  const colQty = margin + 580;
+  const colTemplate = margin + 320;
+  const colQty = margin + 520;
 
   const renderHeader = () => {
     drawText("Ref", colRef, cursorY, { bold: true });
-    drawText("Name", colName, cursorY, { bold: true });
-    drawText("Function", colRole, cursorY, { bold: true });
+    drawText("Name / Function", colName, cursorY, { bold: true });
     drawText("Template", colTemplate, cursorY, { bold: true });
-    drawText("Brand", colBrand, cursorY, { bold: true });
     drawText("Qty", colQty, cursorY, { bold: true });
     cursorY -= rowHeight;
   };
@@ -107,9 +115,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     }
     drawText(order.referenceCode, colRef, cursorY);
     drawText(order.requesterName, colName, cursorY);
-    drawText(order.requesterRole || "–", colRole, cursorY);
+    cursorY -= rowHeight;
+    drawText(order.requesterRole || "–", colName, cursorY);
     drawText(order.templateLabel, colTemplate, cursorY);
-    drawText(order.brandName ?? "–", colBrand, cursorY);
     drawText(order.quantity.toString(), colQty, cursorY);
     cursorY -= rowHeight;
   });

@@ -40,12 +40,26 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
   }
 
   const locale = isLocale(session.user.locale) ? session.user.locale : "en";
+  const shippingAddress = [
+    (delivery as any).shippingName,
+    (delivery as any).shippingCompany,
+    (delivery as any).shippingStreet,
+    (delivery as any).shippingAddressExtra,
+    [(delivery as any).shippingPostalCode, (delivery as any).shippingCity].filter(Boolean).join(" ").trim(),
+    (delivery as any).shippingCountryCode,
+  ]
+    .filter((line) => line && line.toString().trim().length > 0)
+    .join("\n");
+
+  const orders = (delivery as any).items ?? [];
+
   const pdfBytes = await generateDeliveryNotePdf({
     deliveryNumber: delivery.number,
     createdAt: delivery.createdAt,
     note: delivery.note,
     locale: locale === "de" ? "de" : "en",
-    orders: delivery.items.map(({ order }) => ({
+    shippingAddress,
+    orders: orders.map(({ order }: any) => ({
       referenceCode: order.referenceCode,
       requesterName: order.requesterName,
       requesterRole: order.requesterRole ?? "",

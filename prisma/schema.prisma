@@ -320,8 +320,17 @@ model Delivery {
   number           String          @unique
   note             String?
   deliveryNoteUrl  String?
+  brandId          String
+  shippingName     String?
+  shippingCompany  String?
+  shippingStreet   String?
+  shippingPostalCode String?
+  shippingCity     String?
+  shippingCountryCode String?
+  shippingAddressExtra String?
   createdByUserId  String
   createdBy        User            @relation("UserDeliveries", fields: [createdByUserId], references: [id])
+  brand            Brand           @relation(fields: [brandId], references: [id])
   items            DeliveryItem[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt

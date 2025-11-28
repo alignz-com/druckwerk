@@ -156,6 +156,11 @@ export function OrdersTable({
   const [deliveryNote, setDeliveryNote] = useState("");
   const [isCreatingDelivery, setIsCreatingDelivery] = useState(false);
   const [deliveryMessage, setDeliveryMessage] = useState<{ text: string; tone: "success" | "error" } | null>(null);
+  const [deliveryAddressId, setDeliveryAddressId] = useState<string>("");
+  const [deliveryAddresses, setDeliveryAddresses] = useState<
+    Array<{ id: string; label: string; street?: string | null; city?: string | null; postalCode?: string | null }>
+  >([]);
+  const [deliveryAddressesLoading, setDeliveryAddressesLoading] = useState(false);
 
   const orderById = useMemo(() => {
     const map = new Map<string, OrdersTableRow>();
@@ -423,6 +428,36 @@ export function OrdersTable({
     });
   }, [data]);
 
+  const selectedBrandId = useMemo(() => {
+    const selectedRows = data.filter((row) => selected.has(row.id));
+    if (selectedRows.length === 0) return null;
+    const brandIds = new Set(selectedRows.map((row) => row.brandId).filter(Boolean) as string[]);
+    if (brandIds.size === 1) return Array.from(brandIds)[0];
+    return null;
+  }, [data, selected]);
+
+  useEffect(() => {
+    if (!isCreateDeliveryOpen) return;
+    if (!selectedBrandId) {
+      setDeliveryAddresses([]);
+      setDeliveryAddressId("");
+      return;
+    }
+    setDeliveryAddressesLoading(true);
+    fetch(`/api/printer/brands/${selectedBrandId}/addresses`)
+      .then((res) => res.json())
+      .then((payload) => {
+        const addresses = Array.isArray(payload.addresses) ? payload.addresses : [];
+        setDeliveryAddresses(addresses);
+        setDeliveryAddressId(addresses[0]?.id ?? "");
+      })
+      .catch(() => {
+        setDeliveryAddresses([]);
+        setDeliveryAddressId("");
+      })
+      .finally(() => setDeliveryAddressesLoading(false));
+  }, [selectedBrandId, isCreateDeliveryOpen]);
+
   const handleBulkStatusUpdate = async () => {
     if (!bulkStatus || !bulkStatusValue || selected.size === 0) return;
     setIsBulkUpdating(true);
@@ -449,14 +484,18 @@ export function OrdersTable({
   };
 
   const handleCreateDelivery = async () => {
-    if (!bulkDelivery || selected.size === 0) return;
+    if (!bulkDelivery || selected.size === 0 || !deliveryAddressId) return;
     setIsCreatingDelivery(true);
     setDeliveryMessage(null);
     try {
       const response = await fetch("/api/printer/deliveries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderIds: Array.from(selected), note: deliveryNote.trim() || undefined }),
+        body: JSON.stringify({
+          orderIds: Array.from(selected),
+          note: deliveryNote.trim() || undefined,
+          addressId: deliveryAddressId,
+        }),
       });
       if (!response.ok) {
         throw new Error("Request failed");
@@ -525,7 +564,7 @@ export function OrdersTable({
                   type="button"
                   variant="outline"
                   onClick={() => setIsCreateDeliveryOpen(true)}
-                  disabled={isCreatingDelivery}
+                  disabled={isCreatingDelivery || !selectedBrandId}
                 >
                   {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
                 </Button>
@@ -651,16 +690,37 @@ export function OrdersTable({
 
       {bulkDelivery ? (
         <Dialog open={isCreateDeliveryOpen} onOpenChange={setIsCreateDeliveryOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{bulkDelivery.label}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{bulkDelivery.label}</DialogTitle>
+              </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-900">Ship to</div>
+                {deliveryAddressesLoading ? (
+                  <div className="text-xs text-slate-500">Loading addresses…</div>
+                ) : deliveryAddresses.length === 0 ? (
+                  <div className="text-xs text-red-600">No addresses for this brand.</div>
+                ) : (
+                  <Select value={deliveryAddressId} onValueChange={setDeliveryAddressId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select address" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliveryAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id}>
+                          {addr.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <Textarea
                 placeholder={bulkDelivery.notePlaceholder}
                 value={deliveryNote}
                 onChange={(e) => setDeliveryNote(e.target.value)}
-                rows={4}
+                rows={3}
               />
               <p className="text-xs text-slate-500">
                 {selectedCount} {selectedCount === 1 ? "order" : "orders"} selected
@@ -670,7 +730,16 @@ export function OrdersTable({
               <Button type="button" variant="outline" onClick={() => setIsCreateDeliveryOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={handleCreateDelivery} disabled={isCreatingDelivery}>
+              <Button
+                type="button"
+                onClick={handleCreateDelivery}
+                disabled={
+                  isCreatingDelivery ||
+                  !deliveryAddressId ||
+                  deliveryAddresses.length === 0 ||
+                  deliveryAddressesLoading
+                }
+              >
                 {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
               </Button>
             </DialogFooter>
