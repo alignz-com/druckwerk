@@ -31,6 +31,15 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
+const STATUS_COLOR: Record<string, { bg: string; text: string; border: string }> = {
+  DRAFT: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-200" },
+  SUBMITTED: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-200" },
+  IN_PRODUCTION: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-200" },
+  READY_FOR_DELIVERY: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200" },
+  COMPLETED: { bg: "bg-green-100", text: "text-green-700", border: "border-green-200" },
+  CANCELLED: { bg: "bg-red-100", text: "text-red-700", border: "border-red-200" },
+};
+
 export type OrdersTableRow = {
   id: string;
   referenceCode: string;
@@ -291,7 +300,16 @@ export function OrdersTable({
         enableSorting: true,
         sortAccessor: (row) => row.statusLabel.toLowerCase(),
         renderCell: (row) => (
-          <Badge variant={row.status === "SUBMITTED" ? "secondary" : "outline"}>{row.statusLabel}</Badge>
+          <Badge
+            className={cn(
+              "border text-xs font-medium",
+              STATUS_COLOR[row.status]?.bg ?? "bg-slate-100",
+              STATUS_COLOR[row.status]?.text ?? "text-slate-700",
+              STATUS_COLOR[row.status]?.border ?? "border-slate-200",
+            )}
+          >
+            {row.statusLabel}
+          </Badge>
         ),
       },
       {
