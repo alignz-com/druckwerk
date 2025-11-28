@@ -25,6 +25,7 @@ enum OrderStatus {
   DRAFT
   SUBMITTED
   IN_PRODUCTION
+  READY_FOR_DELIVERY
   COMPLETED
   CANCELLED
 }
@@ -77,6 +78,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   orders         Order[]
   orderProfiles  UserOrderProfile[]
+  deliveriesCreated Delivery[] @relation("UserDeliveries")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -214,6 +216,7 @@ model Template {
   printDpi         Int?
   pcmCode          String?
   hasQrCode        Boolean         @default(false)
+  hasPhotoSlot     Boolean         @default(false)
   orders           Order[]
   assignments      BrandTemplate[]
   brandDefaults    Brand[]         @relation("BrandDefaultTemplate")
@@ -271,6 +274,9 @@ model Order {
   company        String?
   url            String?
   linkedin       String?
+  photoOriginalUrl String?
+  photoCroppedUrl String?
+  photoMeta      Json?
   pdfUrl         String?
   blobId         String?
   pdfFileName    String?
@@ -284,6 +290,7 @@ model Order {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   jdfJob         JdfExportJob?
+  deliveryItems  DeliveryItem[]
 
   @@index([brandId])
   @@index([templateId])
@@ -303,6 +310,44 @@ model JdfExportJob {
 }
 
 model OrderReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Delivery {
+  id               String          @id @default(cuid())
+  number           String          @unique
+  note             String?
+  deliveryNoteUrl  String?
+  brandId          String
+  shippingName     String?
+  shippingCompany  String?
+  shippingStreet   String?
+  shippingPostalCode String?
+  shippingCity     String?
+  shippingCountryCode String?
+  shippingAddressExtra String?
+  createdByUserId  String
+  createdBy        User            @relation("UserDeliveries", fields: [createdByUserId], references: [id])
+  brand            Brand           @relation(fields: [brandId], references: [id])
+  items            DeliveryItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model DeliveryItem {
+  id          String    @id @default(cuid())
+  deliveryId  String
+  orderId     String    @unique
+  position    Int       @default(0)
+  delivery    Delivery  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+}
+
+model DeliveryReferenceCounter {
   year      Int    @id
   lastValue Int    @default(0)
   updatedAt DateTime @updatedAt

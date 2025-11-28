@@ -50,6 +50,9 @@ const FlipCard = dynamic(() => import("@/components/FlipCard"), {
 
 const QUANTITIES = [50, 100, 250, 500, 1000];
 const MAX_ADDRESS_BLOCK_LINES = 4;
+const SIGNED_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const PREVIEW_MESSAGE_CLASS =
+  "flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm font-medium";
 type OverflowFieldKey = "name" | "role" | "email" | "phone" | "mobile" | "url" | "linkedin" | "addressBlock";
 const bindingFieldMap: Record<string, OverflowFieldKey> = {
   name: "name",
@@ -178,6 +181,23 @@ const brandResourcesFetcher = async (brandId: string): Promise<BrandResourcePayl
   return (await response.json()) as BrandResourcePayload;
 };
 
+function getEarliestSignedAssetExpiry(template: ResolvedTemplate | null): number | null {
+  if (!template) return null;
+  const timestamps: number[] = [];
+  template.assets?.forEach((asset) => {
+    if (!asset?.expiresAt) return;
+    const ts = Date.parse(asset.expiresAt);
+    if (!Number.isNaN(ts)) timestamps.push(ts);
+  });
+  template.fonts.forEach((font) => {
+    if (!font.expiresAt) return;
+    const ts = Date.parse(font.expiresAt);
+    if (!Number.isNaN(ts)) timestamps.push(ts);
+  });
+  if (timestamps.length === 0) return null;
+  return Math.min(...timestamps);
+}
+
 export type OrderFormProps = {
   availableBrands?: BrandOption[];
   initialBrandId?: string | null;
@@ -218,6 +238,13 @@ export default function OrderForm({
   });
   const [templateLoadingKey, setTemplateLoadingKey] = useState<string | null>(null);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const templateRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearTemplateRefreshTimeout = useCallback(() => {
+    if (templateRefreshTimeoutRef.current !== null) {
+      clearTimeout(templateRefreshTimeoutRef.current);
+      templateRefreshTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (initialTemplate) {
@@ -335,38 +362,78 @@ export default function OrderForm({
     }
   }, [brandData.initialTemplateKey, brandData.brandId, templates, currentBrandId]);
 
-  useEffect(() => {
-    if (!selectedSummaryKey || templateLoaded) return;
-    let cancelled = false;
-    setTemplateError(null);
-    setTemplateLoadingKey(selectedSummaryKey);
-    const params = new URLSearchParams({ key: selectedSummaryKey });
-    if (currentBrandId) params.set("brandId", currentBrandId);
-    fetch(`/api/templates/resolve?${params.toString()}`)
-      .then((response) => {
+  const loadTemplate = useCallback(
+    async (
+      templateKey: string,
+      opts: {
+        silent?: boolean;
+        signal?: AbortSignal;
+      } = {},
+    ) => {
+      if (!templateKey) return null;
+      const { silent = false, signal } = opts;
+      if (!silent) {
+        setTemplateError(null);
+        setTemplateLoadingKey(templateKey);
+      }
+      try {
+        const params = new URLSearchParams({ key: templateKey });
+        if (currentBrandId) params.set("brandId", currentBrandId);
+        const response = await fetch(`/api/templates/resolve?${params.toString()}`, { signal });
         if (!response.ok) throw new Error("Failed to load template");
-        return response.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        if (data?.template) {
-          setTemplateDetails((current) => ({ ...current, [data.template.key]: data.template }));
-        } else {
+        const data = await response.json();
+        if (!data?.template) {
           throw new Error("Template not available");
         }
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setTemplateError(error instanceof Error ? error.message : "Failed to load template");
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setTemplateLoadingKey((current) => (current === selectedSummaryKey ? null : current));
-      });
+        const template: ResolvedTemplate = data.template;
+        setTemplateDetails((current) => ({ ...current, [template.key]: template }));
+        return template;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return null;
+        }
+        if (!silent) {
+          setTemplateError(error instanceof Error ? error.message : "Failed to load template");
+        } else {
+          console.warn("[order-form] Silent template refresh failed", error);
+        }
+        return null;
+      } finally {
+        if (!silent) {
+          setTemplateLoadingKey((current) => (current === templateKey ? null : current));
+        }
+      }
+    },
+    [currentBrandId],
+  );
+
+  useEffect(() => {
+    if (!selectedSummaryKey || templateLoaded) return;
+    const controller = new AbortController();
+    loadTemplate(selectedSummaryKey, { signal: controller.signal });
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [selectedSummaryKey, templateLoaded, currentBrandId]);
+  }, [selectedSummaryKey, templateLoaded, loadTemplate]);
+
+  useEffect(() => {
+    clearTemplateRefreshTimeout();
+    if (!selectedTemplate) return;
+    const earliestExpiry = getEarliestSignedAssetExpiry(selectedTemplate);
+    if (!earliestExpiry) return;
+    const refreshAt = earliestExpiry - SIGNED_URL_REFRESH_BUFFER_MS;
+    const delay = refreshAt - Date.now();
+    if (delay <= 0) {
+      loadTemplate(selectedTemplate.key, { silent: true });
+      return;
+    }
+    templateRefreshTimeoutRef.current = setTimeout(() => {
+      loadTemplate(selectedTemplate.key, { silent: true });
+    }, delay);
+    return () => {
+      clearTemplateRefreshTimeout();
+    };
+  }, [selectedTemplate, loadTemplate, clearTemplateRefreshTimeout]);
 
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
@@ -1264,7 +1331,7 @@ export default function OrderForm({
                 <div className="relative aspect-[85/55] w-full">
                   {showPreviewSkeleton && selectedTemplate ? (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
-                      <div className="animate-pulse text-xs font-medium text-slate-500">
+                      <div className="animate-pulse text-sm font-medium text-slate-500">
                         {tOrder("preview.loading")}
                       </div>
                     </div>
@@ -1275,19 +1342,23 @@ export default function OrderForm({
                     }`}
                   >
                     {!currentBrandId ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("selectBrandPrompt")}
                       </div>
                     ) : templates.length === 0 ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("preview.noTemplates")}
                       </div>
                     ) : !selectedSummary ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("preview.selectTemplate")}
                       </div>
                     ) : !selectedTemplate ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div
+                        className={`${PREVIEW_MESSAGE_CLASS} ${
+                          templateError ? "text-red-600" : "text-slate-500"
+                        }`}
+                      >
                         {templateError ?? tOrder("preview.loading")}
                       </div>
                     ) : (

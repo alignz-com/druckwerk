@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
       : hasQrCodeRaw === null
         ? false
         : Boolean(hasQrCodeRaw);
+  const hasPhotoSlotRaw = form.get("hasPhotoSlot");
+  const hasPhotoSlot =
+    typeof hasPhotoSlotRaw === "string"
+      ? hasPhotoSlotRaw === "true" || hasPhotoSlotRaw === "on"
+      : hasPhotoSlotRaw === null
+        ? false
+        : Boolean(hasPhotoSlotRaw);
 
   if (!key) {
     return NextResponse.json({ error: "key is required" }, { status: 400 });
@@ -105,6 +112,7 @@ export async function POST(req: NextRequest) {
         pcmCode: pcmCodeValue,
         config,
         hasQrCode,
+        hasPhotoSlot,
         paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
       },
     });

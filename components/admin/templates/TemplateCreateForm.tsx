@@ -31,6 +31,7 @@ type FormState = {
   paperStockId: string;
   config: string;
   hasQrCode: boolean;
+  hasPhotoSlot: boolean;
 };
 
 const emptyForm: FormState = {
@@ -43,6 +44,7 @@ const emptyForm: FormState = {
   paperStockId: "",
   config: defaultConfig,
   hasQrCode: false,
+  hasPhotoSlot: false,
 };
 
 export default function TemplateCreateForm({ onCreated, onCancel, className }: TemplateCreateFormProps) {
@@ -128,6 +130,7 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       payload.append("paperStockId", form.paperStockId);
     }
     payload.append("hasQrCode", form.hasQrCode ? "true" : "false");
+    payload.append("hasPhotoSlot", form.hasPhotoSlot ? "true" : "false");
 
     if (pdfFile) {
       payload.append("pdfFile", pdfFile);
@@ -245,6 +248,24 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
               </Label>
               <p id="template-create-has-qr-hint" className="text-xs text-slate-500">
                 {t("create.hints.hasQrCode")}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
+          <div className="flex items-start gap-4">
+            <Checkbox
+              id="template-create-has-photo"
+              checked={form.hasPhotoSlot}
+              onCheckedChange={(checked) => setForm((current) => ({ ...current, hasPhotoSlot: Boolean(checked) }))}
+              aria-describedby="template-create-has-photo-hint"
+            />
+            <div className="space-y-1">
+              <Label htmlFor="template-create-has-photo" className="text-sm font-medium text-slate-900">
+                {t("create.fields.hasPhotoSlot")}
+              </Label>
+              <p id="template-create-has-photo-hint" className="text-xs text-slate-500">
+                {t("create.hints.hasPhotoSlot")}
               </p>
             </div>
           </div>

@@ -19,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
@@ -107,6 +115,15 @@ type OrdersTableProps = {
       error: string;
     };
   };
+  bulkDelivery?: {
+    label: string;
+    apply: string;
+    creating: string;
+    success: string;
+    error: string;
+    noteLabel: string;
+    notePlaceholder: string;
+  };
 };
 
 export function OrdersTable({
@@ -120,6 +137,7 @@ export function OrdersTable({
   pagination,
   selectionLabelTemplate,
   bulkStatus,
+  bulkDelivery,
 }: OrdersTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -134,6 +152,15 @@ export function OrdersTable({
   const [bulkStatusValue, setBulkStatusValue] = useState<string>("");
   const [bulkStatusMessage, setBulkStatusMessage] = useState<{ text: string; tone: "success" | "error" } | null>(null);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [isCreateDeliveryOpen, setIsCreateDeliveryOpen] = useState(false);
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [isCreatingDelivery, setIsCreatingDelivery] = useState(false);
+  const [deliveryMessage, setDeliveryMessage] = useState<{ text: string; tone: "success" | "error" } | null>(null);
+  const [deliveryAddressId, setDeliveryAddressId] = useState<string>("");
+  const [deliveryAddresses, setDeliveryAddresses] = useState<
+    Array<{ id: string; label: string; street?: string | null; city?: string | null; postalCode?: string | null }>
+  >([]);
+  const [deliveryAddressesLoading, setDeliveryAddressesLoading] = useState(false);
 
   const orderById = useMemo(() => {
     const map = new Map<string, OrdersTableRow>();
@@ -401,6 +428,36 @@ export function OrdersTable({
     });
   }, [data]);
 
+  const selectedBrandId = useMemo(() => {
+    const selectedRows = data.filter((row) => selected.has(row.id));
+    if (selectedRows.length === 0) return null;
+    const brandIds = new Set(selectedRows.map((row) => row.brandId).filter(Boolean) as string[]);
+    if (brandIds.size === 1) return Array.from(brandIds)[0];
+    return null;
+  }, [data, selected]);
+
+  useEffect(() => {
+    if (!isCreateDeliveryOpen) return;
+    if (!selectedBrandId) {
+      setDeliveryAddresses([]);
+      setDeliveryAddressId("");
+      return;
+    }
+    setDeliveryAddressesLoading(true);
+    fetch(`/api/printer/brands/${selectedBrandId}/addresses`)
+      .then((res) => res.json())
+      .then((payload) => {
+        const addresses = Array.isArray(payload.addresses) ? payload.addresses : [];
+        setDeliveryAddresses(addresses);
+        setDeliveryAddressId(addresses[0]?.id ?? "");
+      })
+      .catch(() => {
+        setDeliveryAddresses([]);
+        setDeliveryAddressId("");
+      })
+      .finally(() => setDeliveryAddressesLoading(false));
+  }, [selectedBrandId, isCreateDeliveryOpen]);
+
   const handleBulkStatusUpdate = async () => {
     if (!bulkStatus || !bulkStatusValue || selected.size === 0) return;
     setIsBulkUpdating(true);
@@ -426,6 +483,41 @@ export function OrdersTable({
     }
   };
 
+  const handleCreateDelivery = async () => {
+    if (!bulkDelivery || selected.size === 0 || !deliveryAddressId) return;
+    setIsCreatingDelivery(true);
+    setDeliveryMessage(null);
+    try {
+      const response = await fetch("/api/printer/deliveries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderIds: Array.from(selected),
+          note: deliveryNote.trim() || undefined,
+          addressId: deliveryAddressId,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+      const data = await response.json();
+      const link = data?.delivery?.deliveryNoteUrl;
+      setDeliveryMessage({ text: bulkDelivery.success, tone: "success" });
+      setIsCreateDeliveryOpen(false);
+      setDeliveryNote("");
+      setSelected(new Set());
+      if (link) {
+        window.open(link, "_blank", "noopener,noreferrer");
+      }
+      router.refresh();
+    } catch (error) {
+      console.error("[deliveries] create delivery failed", error);
+      setDeliveryMessage({ text: bulkDelivery.error, tone: "error" });
+    } finally {
+      setIsCreatingDelivery(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -444,27 +536,39 @@ export function OrdersTable({
               {pagination.reset}
             </Button>
           ) : null}
-          {selectedLabel ? (
-            <div className="text-sm text-slate-500">{selectedLabel}</div>
-          ) : null}
-          {bulkStatus && selectedCount > 0 ? (
+          {selectedLabel ? <div className="text-sm text-slate-500">{selectedLabel}</div> : null}
+          {selectedCount > 0 ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-              <span className="text-sm text-slate-500">{bulkStatus.labels.label}</span>
-              <Select value={bulkStatusValue || undefined} onValueChange={setBulkStatusValue}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder={bulkStatus.labels.placeholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {bulkStatus.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatusValue || isBulkUpdating}>
-                {isBulkUpdating ? "…" : bulkStatus.labels.apply}
-              </Button>
+              {bulkStatus ? (
+                <>
+                  <span className="text-sm text-slate-500">{bulkStatus.labels.label}</span>
+                  <Select value={bulkStatusValue || undefined} onValueChange={setBulkStatusValue}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder={bulkStatus.labels.placeholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bulkStatus.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatusValue || isBulkUpdating}>
+                    {isBulkUpdating ? "…" : bulkStatus.labels.apply}
+                  </Button>
+                </>
+              ) : null}
+              {bulkDelivery ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDeliveryOpen(true)}
+                  disabled={isCreatingDelivery || !selectedBrandId}
+                >
+                  {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -472,6 +576,11 @@ export function OrdersTable({
       {bulkStatusMessage ? (
         <div className={`text-sm ${bulkStatusMessage.tone === "success" ? "text-emerald-600" : "text-red-600"}`}>
           {bulkStatusMessage.text}
+        </div>
+      ) : null}
+      {deliveryMessage ? (
+        <div className={`text-sm ${deliveryMessage.tone === "success" ? "text-emerald-600" : "text-red-600"}`}>
+          {deliveryMessage.text}
         </div>
       ) : null}
 
@@ -578,6 +687,65 @@ export function OrdersTable({
           </Button>
         </div>
       </div>
+
+      {bulkDelivery ? (
+        <Dialog open={isCreateDeliveryOpen} onOpenChange={setIsCreateDeliveryOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{bulkDelivery.label}</DialogTitle>
+              </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-900">Ship to</div>
+                {deliveryAddressesLoading ? (
+                  <div className="text-xs text-slate-500">Loading addresses…</div>
+                ) : deliveryAddresses.length === 0 ? (
+                  <div className="text-xs text-red-600">No addresses for this brand.</div>
+                ) : (
+                  <Select value={deliveryAddressId} onValueChange={setDeliveryAddressId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select address" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliveryAddresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id}>
+                          {addr.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <Textarea
+                placeholder={bulkDelivery.notePlaceholder}
+                value={deliveryNote}
+                onChange={(e) => setDeliveryNote(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-slate-500">
+                {selectedCount} {selectedCount === 1 ? "order" : "orders"} selected
+              </p>
+            </div>
+            <DialogFooter className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsCreateDeliveryOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateDelivery}
+                disabled={
+                  isCreatingDelivery ||
+                  !deliveryAddressId ||
+                  deliveryAddresses.length === 0 ||
+                  deliveryAddressesLoading
+                }
+              >
+                {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
 
       <OrderDetailSheet open={detailOpen} onOpenChange={handleDetailOpenChange} order={detailOrder} labels={detailLabels} />
     </div>
