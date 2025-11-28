@@ -99,6 +99,7 @@ export async function POST(req: Request) {
     orders: orders.map((order) => ({
       referenceCode: order.referenceCode,
       requesterName: order.requesterName,
+      requesterRole: order.requesterRole ?? "",
       templateLabel: order.template?.label ?? order.template?.key ?? "–",
       brandName: order.brand?.name ?? null,
       quantity: order.quantity,

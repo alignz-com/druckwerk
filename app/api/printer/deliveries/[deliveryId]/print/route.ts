@@ -48,6 +48,7 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
     orders: delivery.items.map(({ order }) => ({
       referenceCode: order.referenceCode,
       requesterName: order.requesterName,
+      requesterRole: order.requesterRole ?? "",
       templateLabel: order.template?.label ?? order.template?.key ?? "–",
       brandName: order.brand?.name ?? null,
       quantity: order.quantity,

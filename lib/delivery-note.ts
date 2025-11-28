@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export type DeliveryNoteOrder = {
   referenceCode: string;
   requesterName: string;
+  requesterRole: string;
   templateLabel: string;
   brandName: string | null;
   quantity: number;
@@ -25,7 +26,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   const bodyFont = await doc.embedFont(StandardFonts.Helvetica);
   const titleSize = 18;
   const bodySize = 11;
-  const rowHeight = 18;
+  const rowHeight = 20;
   const maxContentWidth = 595.28 - margin * 2;
 
   const drawText = (
@@ -37,11 +38,16 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     const font = options?.bold ? titleFont : bodyFont;
     const size = options?.size ?? bodySize;
     const targetPage = options?.pageRef ?? page;
-    const safeText = text ?? "";
+    const safeText = (text ?? "").replace(/\r?\n/g, " ");
     const trimmed = safeText.replace(/\s+/g, " ").trim();
     const maxWidth = maxContentWidth - x + margin;
     const textWidth = font.widthOfTextAtSize(trimmed, size);
-    const content = textWidth > maxWidth ? font.widthOfTextAtSize(trimmed.slice(0, 40), size) > maxWidth ? trimmed.slice(0, 40) : trimmed.slice(0, Math.min(trimmed.length, 64)) : trimmed;
+    const content =
+      textWidth > maxWidth
+        ? font.widthOfTextAtSize(trimmed.slice(0, 40), size) > maxWidth
+          ? trimmed.slice(0, 40)
+          : trimmed.slice(0, Math.min(trimmed.length, 64))
+        : trimmed;
     targetPage.drawText(content, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
   };
 
@@ -73,14 +79,16 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 18;
 
   const colRef = margin;
-  const colName = margin + 110;
-  const colTemplate = margin + 250;
-  const colBrand = margin + 420;
-  const colQty = margin + 520;
+  const colName = margin + 120;
+  const colRole = margin + 300;
+  const colTemplate = margin + 420;
+  const colBrand = margin + 520;
+  const colQty = margin + 580;
 
   const renderHeader = () => {
     drawText("Ref", colRef, cursorY, { bold: true });
     drawText("Name", colName, cursorY, { bold: true });
+    drawText("Function", colRole, cursorY, { bold: true });
     drawText("Template", colTemplate, cursorY, { bold: true });
     drawText("Brand", colBrand, cursorY, { bold: true });
     drawText("Qty", colQty, cursorY, { bold: true });
@@ -99,6 +107,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     }
     drawText(order.referenceCode, colRef, cursorY);
     drawText(order.requesterName, colName, cursorY);
+    drawText(order.requesterRole || "–", colRole, cursorY);
     drawText(order.templateLabel, colTemplate, cursorY);
     drawText(order.brandName ?? "–", colBrand, cursorY);
     drawText(order.quantity.toString(), colQty, cursorY);
