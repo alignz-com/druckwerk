@@ -65,7 +65,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   drawText(`Created: ${formatDate}`, margin, cursorY);
 
   // Ship from block
-  cursorY -= 18;
+  cursorY -= 24;
   drawText("Ship from:", margin, cursorY, { bold: true });
   cursorY -= 12;
   const shipFromLines = ["Thurnher Druckerei GmbH", "Grundweg 4", "6830 Rankweil", "AT"];
