@@ -568,40 +568,34 @@ export function OrdersTable({
           {filters ? (
             <div className="flex flex-wrap items-center gap-2 text-xs">
               {filters.brand ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-medium text-slate-500">{filters.brand.label}</span>
-                  <Select value={brandFilter} onValueChange={setBrandFilter}>
-                    <SelectTrigger className="w-40 h-9 text-sm">
-                      <SelectValue placeholder={filters.brand.allLabel} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{filters.brand.allLabel}</SelectItem>
-                      {filters.brand.options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select value={brandFilter} onValueChange={setBrandFilter}>
+                  <SelectTrigger className="h-9 min-w-[9rem] text-xs">
+                    <SelectValue placeholder={filters.brand.allLabel} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{filters.brand.allLabel}</SelectItem>
+                    {filters.brand.options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : null}
               {filters.status ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-medium text-slate-500">{filters.status.label}</span>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40 h-9 text-sm">
-                      <SelectValue placeholder={filters.status.allLabel} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{filters.status.allLabel}</SelectItem>
-                      {filters.status.options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 min-w-[9rem] text-xs">
+                    <SelectValue placeholder={filters.status.allLabel} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{filters.status.allLabel}</SelectItem>
+                    {filters.status.options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : null}
             </div>
           ) : null}
@@ -615,9 +609,8 @@ export function OrdersTable({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
               {bulkStatus ? (
                 <>
-                  <span className="text-sm text-slate-500">{bulkStatus.labels.label}</span>
                   <Select value={bulkStatusValue || undefined} onValueChange={setBulkStatusValue}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="h-9 w-40 text-xs">
                       <SelectValue placeholder={bulkStatus.labels.placeholder} />
                     </SelectTrigger>
                     <SelectContent>
