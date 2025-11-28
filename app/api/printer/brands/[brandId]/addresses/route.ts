@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_: Request, { params }: { params: { brandId: string } }) {
+export async function GET(_: NextRequest, context: { params: Promise<{ brandId: string }> }) {
   const session = await getServerAuthSession();
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "PRINTER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const brandId = params.brandId;
+  const { brandId } = await context.params;
   if (!brandId) {
     return NextResponse.json({ error: "Invalid brand id" }, { status: 400 });
   }
