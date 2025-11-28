@@ -564,14 +564,14 @@ export function OrdersTable({
             className="pl-9"
           />
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           {filters ? (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               {filters.brand ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500">{filters.brand.label}</span>
+                  <span className="text-[11px] font-medium text-slate-500">{filters.brand.label}</span>
                   <Select value={brandFilter} onValueChange={setBrandFilter}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-40 h-9 text-sm">
                       <SelectValue placeholder={filters.brand.allLabel} />
                     </SelectTrigger>
                     <SelectContent>
@@ -587,9 +587,9 @@ export function OrdersTable({
               ) : null}
               {filters.status ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500">{filters.status.label}</span>
+                  <span className="text-[11px] font-medium text-slate-500">{filters.status.label}</span>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-40 h-9 text-sm">
                       <SelectValue placeholder={filters.status.allLabel} />
                     </SelectTrigger>
                     <SelectContent>
