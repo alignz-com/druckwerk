@@ -36,7 +36,7 @@ const STATUS_COLOR: Record<string, { bg: string; text: string; border: string }>
   SUBMITTED: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-200" },
   IN_PRODUCTION: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-200" },
   READY_FOR_DELIVERY: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200" },
-  COMPLETED: { bg: "bg-green-100", text: "text-green-700", border: "border-green-200" },
+  COMPLETED: { bg: "bg-green-200", text: "text-green-800", border: "border-green-300" },
   CANCELLED: { bg: "bg-red-100", text: "text-red-700", border: "border-red-200" },
 };
 
