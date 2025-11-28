@@ -70,17 +70,17 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 12;
   const shipFromLines = ["Thurnher Druckerei GmbH", "Grundweg 4", "6830 Rankweil", "AT"];
   shipFromLines.forEach((line) => {
-    drawText(line, margin + 12, cursorY);
+    drawText(line, margin, cursorY);
     cursorY -= 12;
   });
 
   if (payload.shippingAddress && payload.shippingAddress.trim()) {
-    cursorY -= 14;
+    cursorY -= 18;
     drawText("Ship to:", margin, cursorY, { bold: true });
     cursorY -= 12;
     const lines = payload.shippingAddress.split(/\r?\n/).filter((line) => line.trim().length > 0);
     lines.forEach((line) => {
-      drawText(line, margin + 12, cursorY);
+      drawText(line, margin, cursorY);
       cursorY -= 12;
     });
   }
