@@ -1,49 +1,20 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { getCountryLabel } from "@/lib/countries";
 
-type DeliveryNoteOrder = {
+export type DeliveryNoteOrder = {
   referenceCode: string;
+  requesterName: string;
   templateLabel: string;
   brandName: string | null;
   quantity: number;
-  requesterName: string;
-  company: string | null;
-  address?: {
-    companyName?: string | null;
-    street?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-    countryCode?: string | null;
-    addressExtra?: string | null;
-  } | null;
 };
 
-type DeliveryNotePayload = {
+export type DeliveryNotePayload = {
   deliveryNumber: string;
   createdAt: Date;
   note?: string | null;
   locale: "en" | "de";
   orders: DeliveryNoteOrder[];
 };
-
-function formatAddress(address: DeliveryNoteOrder["address"], locale: "en" | "de") {
-  if (!address) return "";
-  const lines: string[] = [];
-  const company = (address.companyName ?? "").trim();
-  if (company) lines.push(company);
-  const street = (address.street ?? "").trim();
-  if (street) lines.push(street);
-  const postalCity = [address.postalCode, address.city].filter(Boolean).join(" ").trim();
-  if (postalCity) lines.push(postalCity);
-  const country =
-    address.countryCode && address.countryCode.length > 0
-      ? getCountryLabel(locale, address.countryCode).trim()
-      : "";
-  if (country) lines.push(country);
-  const extra = (address.addressExtra ?? "").trim();
-  if (extra) lines.push(extra);
-  return lines.join("\n");
-}
 
 export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
@@ -94,39 +65,37 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   drawText("Orders", margin, cursorY, { bold: true });
   cursorY -= 18;
 
-  const headerY = cursorY;
-  drawText("Ref", margin, headerY, { bold: true });
-  drawText("Template", margin + 100, headerY, { bold: true });
-  drawText("Brand", margin + 260, headerY, { bold: true });
-  drawText("Qty", margin + 400, headerY, { bold: true });
-  cursorY -= 14;
+  const colRef = margin;
+  const colName = margin + 90;
+  const colTemplate = margin + 240;
+  const colBrand = margin + 380;
+  const colQty = margin + 480;
+
+  const renderHeader = () => {
+    drawText("Ref", colRef, cursorY, { bold: true });
+    drawText("Name", colName, cursorY, { bold: true });
+    drawText("Template", colTemplate, cursorY, { bold: true });
+    drawText("Brand", colBrand, cursorY, { bold: true });
+    drawText("Qty", colQty, cursorY, { bold: true });
+    cursorY -= 14;
+  };
+
+  renderHeader();
 
   payload.orders.forEach((order) => {
-    if (cursorY < margin + 80) {
-      // new page if needed
-      const newPage = doc.addPage([595.28, 841.89]);
-      page = newPage;
+    if (cursorY < margin + 60) {
+      page = doc.addPage([595.28, 841.89]);
       cursorY = height - margin;
       drawText("Orders (continued)", margin, cursorY, { pageRef: page });
       cursorY -= 18;
+      renderHeader();
     }
-    drawText(order.referenceCode, margin, cursorY);
-    drawText(order.templateLabel, margin + 100, cursorY);
-    drawText(order.brandName ?? "–", margin + 260, cursorY);
-    drawText(order.quantity.toString(), margin + 400, cursorY);
+    drawText(order.referenceCode, colRef, cursorY);
+    drawText(order.requesterName, colName, cursorY);
+    drawText(order.templateLabel, colTemplate, cursorY);
+    drawText(order.brandName ?? "–", colBrand, cursorY);
+    drawText(order.quantity.toString(), colQty, cursorY);
     cursorY -= 14;
-    const addr = formatAddress(order.address, payload.locale);
-    const companyLine = order.company?.trim();
-    const lines: string[] = [];
-    if (companyLine) lines.push(companyLine);
-    if (addr) lines.push(addr);
-    if (lines.length > 0) {
-      lines.forEach((line) => {
-        drawText(line, margin + 12, cursorY);
-        cursorY -= 12;
-      });
-      cursorY -= 6;
-    }
   });
 
   const pdfBytes = await doc.save();

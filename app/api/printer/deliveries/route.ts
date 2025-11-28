@@ -30,21 +30,6 @@ async function reserveDeliveryNumber() {
   };
 }
 
-function extractAddress(meta: unknown) {
-  if (!meta || typeof meta !== "object") return null;
-  const address = (meta as Record<string, unknown>).address;
-  if (!address || typeof address !== "object") return null;
-  const addr = address as Record<string, unknown>;
-  return {
-    companyName: typeof addr.companyName === "string" ? addr.companyName : null,
-    street: typeof addr.street === "string" ? addr.street : null,
-    postalCode: typeof addr.postalCode === "string" ? addr.postalCode : null,
-    city: typeof addr.city === "string" ? addr.city : null,
-    countryCode: typeof addr.countryCode === "string" ? addr.countryCode : null,
-    addressExtra: typeof addr.addressExtra === "string" ? addr.addressExtra : null,
-  };
-}
-
 export async function POST(req: Request) {
   const session = await getServerAuthSession();
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "PRINTER")) {
@@ -113,12 +98,10 @@ export async function POST(req: Request) {
     locale: locale === "de" ? "de" : "en",
     orders: orders.map((order) => ({
       referenceCode: order.referenceCode,
+      requesterName: order.requesterName,
       templateLabel: order.template?.label ?? order.template?.key ?? "–",
       brandName: order.brand?.name ?? null,
       quantity: order.quantity,
-      requesterName: order.requesterName,
-      company: order.company ?? null,
-      address: extractAddress(order.meta),
     })),
   });
 

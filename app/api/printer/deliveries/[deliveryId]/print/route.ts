@@ -47,15 +47,10 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
     locale: locale === "de" ? "de" : "en",
     orders: delivery.items.map(({ order }) => ({
       referenceCode: order.referenceCode,
+      requesterName: order.requesterName,
       templateLabel: order.template?.label ?? order.template?.key ?? "–",
       brandName: order.brand?.name ?? null,
       quantity: order.quantity,
-      requesterName: order.requesterName,
-      company: order.company ?? null,
-      address:
-        order.meta && typeof order.meta === "object" && "address" in order.meta
-          ? ((order.meta as { address?: any }).address as any)
-          : null,
     })),
   });
 
