@@ -51,6 +51,8 @@ const FlipCard = dynamic(() => import("@/components/FlipCard"), {
 const QUANTITIES = [50, 100, 250, 500, 1000];
 const MAX_ADDRESS_BLOCK_LINES = 4;
 const SIGNED_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const PREVIEW_MESSAGE_CLASS =
+  "flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm font-medium";
 type OverflowFieldKey = "name" | "role" | "email" | "phone" | "mobile" | "url" | "linkedin" | "addressBlock";
 const bindingFieldMap: Record<string, OverflowFieldKey> = {
   name: "name",
@@ -1340,19 +1342,23 @@ export default function OrderForm({
                     }`}
                   >
                     {!currentBrandId ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("selectBrandPrompt")}
                       </div>
                     ) : templates.length === 0 ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("preview.noTemplates")}
                       </div>
                     ) : !selectedSummary ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("preview.selectTemplate")}
                       </div>
                     ) : !selectedTemplate ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500 text-center px-4">
+                      <div
+                        className={`${PREVIEW_MESSAGE_CLASS} ${
+                          templateError ? "text-red-600" : "text-slate-500"
+                        }`}
+                      >
                         {templateError ?? tOrder("preview.loading")}
                       </div>
                     ) : (

@@ -212,6 +212,19 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               }
             : undefined
         }
+        bulkDelivery={
+          isAdmin || isPrinter
+            ? {
+                label: t.ordersPage.table.bulkDelivery.title,
+                apply: t.ordersPage.table.bulkDelivery.apply,
+                creating: t.ordersPage.table.bulkDelivery.creating,
+                success: t.ordersPage.table.bulkDelivery.success,
+                error: t.ordersPage.table.bulkDelivery.error,
+                noteLabel: t.ordersPage.table.bulkDelivery.noteLabel,
+                notePlaceholder: t.ordersPage.table.bulkDelivery.notePlaceholder,
+              }
+            : undefined
+        }
       />
     </div>
   );

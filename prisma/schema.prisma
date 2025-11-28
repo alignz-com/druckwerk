@@ -25,6 +25,7 @@ enum OrderStatus {
   DRAFT
   SUBMITTED
   IN_PRODUCTION
+  READY_FOR_DELIVERY
   COMPLETED
   CANCELLED
 }
@@ -77,6 +78,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   orders         Order[]
   orderProfiles  UserOrderProfile[]
+  deliveriesCreated Delivery[] @relation("UserDeliveries")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -288,6 +290,7 @@ model Order {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   jdfJob         JdfExportJob?
+  deliveryItems  DeliveryItem[]
 
   @@index([brandId])
   @@index([templateId])
@@ -307,6 +310,35 @@ model JdfExportJob {
 }
 
 model OrderReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Delivery {
+  id               String          @id @default(cuid())
+  number           String          @unique
+  note             String?
+  deliveryNoteUrl  String?
+  createdByUserId  String
+  createdBy        User            @relation("UserDeliveries", fields: [createdByUserId], references: [id])
+  items            DeliveryItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model DeliveryItem {
+  id          String    @id @default(cuid())
+  deliveryId  String
+  orderId     String    @unique
+  position    Int       @default(0)
+  delivery    Delivery  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+}
+
+model DeliveryReferenceCounter {
   year      Int    @id
   lastValue Int    @default(0)
   updatedAt DateTime @updatedAt

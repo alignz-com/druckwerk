@@ -38,11 +38,13 @@ export default async function AppLayout({ children }: Props) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("") || "BC";
+  const isAdmin = session.user.role === "ADMIN";
+  const isPrinter = session.user.role === "PRINTER";
   const primaryNav = [
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
     { href: "/orders", label: t.nav.orders, icon: "orders" },
+    ...(isAdmin || isPrinter ? [{ href: "/deliveries", label: t.nav.deliveries, icon: "deliveries" }] : []),
   ];
-  const isAdmin = session.user.role === "ADMIN";
   const adminNav = isAdmin
     ? [
         { href: "/admin/brands", label: t.nav.adminBrands, icon: "admin-brands" },
