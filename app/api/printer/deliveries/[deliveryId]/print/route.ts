@@ -55,7 +55,7 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
   });
 
   const pdfBuffer = Buffer.from(pdfBytes);
-  const blobPath = `deliveries/${delivery.number}.pdf`;
+  const blobPath = `deliveries/${delivery.number}-${Date.now()}.pdf`;
   const upload = await put(blobPath, pdfBuffer, {
     access: "public",
   });

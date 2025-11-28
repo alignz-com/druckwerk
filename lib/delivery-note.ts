@@ -66,10 +66,10 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 18;
 
   const colRef = margin;
-  const colName = margin + 90;
-  const colTemplate = margin + 240;
-  const colBrand = margin + 380;
-  const colQty = margin + 480;
+  const colName = margin + 110;
+  const colTemplate = margin + 310;
+  const colBrand = margin + 450;
+  const colQty = margin + 520;
 
   const renderHeader = () => {
     drawText("Ref", colRef, cursorY, { bold: true });
@@ -77,7 +77,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     drawText("Template", colTemplate, cursorY, { bold: true });
     drawText("Brand", colBrand, cursorY, { bold: true });
     drawText("Qty", colQty, cursorY, { bold: true });
-    cursorY -= 14;
+    cursorY -= 16;
   };
 
   renderHeader();
