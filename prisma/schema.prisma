@@ -137,6 +137,7 @@ model Brand {
   addresses BrandAddress[]
   domains   BrandDomain[]
   orderProfiles UserOrderProfile[]
+  deliveries Delivery[] @relation("BrandDeliveries")
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
@@ -330,7 +331,7 @@ model Delivery {
   shippingAddressExtra String?
   createdByUserId  String
   createdBy        User            @relation("UserDeliveries", fields: [createdByUserId], references: [id])
-  brand            Brand           @relation(fields: [brandId], references: [id])
+  brand            Brand           @relation("BrandDeliveries", fields: [brandId], references: [id])
   items            DeliveryItem[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
