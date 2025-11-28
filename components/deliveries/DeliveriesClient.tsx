@@ -154,7 +154,7 @@ export function DeliveriesClient({ deliveries, labels }: Props) {
       </div>
 
       <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setDetailId(null)}>
-        <SheetContent className="w-full max-w-2xl">
+        <SheetContent className="w-full max-w-2xl px-6 sm:px-8">
           {selected ? (
             <>
               <SheetHeader>

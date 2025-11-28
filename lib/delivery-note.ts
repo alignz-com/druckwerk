@@ -25,6 +25,8 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   const bodyFont = await doc.embedFont(StandardFonts.Helvetica);
   const titleSize = 18;
   const bodySize = 11;
+  const rowHeight = 18;
+  const maxContentWidth = 595.28 - margin * 2;
 
   const drawText = (
     text: string,
@@ -35,7 +37,12 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     const font = options?.bold ? titleFont : bodyFont;
     const size = options?.size ?? bodySize;
     const targetPage = options?.pageRef ?? page;
-    targetPage.drawText(text, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
+    const safeText = text ?? "";
+    const trimmed = safeText.replace(/\s+/g, " ").trim();
+    const maxWidth = maxContentWidth - x + margin;
+    const textWidth = font.widthOfTextAtSize(trimmed, size);
+    const content = textWidth > maxWidth ? font.widthOfTextAtSize(trimmed.slice(0, 40), size) > maxWidth ? trimmed.slice(0, 40) : trimmed.slice(0, Math.min(trimmed.length, 64)) : trimmed;
+    targetPage.drawText(content, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
   };
 
   const formatDate = new Intl.DateTimeFormat(payload.locale === "de" ? "de-AT" : "en-GB", {
@@ -67,8 +74,8 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
   const colRef = margin;
   const colName = margin + 110;
-  const colTemplate = margin + 310;
-  const colBrand = margin + 450;
+  const colTemplate = margin + 250;
+  const colBrand = margin + 420;
   const colQty = margin + 520;
 
   const renderHeader = () => {
@@ -77,7 +84,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     drawText("Template", colTemplate, cursorY, { bold: true });
     drawText("Brand", colBrand, cursorY, { bold: true });
     drawText("Qty", colQty, cursorY, { bold: true });
-    cursorY -= 16;
+    cursorY -= rowHeight;
   };
 
   renderHeader();
@@ -87,7 +94,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
       page = doc.addPage([595.28, 841.89]);
       cursorY = height - margin;
       drawText("Orders (continued)", margin, cursorY, { pageRef: page });
-      cursorY -= 18;
+      cursorY -= rowHeight;
       renderHeader();
     }
     drawText(order.referenceCode, colRef, cursorY);
@@ -95,7 +102,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     drawText(order.templateLabel, colTemplate, cursorY);
     drawText(order.brandName ?? "–", colBrand, cursorY);
     drawText(order.quantity.toString(), colQty, cursorY);
-    cursorY -= 14;
+    cursorY -= rowHeight;
   });
 
   const pdfBytes = await doc.save();
