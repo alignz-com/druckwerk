@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { Buffer } from "buffer";
 
@@ -7,13 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { generateDeliveryNotePdf } from "@/lib/delivery-note";
 import { isLocale } from "@/lib/i18n/messages";
 
-export async function POST(_: Request, { params }: { params: { deliveryId: string } }) {
+export async function POST(_: NextRequest, context: { params: Promise<{ deliveryId: string }> }) {
   const session = await getServerAuthSession();
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "PRINTER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const deliveryId = params.deliveryId;
+  const { deliveryId } = await context.params;
   if (!deliveryId) {
     return NextResponse.json({ error: "Invalid delivery id" }, { status: 400 });
   }
