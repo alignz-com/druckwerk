@@ -198,6 +198,30 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           reset: t.ordersPage.table.pagination.reset,
         }}
         selectionLabelTemplate={t.ordersPage.table.selection}
+        filters={
+          isAdmin || isPrinter
+            ? {
+                brand: {
+                  label: t.ordersPage.table.filters.brand,
+                  allLabel: t.ordersPage.table.filters.allBrands,
+                  options: Array.from(
+                    new Map(
+                      tableData
+                        .filter((row) => row.brandId && row.brandName)
+                        .map((row) => [row.brandId as string, row.brandName as string]),
+                    ).entries(),
+                  )
+                    .map(([value, label]) => ({ value, label }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
+                },
+                status: {
+                  label: t.ordersPage.table.filters.status,
+                  allLabel: t.ordersPage.table.filters.allStatuses,
+                  options: statusOptions,
+                },
+              }
+            : undefined
+        }
         bulkStatus={
           isAdmin || isPrinter
             ? {

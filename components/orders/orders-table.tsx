@@ -114,6 +114,18 @@ type OrdersTableProps = {
     reset: string;
   };
   selectionLabelTemplate?: string;
+  filters?: {
+    brand?: {
+      label: string;
+      allLabel: string;
+      options: { value: string; label: string }[];
+    };
+    status?: {
+      label: string;
+      allLabel: string;
+      options: { value: string; label: string }[];
+    };
+  };
   bulkStatus?: {
     options: { value: string; label: string }[];
     labels: {
@@ -145,6 +157,7 @@ export function OrdersTable({
   noResults,
   pagination,
   selectionLabelTemplate,
+  filters,
   bulkStatus,
   bulkDelivery,
 }: OrdersTableProps) {
@@ -170,6 +183,8 @@ export function OrdersTable({
     Array<{ id: string; label: string; street?: string | null; city?: string | null; postalCode?: string | null }>
   >([]);
   const [deliveryAddressesLoading, setDeliveryAddressesLoading] = useState(false);
+  const [brandFilter, setBrandFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   const orderById = useMemo(() => {
     const map = new Map<string, OrdersTableRow>();
@@ -328,11 +343,12 @@ export function OrdersTable({
   }, [labels, showBrandColumn, handleOpenDetail]);
 
   const filteredData = useMemo(() => {
-    if (!normalizedSearch) {
-      return data;
-    }
-
     return data.filter((order) => {
+      if (brandFilter && order.brandId !== brandFilter) return false;
+      if (statusFilter && order.status !== statusFilter) return false;
+
+      if (!normalizedSearch) return true;
+
       const haystack = [
         order.referenceCode,
         order.templateLabel,
@@ -346,7 +362,7 @@ export function OrdersTable({
 
       return haystack.includes(normalizedSearch);
     });
-  }, [data, normalizedSearch]);
+  }, [data, normalizedSearch, brandFilter, statusFilter]);
 
   const sortedData = useMemo(() => {
     if (!sort) {
@@ -549,6 +565,46 @@ export function OrdersTable({
           />
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+          {filters ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {filters.brand ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">{filters.brand.label}</span>
+                  <Select value={brandFilter || ""} onValueChange={setBrandFilter}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder={filters.brand.allLabel} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{filters.brand.allLabel}</SelectItem>
+                      {filters.brand.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              {filters.status ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">{filters.status.label}</span>
+                  <Select value={statusFilter || ""} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder={filters.status.allLabel} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{filters.status.allLabel}</SelectItem>
+                      {filters.status.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {sort ? (
             <Button variant="ghost" size="sm" onClick={() => setSort(null)}>
               {pagination.reset}

@@ -205,6 +205,12 @@ export const messages = {
           noteLabel: "Delivery note",
           notePlaceholder: "Add an optional note for the delivery note…",
         },
+        filters: {
+          brand: "Brand filter",
+          allBrands: "All brands",
+          status: "Status filter",
+          allStatuses: "All statuses",
+        },
       },
       detail: {
         title: "Order details",
@@ -1085,6 +1091,12 @@ export const messages = {
           error: "Lieferung konnte nicht erstellt werden.",
           noteLabel: "Liefer-Hinweis",
           notePlaceholder: "Optionaler Hinweis für den Lieferschein…",
+        },
+        filters: {
+          brand: "Markenfilter",
+          allBrands: "Alle Marken",
+          status: "Statusfilter",
+          allStatuses: "Alle Status",
         },
       },
       detail: {
