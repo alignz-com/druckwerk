@@ -21,14 +21,14 @@ export type DeliveryNotePayload = {
 export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   let page = doc.addPage([595.28, 841.89]); // A4 in points
-  const { height } = page.getSize();
-  const margin = 40;
+  const { height, width } = page.getSize();
+  const margin = 50;
   const titleFont = await doc.embedFont(StandardFonts.HelveticaBold);
   const bodyFont = await doc.embedFont(StandardFonts.Helvetica);
   const titleSize = 18;
   const bodySize = 10;
   const rowHeight = 16;
-  const maxContentWidth = 595.28 - margin * 2;
+  const maxContentWidth = width - margin * 2;
 
   const drawText = (
     text: string,
@@ -64,6 +64,16 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 16;
   drawText(`Created: ${formatDate}`, margin, cursorY);
 
+  // Ship from block
+  cursorY -= 18;
+  drawText("Ship from:", margin, cursorY, { bold: true });
+  cursorY -= 12;
+  const shipFromLines = ["Thurnher Druckerei GmbH", "Grundweg 4", "6830 Rankweil", "AT"];
+  shipFromLines.forEach((line) => {
+    drawText(line, margin + 12, cursorY);
+    cursorY -= 12;
+  });
+
   if (payload.shippingAddress && payload.shippingAddress.trim()) {
     cursorY -= 14;
     drawText("Ship to:", margin, cursorY, { bold: true });
@@ -75,7 +85,7 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     });
   }
 
-  cursorY -= 28;
+  cursorY -= 30;
   if (payload.note && payload.note.trim()) {
     drawText("Note:", margin, cursorY, { bold: true });
     cursorY -= 14;
@@ -91,9 +101,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   cursorY -= 18;
 
   const colRef = margin;
-  const colName = margin + 120;
-  const colTemplate = margin + 320;
-  const colQty = margin + 520;
+  const colName = margin + 90;
+  const colTemplate = margin + 310;
+  const colQty = width - margin - 40;
 
   const renderHeader = () => {
     drawText("Ref", colRef, cursorY, { bold: true });
@@ -113,13 +123,16 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
       cursorY -= rowHeight;
       renderHeader();
     }
-    drawText(order.referenceCode, colRef, cursorY);
-    drawText(order.requesterName, colName, cursorY);
-    cursorY -= rowHeight;
-    drawText(order.requesterRole || "–", colName, cursorY);
-    drawText(order.templateLabel, colTemplate, cursorY);
-    drawText(order.quantity.toString(), colQty, cursorY);
-    cursorY -= rowHeight;
+    const startY = cursorY;
+    drawText(order.referenceCode, colRef, startY);
+    drawText(order.requesterName, colName, startY);
+    drawText(order.templateLabel, colTemplate, startY);
+    drawText(order.quantity.toString(), colQty, startY);
+
+    const roleLine = order.requesterRole && order.requesterRole.trim().length > 0 ? order.requesterRole : "–";
+    drawText(roleLine, colName, startY - rowHeight + 4);
+
+    cursorY -= rowHeight * 2 + 4;
   });
 
   const pdfBytes = await doc.save();
