@@ -1147,18 +1147,22 @@ export default function OrderForm({
                     <Label htmlFor="addressSearch">{tOrder("fields.addressSearch")}</Label>
                     <div className="relative">
                       <Input
-                        id="addressSearch"
-                        value={addressInputValue}
-                        onFocus={(e) => {
-                          setAddressDropdownOpen(true);
-                          setAddressSearch("");
-                          e.target.select();
-                        }}
-                        onBlur={() => setTimeout(() => setAddressDropdownOpen(false), 150)}
-                        onChange={(e) => {
-                          setAddressInputValue(e.target.value);
-                          setAddressSearch(e.target.value);
-                          if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
+                      id="addressSearch"
+                      value={addressInputValue}
+                      onFocus={(e) => {
+                        setAddressDropdownOpen(true);
+                        setAddressSearch("");
+                        e.target.select();
+                      }}
+                      onMouseDown={() => {
+                        // Allow reopening the dropdown even when the input is already focused.
+                        setAddressDropdownOpen(true);
+                      }}
+                      onBlur={() => setTimeout(() => setAddressDropdownOpen(false), 150)}
+                      onChange={(e) => {
+                        setAddressInputValue(e.target.value);
+                        setAddressSearch(e.target.value);
+                        if (!isAddressDropdownOpen) setAddressDropdownOpen(true);
                         }}
                         placeholder={tOrder("placeholders.addressSearch") ?? ""}
                         className={`border-slate-300 bg-slate-50 pr-10 focus-visible:border-slate-400 focus-visible:ring-slate-200 ${isAddressDropdownOpen ? "cursor-text" : "cursor-pointer"}`}
