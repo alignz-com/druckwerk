@@ -9,7 +9,10 @@ export const runtime = "nodejs";
 export async function POST(req: Request): Promise<Response> {
   try {
     const body = (await req.json()) as OrderPdfFields & { template?: string };
-    const templateKey = body.template ?? "omicron";
+    const templateKey = body.template;
+    if (!templateKey) {
+      return NextResponse.json({ error: "template is required" }, { status: 400 });
+    }
     const templateDefinition = await getTemplateByKey(templateKey);
 
     const { template: _ignored, ...fields } = body;

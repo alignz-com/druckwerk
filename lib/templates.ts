@@ -173,29 +173,15 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
     orderBy: [{ label: "asc" }],
   });
 
-  if (dbTemplates.length > 0) {
-    return dbTemplates.map((tpl, index) => ({
-      id: tpl.id,
-      key: tpl.key,
-      label: tpl.label,
-      description: tpl.description ?? null,
-      orderIndex: index,
-      hasQrCode: tpl.hasQrCode,
-      hasPhotoSlot: tpl.hasPhotoSlot ?? false,
-    }));
-  }
-
-  return sortSummaries(
-    DEFAULT_TEMPLATE_LIST.map((tpl) => ({
-      id: tpl.key,
-      key: tpl.key,
-      label: tpl.label,
-      description: tpl.description ?? null,
-      orderIndex: 0,
-      hasQrCode: detectHasQrCode(tpl.hasQrCode, tpl.config),
-      hasPhotoSlot: detectHasPhotoSlot(tpl.hasPhotoSlot, tpl.config),
-    })),
-  );
+  return dbTemplates.map((tpl, index) => ({
+    id: tpl.id,
+    key: tpl.key,
+    label: tpl.label,
+    description: tpl.description ?? null,
+    orderIndex: index,
+    hasQrCode: tpl.hasQrCode,
+    hasPhotoSlot: tpl.hasPhotoSlot ?? false,
+  }));
 }
 
 const templateInclude = {
@@ -393,7 +379,9 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
   }
 
   const fallback = DEFAULT_TEMPLATES[key];
-  if (fallback) return resolvedFromDefinition(fallback);
+  if (fallback) {
+    throw new Error(`Template ${key} not found in database`);
+  }
 
   throw new Error(`Unknown template key: ${key}`);
 }

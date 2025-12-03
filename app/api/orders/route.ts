@@ -30,7 +30,7 @@ const requestSchema = z.object({
   url: z.string().optional().default(""),
   linkedin: z.string().optional().default(""),
   brandId: z.string().optional().nullable(),
-  template: z.string().optional().default("omicron"),
+  template: z.string().min(1, "template is required"),
   quantity: z.number().int().positive(),
   deliveryTime: z.enum(["express", "standard"]),
   customerReference: z.string().optional().default(""),

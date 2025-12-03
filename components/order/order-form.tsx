@@ -614,10 +614,8 @@ export default function OrderForm({
       return haystack.includes(query);
     });
   }, [addressOptions, addressSearch]);
-  const displayedAddressOptions = useMemo(
-    () => filteredAddressOptions.slice(0, 5),
-    [filteredAddressOptions],
-  );
+  // Show all filtered options; scroll container handles large lists.
+  const displayedAddressOptions = useMemo(() => filteredAddressOptions, [filteredAddressOptions]);
 
   const handleSelectAddress = (entry: BrandAddressEntry) => {
     setCompanyName(entry.company ?? "");
@@ -1173,7 +1171,7 @@ export default function OrderForm({
                         aria-hidden="true"
                       />
                       {isAddressDropdownOpen && (
-                        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
+                        <div className="absolute z-20 mt-1 w-full max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
                           {addressOptions.length === 0 ? (
                             <p className="px-3 py-2 text-slate-500">{tOrder("addressSearch.empty")}</p>
                           ) : displayedAddressOptions.length === 0 ? (
