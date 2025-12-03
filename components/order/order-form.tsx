@@ -728,13 +728,10 @@ export default function OrderForm({
           ? addresses.find((entry) => entry.id === profile.addressId)
           : null;
 
+      // Only show a saved address label if it still exists for this brand; otherwise start empty.
+      const displayLabel = matchedAddress ? matchedAddress.label ?? matchedAddress.company ?? "" : "";
       setSelectedAddressEntry(matchedAddress ?? null);
-      setAddressInputValue(
-        profile.addressLabel ??
-          matchedAddress?.label ??
-          matchedAddress?.company ??
-          "",
-      );
+      setAddressInputValue(displayLabel);
       setAddressSearch("");
       setAddressDropdownOpen(false);
       setCompanyName(profile.companyName ?? matchedAddress?.company ?? "");
