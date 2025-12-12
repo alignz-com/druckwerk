@@ -11,7 +11,7 @@ import { isLocale } from "@/lib/i18n/messages";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
 function formatDeliveryNumber(year: number, sequence: number) {
-  return `DEL-${year}-${sequence.toString().padStart(5, "0")}`;
+  return `CONF-${year}-${sequence.toString().padStart(5, "0")}`;
 }
 
 async function reserveDeliveryNumber() {

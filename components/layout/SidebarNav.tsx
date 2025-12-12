@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Layers, PlusCircle, ShieldCheck, Truck, Type, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, ClipboardList, Layers, PlusCircle, ShieldCheck, Type, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
   orders: ClipboardList,
   "new-order": PlusCircle,
-  deliveries: Truck,
+  deliveries: ClipboardCheck,
   "admin-brands": ShieldCheck,
   "admin-users": Users,
   "admin-templates": Layers,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileDown, RefreshCcw, Search } from "lucide-react";
+import { FileDown, FileSpreadsheet, RefreshCcw, Search } from "lucide-react";
 
 import { dataTableContainerClass, dataTableHeaderClass, dataTableRowClass } from "@/components/admin/shared/data-table-styles";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -40,6 +40,7 @@ type Props = {
       orders: string;
       note: string;
       pdf: string;
+      csv?: string;
       empty: string;
       noResults: string;
     };
@@ -49,6 +50,7 @@ type Props = {
       created: string;
       download: string;
       regenerate: string;
+      downloadCsv?: string;
       orders: string;
       order: string;
       quantity: string;
@@ -110,13 +112,14 @@ export function DeliveriesClient({ deliveries, labels }: Props) {
               <TableHead>{labels.table.created}</TableHead>
               <TableHead className="w-28">{labels.table.orders}</TableHead>
               <TableHead>{labels.table.note}</TableHead>
-              <TableHead className="w-32 text-right">{labels.table.pdf}</TableHead>
+              <TableHead className="w-36 text-right">{labels.table.pdf}</TableHead>
+              {labels.table.csv ? <TableHead className="w-28 text-right">{labels.table.csv}</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow className={dataTableRowClass}>
-                <TableCell colSpan={5} className="text-center text-sm text-slate-500">
+                <TableCell colSpan={labels.table.csv ? 6 : 5} className="text-center text-sm text-slate-500">
                   {deliveries.length === 0 ? labels.table.empty : labels.table.noResults}
                 </TableCell>
               </TableRow>
@@ -146,6 +149,16 @@ export function DeliveriesClient({ deliveries, labels }: Props) {
                       <span className="text-xs text-slate-500">–</span>
                     )}
                   </TableCell>
+                  {labels.table.csv ? (
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="ghost" disabled={!delivery.id}>
+                        <a href={`/api/printer/deliveries/${delivery.id}/csv`} target="_blank" rel="noreferrer">
+                          <FileSpreadsheet className="mr-2 h-4 w-4" />
+                          CSV
+                        </a>
+                      </Button>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))
             )}
@@ -176,6 +189,14 @@ export function DeliveriesClient({ deliveries, labels }: Props) {
                       {labels.detail.download}
                     </a>
                   </Button>
+                  {labels.detail.downloadCsv ? (
+                    <Button asChild size="sm" variant="outline">
+                      <a href={`/api/printer/deliveries/${selected.id}/csv`} target="_blank" rel="noreferrer">
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        {labels.detail.downloadCsv}
+                      </a>
+                    </Button>
+                  ) : null}
                   <Button size="sm" variant="outline" onClick={handleRegenerate} disabled={isRegenerating}>
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     {isRegenerating ? "…" : labels.detail.regenerate}

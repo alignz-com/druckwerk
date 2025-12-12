@@ -58,9 +58,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   }).format(payload.createdAt);
 
   let cursorY = height - margin;
-  drawText("Delivery Note", margin, cursorY, { size: titleSize, bold: true });
+  drawText("Order Confirmation", margin, cursorY, { size: titleSize, bold: true });
   cursorY -= 20;
-  drawText(`Delivery #: ${payload.deliveryNumber}`, margin, cursorY);
+  drawText(`Confirmation #: ${payload.deliveryNumber}`, margin, cursorY);
   cursorY -= 16;
   drawText(`Created: ${formatDate}`, margin, cursorY);
 
