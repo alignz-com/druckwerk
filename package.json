@@ -33,7 +33,7 @@
     "geist": "^1.5.1",
     "libphonenumber-js": "^1.11.11",
     "lucide-react": "^0.542.0",
-    "next": "15.5.0",
+    "next": "15.5.9",
     "next-auth": "^4.24.12",
     "nodemailer": "^7.0.10",
     "pdf-lib": "^1.17.1",
