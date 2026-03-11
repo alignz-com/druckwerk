@@ -1,0 +1,518 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  BRAND_ADMIN
+  PRINTER
+}
+
+enum OrderStatus {
+  DRAFT
+  SUBMITTED
+  IN_PRODUCTION
+  READY_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum BrandQrMode {
+  VCARD_ONLY
+  PUBLIC_PROFILE_ONLY
+  BOTH
+}
+
+enum ContactStatus {
+  DRAFT
+  CONFIRMED
+  EXPIRED
+}
+
+enum TemplateAssetType {
+  PDF
+  PREVIEW_FRONT
+  PREVIEW_BACK
+  CONFIG
+  OTHER
+}
+
+enum JdfExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum FontStyle {
+  NORMAL
+  ITALIC
+}
+
+enum FontFormat {
+  TTF
+  OTF
+  WOFF
+  WOFF2
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  role           UserRole  @default(USER)
+  jobTitle       String?
+  department     String?
+  mobilePhone    String?
+  businessPhone  String?
+  url            String?
+  locale         String    @default("en")
+  hashedPassword String?
+  brandId        String?
+  brand          Brand?    @relation(fields: [brandId], references: [id])
+  accounts       Account[]
+  sessions       Session[]
+  passwordResetTokens PasswordResetToken[]
+  orders         Order[]
+  orderProfiles  UserOrderProfile[]
+  deliveriesCreated Delivery[] @relation("UserDeliveries")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @map("refreshToken")
+  access_token      String? @map("accessToken")
+  expires_at        Int?    @map("expiresAt")
+  token_type        String? @map("tokenType")
+  ext_expires_in    Int?    @map("extExpiresIn")
+  scope             String?
+  id_token          String? @map("idToken")
+  session_state     String? @map("sessionState")
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationTokens")
+}
+
+model Brand {
+  id        String          @id @default(cuid())
+  name      String
+  slug      String          @unique
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  logoUrl   String?
+  qrMode    BrandQrMode    @default(VCARD_ONLY)
+  defaultQrMode BrandQrMode?
+  quantityMin Int?
+  quantityMax Int?
+  quantityStep Int?
+  quantityOptions Int[] @default([])
+  users     User[]
+  orders    Order[]
+  templates BrandTemplate[]
+  defaultTemplateId String?
+  defaultTemplate   Template?      @relation("BrandDefaultTemplate", fields: [defaultTemplateId], references: [id])
+  addresses BrandAddress[]
+  domains   BrandDomain[]
+  publicDomains BrandPublicDomain[]
+  contacts  Contact[]
+  orderProfiles UserOrderProfile[]
+  deliveries Delivery[] @relation("BrandDeliveries")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model BrandAddress {
+  id           String   @id @default(cuid())
+  brandId      String
+  label        String?
+  company      String?
+  street       String?
+  addressExtra String?
+  postalCode   String?
+  city         String?
+  countryCode  String?
+  cardAddressText String?
+  url          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  templateAssignments TemplateAddress[]
+
+  @@index([brandId])
+}
+
+model BrandDomain {
+  id        String   @id @default(cuid())
+  brandId   String
+  domain    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, domain])
+  @@index([domain])
+}
+
+model BrandPublicDomain {
+  id        String   @id @default(cuid())
+  brandId   String
+  domain    String   @unique
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId, isPrimary])
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  publicId   String   @unique
+  brandId    String
+  status     ContactStatus @default(CONFIRMED)
+  expiresAt  DateTime?
+  firstName  String
+  lastName   String
+  title      String?
+  department String?
+  email      String?
+  phone      String?
+  mobile     String?
+  website    String?
+  linkedin   String?
+  photoUrl   String?
+  addressId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+}
+
+model UserOrderProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  brandId      String
+  name         String?
+  jobTitle     String?
+  seniority    String?
+  email        String?
+  phone        String?
+  mobile       String?
+  url          String?
+  linkedin     String?
+  addressId    String?
+  addressLabel String?
+  companyName  String?
+  street       String?
+  postalCode   String?
+  city         String?
+  countryCode  String?
+  addressBlock String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, brandId])
+}
+
+model Template {
+  id               String          @id @default(cuid())
+  key              String          @unique
+  label            String
+  description      String?
+  paperStockId     String?
+  pdfPath          String
+  previewFrontPath String?
+  previewBackPath  String?
+  config           Json
+  layoutVersion    Int?
+  printDpi         Int?
+  pageWidthMm      Float?
+  pageHeightMm     Float?
+  canvasWidthMm    Float?
+  canvasHeightMm   Float?
+  pcmCode          String?
+  hasQrCode        Boolean         @default(false)
+  hasPhotoSlot     Boolean         @default(false)
+  orders           Order[]
+  assignments      BrandTemplate[]
+  brandDefaults    Brand[]         @relation("BrandDefaultTemplate")
+  assets           TemplateAsset[]
+  fonts            TemplateFont[]
+  paperStock       PaperStock?     @relation(fields: [paperStockId], references: [id])
+  addressAssignments TemplateAddress[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model TemplateAddress {
+  id             String   @id @default(cuid())
+  templateId     String
+  brandAddressId String
+  createdAt      DateTime @default(now())
+
+  template     Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  brandAddress BrandAddress @relation(fields: [brandAddressId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, brandAddressId])
+  @@index([templateId])
+  @@index([brandAddressId])
+}
+
+model PaperStock {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  finish      String?
+  color       String?
+  weightGsm   Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  templates   Template[]
+}
+
+model BrandTemplate {
+  id             String   @id @default(cuid())
+  brandId        String
+  templateId     String
+  assignedAt     DateTime @default(now())
+  configOverride Json?
+  orderIndex     Int      @default(0)
+
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, templateId])
+  @@index([brandId, orderIndex])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  referenceCode  String      @unique
+  referenceYear  Int?
+  referenceSequence Int?
+  userId         String
+  brandId        String?
+  templateId     String?
+  status         OrderStatus @default(SUBMITTED)
+  quantity       Int
+  deliveryTime   String
+  deliveryDueAt  DateTime?
+  requesterName  String
+  requesterRole  String?
+  requesterSeniority String?
+  requesterEmail String
+  phone          String?
+  mobile         String?
+  company        String?
+  url            String?
+  linkedin       String?
+  photoOriginalUrl String?
+  photoCroppedUrl String?
+  photoMeta      Json?
+  pdfUrl         String?
+  blobId         String?
+  pdfFileName    String?
+  jdfUrl         String?
+  jdfBlobId      String?
+  jdfFileName    String?
+  meta           Json?
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand          Brand?      @relation(fields: [brandId], references: [id])
+  template       Template?   @relation(fields: [templateId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  jdfJob         JdfExportJob?
+  deliveryItems  DeliveryItem[]
+
+  @@index([brandId])
+  @@index([templateId])
+}
+
+model JdfExportJob {
+  id           String           @id @default(cuid())
+  orderId      String           @unique
+  order        Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  pdfUrl       String
+  jdfXml       String
+  status       JdfExportStatus  @default(PENDING)
+  attemptCount Int              @default(0)
+  lastError    String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model OrderReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Delivery {
+  id               String          @id @default(cuid())
+  number           String          @unique
+  note             String?
+  deliveryNoteUrl  String?
+  brandId          String
+  shippingName     String?
+  shippingCompany  String?
+  shippingStreet   String?
+  shippingPostalCode String?
+  shippingCity     String?
+  shippingCountryCode String?
+  shippingAddressExtra String?
+  createdByUserId  String
+  createdBy        User            @relation("UserDeliveries", fields: [createdByUserId], references: [id])
+  brand            Brand           @relation("BrandDeliveries", fields: [brandId], references: [id])
+  items            DeliveryItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model DeliveryItem {
+  id          String    @id @default(cuid())
+  deliveryId  String
+  orderId     String    @unique
+  position    Int       @default(0)
+  delivery    Delivery  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+}
+
+model DeliveryReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model TemplateAsset {
+  id         String            @id @default(cuid())
+  templateId String
+  type       TemplateAssetType
+  storageKey String
+  mimeType   String
+  fileName   String?
+  checksum   String?
+  version    Int               @default(1)
+  sizeBytes  Int?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([templateId, type])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FontFamily {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  defaultWeight Int?          @default(400)
+  defaultStyle  FontStyle?    @default(NORMAL)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  variants      FontVariant[]
+
+  @@unique([name])
+}
+
+model FontVariant {
+  id             String     @id @default(cuid())
+  fontFamilyId   String
+  weight         Int        @default(400)
+  style          FontStyle  @default(NORMAL)
+  format         FontFormat
+  storageKey     String
+  fileName       String?
+  postscriptName String?
+  checksum       String?
+  sizeBytes      Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  fontFamily FontFamily     @relation(fields: [fontFamilyId], references: [id], onDelete: Cascade)
+  templates  TemplateFont[]
+
+  @@unique([fontFamilyId, weight, style, format])
+  @@index([fontFamilyId])
+}
+
+model TemplateFont {
+  id            String   @id @default(cuid())
+  templateId    String
+  fontVariantId String
+  usage         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  template    Template    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fontVariant FontVariant @relation(fields: [fontVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fontVariantId])
+  @@index([fontVariantId])
+}
