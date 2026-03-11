@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Settings2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,16 @@ export default function UserSettingsDialog({ showTooltip = false, tooltip, hasPa
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
 
+  // Auto-close dialog 2s after successful password change
+  useEffect(() => {
+    if (!pwSuccess) return;
+    const timer = setTimeout(() => {
+      setOpen(false);
+      setPwSuccess(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [pwSuccess]);
+
   const resetPasswordForm = () => {
     setCurrent("");
     setNext("");
@@ -83,8 +93,8 @@ export default function UserSettingsDialog({ showTooltip = false, tooltip, hasPa
         setPwError(data?.error === "Current password is incorrect" ? pt.errorWrong : (data?.error ?? pt.errorWrong));
         return;
       }
-      setPwSuccess(true);
       resetPasswordForm();
+      setPwSuccess(true);
     } catch {
       setPwError(pt.errorWrong);
     } finally {
@@ -130,48 +140,55 @@ export default function UserSettingsDialog({ showTooltip = false, tooltip, hasPa
         {hasPassword ? (
           <>
             <Separator />
-            <form onSubmit={handlePasswordSubmit} className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{pt.title}</p>
-              <div className="space-y-1.5">
-                <Label htmlFor="pw-current">{pt.current}</Label>
-                <Input
-                  id="pw-current"
-                  type="password"
-                  value={current}
-                  onChange={(e) => setCurrent(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
+            {pwSuccess ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                <p className="text-sm font-medium text-slate-800">{pt.success}</p>
+                <p className="text-xs text-slate-500">Closing…</p>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pw-new">{pt.new}</Label>
-                <Input
-                  id="pw-new"
-                  type="password"
-                  value={next}
-                  onChange={(e) => setNext(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pw-confirm">{pt.confirm}</Label>
-                <Input
-                  id="pw-confirm"
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              {pwError ? <p className="text-xs text-red-600">{pwError}</p> : null}
-              {pwSuccess ? <p className="text-xs text-emerald-600">{pt.success}</p> : null}
-              <Button type="submit" className="w-full" disabled={pwSaving || !current || !next || !confirm}>
-                {pwSaving ? pt.submitting : pt.submit}
-              </Button>
-            </form>
+            ) : (
+              <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{pt.title}</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pw-current">{pt.current}</Label>
+                  <Input
+                    id="pw-current"
+                    type="password"
+                    value={current}
+                    onChange={(e) => setCurrent(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pw-new">{pt.new}</Label>
+                  <Input
+                    id="pw-new"
+                    type="password"
+                    value={next}
+                    onChange={(e) => setNext(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pw-confirm">{pt.confirm}</Label>
+                  <Input
+                    id="pw-confirm"
+                    type="password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+                {pwError ? <p className="text-xs text-red-600">{pwError}</p> : null}
+                <Button type="submit" className="w-full" disabled={pwSaving || !current || !next || !confirm}>
+                  {pwSaving ? pt.submitting : pt.submit}
+                </Button>
+              </form>
+            )}
           </>
         ) : null}
       </DialogContent>
