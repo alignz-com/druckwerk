@@ -60,6 +60,7 @@ export default async function AppLayout({ children }: Props) {
   }
   const roleLabel = session.user.role ? t.layout.roles[session.user.role] ?? session.user.role : null;
   const settingsLabel = t.layout.settings.open;
+  const hasPassword = Boolean(session.user.hasPassword);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -73,6 +74,7 @@ export default async function AppLayout({ children }: Props) {
           brandTitle={t.layout.brandTitle}
           logoutLabel={t.nav.logout}
           settingsLabel={settingsLabel}
+          hasPassword={hasPassword}
         />
 
         {/* Mobile bottom nav — hidden on desktop */}

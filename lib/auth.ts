@@ -200,6 +200,7 @@ export const authOptions: NextAuthOptions = {
         token.businessPhone = (user as any).businessPhone ?? null;
         const baseEmail = (user as any).email ?? undefined;
         token.url = (user as any).url ?? buildWebsiteFromEmail(baseEmail ? String(baseEmail) : undefined);
+        token.hasPassword = Boolean((user as any).hashedPassword);
       } else if (trigger === "update" && session?.locale) {
         token.locale = session.locale as string;
       }
@@ -221,6 +222,7 @@ export const authOptions: NextAuthOptions = {
         session.user.mobilePhone = token?.mobilePhone ? String(token.mobilePhone) : null;
         session.user.businessPhone = token?.businessPhone ? String(token.businessPhone) : null;
         session.user.url = token?.url ? String(token.url) : session.user.url ?? buildWebsiteFromEmail(session.user.email ?? null);
+        session.user.hasPassword = Boolean(token.hasPassword);
       }
       return session;
     },

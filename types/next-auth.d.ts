@@ -14,6 +14,7 @@ declare module "next-auth" {
       businessPhone?: string | null;
       locale?: string;
       url?: string | null;
+      hasPassword?: boolean;
     };
   }
 
@@ -26,6 +27,7 @@ declare module "next-auth" {
     businessPhone?: string | null;
     locale?: string;
     url?: string | null;
+    hasPassword?: boolean;
   }
 }
 
@@ -40,5 +42,6 @@ declare module "next-auth/jwt" {
     businessPhone?: string | null;
     locale?: string;
     url?: string | null;
+    hasPassword?: boolean;
   }
 }

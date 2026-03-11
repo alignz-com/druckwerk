@@ -19,6 +19,7 @@ type Props = {
   brandTitle: string;
   logoutLabel: string;
   settingsLabel: string;
+  hasPassword?: boolean;
 };
 
 type SidebarTooltipProps = {
@@ -57,6 +58,7 @@ export function AppSidebar({
   brandTitle,
   logoutLabel,
   settingsLabel,
+  hasPassword = false,
 }: Props) {
   const collapsed = true;
   const logoSrc = collapsed ? "/logo-mark.svg" : "/logo.svg";
@@ -131,7 +133,7 @@ export function AppSidebar({
                 </Avatar>
               </SidebarTooltip>
               <div className="flex justify-center">
-                <UserSettingsDialog showTooltip tooltip={settingsLabel} />
+                <UserSettingsDialog showTooltip tooltip={settingsLabel} hasPassword={hasPassword} />
               </div>
               <SidebarTooltip label={logoutLabel} className="justify-center">
                 <LogoutButton label={logoutLabel} iconOnly />
@@ -157,7 +159,7 @@ export function AppSidebar({
                     ) : null}
                   </div>
                 </div>
-                <UserSettingsDialog tooltip={settingsLabel} />
+                <UserSettingsDialog tooltip={settingsLabel} hasPassword={hasPassword} />
               </div>
               <SidebarTooltip label={logoutLabel} show={false} className="mt-4 w-full">
                 <LogoutButton label={logoutLabel} />
