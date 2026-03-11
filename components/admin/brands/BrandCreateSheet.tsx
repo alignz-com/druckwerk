@@ -268,6 +268,7 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
                 <div className="space-y-2 md:col-span-2">
                   <LogoUpload
                     label={t("form.logoUrl")}
+                    hint={t("form.logoUrlHint")}
                     value={form.logoUrl}
                     onChange={(url) => handleFieldChange("logoUrl", url)}
                     disabled={isSubmitting}
