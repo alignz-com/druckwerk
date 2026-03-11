@@ -20,7 +20,8 @@ import { Sheet, BottomSheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import LogoutButton from "./LogoutButton";
-import UserSettingsDialog from "@/components/UserSettingsDialog";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "@/components/providers/locale-provider";
 import type { NavGroup } from "./SidebarNav";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -39,7 +40,6 @@ type Props = {
   initials: string;
   roleLabel?: string | null;
   logoutLabel: string;
-  settingsLabel: string;
   moreLabel: string;
 };
 
@@ -49,9 +49,9 @@ export function MobileNav({
   initials,
   roleLabel,
   logoutLabel,
-  settingsLabel,
   moreLabel,
 }: Props) {
+  const t = useTranslations();
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -160,9 +160,14 @@ export function MobileNav({
 
           <Separator />
 
-          {/* Settings + Logout */}
-          <div className="flex items-center gap-2 px-5 py-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-            <UserSettingsDialog tooltip={settingsLabel} />
+          {/* Language + Logout */}
+          <div className="px-5 py-4 space-y-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {t("layout.settings.title")}
+              </p>
+              <LanguageSwitcher onChanged={() => setMoreOpen(false)} />
+            </div>
             <LogoutButton label={logoutLabel} />
           </div>
         </BottomSheetContent>

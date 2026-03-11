@@ -82,7 +82,6 @@ export default async function AppLayout({ children }: Props) {
           initials={initials}
           roleLabel={roleLabel}
           logoutLabel={t.nav.logout}
-          settingsLabel={settingsLabel}
           moreLabel={t.nav.more}
         />
 
