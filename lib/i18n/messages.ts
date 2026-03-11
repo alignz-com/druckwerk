@@ -824,6 +824,8 @@ export const messages = {
         actions: {
           newBrand: "New brand",
           manage: "Manage",
+          create: "Create brand",
+          creating: "Creating…",
           save: "Save changes",
           saving: "Saving…",
           delete: "Delete brand",
@@ -1852,6 +1854,8 @@ export const messages = {
         actions: {
           newBrand: "Neue Marke",
           manage: "Verwalten",
+          create: "Marke erstellen",
+          creating: "Wird erstellt…",
           save: "Änderungen speichern",
           saving: "Speichern…",
           delete: "Marke löschen",

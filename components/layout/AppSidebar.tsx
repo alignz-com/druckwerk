@@ -76,7 +76,7 @@ export function AppSidebar({
       <div
         className={cn(
           "flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm",
-          "lg:sticky lg:top-10",
+          "lg:sticky lg:top-10 lg:z-10",
         )}
       >
         <div

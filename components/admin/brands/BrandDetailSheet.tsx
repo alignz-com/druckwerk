@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
@@ -500,7 +499,7 @@ export default function BrandDetailSheet({
                 <SheetTitle>{brand.name}</SheetTitle>
                 <SheetDescription>{t("dialog.description")}</SheetDescription>
               </SheetHeader>
-              <form onSubmit={handleSubmit} className="flex h-full flex-col">
+              <form onSubmit={handleSubmit} className="flex flex-1 flex-col min-h-0">
                 <div className="flex-1 overflow-y-auto px-6 py-6 pb-24">
                   <div className="w-full space-y-8">
                   {error ? (
@@ -941,7 +940,7 @@ export default function BrandDetailSheet({
                   </section>
                   </div>
                 </div>
-              <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex sm:items-center sm:justify-between">
+              <div className="border-t border-slate-200 bg-white px-6 py-4 sm:flex sm:items-center sm:justify-between">
                 <Button
                   type="button"
                   variant="outline"
@@ -951,9 +950,15 @@ export default function BrandDetailSheet({
                   {t("actions.cancel")}
                 </Button>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <Button type="submit" disabled={disableActions || !form.name.trim()}>
-                    {isSaving ? t("actions.saving") : t("actions.save")}
-                  </Button>
+                  {isSaving ? (
+                    <Button key="saving" type="button" disabled>
+                      {t("actions.saving")}
+                    </Button>
+                  ) : (
+                    <Button key="idle" type="submit" disabled={disableActions || !form.name.trim()}>
+                      {t("actions.save")}
+                    </Button>
+                  )}
                 </div>
               </div>
               </form>

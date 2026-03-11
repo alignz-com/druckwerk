@@ -1300,30 +1300,21 @@ export default function OrderForm({
   };
 
   return (
-    <section className="space-y-10">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{tOrder("title")}</h1>
-          {tOrder("subtitle") ? (
-            <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
-          ) : null}
-        </div>
-        <Button
-          onClick={openConfirm}
-          className="self-start sm:self-auto lg:hidden"
-          disabled={!canSubmitOrder || hasOverflow || isSubmitting}
-        >
-          {tOrder("buttons.order")}
-        </Button>
+    <section>
+      <header className="hidden lg:block">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{tOrder("title")}</h1>
+        {tOrder("subtitle") ? (
+          <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
+        ) : null}
       </header>
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] lg:items-start 2xl:gap-12">
-        <div className="space-y-8">
-          <Card className="h-fit">
-            <CardHeader className="pb-2">
+      <div className="grid gap-0 items-start lg:mt-10 lg:gap-10 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] 2xl:gap-12">
+        <div className="space-y-8 order-2 lg:order-1 pt-6 lg:pt-0">
+          <Card className="h-fit border-0 shadow-none rounded-none lg:rounded-xl lg:border lg:shadow-sm">
+            <CardHeader className="pb-2 px-0 lg:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("infoTitle")}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0 lg:px-6">
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="qty">{tOrder("quantity")}</Label>
@@ -1455,11 +1446,11 @@ export default function OrderForm({
             </CardContent>
           </Card>
 
-          <Card className="h-fit">
-            <CardHeader>
+          <Card className="h-fit border-0 shadow-none rounded-none lg:rounded-xl lg:border lg:shadow-sm">
+            <CardHeader className="px-0 lg:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("sections.personal")}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 px-0 lg:px-6">
               <div className="grid gap-4">
                 {canUploadPhoto ? (
                   <div className="grid gap-2">
@@ -1580,26 +1571,25 @@ export default function OrderForm({
                       </span>
                     ) : null}
                   </Label>
-                  <div className="relative">
+                  <div className="flex gap-2">
                     <Input
                       id="phone"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       onBlur={handleFieldBlur}
-                      className={cn("pr-16", phoneOverflow && fieldErrorClass)}
+                      className={cn("flex-1", phoneOverflow && fieldErrorClass)}
                       aria-invalid={phoneOverflow || undefined}
                       title={getFieldTitle("phone")}
                     />
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
-                    onClick={() => handleFormatPhone("phone")}
-                  >
-                    {tOrder("buttons.format")}
-                  </Button>
-                </div>
+                      variant="outline"
+                      className="shrink-0 text-xs"
+                      onClick={() => handleFormatPhone("phone")}
+                    >
+                      {tOrder("buttons.format")}
+                    </Button>
+                  </div>
               </div>
                 <div className="grid gap-2">
                   <Label htmlFor="mobile" className="flex items-center gap-1">
@@ -1610,26 +1600,25 @@ export default function OrderForm({
                       </span>
                     ) : null}
                   </Label>
-                  <div className="relative">
+                  <div className="flex gap-2">
                     <Input
                       id="mobile"
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
                       onBlur={handleFieldBlur}
-                      className={cn("pr-16", mobileOverflow && fieldErrorClass)}
+                      className={cn("flex-1", mobileOverflow && fieldErrorClass)}
                       aria-invalid={mobileOverflow || undefined}
                       title={getFieldTitle("mobile")}
                     />
                     <Button
                       type="button"
-                      variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
-                    onClick={() => handleFormatPhone("mobile")}
-                  >
-                    {tOrder("buttons.format")}
-                  </Button>
-                </div>
+                      variant="outline"
+                      className="shrink-0 text-xs"
+                      onClick={() => handleFormatPhone("mobile")}
+                    >
+                      {tOrder("buttons.format")}
+                    </Button>
+                  </div>
               </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email" className="flex items-center gap-1">
@@ -1814,7 +1803,7 @@ export default function OrderForm({
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
+                      className="text-xs"
                       onClick={handleLoadAddressDefault}
                       disabled={!selectedAddressEntry}
                     >
@@ -1846,11 +1835,25 @@ export default function OrderForm({
               </div>
             </CardContent>
           </Card>
+          <div className="pt-4 lg:hidden">
+            <Button
+              onClick={openConfirm}
+              className="w-full"
+              disabled={!canSubmitOrder || hasOverflow || isSubmitting}
+            >
+              {tOrder("buttons.order")}
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-4 lg:sticky lg:top-10 lg:self-start">
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="order-1 lg:order-2 sticky top-0 z-10 bg-white border-b border-slate-200 lg:border-b-0 lg:space-y-4 lg:top-10 lg:self-start">
+          {/* Mobile title — hidden on desktop */}
+          <div className="pt-3 pb-2 lg:hidden">
+            <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
+          </div>
+          <Card className="rounded-none border-0 shadow-none lg:rounded-xl lg:border lg:shadow-sm">
+            {/* Desktop card header with title and front/back buttons */}
+            <CardHeader className="hidden lg:flex flex-row items-center justify-between pb-2 gap-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
               <div className="flex gap-2">
                 <Button
@@ -1871,9 +1874,36 @@ export default function OrderForm({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex items-center justify-center pt-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
+            <CardContent className="flex items-center justify-center pt-0 px-0 pb-2 lg:px-6 lg:pb-6 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
               <div className="w-full max-w-[1100px]">
                 <div className="relative aspect-[85/55] w-full">
+                  {/* Mobile front/back overlay buttons */}
+                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 lg:hidden">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewView("front")}
+                      className={cn(
+                        "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
+                        previewView === "front"
+                          ? "bg-slate-900 text-white"
+                          : "bg-white/90 text-slate-600",
+                      )}
+                    >
+                      {tOrder("confirm.front")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewView("back")}
+                      className={cn(
+                        "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
+                        previewView === "back"
+                          ? "bg-slate-900 text-white"
+                          : "bg-white/90 text-slate-600",
+                      )}
+                    >
+                      {tOrder("confirm.back")}
+                    </button>
+                  </div>
                   {showPreviewSkeleton && selectedTemplate ? (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
                       <div className="animate-pulse text-sm font-medium text-slate-500">

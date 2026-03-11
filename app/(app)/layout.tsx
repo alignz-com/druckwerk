@@ -63,8 +63,8 @@ export default async function AppLayout({ children }: Props) {
   const hasPassword = Boolean(session.user.hasPassword);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex w-full max-w-[2000px] flex-col gap-8 px-4 py-6 lg:flex-row lg:px-12 lg:py-10">
+    <div className="min-h-screen bg-white lg:bg-slate-50">
+      <div className="mx-auto flex w-full max-w-[2000px] flex-col gap-8 lg:flex-row lg:px-12 lg:py-10">
         {/* Desktop sidebar — hidden on mobile */}
         <AppSidebar
           navGroups={navGroups}
@@ -90,7 +90,7 @@ export default async function AppLayout({ children }: Props) {
 
         <main className="flex-1 lg:pl-6">
           {/* Extra bottom padding on mobile so content clears the bottom nav bar */}
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm px-5 py-6 pb-24 sm:px-8 sm:py-8 lg:px-12 lg:py-10 lg:pb-10">
+          <div className="bg-white px-4 pb-24 sm:px-6 sm:pb-24 lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-sm lg:px-12 lg:py-10 lg:pb-10">
             {children}
           </div>
         </main>

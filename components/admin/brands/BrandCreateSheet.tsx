@@ -191,7 +191,6 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         onBrandCreated(brand);
       }
 
-      reset();
       onOpenChange(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("toast.createFailed"));
@@ -212,7 +211,7 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
           <SheetTitle>{t("dialog.createTitle")}</SheetTitle>
           <SheetDescription>{t("dialog.description")}</SheetDescription>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="flex h-full flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col min-h-0">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
             {/* General */}
@@ -407,13 +406,19 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
 
-          <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("actions.cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting || !form.name.trim()}>
-              {isSubmitting ? t("actions.saving") : t("actions.save")}
-            </Button>
+            {isSubmitting ? (
+              <Button key="submitting" type="button" disabled>
+                {t("actions.creating")}
+              </Button>
+            ) : (
+              <Button key="idle" type="submit" disabled={!form.name.trim()}>
+                {t("actions.create")}
+              </Button>
+            )}
           </div>
         </form>
       </SheetContent>
