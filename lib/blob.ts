@@ -21,7 +21,8 @@ type PutResult = {
 };
 
 function bucketFor(pathname: string): string {
-  return pathname.startsWith("photos/") ? UPLOADS_BUCKET : ORDERS_BUCKET;
+  if (pathname.startsWith("photos/") || pathname.startsWith("logos/")) return UPLOADS_BUCKET;
+  return ORDERS_BUCKET;
 }
 
 export async function put(

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { cn } from "@/lib/utils";
+import LogoUpload from "./LogoUpload";
 
 type Props = {
   open: boolean;
@@ -264,15 +265,13 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
                     onChange={(e) => handleFieldChange("contactPhone", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="create-logo-url">{t("form.logoUrl")}</Label>
-                  <Input
-                    id="create-logo-url"
+                <div className="space-y-2 md:col-span-2">
+                  <LogoUpload
+                    label={t("form.logoUrl")}
                     value={form.logoUrl}
-                    onChange={(e) => handleFieldChange("logoUrl", e.target.value)}
-                    placeholder={t("form.logoUrlPlaceholder")}
+                    onChange={(url) => handleFieldChange("logoUrl", url)}
+                    disabled={isSubmitting}
                   />
-                  <p className="text-xs text-slate-500">{t("form.logoUrlHint")}</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="create-qr-mode">{t("form.qrMode")}</Label>

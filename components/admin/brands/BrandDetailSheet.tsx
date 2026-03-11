@@ -22,6 +22,7 @@ import {
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 import BrandTemplateSection from "./BrandTemplateSection";
+import LogoUpload from "./LogoUpload";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { cn } from "@/lib/utils";
 
@@ -576,14 +577,12 @@ export default function BrandDetailSheet({
                         />
                       </div>
                       <div className="space-y-1.5 sm:col-span-2">
-                        <Label htmlFor="brand-logo-url-detail">{t("form.logoUrl")}</Label>
-                        <Input
-                          id="brand-logo-url-detail"
+                        <LogoUpload
+                          label={t("form.logoUrl")}
                           value={form.logoUrl}
-                          onChange={(event) => handleFieldChange("logoUrl", event.target.value)}
-                          placeholder={t("form.logoUrlPlaceholder")}
+                          onChange={(url) => handleFieldChange("logoUrl", url)}
+                          disabled={disableActions}
                         />
-                        <p className="text-xs text-slate-500">{t("form.logoUrlHint")}</p>
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="brand-qr-mode-detail">{t("form.qrMode")}</Label>
