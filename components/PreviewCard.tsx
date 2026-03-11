@@ -859,26 +859,6 @@ function renderDesignElements(
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
 
-function svgFontAttributes(style: TemplateTextStyle, fontScale: number) {
-  const fontSize = ptToMm(style.sizePt) * fontScale;
-  let fontWeight = 400;
-  let fontStyle = "normal" as "normal" | "italic";
-
-  switch (style.font) {
-    case "bold":
-      fontWeight = 700;
-      break;
-    case "light":
-      fontWeight = 300;
-      break;
-    case "lightItalic":
-      fontWeight = 300;
-      fontStyle = "italic";
-      break;
-  }
-
-  return { fontSize, fontWeight, fontStyle };
-}
 
 /* ---------- kleine Helfer ---------- */
 function vEscape(s: string) {
@@ -1015,7 +995,7 @@ export function BusinessCardFront({
   const design = template.design ?? DEFAULT_TEMPLATE_DESIGN;
   const { canvasW, canvasH, offsetX, offsetY } = useMemo(
     () => getCanvasMetrics(template),
-    [template.pageWidthMm, template.pageHeightMm],
+    [template.pageWidthMm, template.pageHeightMm, template.canvasWidthMm, template.canvasHeightMm],
   );
   const normalizedFrontAddress = useMemo(() => normalizeAddress(company), [company]);
   const companyLines = useMemo(
@@ -1280,7 +1260,7 @@ export function BusinessCardBack({
   const displayBackLinkedin = useMemo(() => formatUrlForDisplay(linkedin), [linkedin]);
   const { canvasW, canvasH, offsetX, offsetY } = useMemo(
     () => getCanvasMetrics(template),
-    [template.pageWidthMm, template.pageHeightMm],
+    [template.pageWidthMm, template.pageHeightMm, template.canvasWidthMm, template.canvasHeightMm],
   );
   const vcard = useMemo(
     () =>

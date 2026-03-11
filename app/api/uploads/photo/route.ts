@@ -33,7 +33,6 @@ export async function POST(req: Request) {
   const upload = await put(path, file, {
     access: "public",
     contentType: file.type,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
   });
 
   return NextResponse.json({ url: upload.url, path: upload.pathname ?? path });

@@ -322,7 +322,6 @@ export async function POST(req: Request) {
     const upload = await put(fileName, pdfBlob, {
       access: "public",
       contentType: "application/pdf",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     const requesterCompany =
@@ -384,7 +383,6 @@ export async function POST(req: Request) {
     const jdfUpload = await put(jdfStorageKey, jdfBlob, {
       access: "public",
       contentType: "application/xml",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     const order = await prisma.order.create({

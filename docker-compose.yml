@@ -22,6 +22,21 @@ services:
     volumes:
       - minio_data:/data
 
+  # Replaces Vercel crons. Calls the two cron API routes on the same schedule.
+  # Requires APP_URL and CRON_SECRET to be set in .env (or passed via environment).
+  cron:
+    image: alpine:3
+    restart: unless-stopped
+    environment:
+      APP_URL: ${APP_URL:-http://host.docker.internal:3000}
+      CRON_SECRET: ${CRON_SECRET}
+    command: >
+      sh -c "
+        echo '* * * * * wget -qO- --header=\"Authorization: Bearer $$CRON_SECRET\" $$APP_URL/api/cron/jdf-worker > /dev/null 2>&1' > /etc/crontabs/root &&
+        echo '15 3 * * * wget -qO- --header=\"Authorization: Bearer $$CRON_SECRET\" $$APP_URL/api/cron/cleanup-drafts > /dev/null 2>&1' >> /etc/crontabs/root &&
+        crond -f -l 8
+      "
+
 volumes:
   postgres_data:
   minio_data:

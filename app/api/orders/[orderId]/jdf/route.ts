@@ -130,7 +130,6 @@ export async function POST(_req: Request, context: { params: RouteParams | Promi
   const jdfUpload = await put(jdfStorageKey, jdfBlob, {
     access: "public",
     contentType: "application/xml",
-    token: process.env.BLOB_READ_WRITE_TOKEN,
     allowOverwrite: true,
   });
 
