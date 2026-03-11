@@ -85,6 +85,7 @@ export default async function AppLayout({ children }: Props) {
           roleLabel={roleLabel}
           logoutLabel={t.nav.logout}
           moreLabel={t.nav.more}
+          hasPassword={hasPassword}
         />
 
         <main className="flex-1 lg:pl-6">
