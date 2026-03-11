@@ -66,7 +66,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "transition-[width] duration-200 lg:shrink-0",
+        "hidden lg:block transition-[width] duration-200 lg:shrink-0",
         collapsed ? "lg:w-20" : "lg:w-64",
       )}
       data-collapsed={collapsed ? "true" : "false"}
