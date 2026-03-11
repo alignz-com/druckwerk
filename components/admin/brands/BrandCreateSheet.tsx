@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -9,13 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  dataTableContainerClass,
-  dataTableHeaderClass,
-  dataTableRowClass,
-} from "@/components/admin/shared/data-table-styles";
-import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -24,40 +16,20 @@ type Props = {
   onBrandCreated: (brand: AdminBrandSummary) => void;
 };
 
-type AddressForm = BrandAddressDraft;
-
 type FormState = {
   name: string;
   slug: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  logoUrl: string;
+  qrMode: "VCARD_ONLY" | "PUBLIC_PROFILE_ONLY" | "BOTH";
+  defaultQrMode: "VCARD_ONLY" | "PUBLIC_PROFILE_ONLY" | "";
   quantityMin: string;
   quantityMax: string;
   quantityStep: string;
   quantityOptions: string;
-  addresses: AddressForm[];
 };
-
-const generateKey = () =>
-  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
-
-const emptyAddress = (): AddressForm => ({
-  clientKey: generateKey(),
-  label: "",
-  company: "",
-  street: "",
-  addressExtra: "",
-  postalCode: "",
-  city: "",
-  countryCode: "",
-  cardAddressText: "",
-  url: "",
-  createdAt: null,
-  updatedAt: null,
-});
 
 const emptyForm = (): FormState => ({
   name: "",
@@ -65,11 +37,13 @@ const emptyForm = (): FormState => ({
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  logoUrl: "",
+  qrMode: "VCARD_ONLY",
+  defaultQrMode: "",
   quantityMin: "",
   quantityMax: "",
   quantityStep: "",
   quantityOptions: "",
-  addresses: [],
 });
 
 const parseOptionalPositiveInt = (value: string) => {
@@ -102,10 +76,6 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
   const [domainInput, setDomainInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [addressSearch, setAddressSearch] = useState("");
-  const [addressSheetState, setAddressSheetState] = useState<AddressSheetState | null>(null);
-
-  const addressesCount = form.addresses.length;
 
   const reset = () => {
     setForm(emptyForm());
@@ -115,41 +85,8 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
     setError(null);
   };
 
-  const handleFieldChange = (field: keyof Omit<FormState, "addresses">, value: string) => {
+  const handleFieldChange = (field: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const openCreateAddress = () => {
-    setAddressSheetState({ mode: "create", address: emptyAddress() });
-  };
-
-  const openEditAddress = (clientKey: string) => {
-    const target = form.addresses.find((address) => address.clientKey === clientKey);
-    if (target) {
-      setAddressSheetState({ mode: "edit", address: target });
-    }
-  };
-
-  const handleAddressSaved = (draft: AddressForm) => {
-    setForm((current) => {
-      const exists = current.addresses.some((address) => address.clientKey === draft.clientKey);
-      const addresses = exists
-        ? current.addresses.map((address) => (address.clientKey === draft.clientKey ? draft : address))
-        : [...current.addresses, draft];
-      return { ...current, addresses };
-    });
-    setAddressSheetState(null);
-  };
-
-  const closeAddressSheet = () => setAddressSheetState(null);
-
-  const handleAddressDelete = (clientKey: string) => {
-    const confirmed = window.confirm(t("addresses.confirmDelete"));
-    if (!confirmed) return;
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
-    }));
   };
 
   const addDomain = () => {
@@ -201,21 +138,13 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
       contactName: form.contactName.trim() ? form.contactName.trim() : null,
       contactEmail: form.contactEmail.trim() ? form.contactEmail.trim() : null,
       contactPhone: form.contactPhone.trim() ? form.contactPhone.trim() : null,
+      logoUrl: form.logoUrl.trim() ? form.logoUrl.trim() : null,
+      qrMode: form.qrMode,
+      defaultQrMode: form.qrMode === "BOTH" ? (form.defaultQrMode || "VCARD_ONLY") : null,
       quantityMin: quantityMinResult.value,
       quantityMax: quantityMaxResult.value,
       quantityStep: quantityStepResult.value,
       quantityOptions: quantityOptionsResult.value,
-      addresses: form.addresses.map((address) => ({
-        label: address.label.trim() ? address.label.trim() : null,
-        company: address.company.trim() ? address.company.trim() : null,
-        street: address.street.trim() ? address.street.trim() : null,
-        addressExtra: address.addressExtra.trim() ? address.addressExtra.trim() : null,
-        postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
-        city: address.city.trim() ? address.city.trim() : null,
-        countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
-        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
-        url: address.url.trim() ? address.url.trim() : null,
-      })),
     };
 
     try {
@@ -263,44 +192,20 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
 
       reset();
       onOpenChange(false);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : t("toast.createFailed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("toast.createFailed"));
       setIsSubmitting(false);
     }
   };
 
-  const normalizedAddressSearch = addressSearch.trim().toLowerCase();
-  const addressRows = useMemo(() => {
-    if (!normalizedAddressSearch) return form.addresses;
-    return form.addresses.filter((address) => {
-      const haystack = [
-        address.label,
-        address.company,
-        address.street,
-        address.addressExtra,
-        address.cardAddressText,
-        address.postalCode,
-        address.city,
-        address.countryCode,
-        address.url,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(normalizedAddressSearch);
-    });
-  }, [form.addresses, normalizedAddressSearch]);
-
   return (
-    <>
-      <Sheet
-        open={open}
-        onOpenChange={(next) => {
-          if (!next) {
-            reset();
-          }
-          onOpenChange(next);
-        }}
-      >
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
       <SheetContent className="flex h-full max-w-4xl flex-col p-0">
         <SheetHeader className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-5 text-left">
           <SheetTitle>{t("dialog.createTitle")}</SheetTitle>
@@ -308,254 +213,210 @@ export default function BrandCreateSheet({ open, onOpenChange, onBrandCreated }:
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          <section className="space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
-              <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="brand-name">{t("form.name")}</Label>
-                <Input
-                  id="brand-name"
-                  value={form.name}
-                  onChange={(event) => handleFieldChange("name", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-slug">{t("form.slug")}</Label>
-                <Input
-                  id="brand-slug"
-                  value={form.slug}
-                  onChange={(event) => handleFieldChange("slug", event.target.value)}
-                  placeholder={t("form.slugHint")}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-contact-name">{t("form.contactName")}</Label>
-                <Input
-                  id="brand-contact-name"
-                  value={form.contactName}
-                  onChange={(event) => handleFieldChange("contactName", event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-contact-email">{t("form.contactEmail")}</Label>
-                <Input
-                  id="brand-contact-email"
-                  type="email"
-                  value={form.contactEmail}
-                  onChange={(event) => handleFieldChange("contactEmail", event.target.value)}
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="brand-contact-phone">{t("form.contactPhone")}</Label>
-                <Input
-                  id="brand-contact-phone"
-                  value={form.contactPhone}
-                  onChange={(event) => handleFieldChange("contactPhone", event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-quantity-min">{t("form.quantityMin")}</Label>
-                <Input
-                  id="brand-quantity-min"
-                  inputMode="numeric"
-                  value={form.quantityMin}
-                  onChange={(event) => handleFieldChange("quantityMin", event.target.value)}
-                  placeholder="50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-quantity-max">{t("form.quantityMax")}</Label>
-                <Input
-                  id="brand-quantity-max"
-                  inputMode="numeric"
-                  value={form.quantityMax}
-                  onChange={(event) => handleFieldChange("quantityMax", event.target.value)}
-                  placeholder="1000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand-quantity-step">{t("form.quantityStep")}</Label>
-                <Input
-                  id="brand-quantity-step"
-                  inputMode="numeric"
-                  value={form.quantityStep}
-                  onChange={(event) => handleFieldChange("quantityStep", event.target.value)}
-                  placeholder="50"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="brand-quantity-options">{t("form.quantityOptions")}</Label>
-                <Input
-                  id="brand-quantity-options"
-                  value={form.quantityOptions}
-                  onChange={(event) => handleFieldChange("quantityOptions", event.target.value)}
-                  placeholder="50, 100, 250"
-                />
-                <p className="text-xs text-slate-500">{t("form.quantityOptionsHint")}</p>
-              </div>
-            </div>
-          </section>
 
-          <section className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* General */}
+            <section className="space-y-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.addresses.title")}</h3>
-                <p className="text-xs text-slate-500">{t("detail.sections.addresses.description")}</p>
+                <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h3>
+                <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
               </div>
-              <Button type="button" onClick={openCreateAddress} className="self-start sm:self-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addresses.add")}
-              </Button>
-            </div>
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={addressSearch}
-                onChange={(event) => setAddressSearch(event.target.value)}
-                placeholder={t("addresses.searchPlaceholder")}
-                className="pl-9"
-              />
-            </div>
-            <div className={cn(dataTableContainerClass, "mt-4")}>
-              <Table>
-                <TableHeader className={dataTableHeaderClass}>
-                  <TableRow>
-                    <TableHead>{t("addresses.table.columns.label")}</TableHead>
-                    <TableHead>{t("addresses.table.columns.address")}</TableHead>
-                    <TableHead className="w-24">{t("addresses.table.columns.country")}</TableHead>
-                    <TableHead className="w-32">{t("addresses.table.columns.updated")}</TableHead>
-                    <TableHead className="w-28 text-right">{t("addresses.table.columns.actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {addressRows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="py-6 text-center text-sm text-slate-500">
-                        {addressSearch ? t("addresses.noResults") : t("addresses.empty")}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    addressRows.map((address) => (
-                      <TableRow key={address.clientKey} className={dataTableRowClass}>
-                        <TableCell className="align-top">
-                          <div className="font-medium text-slate-900">
-                            {address.label || t("addresses.fields.label")}
-                          </div>
-                          <div className="text-sm text-slate-500">{address.company || "—"}</div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="text-sm text-slate-700">{formatAddressPreview(address)}</div>
-                          {address.cardAddressText ? (
-                            <p className="mt-1 whitespace-pre-line text-xs text-slate-500">{address.cardAddressText}</p>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-slate-600">
-                          {address.countryCode ? address.countryCode.toUpperCase() : "—"}
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-slate-600">—</TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t("addresses.actions.edit")}
-                              onClick={() => openEditAddress(address.clientKey)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t("addresses.actions.delete")}
-                              onClick={() => handleAddressDelete(address.clientKey)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h3>
-                <p className="text-xs text-slate-500">{t("domains.description")}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={domainInput}
-                  onChange={(event) => setDomainInput(event.target.value)}
-                  placeholder={t("domains.placeholder")}
-                  className="w-56"
-                />
-                <Button type="button" variant="secondary" onClick={addDomain} disabled={isSubmitting}>
-                  {t("domains.add")}
-                </Button>
-              </div>
-            </div>
-            {domains.length === 0 ? (
-              <p className="text-xs text-slate-500">{t("domains.empty")}</p>
-            ) : (
-              <ul className="flex flex-wrap gap-2 text-xs text-slate-600">
-                {domains.map((domain) => (
-                  <li
-                    key={domain}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="create-brand-name">{t("form.name")}</Label>
+                  <Input
+                    id="create-brand-name"
+                    value={form.name}
+                    onChange={(e) => handleFieldChange("name", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-brand-slug">{t("form.slug")}</Label>
+                  <Input
+                    id="create-brand-slug"
+                    value={form.slug}
+                    onChange={(e) => handleFieldChange("slug", e.target.value)}
+                    placeholder={t("form.slugHint")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-contact-name">{t("form.contactName")}</Label>
+                  <Input
+                    id="create-contact-name"
+                    value={form.contactName}
+                    onChange={(e) => handleFieldChange("contactName", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-contact-email">{t("form.contactEmail")}</Label>
+                  <Input
+                    id="create-contact-email"
+                    type="email"
+                    value={form.contactEmail}
+                    onChange={(e) => handleFieldChange("contactEmail", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-contact-phone">{t("form.contactPhone")}</Label>
+                  <Input
+                    id="create-contact-phone"
+                    value={form.contactPhone}
+                    onChange={(e) => handleFieldChange("contactPhone", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-logo-url">{t("form.logoUrl")}</Label>
+                  <Input
+                    id="create-logo-url"
+                    value={form.logoUrl}
+                    onChange={(e) => handleFieldChange("logoUrl", e.target.value)}
+                    placeholder={t("form.logoUrlPlaceholder")}
+                  />
+                  <p className="text-xs text-slate-500">{t("form.logoUrlHint")}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-qr-mode">{t("form.qrMode")}</Label>
+                  <select
+                    id="create-qr-mode"
+                    value={form.qrMode}
+                    onChange={(e) => handleFieldChange("qrMode", e.target.value)}
+                    className={cn(
+                      "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700",
+                      "focus:outline-none focus:ring-2 focus:ring-slate-400",
+                    )}
                   >
-                    <span>{domain}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      type="button"
-                      onClick={() => removeDomain(domain)}
-                      aria-label={t("domains.removeLabel", { domain })}
-                    >
-                      ×
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                    <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
+                    <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
+                    <option value="BOTH">{t("form.qrModes.both")}</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-default-qr-mode">{t("form.defaultQrMode")}</Label>
+                  <select
+                    id="create-default-qr-mode"
+                    value={form.defaultQrMode}
+                    onChange={(e) => handleFieldChange("defaultQrMode", e.target.value)}
+                    disabled={form.qrMode !== "BOTH"}
+                    className={cn(
+                      "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700",
+                      "focus:outline-none focus:ring-2 focus:ring-slate-400",
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
+                    <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
+                  </select>
+                  {form.qrMode !== "BOTH" ? (
+                    <p className="text-xs text-slate-500">{t("form.defaultQrModeHint")}</p>
+                  ) : null}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-quantity-min">{t("form.quantityMin")}</Label>
+                  <Input
+                    id="create-quantity-min"
+                    inputMode="numeric"
+                    value={form.quantityMin}
+                    onChange={(e) => handleFieldChange("quantityMin", e.target.value)}
+                    placeholder="50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-quantity-max">{t("form.quantityMax")}</Label>
+                  <Input
+                    id="create-quantity-max"
+                    inputMode="numeric"
+                    value={form.quantityMax}
+                    onChange={(e) => handleFieldChange("quantityMax", e.target.value)}
+                    placeholder="1000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-quantity-step">{t("form.quantityStep")}</Label>
+                  <Input
+                    id="create-quantity-step"
+                    inputMode="numeric"
+                    value={form.quantityStep}
+                    onChange={(e) => handleFieldChange("quantityStep", e.target.value)}
+                    placeholder="50"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="create-quantity-options">{t("form.quantityOptions")}</Label>
+                  <Input
+                    id="create-quantity-options"
+                    value={form.quantityOptions}
+                    onChange={(e) => handleFieldChange("quantityOptions", e.target.value)}
+                    placeholder="50, 100, 250"
+                  />
+                  <p className="text-xs text-slate-500">{t("form.quantityOptionsHint")}</p>
+                </div>
+              </div>
+            </section>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {/* Domains */}
+            <section className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h3>
+                  <p className="text-xs text-slate-500">{t("domains.description")}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Input
+                    value={domainInput}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addDomain())}
+                    placeholder={t("domains.placeholder")}
+                    className="w-48"
+                  />
+                  <Button type="button" variant="secondary" onClick={addDomain} disabled={isSubmitting}>
+                    {t("domains.add")}
+                  </Button>
+                </div>
+              </div>
+              {domains.length === 0 ? (
+                <p className="text-xs text-slate-500">{t("domains.empty")}</p>
+              ) : (
+                <ul className="flex flex-wrap gap-2 text-xs text-slate-600">
+                  {domains.map((domain) => (
+                    <li
+                      key={domain}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
+                    >
+                      <span>{domain}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        type="button"
+                        onClick={() => removeDomain(domain)}
+                        aria-label={t("domains.removeLabel", { domain })}
+                      >
+                        ×
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* Addresses note */}
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              {t("addresses.empty")} {t("detail.sections.addresses.description")}
+            </p>
+
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
+
           <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("actions.cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !form.name.trim()}>
               {isSubmitting ? t("actions.saving") : t("actions.save")}
             </Button>
           </div>
         </form>
       </SheetContent>
     </Sheet>
-      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} />
-    </>
   );
-}
-
-function formatAddressPreview(address: AddressForm) {
-  const parts = [
-    address.street,
-    address.addressExtra,
-    [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
-    address.url,
-  ].filter((value) => value && value.trim().length > 0);
-
-  return parts.length > 0 ? parts.join(" · ") : "—";
 }

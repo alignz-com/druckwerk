@@ -663,15 +663,6 @@ export default function BrandDetailSheet({
         </div>
       </section>
 
-      {brand ? (
-        <BrandTemplateSection
-          brandId={brand.id}
-          templates={brand.templates}
-          defaultTemplateId={brand.defaultTemplateId}
-          onBrandUpdated={onBrandUpdated}
-        />
-      ) : null}
-
                   <Separator />
 
                   <section className="space-y-4">
@@ -957,7 +948,7 @@ export default function BrandDetailSheet({
                   onClick={() => onOpenChange(false)}
                   disabled={disableActions}
                 >
-                  {t("actions.close")}
+                  {t("actions.cancel")}
                 </Button>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   <Button type="submit" disabled={disableActions || !form.name.trim()}>
