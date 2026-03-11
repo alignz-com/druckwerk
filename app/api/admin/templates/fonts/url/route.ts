@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { getSignedUrl } from "@/lib/storage";
+import { FONT_BUCKET } from "@/lib/s3";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const signedUrl = await getSignedUrl(process.env.SUPABASE_FONT_BUCKET ?? "fonts", storageKey, 3600);
+    const signedUrl = await getSignedUrl(FONT_BUCKET, storageKey, 3600);
     return NextResponse.json({ url: signedUrl });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message ?? "Failed to sign font" }, { status: 500 });

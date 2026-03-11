@@ -7,8 +7,7 @@ import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteObject } from "@/lib/storage";
 import { adminTemplateSummaryInclude, mapTemplateToAdminSummary } from "@/lib/admin/templates-data";
-
-const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
+import { TEMPLATE_BUCKET } from "@/lib/s3";
 
 type RouteParams = { templateId: string };
 

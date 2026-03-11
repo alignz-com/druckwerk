@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
-import { getSignedUrl } from "@/lib/storage";
-
-const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
-const SIGNED_URL_TTL_SECONDS = 3600;
-const SIGNED_URL_TTL_MS = SIGNED_URL_TTL_SECONDS * 1000;
+import { getTemplateAssetPublicUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -41,20 +37,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "storageKeys must be a non-empty array of strings" }, { status: 400 });
   }
 
-  const issuedAt = Date.now();
-  const expiresAtIso = new Date(issuedAt + SIGNED_URL_TTL_MS).toISOString();
-
-  const urls = await Promise.all(
-    storageKeys.map(async (storageKey) => {
-      try {
-        const url = await getSignedUrl(TEMPLATE_BUCKET, storageKey, SIGNED_URL_TTL_SECONDS);
-        return { storageKey, url, expiresAt: expiresAtIso };
-      } catch (error) {
-        console.error(`[templates] Failed to refresh signed url for ${storageKey}`, error);
-        return { storageKey, url: null, error: "Failed to sign" };
-      }
-    }),
-  );
+  const urls = storageKeys.map((storageKey) => ({
+    storageKey,
+    url: getTemplateAssetPublicUrl(storageKey),
+  }));
 
   return NextResponse.json({ urls });
 }

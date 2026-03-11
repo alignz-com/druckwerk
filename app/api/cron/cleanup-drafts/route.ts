@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { del } from "@vercel/blob";
+import { del } from "@/lib/blob";
 
 import { prisma } from "@/lib/prisma";
 

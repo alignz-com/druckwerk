@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { put } from "@/lib/blob";
 
 import { generateOrderPdf, type OrderPdfFields } from "@/lib/orderPdf";
 import { getTemplateByKey } from "@/lib/templates";

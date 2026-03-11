@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { Readable } from "node:stream";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import ftp from "basic-ftp";
+import { prisma } from "./prisma";
 
 export type JdfExportJob = {
   id: string;
@@ -14,8 +14,6 @@ export type JdfExportJob = {
 };
 
 export type JdfWorkerConfig = {
-  supabaseUrl: string;
-  serviceRoleKey: string;
   ftpHost: string;
   ftpUser: string;
   ftpPassword: string;
@@ -35,8 +33,6 @@ export type JdfWorkerResult = {
 
 export function buildJdfWorkerConfigFromEnv(): JdfWorkerConfig {
   return {
-    supabaseUrl: requireEnv("SUPABASE_URL"),
-    serviceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     ftpHost: requireEnv("PRINTER_FTP_HOST"),
     ftpUser: requireEnv("PRINTER_FTP_USER"),
     ftpPassword: requireEnv("PRINTER_FTP_PASSWORD"),
@@ -49,145 +45,78 @@ export function buildJdfWorkerConfigFromEnv(): JdfWorkerConfig {
 }
 
 export async function runJdfWorker(config: JdfWorkerConfig): Promise<JdfWorkerResult[]> {
-  const supabase = createAdminClient(config);
-  const jobs = await fetchPendingJobs(supabase, config);
-
+  const jobs = await fetchPendingJobs(config);
   const processed: JdfWorkerResult[] = [];
 
   for (const job of jobs) {
-    const locked = await lockJob(supabase, job.id);
+    const locked = await lockJob(job.id);
     if (!locked) {
-      processed.push({
-        id: job.id,
-        status: "SKIPPED",
-        attempts: job.attemptCount,
-      });
+      processed.push({ id: job.id, status: "SKIPPED", attempts: job.attemptCount });
       continue;
     }
 
     try {
-      await processJob(supabase, locked, config);
-      processed.push({
-        id: locked.id,
-        status: "COMPLETED",
-        attempts: locked.attemptCount + 1,
-      });
+      await processJob(locked, config);
+      processed.push({ id: locked.id, status: "COMPLETED", attempts: locked.attemptCount + 1 });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await failJob(supabase, locked, config, message);
-      processed.push({
-        id: locked.id,
-        status: "FAILED",
-        attempts: locked.attemptCount + 1,
-        error: message,
-      });
+      await failJob(locked, config, message);
+      processed.push({ id: locked.id, status: "FAILED", attempts: locked.attemptCount + 1, error: message });
     }
   }
 
   return processed;
 }
 
-function createAdminClient(config: JdfWorkerConfig) {
-  return createClient(config.supabaseUrl, config.serviceRoleKey, {
-    auth: { persistSession: false },
-  });
+async function fetchPendingJobs(config: JdfWorkerConfig) {
+  return prisma.jdfExportJob.findMany({
+    where: { status: "PENDING", attemptCount: { lt: config.maxAttempts } },
+    orderBy: { createdAt: "asc" },
+    take: config.batchSize,
+  }) as unknown as Promise<JdfExportJob[]>;
 }
 
-async function fetchPendingJobs(supabase: SupabaseClient, config: JdfWorkerConfig) {
-  const { data, error } = await supabase
-    .from("JdfExportJob")
-    .select("*")
-    .eq("status", "PENDING")
-    .lt("attemptCount", config.maxAttempts)
-    .order("createdAt", { ascending: true })
-    .limit(config.batchSize);
-
-  if (error) {
-    console.error("[jdf-worker] failed to fetch jobs", error);
-    return [];
-  }
-
-  return (data as JdfExportJob[]) ?? [];
-}
-
-async function lockJob(supabase: SupabaseClient, jobId: string) {
-  const { data, error } = await supabase
-    .from("JdfExportJob")
-    .update({
-      status: "PROCESSING",
-      updatedAt: new Date().toISOString(),
-    })
-    .eq("id", jobId)
-    .eq("status", "PENDING")
-    .select("*")
-    .single();
-
-  if (error || !data) {
-    if (error) {
-      console.warn("[jdf-worker] failed to lock job", jobId, error);
-    }
+async function lockJob(jobId: string): Promise<JdfExportJob | null> {
+  try {
+    const locked = await prisma.jdfExportJob.updateMany({
+      where: { id: jobId, status: "PENDING" },
+      data: { status: "PROCESSING" },
+    });
+    if (locked.count === 0) return null;
+    return prisma.jdfExportJob.findUnique({ where: { id: jobId } }) as unknown as Promise<JdfExportJob>;
+  } catch (error) {
+    console.warn("[jdf-worker] failed to lock job", jobId, error);
     return null;
   }
-
-  return data as JdfExportJob;
 }
 
-async function processJob(supabase: SupabaseClient, job: JdfExportJob, config: JdfWorkerConfig) {
+async function processJob(job: JdfExportJob, config: JdfWorkerConfig) {
   const pdfReady = await waitForPdf(job.pdfUrl, config);
   if (!pdfReady) {
     throw new Error("PDF not reachable within timeout");
   }
 
-  const reference = await getOrderReferenceCode(supabase, job.orderId);
-  const fileName = `${reference ?? job.orderId}.jdf`;
+  const order = await prisma.order.findUnique({
+    where: { id: job.orderId },
+    select: { referenceCode: true },
+  });
+  const fileName = `${order?.referenceCode ?? job.orderId}.jdf`;
 
   await uploadToFtp(job.jdfXml, fileName, config);
 
-  const { error } = await supabase
-    .from("JdfExportJob")
-    .update({
-      status: "COMPLETED",
-      attemptCount: job.attemptCount + 1,
-      lastError: null,
-      updatedAt: new Date().toISOString(),
-    })
-    .eq("id", job.id);
-
-  if (error) {
-    console.error("[jdf-worker] failed to mark job completed", job.id, error);
-  }
+  await prisma.jdfExportJob.update({
+    where: { id: job.id },
+    data: { status: "COMPLETED", attemptCount: job.attemptCount + 1, lastError: null },
+  });
 }
 
-async function failJob(supabase: SupabaseClient, job: JdfExportJob, config: JdfWorkerConfig, message: string) {
+async function failJob(job: JdfExportJob, config: JdfWorkerConfig, message: string) {
   const attemptCount = job.attemptCount + 1;
   const status = attemptCount >= config.maxAttempts ? "FAILED" : "PENDING";
-  const { error } = await supabase
-    .from("JdfExportJob")
-    .update({
-      status,
-      attemptCount,
-      lastError: message,
-      updatedAt: new Date().toISOString(),
-    })
-    .eq("id", job.id);
-
-  if (error) {
-    console.error("[jdf-worker] failed to update failed job", job.id, error);
-  }
-}
-
-async function getOrderReferenceCode(supabase: SupabaseClient, orderId: string) {
-  const { data, error } = await supabase
-    .from("Order")
-    .select("referenceCode")
-    .eq("id", orderId)
-    .single();
-
-  if (error) {
-    console.error("[jdf-worker] failed to load order reference", orderId, error);
-    return null;
-  }
-  return (data as { referenceCode: string | null }).referenceCode ?? null;
+  await prisma.jdfExportJob.update({
+    where: { id: job.id },
+    data: { status, attemptCount, lastError: message },
+  });
 }
 
 async function waitForPdf(url: string, config: JdfWorkerConfig) {
@@ -195,9 +124,7 @@ async function waitForPdf(url: string, config: JdfWorkerConfig) {
   while (Date.now() - start < config.pdfTimeoutMs) {
     try {
       const response = await fetch(url, { method: "HEAD" });
-      if (response.ok) {
-        return true;
-      }
+      if (response.ok) return true;
     } catch (error) {
       console.warn("[jdf-worker] pdf HEAD failed", error);
     }
@@ -236,17 +163,13 @@ function delay(ms: number) {
 
 function requireEnv(key: string): string {
   const value = process.env[key];
-  if (!value) {
-    throw new Error(`${key} is not set`);
-  }
+  if (!value) throw new Error(`${key} is not set`);
   return value;
 }
 
 function intFromEnv(key: string, defaultValue: number) {
   const raw = process.env[key];
-  if (!raw) {
-    return defaultValue;
-  }
+  if (!raw) return defaultValue;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : defaultValue;
 }

@@ -1,14 +1,11 @@
 import { Buffer } from "node:buffer";
 import { PDFDocument } from "pdf-lib";
 import { PNG } from "pngjs";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl as s3GetSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { TemplateAssetType } from "@prisma/client";
-
-const SUPABASE_URL = requireEnv("SUPABASE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
-const FONT_BUCKET = process.env.SUPABASE_FONT_BUCKET ?? "fonts";
-
-const STORAGE_BASE_URL = `${SUPABASE_URL}/storage/v1/object`;
+import { s3, S3_PUBLIC_URL, TEMPLATE_BUCKET, FONT_BUCKET } from "./s3";
 
 type UploadOptions = {
   upsert?: boolean;
@@ -57,25 +54,25 @@ export type PngMetadata = {
   heightMm?: number;
 };
 
-export async function uploadTemplateAsset(input: TemplateAssetUpload, opts: UploadOptions = {}): Promise<UploadResult> {
+export async function uploadTemplateAsset(input: TemplateAssetUpload, _opts: UploadOptions = {}): Promise<UploadResult> {
   const path = buildTemplateAssetPath(input.templateKey, input.version, input.fileName);
-  const response = await uploadToSupabase(TEMPLATE_BUCKET, path, input.data, input.contentType, opts);
+  await uploadToS3(TEMPLATE_BUCKET, path, input.data, input.contentType);
   return {
     storageKey: path,
     bucket: TEMPLATE_BUCKET,
     contentType: input.contentType,
-    sizeBytes: response.size,
+    sizeBytes: input.data.byteLength,
   };
 }
 
-export async function uploadFontVariant(input: FontUpload, opts: UploadOptions = {}): Promise<UploadResult> {
+export async function uploadFontVariant(input: FontUpload, _opts: UploadOptions = {}): Promise<UploadResult> {
   const path = buildFontPath(input.familySlug, input.weight, input.style, input.format, input.fileName);
-  const response = await uploadToSupabase(FONT_BUCKET, path, input.data, input.contentType, opts);
+  await uploadToS3(FONT_BUCKET, path, input.data, input.contentType);
   return {
     storageKey: path,
     bucket: FONT_BUCKET,
     contentType: input.contentType,
-    sizeBytes: response.size,
+    sizeBytes: input.data.byteLength,
   };
 }
 
@@ -84,40 +81,12 @@ export async function deleteFontVariantObject(storageKey: string) {
 }
 
 export async function deleteObject(bucket: string, key: string) {
-  const url = `${STORAGE_BASE_URL}/${encodeURIComponent(bucket)}/${encodeStoragePath(key)}`;
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: supabaseHeaders(),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to delete ${bucket}/${key}: ${res.status} ${text}`);
-  }
+  await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
 }
 
 export async function getSignedUrl(bucket: string, key: string, expiresInSeconds = 60) {
-  const url = `${SUPABASE_URL}/storage/v1/object/sign/${encodeURIComponent(bucket)}/${encodeStoragePath(key)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      ...supabaseHeaders(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ expiresIn: expiresInSeconds }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to sign ${bucket}/${key}: ${res.status} ${text}`);
-  }
-  const data = (await res.json()) as { signedURL: string };
-  let path = data.signedURL ?? "";
-  if (!path.startsWith("/")) {
-    path = `/${path}`;
-  }
-  if (!path.startsWith("/storage/v1/")) {
-    path = `/storage/v1${path}`;
-  }
-  return `${SUPABASE_URL}${path}`;
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  return s3GetSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 }
 
 export async function extractPdfMetadata(buffer: Uint8Array): Promise<PdfMetadata> {
@@ -173,42 +142,24 @@ export function buildTemplateAssetPath(templateKey: string, version: number, fil
   return `${safeKey}/v${version}/${sanitizeFileName(fileName)}`;
 }
 
-export function buildFontPath(familySlug: string, weight: number, style: string, format: string, fileName: string) {
+export function buildFontPath(familySlug: string, weight: number, style: string, format: string, _fileName: string) {
   const safeFamily = slugify(familySlug);
   return `${safeFamily}/${weight}${style === "italic" ? "i" : ""}.${format.toLowerCase()}`;
 }
 
 export function getTemplateAssetPublicUrl(storageKey: string) {
-  return `${SUPABASE_URL}/storage/v1/object/public/${encodeURIComponent(TEMPLATE_BUCKET)}/${encodeStoragePath(storageKey)}`;
+  return `${S3_PUBLIC_URL}/${TEMPLATE_BUCKET}/${storageKey}`;
 }
 
-async function uploadToSupabase(bucket: string, path: string, data: Uint8Array, contentType: string, opts: UploadOptions) {
-  const url = `${STORAGE_BASE_URL}/${encodeURIComponent(bucket)}/${encodeStoragePath(path)}`;
-  const body = Buffer.from(data);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      ...supabaseHeaders(),
-      "Content-Type": contentType,
-      "x-upsert": opts.upsert ? "true" : "false",
-    },
-    body: body as unknown as BodyInit,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to upload to ${bucket}/${path}: ${res.status} ${text}`);
-  }
-
-  const size = data.byteLength;
-  return { size };
-}
-
-function supabaseHeaders(): Record<string, string> {
-  return {
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-  };
+async function uploadToS3(bucket: string, key: string, data: Uint8Array, contentType: string) {
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: Buffer.from(data),
+      ContentType: contentType,
+    }),
+  );
 }
 
 function ptToMm(pt: number) {
@@ -224,16 +175,4 @@ function slugify(value: string) {
 
 function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "_");
-}
-
-function encodeStoragePath(path: string) {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`${key} is not set`);
-  }
-  return value;
 }

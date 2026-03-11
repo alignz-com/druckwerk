@@ -17,7 +17,8 @@ import {
   parseTemplateDesign,
   type TemplateDesign,
 } from "./template-design";
-import { getSignedUrl } from "./storage";
+import { getSignedUrl, getTemplateAssetPublicUrl } from "./storage";
+import { FONT_BUCKET } from "./s3";
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -204,48 +205,20 @@ const templateInclude = {
 };
 
 type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateInclude }>;
-function encodeStoragePath(path: string) {
-  return path
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-}
 
-const TEMPLATE_BUCKET = process.env.SUPABASE_TEMPLATE_BUCKET ?? "templates";
 const SIGNED_URL_TTL_SECONDS = 3600;
 const SIGNED_URL_TTL_MS = SIGNED_URL_TTL_SECONDS * 1000;
-
-function buildTemplateAssetPublicUrl(storageKey: string | null | undefined) {
-  if (!storageKey) return null;
-  const baseUrl = process.env.SUPABASE_URL;
-  if (!baseUrl) return null;
-  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(TEMPLATE_BUCKET)}/${encodeStoragePath(storageKey)}`;
-}
 
 async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): Promise<ResolvedTemplate> {
   const baseConfig = fallback?.config ?? ((tpl.config ?? {}) as TemplateConfig);
   const mergedConfig = mergeConfigs(baseConfig, tpl.config ?? undefined);
-  const assets: TemplateAssetSummary[] = await Promise.all(
-    tpl.assets.map(async (asset) => {
-      const directUrl = buildTemplateAssetPublicUrl(asset.storageKey);
-      let signedUrl: string | null = null;
-      let expiresAt: string | undefined;
-      try {
-        signedUrl = await getSignedUrl(TEMPLATE_BUCKET, asset.storageKey, SIGNED_URL_TTL_SECONDS);
-        expiresAt = new Date(Date.now() + SIGNED_URL_TTL_MS).toISOString();
-      } catch (error) {
-        console.warn(`[templates] Failed to sign asset ${asset.storageKey}`, error);
-      }
-      return {
-        type: asset.type,
-        storageKey: asset.storageKey,
-        publicUrl: signedUrl ?? directUrl ?? null,
-        version: asset.version,
-        updatedAt: asset.updatedAt.toISOString(),
-        expiresAt,
-      };
-    }),
-  );
+  const assets: TemplateAssetSummary[] = tpl.assets.map((asset) => ({
+    type: asset.type,
+    storageKey: asset.storageKey,
+    publicUrl: getTemplateAssetPublicUrl(asset.storageKey),
+    version: asset.version,
+    updatedAt: asset.updatedAt.toISOString(),
+  }));
 
   const pdfAsset = assets.find((asset) => asset.type === TemplateAssetType.PDF);
   const previewFrontAsset = assets.find((asset) => asset.type === TemplateAssetType.PREVIEW_FRONT);
@@ -263,11 +236,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
         let publicUrl: string | null = null;
         let expiresAt: string | undefined;
         try {
-        publicUrl = await getSignedUrl(
-          process.env.SUPABASE_FONT_BUCKET ?? "fonts",
-          variant.storageKey,
-          SIGNED_URL_TTL_SECONDS,
-        );
+        publicUrl = await getSignedUrl(FONT_BUCKET, variant.storageKey, SIGNED_URL_TTL_SECONDS);
         expiresAt = new Date(Date.now() + SIGNED_URL_TTL_MS).toISOString();
       } catch (error) {
         console.warn(`[templates] Failed to sign font ${variant.storageKey}`, error);
@@ -335,7 +304,7 @@ async function loadTemplateDesign(assets: TemplateWithAssets["assets"], fallback
     return fallback ?? DEFAULT_TEMPLATE_DESIGN;
   }
   try {
-    const url = await getSignedUrl(TEMPLATE_BUCKET, configAsset.storageKey, SIGNED_URL_TTL_SECONDS);
+    const url = getTemplateAssetPublicUrl(configAsset.storageKey);
     const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Failed to fetch template design (${res.status})`);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { put } from "@/lib/blob";
 
 import { getServerAuthSession } from "@/lib/auth";
 
