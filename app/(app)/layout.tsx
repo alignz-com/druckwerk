@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
@@ -7,6 +6,7 @@ import { getServerAuthSession } from "@/lib/auth";
 import type { NavGroup } from "@/components/layout/SidebarNav";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { MobileNav } from "@/components/layout/MobileNav";
 
 type Props = {
   children: ReactNode;
@@ -64,6 +64,7 @@ export default async function AppLayout({ children }: Props) {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto flex w-full max-w-[2000px] flex-col gap-8 px-4 py-6 lg:flex-row lg:px-12 lg:py-10">
+        {/* Desktop sidebar — hidden on mobile */}
         <AppSidebar
           navGroups={navGroups}
           displayName={displayName}
@@ -73,33 +74,21 @@ export default async function AppLayout({ children }: Props) {
           logoutLabel={t.nav.logout}
           settingsLabel={settingsLabel}
         />
-        <main className="flex-1 lg:pl-6">
-          <header className="mb-6 block lg:hidden">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-slate-500">{t.layout.signedInAs}</div>
-              <div className="text-base font-semibold text-slate-900">{displayName}</div>
-              <div className="mt-4 space-y-4">
-                {navGroups.map((group, idx) => (
-                  <div key={group.title ?? `mobile-group-${idx}`} className="space-y-2">
-                    {group.title ? <div className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.title}</div> : null}
-                    <div className="flex flex-col gap-2">
-                      {group.items.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </header>
 
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+        {/* Mobile bottom nav — hidden on desktop */}
+        <MobileNav
+          navGroups={navGroups}
+          displayName={displayName}
+          initials={initials}
+          roleLabel={roleLabel}
+          logoutLabel={t.nav.logout}
+          settingsLabel={settingsLabel}
+          moreLabel={t.nav.more}
+        />
+
+        <main className="flex-1 lg:pl-6">
+          {/* Extra bottom padding on mobile so content clears the bottom nav bar */}
+          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm px-5 py-6 pb-24 sm:px-8 sm:py-8 lg:px-12 lg:py-10 lg:pb-10">
             {children}
           </div>
         </main>

@@ -46,6 +46,29 @@ const SheetContent = React.forwardRef<
 ))
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
+const BottomSheetContent = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <SheetPortal>
+    <SheetOverlay />
+    <SheetPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl border-t bg-background shadow-xl outline-none",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+        className,
+      )}
+      {...props}
+    >
+      {/* drag handle */}
+      <div className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-slate-300" />
+      {children}
+    </SheetPrimitive.Content>
+  </SheetPortal>
+))
+BottomSheetContent.displayName = "BottomSheetContent"
+
 const SheetHeader = ({
   className,
   ...props
@@ -103,6 +126,7 @@ export {
   SheetClose,
   SheetOverlay,
   SheetContent,
+  BottomSheetContent,
   SheetHeader,
   SheetFooter,
   SheetTitle,
