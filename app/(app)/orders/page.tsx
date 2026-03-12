@@ -7,11 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { OrdersTable, type OrdersTableRow } from "@/components/orders/orders-table";
+import { OrderCardList } from "@/components/orders/OrderCardList";
+import type { OrderCardData } from "@/components/orders/OrderCardRow";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { Plus } from "lucide-react";
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
+import { getUserAccessibleProductTypes } from "@/lib/user-products";
 
 type OrdersPageProps = {
   searchParams?: Record<string, string | string[]>;
@@ -53,6 +56,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     value: status,
     label: t.statuses[status as keyof typeof t.statuses] ?? status,
   }));
+  // Determine which view to show
+  const access = await getUserAccessibleProductTypes(session.user.id, brandId);
+  const useCardView = isAdmin || isPrinter || (access.hasBusinessCard && access.hasPdfPrint);
+
   const orders = await prisma.order.findMany({
     where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
     orderBy: { createdAt: "desc" },
@@ -60,6 +67,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       template: true,
       brand: true,
       user: { select: { name: true, email: true } },
+      _count: { select: { pdfOrderItems: true } },
     },
   });
 
@@ -97,13 +105,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     return {
       id: order.id,
       referenceCode: order.referenceCode,
+      orderType: order.type as "BUSINESS_CARD" | "PDF_PRINT",
       createdAtLabel,
       createdAtValue: order.createdAt.getTime(),
       userName: order.user?.name ?? null,
       userEmail: (order.user?.email ?? order.requesterEmail) ?? null,
       templateLabel: order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
-      quantity: order.quantity,
-      quantityLabel: order.quantity.toLocaleString(localeTag),
+      quantity: order.quantity ?? 0,
+      quantityLabel: (order.quantity ?? 0).toLocaleString(localeTag),
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryTime: order.deliveryTime,
@@ -116,10 +125,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       allowedQuantities: resolveAllowedQuantities(order.brand ?? undefined),
       detail: {
         requester: {
-          name: order.requesterName,
+          name: order.requesterName ?? "",
           role: order.requesterRole ?? "",
           seniority: order.requesterSeniority ?? "",
-          email: order.requesterEmail,
+          email: order.requesterEmail ?? "",
           phone: order.phone ?? "",
           mobile: order.mobile ?? "",
           url: order.url ?? "",
@@ -127,7 +136,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         },
         company: order.company ?? "",
         address: addressMeta,
-        quantity: order.quantity,
+        quantity: order.quantity ?? 0,
         deliveryTime: order.deliveryTime,
         deliveryTimeLabel,
         customerReference: customerReference || "",
@@ -138,6 +147,36 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           order.template?.label ?? (typeof templateKey === "string" ? templateKey : order.templateId ?? "–"),
         deliveryDueAtLabel: deliveryDueAtDetailLabel,
       },
+    };
+  });
+
+  const cardData: OrderCardData[] = orders.map((order) => {
+    const templateKey =
+      typeof order.meta === "object" && order.meta && "templateKey" in order.meta
+        ? (order.meta as { templateKey?: unknown }).templateKey
+        : null;
+    const deliveryDueAtLabel = order.deliveryDueAt
+      ? formatDateTime(order.deliveryDueAt, localeTag, { dateStyle: "medium" })
+      : null;
+    return {
+      id: order.id,
+      referenceCode: order.referenceCode,
+      orderType: order.type as "BUSINESS_CARD" | "PDF_PRINT",
+      deliveryTime: order.deliveryTime,
+      brandName: order.brand?.name ?? null,
+      templateLabel:
+        order.type === "BUSINESS_CARD"
+          ? (order.template?.label ?? (typeof templateKey === "string" ? templateKey : null))
+          : null,
+      requesterName: order.requesterName ?? null,
+      requesterRole: order.requesterRole ?? null,
+      requesterSeniority: order.requesterSeniority ?? null,
+      quantity: order.quantity ?? null,
+      fileCount: order._count.pdfOrderItems || null,
+      status: order.status,
+      statusLabel: t.statuses[order.status] ?? order.status,
+      deliveryDueAtLabel,
+      createdAtLabel: formatDateTime(order.createdAt, localeTag, { dateStyle: "medium" }),
     };
   });
 
@@ -162,6 +201,15 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         </div>
       ) : null}
 
+      {useCardView ? (
+        <OrderCardList
+          orders={cardData}
+          showBrand={isAdmin || isPrinter}
+          searchPlaceholder={t.ordersPage.table.searchPlaceholder}
+          emptyState={t.ordersPage.table.empty}
+          noResults={t.ordersPage.table.noResults}
+        />
+      ) : (
       <OrdersTable
         data={tableData}
         showBrandColumn={isAdmin || isPrinter}
@@ -272,6 +320,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
             : undefined
         }
       />
+      )}
     </div>
   );
 }

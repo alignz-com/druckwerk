@@ -56,6 +56,16 @@ enum JdfExportStatus {
   FAILED
 }
 
+enum OrderType {
+  BUSINESS_CARD
+  PDF_PRINT
+}
+
+enum ProductType {
+  BUSINESS_CARD
+  PDF_PRINT
+}
+
 enum FontStyle {
   NORMAL
   ITALIC
@@ -87,6 +97,8 @@ model User {
   accounts       Account[]
   sessions       Session[]
   passwordResetTokens PasswordResetToken[]
+  canOrderBusinessCards Boolean?
+  canOrderPdfPrint      Boolean?
   orders         Order[]
   orderProfiles  UserOrderProfile[]
   deliveriesCreated Delivery[] @relation("UserDeliveries")
@@ -146,10 +158,13 @@ model Brand {
   quantityMin Int?
   quantityMax Int?
   quantityStep Int?
-  quantityOptions Int[] @default([])
-  users     User[]
-  orders    Order[]
-  templates BrandTemplate[]
+  quantityOptions         Int[]       @default([])
+  canOrderBusinessCards   Boolean     @default(true)
+  canOrderPdfPrint        Boolean     @default(false)
+  users              User[]
+  orders             Order[]
+  templates          BrandTemplate[]
+  productPaperDefaults BrandProductPaper[]
   defaultTemplateId String?
   defaultTemplate   Template?      @relation("BrandDefaultTemplate", fields: [defaultTemplateId], references: [id])
   addresses BrandAddress[]
@@ -269,11 +284,13 @@ model Template {
   label            String
   description      String?
   paperStockId     String?
+  productId        String?
   pdfPath          String
   previewFrontPath String?
   previewBackPath  String?
   config           Json
   layoutVersion    Int?
+  // Kept for backwards compat — prefer product.printDpi / product.canvasWidthMm etc. when productId is set
   printDpi         Int?
   pageWidthMm      Float?
   pageHeightMm     Float?
@@ -288,6 +305,7 @@ model Template {
   assets           TemplateAsset[]
   fonts            TemplateFont[]
   paperStock       PaperStock?     @relation(fields: [paperStockId], references: [id])
+  product          Product?        @relation(fields: [productId], references: [id])
   addressAssignments TemplateAddress[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -308,15 +326,43 @@ model TemplateAddress {
 }
 
 model PaperStock {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  finish      String?
-  color       String?
-  weightGsm   Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  templates   Template[]
+  id              String              @id @default(cuid())
+  name            String
+  description     String?
+  finish          String?
+  color           String?
+  weightGsm       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  templates       Template[]
+  productStocks   ProductPaperStock[]
+  brandDefaults   BrandProductPaper[]
+}
+
+model ProductPaperStock {
+  id           String     @id @default(cuid())
+  productId    String
+  paperStockId String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  paperStock   PaperStock @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([productId, paperStockId])
+  @@index([productId])
+}
+
+model BrandProductPaper {
+  id           String     @id @default(cuid())
+  brandId      String
+  productId    String
+  paperStockId String
+  brand        Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  paperStock   PaperStock @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([brandId, productId])
+  @@index([brandId])
 }
 
 model BrandTemplate {
@@ -342,14 +388,16 @@ model Order {
   userId         String
   brandId        String?
   templateId     String?
+  type           OrderType   @default(BUSINESS_CARD)
   status         OrderStatus @default(SUBMITTED)
-  quantity       Int
+  quantity       Int?
+  notes          String?
   deliveryTime   String
   deliveryDueAt  DateTime?
-  requesterName  String
+  requesterName  String?
   requesterRole  String?
   requesterSeniority String?
-  requesterEmail String
+  requesterEmail String?
   phone          String?
   mobile         String?
   company        String?
@@ -372,9 +420,11 @@ model Order {
   updatedAt      DateTime    @updatedAt
   jdfJob         JdfExportJob?
   deliveryItems  DeliveryItem[]
+  pdfOrderItems  PdfOrderItem[]
 
   @@index([brandId])
   @@index([templateId])
+  @@index([type])
 }
 
 model JdfExportJob {
@@ -514,4 +564,50 @@ model TemplateFont {
 
   @@unique([templateId, fontVariantId])
   @@index([fontVariantId])
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  type            ProductType
+  trimWidthMm     Float
+  trimHeightMm    Float
+  toleranceMm     Float          @default(1.0)
+  expectedBleedMm Float?
+  canvasWidthMm   Float?
+  canvasHeightMm  Float?
+  printDpi        Int?
+  pcmCode         String?
+  templates       Template[]
+  pdfOrderItems   PdfOrderItem[]
+  paperStocks     ProductPaperStock[]
+  brandPaperDefaults BrandProductPaper[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([type])
+}
+
+model PdfOrderItem {
+  id                   String   @id @default(cuid())
+  orderId              String
+  filename             String
+  sourceZipFilename    String?
+  storagePath          String?
+  thumbnailStoragePath String?
+  quantity             Int      @default(1)
+  trimWidthMm          Float?
+  trimHeightMm         Float?
+  bleedMm              Float?
+  colorSpaces          String[] @default([])
+  pantoneColors        String[] @default([])
+  pages                Int?
+  productId            String?
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product              Product? @relation(fields: [productId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([orderId])
 }

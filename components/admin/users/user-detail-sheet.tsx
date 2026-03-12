@@ -33,6 +33,105 @@ type Props = {
 
 const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
 
+type UserAccessValues = {
+  canOrderBusinessCards: boolean | null
+  canOrderPdfPrint: boolean | null
+}
+
+function UserAccessSection({ userId, initialValues }: { userId: string; initialValues: UserAccessValues }) {
+  const t = useTranslations("admin.products.userAccess")
+  const [bc, setBc] = useState<boolean | null>(initialValues.canOrderBusinessCards)
+  const [pdf, setPdf] = useState<boolean | null>(initialValues.canOrderPdfPrint)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBc(initialValues.canOrderBusinessCards)
+    setPdf(initialValues.canOrderPdfPrint)
+    setSaved(false)
+  }, [userId, initialValues.canOrderBusinessCards, initialValues.canOrderPdfPrint])
+
+  const hasChanges =
+    bc !== initialValues.canOrderBusinessCards || pdf !== initialValues.canOrderPdfPrint
+
+  async function save() {
+    setSaving(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/access`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ canOrderBusinessCards: bc, canOrderPdfPrint: pdf }),
+      })
+      if (!res.ok) throw new Error()
+      setSaved(true)
+    } catch {
+      setErr(t("error"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">{t("title")}</h3>
+        <p className="text-xs text-slate-500">{t("description")}</p>
+      </div>
+
+      {err && <p className="text-xs text-red-600">{err}</p>}
+      {saved && <p className="text-xs text-emerald-600">{t("saved")}</p>}
+
+      <div className="space-y-2">
+        {[
+          { label: "Business Cards", value: bc, set: setBc },
+          { label: "PDF Print", value: pdf, set: setPdf },
+        ].map(({ label, value, set }) => (
+          <div key={label} className="flex items-center gap-3">
+            <Select
+              value={value === null ? "inherit" : value ? "yes" : "no"}
+              onValueChange={(v) => {
+                set(v === "inherit" ? null : v === "yes")
+                setSaved(false)
+              }}
+            >
+              <SelectTrigger className="w-32 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inherit">Inherit</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-slate-700">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={!hasChanges || saving}
+          onClick={() => {
+            setBc(initialValues.canOrderBusinessCards)
+            setPdf(initialValues.canOrderPdfPrint)
+            setSaved(false)
+          }}
+        >
+          {t("reset")}
+        </Button>
+        <Button type="button" size="sm" disabled={!hasChanges || saving} onClick={save}>
+          {saving ? "…" : t("save")}
+        </Button>
+      </div>
+    </section>
+  )
+}
+
 export function UserDetailSheet({
   user,
   brandOptions,
@@ -198,6 +297,16 @@ export function UserDetailSheet({
                   </Select>
                 </div>
               </section>
+
+              <Separator />
+
+              <UserAccessSection
+                userId={user.id}
+                initialValues={{
+                  canOrderBusinessCards: user.canOrderBusinessCards,
+                  canOrderPdfPrint: user.canOrderPdfPrint,
+                }}
+              />
 
               {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}

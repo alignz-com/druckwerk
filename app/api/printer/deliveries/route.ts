@@ -133,7 +133,7 @@ export async function POST(req: Request) {
       .join("\n"),
     orders: orders.map((order) => ({
       referenceCode: order.referenceCode,
-      requesterName: order.requesterName,
+      requesterName: order.requesterName ?? "",
       requesterRole: order.requesterRole ?? "",
       customerReference:
         typeof order.meta === "object" && order.meta && "customerReference" in order.meta
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
           : null,
       templateLabel: order.template?.label ?? order.template?.key ?? "–",
       brandName: order.brand?.name ?? null,
-      quantity: order.quantity,
+      quantity: order.quantity ?? 0,
     })),
   });
 

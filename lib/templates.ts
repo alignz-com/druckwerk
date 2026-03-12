@@ -73,12 +73,24 @@ export type TemplatePhotoSlot = TemplatePhotoSlotConfig & {
   shape: "circle" | "square" | "rounded";
 };
 
+export type ResolvedTemplateProduct = {
+  id: string;
+  name: string;
+  trimWidthMm: number;
+  trimHeightMm: number;
+  canvasWidthMm: number | null;
+  canvasHeightMm: number | null;
+  printDpi: number | null;
+  pcmCode: string | null;
+};
+
 export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock" | "hasQrCode" | "hasPhotoSlot"> & {
   fonts: ResolvedTemplateFont[];
   paperStock: TemplatePaperStock | null;
   hasQrCode: boolean;
   hasPhotoSlot: boolean;
   photoSlot: TemplatePhotoSlot | null;
+  product: ResolvedTemplateProduct | null;
 };
 
 export type TemplateSummary = {
@@ -104,6 +116,7 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
     hasQrCode: detectHasQrCode(def.hasQrCode ?? null, def.config),
     hasPhotoSlot: detectHasPhotoSlot(def.hasPhotoSlot ?? null, def.config),
     photoSlot: normalizedPhoto,
+    product: null,
   };
 }
 
@@ -202,6 +215,18 @@ const templateInclude = {
     },
   },
   paperStock: true,
+  product: {
+    select: {
+      id: true,
+      name: true,
+      trimWidthMm: true,
+      trimHeightMm: true,
+      canvasWidthMm: true,
+      canvasHeightMm: true,
+      printDpi: true,
+      pcmCode: true,
+    },
+  },
 };
 
 type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateInclude }>;
@@ -268,16 +293,35 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
       }
     : null;
 
+  // Dimension fallback chain: template → product → fallback default
+  const product = tpl.product ?? null;
+  const resolvedPageWidthMm = tpl.pageWidthMm ?? product?.trimWidthMm ?? fallback?.pageWidthMm ?? null;
+  const resolvedPageHeightMm = tpl.pageHeightMm ?? product?.trimHeightMm ?? fallback?.pageHeightMm ?? null;
+  const resolvedCanvasWidthMm = tpl.canvasWidthMm ?? product?.canvasWidthMm ?? fallback?.canvasWidthMm ?? null;
+  const resolvedCanvasHeightMm = tpl.canvasHeightMm ?? product?.canvasHeightMm ?? fallback?.canvasHeightMm ?? null;
+
   const resolved: ResolvedTemplate = {
     id: tpl.id,
     key: tpl.key,
     label: tpl.label ?? fallback?.label ?? tpl.key,
     description: tpl.description ?? fallback?.description,
-    pcmCode: tpl.pcmCode ?? fallback?.pcmCode ?? null,
-    pageWidthMm: tpl.pageWidthMm ?? fallback?.pageWidthMm ?? null,
-    pageHeightMm: tpl.pageHeightMm ?? fallback?.pageHeightMm ?? null,
-    canvasWidthMm: tpl.canvasWidthMm ?? fallback?.canvasWidthMm ?? null,
-    canvasHeightMm: tpl.canvasHeightMm ?? fallback?.canvasHeightMm ?? null,
+    pcmCode: tpl.pcmCode ?? product?.pcmCode ?? fallback?.pcmCode ?? null,
+    pageWidthMm: resolvedPageWidthMm,
+    pageHeightMm: resolvedPageHeightMm,
+    canvasWidthMm: resolvedCanvasWidthMm,
+    canvasHeightMm: resolvedCanvasHeightMm,
+    product: product
+      ? {
+          id: product.id,
+          name: product.name,
+          trimWidthMm: product.trimWidthMm,
+          trimHeightMm: product.trimHeightMm,
+          canvasWidthMm: product.canvasWidthMm ?? null,
+          canvasHeightMm: product.canvasHeightMm ?? null,
+          printDpi: product.printDpi ?? null,
+          pcmCode: product.pcmCode ?? null,
+        }
+      : null,
     pdfPath: pdfAsset?.publicUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",
     previewFrontPath: previewFrontAsset?.publicUrl ?? tpl.previewFrontPath ?? fallback?.previewFrontPath ?? "",
     previewBackPath: previewBackAsset?.publicUrl ?? tpl.previewBackPath ?? fallback?.previewBackPath ?? "",

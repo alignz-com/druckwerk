@@ -155,6 +155,15 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     }
   }
 
+  if (payload?.productId !== undefined) {
+    const value = payload.productId === null ? "" : String(payload.productId).trim();
+    if (!value) {
+      updateData.product = { disconnect: true };
+    } else {
+      updateData.product = { connect: { id: value } };
+    }
+  }
+
   if (payload?.config !== undefined) {
     if (payload.config === null || typeof payload.config !== "object") {
       return NextResponse.json({ error: "config must be an object" }, { status: 400 });

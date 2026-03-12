@@ -25,13 +25,6 @@ type FormState = {
   key: string;
   label: string;
   description: string;
-  layoutVersion: string;
-  printDpi: string;
-  pageWidthMm: string;
-  pageHeightMm: string;
-  canvasWidthMm: string;
-  canvasHeightMm: string;
-  pcmCode: string;
   paperStockId: string;
   config: string;
   hasQrCode: boolean;
@@ -42,26 +35,11 @@ const emptyForm: FormState = {
   key: "",
   label: "",
   description: "",
-  layoutVersion: "",
-  printDpi: "",
-  pageWidthMm: "",
-  pageHeightMm: "",
-  canvasWidthMm: "",
-  canvasHeightMm: "",
-  pcmCode: "",
   paperStockId: "",
   config: defaultConfig,
   hasQrCode: false,
   hasPhotoSlot: false,
 };
-
-function parseLocalizedPositiveFloat(input: string): number | null {
-  const normalized = input.trim().replace(",", ".");
-  if (!normalized) return null;
-  const parsed = Number.parseFloat(normalized);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return parsed;
-}
 
 export default function TemplateCreateForm({ onCreated, onCancel, className }: TemplateCreateFormProps) {
   const t = useTranslations("admin.templates");
@@ -98,66 +76,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
       return;
     }
 
-    let layoutVersion: number | null = null;
-    if (form.layoutVersion.trim()) {
-      const parsed = Number.parseInt(form.layoutVersion.trim(), 10);
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        setError(t("create.errors.layoutVersionInvalid"));
-        return;
-      }
-      layoutVersion = parsed;
-    }
-
-    let printDpi: number | null = null;
-    if (form.printDpi.trim()) {
-      const parsed = Number.parseInt(form.printDpi.trim(), 10);
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        setError(t("create.errors.printDpiInvalid"));
-        return;
-      }
-      printDpi = parsed;
-    }
-
-    let pageWidthMm: number | null = null;
-    if (form.pageWidthMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(form.pageWidthMm);
-      if (parsed === null) {
-        setError(t("create.errors.pageWidthInvalid"));
-        return;
-      }
-      pageWidthMm = parsed;
-    }
-
-    let pageHeightMm: number | null = null;
-    if (form.pageHeightMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(form.pageHeightMm);
-      if (parsed === null) {
-        setError(t("create.errors.pageHeightInvalid"));
-        return;
-      }
-      pageHeightMm = parsed;
-    }
-
-    let canvasWidthMm: number | null = null;
-    if (form.canvasWidthMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(form.canvasWidthMm);
-      if (parsed === null) {
-        setError(t("create.errors.canvasWidthInvalid"));
-        return;
-      }
-      canvasWidthMm = parsed;
-    }
-
-    let canvasHeightMm: number | null = null;
-    if (form.canvasHeightMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(form.canvasHeightMm);
-      if (parsed === null) {
-        setError(t("create.errors.canvasHeightInvalid"));
-        return;
-      }
-      canvasHeightMm = parsed;
-    }
-
     let configObject: unknown;
     try {
       configObject = JSON.parse(form.config);
@@ -172,28 +90,7 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
     payload.append("key", key);
     payload.append("label", label);
     payload.append("description", description);
-    if (layoutVersion !== null) {
-      payload.append("layoutVersion", String(layoutVersion));
-    }
-    if (printDpi !== null) {
-      payload.append("printDpi", String(printDpi));
-    }
-    if (pageWidthMm !== null) {
-      payload.append("pageWidthMm", String(pageWidthMm));
-    }
-    if (pageHeightMm !== null) {
-      payload.append("pageHeightMm", String(pageHeightMm));
-    }
-    if (canvasWidthMm !== null) {
-      payload.append("canvasWidthMm", String(canvasWidthMm));
-    }
-    if (canvasHeightMm !== null) {
-      payload.append("canvasHeightMm", String(canvasHeightMm));
-    }
     payload.append("config", JSON.stringify(configObject));
-    if (form.pcmCode.trim()) {
-      payload.append("pcmCode", form.pcmCode.trim());
-    }
     if (form.paperStockId) {
       payload.append("paperStockId", form.paperStockId);
     }
@@ -269,82 +166,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             placeholder={t("create.placeholders.description")}
             rows={3}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-layout-version">{t("create.fields.layoutVersion")}</Label>
-          <Input
-            id="template-layout-version"
-            type="number"
-            min={0}
-            value={form.layoutVersion}
-            onChange={(event) => handleChange("layoutVersion")(event.target.value)}
-            placeholder="1"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
-          <Input
-            id="template-print-dpi"
-            type="number"
-            min={0}
-            value={form.printDpi}
-            onChange={(event) => handleChange("printDpi")(event.target.value)}
-            placeholder="300"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-page-width">{t("create.fields.pageWidthMm")}</Label>
-          <Input
-            id="template-page-width"
-            type="text"
-            inputMode="decimal"
-            value={form.pageWidthMm}
-            onChange={(event) => handleChange("pageWidthMm")(event.target.value)}
-            placeholder="85"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-page-height">{t("create.fields.pageHeightMm")}</Label>
-          <Input
-            id="template-page-height"
-            type="text"
-            inputMode="decimal"
-            value={form.pageHeightMm}
-            onChange={(event) => handleChange("pageHeightMm")(event.target.value)}
-            placeholder="55"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-canvas-width">{t("create.fields.canvasWidthMm")}</Label>
-          <Input
-            id="template-canvas-width"
-            type="text"
-            inputMode="decimal"
-            value={form.canvasWidthMm}
-            onChange={(event) => handleChange("canvasWidthMm")(event.target.value)}
-            placeholder="99.9"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-canvas-height">{t("create.fields.canvasHeightMm")}</Label>
-          <Input
-            id="template-canvas-height"
-            type="text"
-            inputMode="decimal"
-            value={form.canvasHeightMm}
-            onChange={(event) => handleChange("canvasHeightMm")(event.target.value)}
-            placeholder="69.9"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="template-pcm-code">{t("create.fields.pcmCode")}</Label>
-          <Input
-            id="template-pcm-code"
-            value={form.pcmCode}
-            onChange={(event) => handleChange("pcmCode")(event.target.value)}
-            placeholder="pcm_vk_template"
-          />
-          <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
         </div>
         <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
           <div className="flex items-start gap-4">

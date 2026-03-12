@@ -75,6 +75,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
       template: true,
       brand: true,
       user: { select: { name: true, email: true } },
+      pdfOrderItems: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -136,24 +137,28 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.brand}</dt>
               <dd className="mt-1 text-base text-slate-900">{order.brand?.name ?? "—"}</dd>
             </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.template}</dt>
-              <dd className="mt-1 text-base text-slate-900">
-                {order.template?.label ?? templateKey ?? order.templateId ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.quantity}</dt>
-              <dd className="mt-1 text-base text-slate-900">
-                <OrderQuantityEditor
-                  orderId={order.id}
-                  quantity={order.quantity}
-                  allowedQuantities={allowedQuantities}
-                  canEdit={canEditQuantity}
-                  locale={locale}
-                />
-              </dd>
-            </div>
+            {order.type === "BUSINESS_CARD" && (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.template}</dt>
+                <dd className="mt-1 text-base text-slate-900">
+                  {order.template?.label ?? templateKey ?? order.templateId ?? "—"}
+                </dd>
+              </div>
+            )}
+            {order.type === "BUSINESS_CARD" && (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.quantity}</dt>
+                <dd className="mt-1 text-base text-slate-900">
+                  <OrderQuantityEditor
+                    orderId={order.id}
+                    quantity={order.quantity ?? 0}
+                    allowedQuantities={allowedQuantities}
+                    canEdit={canEditQuantity}
+                    locale={locale}
+                  />
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.delivery}</dt>
               <dd className="mt-1 text-base text-slate-900">
@@ -270,6 +275,65 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           </div>
         </section>
       </div>
+
+      {/* PDF line items — only for PDF_PRINT orders */}
+      {order.type === "PDF_PRINT" && order.pdfOrderItems.length > 0 && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900 mb-4">Files</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-slate-50">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">File</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Archive</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Format</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Bleed</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Colors</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">Pages</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.pdfOrderItems.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-medium truncate max-w-[220px]">{item.filename}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs truncate max-w-[160px]">
+                      {item.sourceZipFilename ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                      {item.trimWidthMm != null && item.trimHeightMm != null
+                        ? `${item.trimWidthMm} × ${item.trimHeightMm} mm`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600">
+                      {item.bleedMm != null
+                        ? item.bleedMm === 0
+                          ? <span className="text-red-600">No bleed</span>
+                          : `${item.bleedMm} mm`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(item.colorSpaces as string[]).map((cs) => (
+                          <span key={cs} className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700">{cs}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-600">{item.pages ?? "—"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">{item.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {order.notes && (
+            <div className="mt-4 pt-4 border-t text-sm text-slate-600">
+              <span className="text-xs uppercase tracking-wide text-slate-400 block mb-1">Notes</span>
+              {order.notes}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

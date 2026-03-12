@@ -57,7 +57,7 @@ export default async function DeliveriesPage() {
       referenceCode: item.order.referenceCode,
       brandName: item.order.brand?.name ?? null,
       templateLabel: item.order.template?.label ?? item.order.template?.key ?? "—",
-      quantity: item.order.quantity,
+      quantity: item.order.quantity ?? 0,
     })),
   }));
 

@@ -64,13 +64,6 @@ const ADDRESS_CACHE_TTL_MS = 30_000;
 const addressLoadCache = new Map<string, { data: TemplateAddressBrandGroup[]; timestamp: number }>();
 const addressLoadInFlight = new Set<string>();
 
-function parseLocalizedPositiveFloat(input: string): number | null {
-  const normalized = input.trim().replace(",", ".");
-  if (!normalized) return null;
-  const parsed = Number.parseFloat(normalized);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return parsed;
-}
 
 export default function TemplateDetailContent({ template, onDelete }: Props) {
   const router = useRouter();
@@ -83,18 +76,20 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [metadata, setMetadata] = useState(() => ({
     label: template.label ?? "",
     description: template.description ?? "",
-    layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
-    printDpi: template.printDpi ? String(template.printDpi) : "",
-    pageWidthMm: template.pageWidthMm ? String(template.pageWidthMm) : "",
-    pageHeightMm: template.pageHeightMm ? String(template.pageHeightMm) : "",
-    canvasWidthMm: template.canvasWidthMm ? String(template.canvasWidthMm) : "",
-    canvasHeightMm: template.canvasHeightMm ? String(template.canvasHeightMm) : "",
-    pcmCode: template.pcmCode ?? "",
     paperStockId: template.paperStock?.id ?? "",
+    productId: template.productId ?? "",
     config: stringifyConfig(template.config),
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
   }));
+
+  const [productOptions, setProductOptions] = useState<{ id: string; name: string; type: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/products")
+      .then((r) => r.json())
+      .then((data) => setProductOptions(data))
+      .catch(() => {});
+  }, []);
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
   const [brandSearch, setBrandSearch] = useState("");
@@ -268,14 +263,8 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     setMetadata({
       label: template.label ?? "",
       description: template.description ?? "",
-      layoutVersion: template.layoutVersion ? String(template.layoutVersion) : "",
-      printDpi: template.printDpi ? String(template.printDpi) : "",
-      pageWidthMm: template.pageWidthMm ? String(template.pageWidthMm) : "",
-      pageHeightMm: template.pageHeightMm ? String(template.pageHeightMm) : "",
-      canvasWidthMm: template.canvasWidthMm ? String(template.canvasWidthMm) : "",
-      canvasHeightMm: template.canvasHeightMm ? String(template.canvasHeightMm) : "",
-      pcmCode: template.pcmCode ?? "",
       paperStockId: template.paperStock?.id ?? "",
+      productId: template.productId ?? "",
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
@@ -345,70 +334,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       return;
     }
 
-    const layoutVersionInput = metadata.layoutVersion.trim();
-    const printDpiInput = metadata.printDpi.trim();
-    const pcmCodeInput = metadata.pcmCode.trim();
-    let layoutVersion: number | null = null;
-    let printDpi: number | null = null;
-    let pageWidthMm: number | null = null;
-    let pageHeightMm: number | null = null;
-    let canvasWidthMm: number | null = null;
-    let canvasHeightMm: number | null = null;
-
-    if (layoutVersionInput) {
-      const parsed = Number.parseInt(layoutVersionInput, 10);
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        setMetadataError(t("detail.errors.layoutVersionInvalid"));
-        return;
-      }
-      layoutVersion = parsed;
-    }
-
-    if (printDpiInput) {
-      const parsed = Number.parseInt(printDpiInput, 10);
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        setMetadataError(t("detail.errors.printDpiInvalid"));
-        return;
-      }
-      printDpi = parsed;
-    }
-
-    if (metadata.pageWidthMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(metadata.pageWidthMm);
-      if (parsed === null) {
-        setMetadataError(t("detail.errors.pageWidthInvalid"));
-        return;
-      }
-      pageWidthMm = parsed;
-    }
-
-    if (metadata.pageHeightMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(metadata.pageHeightMm);
-      if (parsed === null) {
-        setMetadataError(t("detail.errors.pageHeightInvalid"));
-        return;
-      }
-      pageHeightMm = parsed;
-    }
-
-    if (metadata.canvasWidthMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(metadata.canvasWidthMm);
-      if (parsed === null) {
-        setMetadataError(t("detail.errors.canvasWidthInvalid"));
-        return;
-      }
-      canvasWidthMm = parsed;
-    }
-
-    if (metadata.canvasHeightMm.trim()) {
-      const parsed = parseLocalizedPositiveFloat(metadata.canvasHeightMm);
-      if (parsed === null) {
-        setMetadataError(t("detail.errors.canvasHeightInvalid"));
-        return;
-      }
-      canvasHeightMm = parsed;
-    }
-
     let parsedConfig: unknown;
     try {
       parsedConfig = JSON.parse(metadata.config);
@@ -425,14 +350,8 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         body: JSON.stringify({
           label,
           description: metadata.description.trim(),
-          layoutVersion,
-          printDpi,
-          pageWidthMm,
-          pageHeightMm,
-          canvasWidthMm,
-          canvasHeightMm,
-          pcmCode: pcmCodeInput || null,
           paperStockId: metadata.paperStockId || null,
+          productId: metadata.productId || null,
           config: parsedConfig,
           hasQrCode: metadata.hasQrCode,
           hasPhotoSlot: metadata.hasPhotoSlot,
@@ -740,97 +659,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               placeholder={t("create.placeholders.description")}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="template-layout-version">{t("create.fields.layoutVersion")}</Label>
-            <Input
-              id="template-layout-version"
-              type="number"
-              min={0}
-              value={metadata.layoutVersion}
-              onChange={(event) => {
-                setMetadata((current) => ({ ...current, layoutVersion: event.target.value }));
-                setMetadataSuccess(null);
-              }}
-            />
-          </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-print-dpi">{t("create.fields.printDpi")}</Label>
-          <Input
-            id="template-print-dpi"
-            type="number"
-            min={0}
-            value={metadata.printDpi}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, printDpi: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-page-width">{t("detail.pageWidthMm")}</Label>
-          <Input
-            id="template-page-width"
-            type="text"
-            inputMode="decimal"
-            value={metadata.pageWidthMm}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, pageWidthMm: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-page-height">{t("detail.pageHeightMm")}</Label>
-          <Input
-            id="template-page-height"
-            type="text"
-            inputMode="decimal"
-            value={metadata.pageHeightMm}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, pageHeightMm: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-canvas-width">{t("detail.canvasWidthMm")}</Label>
-          <Input
-            id="template-canvas-width"
-            type="text"
-            inputMode="decimal"
-            value={metadata.canvasWidthMm}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, canvasWidthMm: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="template-canvas-height">{t("detail.canvasHeightMm")}</Label>
-          <Input
-            id="template-canvas-height"
-            type="text"
-            inputMode="decimal"
-            value={metadata.canvasHeightMm}
-            onChange={(event) => {
-              setMetadata((current) => ({ ...current, canvasHeightMm: event.target.value }));
-              setMetadataSuccess(null);
-            }}
-          />
-        </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="template-pcm-code">{t("create.fields.pcmCode")}</Label>
-            <Input
-              id="template-pcm-code"
-              value={metadata.pcmCode}
-              onChange={(event) => {
-                setMetadata((current) => ({ ...current, pcmCode: event.target.value }));
-                setMetadataSuccess(null);
-              }}
-              placeholder="pcm_vk_template"
-            />
-            <p className="text-xs text-slate-500">{t("create.hints.pcmCode")}</p>
-          </div>
           <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white/80 p-4">
             <div className="flex items-start gap-4">
               <Checkbox
@@ -882,6 +710,36 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
             }}
             helperText={t("paperStock.helper")}
           />
+        </div>
+
+        <div className="md:col-span-2 space-y-1.5">
+          <Label htmlFor="template-product">Product</Label>
+          <Select
+            value={metadata.productId || "none"}
+            onValueChange={(v) => {
+              setMetadata((c) => ({ ...c, productId: v === "none" ? "" : v }));
+              setMetadataSuccess(null);
+            }}
+          >
+            <SelectTrigger id="template-product">
+              <SelectValue placeholder="No product linked" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No product linked</SelectItem>
+              {productOptions.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name} ({p.type === "BUSINESS_CARD" ? "BC" : "PDF"})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {template.product && (
+            <p className="text-xs text-muted-foreground">
+              Linked product dimensions: {template.product.trimWidthMm} × {template.product.trimHeightMm} mm
+              {template.product.canvasWidthMm ? `, canvas ${template.product.canvasWidthMm} × ${template.product.canvasHeightMm} mm` : ""}
+              {template.product.printDpi ? `, ${template.product.printDpi} DPI` : ""}
+            </p>
+          )}
         </div>
       </div>
 

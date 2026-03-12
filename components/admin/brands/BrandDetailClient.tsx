@@ -21,6 +21,8 @@ import {
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 import BrandTemplateSection from "./BrandTemplateSection";
+import { BrandAccessSection } from "./BrandAccessSection";
+import { BrandPaperDefaultsSection } from "./BrandPaperDefaultsSection";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 export type BrandDetailClientProps = {
@@ -370,6 +372,14 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                 defaultTemplateId={brandSnapshot.defaultTemplateId}
                 onBrandUpdated={(next) => setBrandSnapshot(next)}
               />
+              <Separator />
+              <BrandAccessSection
+                brandId={brandSnapshot.id}
+                canOrderBusinessCards={brandSnapshot.canOrderBusinessCards ?? true}
+                canOrderPdfPrint={brandSnapshot.canOrderPdfPrint ?? false}
+              />
+              <Separator />
+              <BrandPaperDefaultsSection brandId={brandSnapshot.id} />
               <Separator />
             </>
           ) : (

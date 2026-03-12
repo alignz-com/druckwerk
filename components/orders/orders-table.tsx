@@ -43,6 +43,7 @@ const STATUS_COLOR: Record<string, { bg: string; text: string; border: string }>
 export type OrdersTableRow = {
   id: string;
   referenceCode: string;
+  orderType?: "BUSINESS_CARD" | "PDF_PRINT";
   createdAtLabel: string;
   createdAtValue: number;
   userName: string | null;
@@ -290,7 +291,16 @@ export function OrdersTable({
         title: labels.template,
         enableSorting: true,
         sortAccessor: (row) => row.templateLabel.toLowerCase(),
-        renderCell: (row) => <span className="text-slate-600">{row.templateLabel}</span>,
+        renderCell: (row) => (
+          <div className="flex items-center gap-2">
+            {row.orderType === "PDF_PRINT" && (
+              <span className="inline-flex items-center rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
+                PDF
+              </span>
+            )}
+            <span className="text-slate-600">{row.orderType === "PDF_PRINT" ? "PDF Print" : row.templateLabel}</span>
+          </div>
+        ),
       },
       {
         id: "quantity",

@@ -1,3 +1,4 @@
+// Business card order form — direct entry point (bypasses type selector)
 import { redirect } from "next/navigation";
 
 import OrderForm from "@/components/order/order-form";
@@ -7,10 +8,8 @@ import { getBrandsForUser } from "@/lib/brand-access";
 import { getBrandResources } from "@/lib/brand-resources";
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 import { getUserOrderProfile } from "@/lib/user-order-profile";
-import { getUserAccessibleProductTypes } from "@/lib/user-products";
-import { OrderTypeSelector } from "@/components/order/OrderTypeSelector";
 
-export default async function NewOrderPage() {
+export default async function NewCardOrderPage() {
   const session = await getServerAuthSession();
   if (!session) redirect("/login");
 
@@ -51,16 +50,6 @@ export default async function NewOrderPage() {
     initialBrandId = preferredBrandId;
   } else if (brandOptions.length === 1) {
     initialBrandId = brandOptions[0]!.id;
-  }
-
-  const access = await getUserAccessibleProductTypes(userId, initialBrandId ?? preferredBrandId);
-
-  if (access.hasPdfPrint && !access.hasBusinessCard) {
-    redirect("/orders/new/pdf");
-  }
-
-  if (access.hasBusinessCard && access.hasPdfPrint) {
-    return <OrderTypeSelector />;
   }
 
   const {

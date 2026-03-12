@@ -68,8 +68,8 @@ export async function POST(_req: Request, context: { params: RouteParams | Promi
     addressMeta?.companyName?.trim() || order.company?.split("\n")[0]?.trim() || order.brand?.name || null;
   const requesterContact = {
     company: requesterCompany,
-    personName: order.requesterName,
-    email: order.requesterEmail,
+    personName: order.requesterName ?? null,
+    email: order.requesterEmail ?? null,
     phone: order.phone || null,
     mobile: order.mobile || null,
     street: addressMeta?.street ?? null,
@@ -115,7 +115,7 @@ export async function POST(_req: Request, context: { params: RouteParams | Promi
     requester: requesterContact,
     administrator: administratorContact,
     deliveryAddress,
-    quantity: order.quantity,
+    quantity: order.quantity ?? 0,
     pdfUrl: order.pdfUrl,
     pdfFileName: order.pdfFileName ?? `${order.referenceCode}.pdf`,
     customerReference,

@@ -48,6 +48,8 @@ export type AdminTemplateSummary = {
   canvasWidthMm: number | null;
   canvasHeightMm: number | null;
   pcmCode: string | null;
+  productId: string | null;
+  product: { id: string; name: string; trimWidthMm: number; trimHeightMm: number; canvasWidthMm: number | null; canvasHeightMm: number | null; printDpi: number | null; pcmCode: string | null } | null;
   paperStock: AdminPaperStockSummary | null;
   hasQrCode: boolean;
   hasPhotoSlot: boolean;
@@ -115,6 +117,18 @@ export const adminTemplateSummaryInclude = {
     orderBy: [{ assignedAt: "desc" as const }],
   },
   paperStock: true,
+  product: {
+    select: {
+      id: true,
+      name: true,
+      trimWidthMm: true,
+      trimHeightMm: true,
+      canvasWidthMm: true,
+      canvasHeightMm: true,
+      printDpi: true,
+      pcmCode: true,
+    },
+  },
 } satisfies Prisma.TemplateInclude;
 
 type TemplateWithRelations = Prisma.TemplateGetPayload<{
@@ -134,6 +148,8 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     canvasWidthMm: template.canvasWidthMm ?? null,
     canvasHeightMm: template.canvasHeightMm ?? null,
     pcmCode: template.pcmCode ?? null,
+    productId: template.productId ?? null,
+    product: template.product ?? null,
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
     paperStock: template.paperStock
