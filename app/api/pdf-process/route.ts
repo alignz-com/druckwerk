@@ -6,11 +6,17 @@ const sevenZip = require("7zip-min") as {
   config: (opts: { binaryPath: string }) => void
   unpack: (src: string, dest: string, cb: (err: Error | null) => void) => void
 }
-// On Linux (Docker/Synology), use system p7zip instead of bundled binary
-// which doesn't survive Next.js standalone output copying.
-// Dockerfile runner stage must include: apk add --no-cache poppler-utils p7zip qpdf
+// Use system 7zz binary where the bundled one won't work.
+// Linux (Docker/Synology): Dockerfile must include: apk add --no-cache poppler-utils p7zip qpdf
+// macOS (dev): install via `brew install 7-zip`
 if (process.platform === "linux") {
   sevenZip.config({ binaryPath: "/usr/bin/7zz" })
+} else if (process.platform === "darwin") {
+  // Apple Silicon or Intel Homebrew locations
+  const darwinBin = ["/opt/homebrew/bin/7zz", "/usr/local/bin/7zz"].find((p) => {
+    try { require("fs").accessSync(p, require("fs").constants.X_OK); return true } catch { return false }
+  })
+  if (darwinBin) sevenZip.config({ binaryPath: darwinBin })
 }
 import { execFile } from "child_process"
 import { promisify } from "util"
@@ -360,8 +366,22 @@ export async function POST(req: NextRequest) {
           results.push({ ...info, fromZip: file.name })
         }
       } else if (name.endsWith(".7z")) {
-        const extracted = await extract7z(buffer, file.name)
-        results.push(...extracted)
+        try {
+          const extracted = await extract7z(buffer, file.name)
+          results.push(...extracted)
+        } catch (err) {
+          results.push({
+            filename: file.name,
+            pages: 0,
+            trimWidthMm: 0,
+            trimHeightMm: 0,
+            trimSource: "MediaBox",
+            bleedMm: null,
+            colorSpaces: [],
+            pantoneColors: [],
+            error: err instanceof Error ? err.message : "Failed to extract .7z archive",
+          })
+        }
       }
     }
 
