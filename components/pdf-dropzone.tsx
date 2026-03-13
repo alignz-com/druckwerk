@@ -19,15 +19,17 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon } from "lucide-react"
+import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon, EyeIcon } from "lucide-react"
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
-import { Badge } from "@/components/ui/badge"
-import pantoneColors from "pantone-colors"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useTranslations } from "@/components/providers/locale-provider"
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pantoneTable = require("pantone-table") as Record<string, string>
 
 export type SortableFile = PdfFileInfo & {
   id: string
   quantity: number
-  /** Original File object for direct PDFs, or the parent archive for ZIP-extracted files */
+  /** Original File for direct PDFs; parent archive for ZIP/7z-extracted */
   _sourceFile?: File
 }
 
@@ -64,6 +66,7 @@ function SortableRow({
     >
       <td className="px-2 py-3 w-8">
         <button
+          type="button"
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
@@ -94,14 +97,8 @@ function SortableRow({
           </span>
         )}
       </td>
-      <td className="px-3 py-3">
-        <div className="flex flex-wrap gap-1">
-          {file.colorSpaces
-            .filter((cs) => cs !== "Grayscale" || (!file.colorSpaces.includes("CMYK") && !file.colorSpaces.includes("RGB")))
-            .map((cs) => (
-              <ColorSpaceBadge key={cs} cs={cs} />
-            ))}
-        </div>
+      <td className="px-3 py-3 text-xs text-muted-foreground">
+        {file.pages > 0 ? file.pages : "—"}
       </td>
       <td className="px-3 py-3 w-24" onClick={(e) => e.stopPropagation()}>
         <input
@@ -114,6 +111,7 @@ function SortableRow({
       </td>
       <td className="px-2 py-3 w-8" onClick={(e) => e.stopPropagation()}>
         <button
+          type="button"
           onClick={() => onRemove(file.id)}
           className="cursor-pointer text-muted-foreground hover:text-destructive transition-colors"
           aria-label="Remove file"
@@ -125,72 +123,24 @@ function SortableRow({
   )
 }
 
-const COLOR_SPACE_STYLES: Record<string, string> = {
-  CMYK: "bg-cyan-100 border-cyan-400 text-cyan-900",
-  RGB: "bg-violet-50 border-violet-300 text-violet-800",
-  Grayscale: "bg-gray-100 border-gray-400 text-gray-600",
-  Spot: "bg-purple-50 border-purple-300 text-purple-800",
-}
-
-function ColorSpaceBadge({ cs }: { cs: string }) {
-  const cls = COLOR_SPACE_STYLES[cs] ?? "bg-muted border-border text-muted-foreground"
+function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
-      {cs}
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-foreground">
+      {children}
     </span>
   )
 }
 
-function hexLuminance(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
-}
-
-function darken(hex: string, amount = 0.2): string {
-  const r = Math.max(0, Math.round(parseInt(hex.slice(1, 3), 16) * (1 - amount)))
-  const g = Math.max(0, Math.round(parseInt(hex.slice(3, 5), 16) * (1 - amount)))
-  const b = Math.max(0, Math.round(parseInt(hex.slice(5, 7), 16) * (1 - amount)))
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
-}
-
-function pantoneApproxColor(name: string): { bg: string; border: string; text: string } {
-  const num = parseInt(name.match(/\d+/)?.[0] ?? "0")
-  if (num === 877) return { bg: "#bcc0c4", border: "#8a8e92", text: "#fff" }
-  if (num >= 871 && num <= 876) return { bg: "#c4962a", border: "#9a7320", text: "#fff" }
-  if (num >= 878 && num <= 883) return { bg: "#b87333", border: "#8a5526", text: "#fff" }
-  const key = String(num) as keyof typeof pantoneColors
-  const hex = pantoneColors[key]
-  if (hex) {
-    const border = darken(hex, 0.2)
-    const text = hexLuminance(hex) > 0.35 ? "#1a1a1a" : "#fff"
-    return { bg: hex, border, text }
-  }
-  return { bg: "transparent", border: "#888", text: "#333" }
-}
-
-function PantoneBadge({ name }: { name: string }) {
-  const { bg, border, text } = pantoneApproxColor(name)
-  const unknown = bg === "transparent"
-  return (
-    <span
-      className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium"
-      style={{
-        backgroundColor: bg,
-        borderColor: border,
-        borderStyle: unknown ? "dashed" : "solid",
-        color: text,
-      }}
-    >
-      {name}
-    </span>
-  )
+function pantoneHex(name: string): string | null {
+  // "PANTONE 871 C" → "pantone_871_c"
+  const key = name.trim().toLowerCase().replace(/^pantone\s+/, "pantone_").replace(/\s+/g, "_")
+  return pantoneTable[key] ?? pantoneTable[`${key}_c`] ?? null
 }
 
 // Detail panel shown on the right when a file is selected
-function FileDetailPanel({ file }: { file: SortableFile }) {
+function FileDetailPanel({ file, onView }: { file: SortableFile; onView: () => void }) {
+  const t = useTranslations()
+  const canView = !!file.previewUrl
   return (
     <div className="flex flex-col gap-4">
       {/* Thumbnail */}
@@ -208,6 +158,17 @@ function FileDetailPanel({ file }: { file: SortableFile }) {
           </div>
         )}
       </div>
+      {/* View button */}
+      <button
+        type="button"
+        onClick={onView}
+        disabled={!canView}
+        title={canView ? undefined : "Not available for files extracted from .7z archives"}
+        className="flex items-center justify-center gap-1.5 w-full rounded border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <EyeIcon className="h-3.5 w-3.5" />
+        {t("pdfOrder.dropzoneViewFile")}
+      </button>
 
       {/* File info */}
       <div className="space-y-2 text-sm">
@@ -223,33 +184,31 @@ function FileDetailPanel({ file }: { file: SortableFile }) {
           <p className="text-destructive text-xs">{file.error}</p>
         ) : (
           <div className="space-y-2 pt-1">
-            <Row label="Format">
-              <span className="font-mono text-xs">
-                {file.trimWidthMm} × {file.trimHeightMm} mm
-              </span>
+            <Row label={t("pdfOrder.dropzoneFormat")}>
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-xs">{file.trimWidthMm} × {file.trimHeightMm} mm</span>
+                {file.trimSource === "MediaBox" && (
+                  <span className="text-[10px] text-destructive font-medium">{t("pdfOrder.dropzoneNoTrimBox")}</span>
+                )}
+              </div>
             </Row>
-            <Row label="Box">
-              <Badge variant={file.trimSource === "TrimBox" ? "default" : "outline"} className="text-xs">
-                {file.trimSource}
-              </Badge>
-            </Row>
-            <Row label="Bleed">
+            <Row label={t("pdfOrder.dropzoneBleed")}>
               {file.bleedMm === null ? (
                 <span className="text-xs text-muted-foreground">—</span>
               ) : file.bleedMm === 0 ? (
-                <Badge variant="outline" className="text-xs text-destructive border-destructive">No bleed</Badge>
+                <span className="text-xs text-destructive font-medium">{t("pdfOrder.dropzoneNoBleed")}</span>
               ) : (
-                <span className="text-xs font-mono text-green-600">{file.bleedMm} mm</span>
+                <span className="text-xs font-mono">{file.bleedMm} mm</span>
               )}
             </Row>
-            <Row label="Pages">
+            <Row label={t("pdfOrder.dropzonePages")}>
               <span className="text-xs">{file.pages}</span>
             </Row>
-            <Row label="Colors">
+            <Row label={t("pdfOrder.dropzoneColors")}>
               <div className="flex flex-wrap gap-1">
                 {file.colorSpaces
                   .filter((cs) => cs !== "Grayscale" || (!file.colorSpaces.includes("CMYK") && !file.colorSpaces.includes("RGB")))
-                  .map((cs) => <ColorSpaceBadge key={cs} cs={cs} />)}
+                  .map((cs) => <Pill key={cs}>{cs}</Pill>)}
                 {file.colorSpaces.length === 0 && (
                   <span className="text-xs text-muted-foreground">—</span>
                 )}
@@ -258,7 +217,20 @@ function FileDetailPanel({ file }: { file: SortableFile }) {
             {file.pantoneColors.length > 0 && (
               <Row label="Pantone">
                 <div className="flex flex-wrap gap-1">
-                  {file.pantoneColors.map((p) => <PantoneBadge key={p} name={p} />)}
+                  {file.pantoneColors.map((p) => {
+                    const hex = pantoneHex(p)
+                    return (
+                      <Pill key={p}>
+                        {hex && (
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0 border border-black/10"
+                            style={{ backgroundColor: hex }}
+                          />
+                        )}
+                        {p}
+                      </Pill>
+                    )
+                  })}
                 </div>
               </Row>
             )}
@@ -291,6 +263,7 @@ export function PdfDropzone({
   files: SortableFile[]
   onChange: (files: SortableFile[]) => void
 }) {
+  const t = useTranslations()
   const [phase, setPhase] = React.useState<Phase>("idle")
   const [uploadPct, setUploadPct] = React.useState(0)
   const [uploadedBytes, setUploadedBytes] = React.useState(0)
@@ -298,6 +271,12 @@ export function PdfDropzone({
   const [error, setError] = React.useState<string | null>(null)
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [setAllQty, setSetAllQty] = React.useState("")
+  const [viewingFile, setViewingFile] = React.useState<SortableFile | null>(null)
+  const [viewObjectUrl, setViewObjectUrl] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    setViewObjectUrl(viewingFile?.previewUrl ?? null)
+  }, [viewingFile])
 
   const selectedFile = files.find((f) => f.id === selectedId) ?? files[0] ?? null
 
@@ -341,7 +320,6 @@ export function PdfDropzone({
       })
 
       // Map each result back to its source File.
-      // Direct PDFs: source is the PDF file. ZIP/7z-extracted: source is the archive.
       const withIds: SortableFile[] = data.files.map((f: PdfFileInfo, i: number) => {
         const sourceFile = f.fromZip
           ? acceptedFiles.find((af) => af.name === f.fromZip)
@@ -402,71 +380,91 @@ export function PdfDropzone({
 
   return (
     <div className="space-y-4">
+      {/* PDF viewer modal */}
+      <Dialog open={!!viewingFile} onOpenChange={(open) => { if (!open) setViewingFile(null) }}>
+        <DialogContent showClose={false} className="p-0 gap-0 overflow-hidden flex flex-col" style={{ width: "96vw", maxWidth: "96vw", height: "96vh" }}>
+          <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b shrink-0">
+            <DialogTitle className="text-sm font-medium truncate flex-1">{viewingFile?.filename}</DialogTitle>
+            <DialogClose className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0">
+              <XIcon className="h-4 w-4" />
+            </DialogClose>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {viewObjectUrl && (
+              <iframe src={viewObjectUrl} className="w-full h-full border-0 block" title={viewingFile?.filename} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Drop zone */}
       <div
         {...getRootProps()}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-10 transition-colors ${
           isDragActive
             ? "border-foreground bg-muted"
             : "border-border hover:border-foreground/40 hover:bg-muted/50"
-        } ${phase !== "idle" ? "pointer-events-none opacity-60" : ""}`}
+        } ${phase !== "idle" ? "pointer-events-none" : ""}`}
+        style={{ height: "200px" }}
       >
         <input {...getInputProps()} />
-        <UploadCloudIcon className="h-8 w-8 text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-sm font-medium">
-            {isDragActive ? "Drop files here" : "Drag & drop PDF, ZIP or 7z files"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">or click to browse · multiple files supported</p>
-        </div>
+
+        {phase === "uploading" && (
+          <div className="w-full max-w-xs space-y-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{t("pdfOrder.dropzoneUploading")}</span>
+              <span>{fmtMb(uploadedBytes)} / {fmtMb(totalBytes)} · {uploadPct}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-foreground transition-all duration-200"
+                style={{ width: `${uploadPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {phase === "processing" && (
+          <div className="w-full max-w-xs space-y-3">
+            <p className="text-xs text-muted-foreground text-center">{t("pdfOrder.dropzoneProcessing")}</p>
+            <div className="h-1.5 w-full rounded-full overflow-hidden">
+              <div
+                className="h-full w-full rounded-full"
+                style={{
+                  background:
+                    "repeating-linear-gradient(45deg, oklch(0.556 0 0) 0px, oklch(0.556 0 0) 10px, oklch(0.708 0 0) 10px, oklch(0.708 0 0) 20px)",
+                  backgroundSize: "28px 100%",
+                  animation: "barberpole 0.6s linear infinite",
+                }}
+              />
+            </div>
+            <style>{`@keyframes barberpole { from { background-position: 0 0; } to { background-position: 28px 0; } }`}</style>
+          </div>
+        )}
+
+        {phase === "idle" && (
+          <>
+            <UploadCloudIcon className="h-8 w-8 text-muted-foreground" />
+            <div className="text-center">
+              <p className="text-sm font-medium">
+                {isDragActive ? t("pdfOrder.dropzoneDropHere") : t("pdfOrder.dropzoneDragDrop")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pdfOrder.dropzoneBrowse")}</p>
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Upload progress */}
-      {phase === "uploading" && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Uploading…</span>
-            <span>{fmtMb(uploadedBytes)} / {fmtMb(totalBytes)} · {uploadPct}%</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-foreground transition-all duration-200"
-              style={{ width: `${uploadPct}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Processing */}
-      {phase === "processing" && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Analysing PDFs, generating thumbnails…</p>
-          <div className="h-1.5 w-full rounded-full overflow-hidden">
-            <div
-              className="h-full w-full rounded-full"
-              style={{
-                background:
-                  "repeating-linear-gradient(45deg, oklch(0.556 0 0) 0px, oklch(0.556 0 0) 10px, oklch(0.708 0 0) 10px, oklch(0.708 0 0) 20px)",
-                backgroundSize: "28px 100%",
-                animation: "barberpole 0.6s linear infinite",
-              }}
-            />
-          </div>
-          <style>{`@keyframes barberpole { from { background-position: 0 0; } to { background-position: 28px 0; } }`}</style>
-        </div>
-      )}
 
       {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
       {/* File list + detail panel */}
       {files.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: file list */}
           <div className="rounded-lg border overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
-              <p className="text-sm font-medium">{files.length} file{files.length !== 1 ? "s" : ""}</p>
+              <p className="text-sm font-medium">{files.length} {files.length !== 1 ? t("pdfOrder.dropzoneFiles") : t("pdfOrder.dropzoneFile")}</p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Set all qty:</span>
+                <span className="text-xs text-muted-foreground">{t("pdfOrder.dropzoneSetAllQty")}</span>
                 <input
                   type="number"
                   min={1}
@@ -477,16 +475,18 @@ export function PdfDropzone({
                   className="w-14 rounded border border-input bg-background px-2 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <button
+                  type="button"
                   onClick={handleSetAll}
                   className="text-xs text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-input bg-background hover:bg-muted transition-colors"
                 >
-                  Apply
+                  {t("pdfOrder.dropzoneApply")}
                 </button>
                 <button
+                  type="button"
                   onClick={() => { onChange([]); setSelectedId(null) }}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-2"
                 >
-                  <XIcon className="h-3 w-3" /> Clear
+                  <XIcon className="h-3 w-3" /> {t("pdfOrder.dropzoneClear")}
                 </button>
               </div>
             </div>
@@ -495,10 +495,10 @@ export function PdfDropzone({
                 <thead>
                   <tr className="border-b bg-muted/20">
                     <th className="w-8 px-2" />
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">File</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Format</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Colors</th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Qty</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColFile")}</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColFormat")}</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColPages")}</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColQty")}</th>
                     <th className="w-8 px-2" />
                   </tr>
                 </thead>
@@ -529,7 +529,7 @@ export function PdfDropzone({
           {/* Right: detail panel */}
           {selectedFile && (
             <div className="rounded-lg border p-4">
-              <FileDetailPanel file={selectedFile} />
+              <FileDetailPanel file={selectedFile} onView={() => setViewingFile(selectedFile)} />
             </div>
           )}
         </div>

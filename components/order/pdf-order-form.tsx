@@ -158,6 +158,9 @@ export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
               <SelectItem value="express">{t("pdfOrder.deliveryExpress")}</SelectItem>
             </SelectContent>
           </Select>
+          {deliveryTime === "express" && (
+            <p className="text-xs text-destructive">{t("pdfOrder.expressNotice")}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             {t("pdfOrder.estimatedDelivery")}: {estimatedLabel}
           </p>

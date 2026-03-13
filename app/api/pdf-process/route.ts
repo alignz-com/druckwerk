@@ -18,6 +18,8 @@ if (process.platform === "linux") {
   })
   if (darwinBin) sevenZip.config({ binaryPath: darwinBin })
 }
+import { PutObjectCommand } from "@aws-sdk/client-s3"
+import { s3, S3_PUBLIC_URL, UPLOADS_BUCKET } from "@/lib/s3"
 import { execFile } from "child_process"
 import { promisify } from "util"
 import { writeFile, readFile, unlink, readdir, rm } from "fs/promises"
@@ -38,8 +40,21 @@ export type PdfFileInfo = {
   colorSpaces: string[]
   pantoneColors: string[]
   thumbnailDataUrl?: string
+  previewUrl?: string
   fromZip?: string
   error?: string
+}
+
+async function uploadTempPdf(buffer: Buffer, filename: string, sessionId: string): Promise<string> {
+  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_")
+  const key = `temp/${sessionId}/${safe}`
+  await s3.send(new PutObjectCommand({
+    Bucket: UPLOADS_BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: "application/pdf",
+  }))
+  return `${S3_PUBLIC_URL}/${UPLOADS_BUCKET}/${key}`
 }
 
 async function extractColorInfo(
@@ -307,7 +322,17 @@ async function analyzePdf(buffer: Buffer, filename: string): Promise<PdfFileInfo
   }
 }
 
-async function extract7z(buffer: Buffer, archiveName: string): Promise<PdfFileInfo[]> {
+async function analyzeAndStore(buffer: Buffer, filename: string, sessionId: string): Promise<PdfFileInfo> {
+  const info = await analyzePdf(buffer, filename)
+  if (!info.error) {
+    try {
+      info.previewUrl = await uploadTempPdf(buffer, filename, sessionId)
+    } catch { /* preview unavailable but analysis still valid */ }
+  }
+  return info
+}
+
+async function extract7z(buffer: Buffer, archiveName: string, sessionId: string): Promise<PdfFileInfo[]> {
   const id = randomUUID()
   const archivePath = join(tmpdir(), `${id}.7z`)
   const extractDir = join(tmpdir(), `${id}-extracted`)
@@ -330,7 +355,7 @@ async function extract7z(buffer: Buffer, archiveName: string): Promise<PdfFileIn
       const fullPath = join(extractDir, relPath)
       const pdfBuffer = await readFile(fullPath)
       const filename = relPath.split(/[\\/]/).pop() ?? relPath
-      const info = await analyzePdf(pdfBuffer, filename)
+      const info = await analyzeAndStore(pdfBuffer, filename, sessionId)
       results.push({ ...info, fromZip: archiveName })
     }
     return results
@@ -343,6 +368,7 @@ async function extract7z(buffer: Buffer, archiveName: string): Promise<PdfFileIn
 export const maxDuration = 120
 
 export async function POST(req: NextRequest) {
+  const sessionId = randomUUID()
   try {
     const formData = await req.formData()
     const files = formData.getAll("files") as File[]
@@ -353,7 +379,7 @@ export async function POST(req: NextRequest) {
       const name = file.name.toLowerCase()
 
       if (name.endsWith(".pdf")) {
-        results.push(await analyzePdf(buffer, file.name))
+        results.push(await analyzeAndStore(buffer, file.name, sessionId))
       } else if (name.endsWith(".zip")) {
         const dir = await unzipper.Open.buffer(buffer)
         const pdfEntries = dir.files.filter(
@@ -362,12 +388,12 @@ export async function POST(req: NextRequest) {
         for (const entry of pdfEntries) {
           const pdfBuffer = await entry.buffer()
           const filename = entry.path.split("/").pop() ?? entry.path
-          const info = await analyzePdf(pdfBuffer, filename)
+          const info = await analyzeAndStore(pdfBuffer, filename, sessionId)
           results.push({ ...info, fromZip: file.name })
         }
       } else if (name.endsWith(".7z")) {
         try {
-          const extracted = await extract7z(buffer, file.name)
+          const extracted = await extract7z(buffer, file.name, sessionId)
           results.push(...extracted)
         } catch (err) {
           results.push({
