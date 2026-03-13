@@ -579,6 +579,10 @@ model Product {
   canvasHeightMm  Float?
   printDpi        Int?
   pcmCode         String?
+  nameEn          String?
+  nameDe          String?
+  minPages        Int?
+  maxPages        Int?
   templates       Template[]
   pdfOrderItems   PdfOrderItem[]
   paperStocks     ProductPaperStock[]

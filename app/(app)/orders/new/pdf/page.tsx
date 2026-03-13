@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getBrandsForUser } from "@/lib/brand-access"
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign"
 import { PdfOrderForm } from "@/components/order/pdf-order-form"
+import type { ProductForMatching } from "@/lib/product-matching"
 
 export default async function NewPdfOrderPage() {
   const session = await getServerAuthSession()
@@ -38,10 +39,26 @@ export default async function NewPdfOrderPage() {
     initialBrandId = brandOptions[0]!.id
   }
 
+  const products: ProductForMatching[] = await prisma.product.findMany({
+    select: {
+      id: true,
+      name: true,
+      nameEn: true,
+      nameDe: true,
+      trimWidthMm: true,
+      trimHeightMm: true,
+      toleranceMm: true,
+      minPages: true,
+      maxPages: true,
+    },
+    orderBy: { name: "asc" },
+  })
+
   return (
     <PdfOrderForm
       availableBrands={brandOptions}
       initialBrandId={initialBrandId}
+      products={products}
     />
   )
 }

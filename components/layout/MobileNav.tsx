@@ -6,8 +6,10 @@ import { usePathname } from "next/navigation";
 import {
   ClipboardCheck,
   ClipboardList,
+  LayoutTemplate,
   Layers,
   MoreHorizontal,
+  Package,
   PlusCircle,
   Settings2,
   ShieldCheck,
@@ -30,8 +32,10 @@ const ICONS: Record<string, LucideIcon> = {
   deliveries: ClipboardCheck,
   "admin-brands": ShieldCheck,
   "admin-users": Users,
-  "admin-templates": Layers,
+  "admin-templates": LayoutTemplate,
   "admin-fonts": Type,
+  "admin-products": Package,
+  "admin-papers": Layers,
 };
 
 type Props = {

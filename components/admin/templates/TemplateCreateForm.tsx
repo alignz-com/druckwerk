@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DEFAULT_TEMPLATES } from "@/lib/templates-defaults";
-import { PaperStockSelector } from "./PaperStockSelector";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const defaultConfig = JSON.stringify(Object.values(DEFAULT_TEMPLATES)[0]?.config ?? {}, null, 2);
@@ -25,7 +24,6 @@ type FormState = {
   key: string;
   label: string;
   description: string;
-  paperStockId: string;
   config: string;
   hasQrCode: boolean;
   hasPhotoSlot: boolean;
@@ -35,7 +33,6 @@ const emptyForm: FormState = {
   key: "",
   label: "",
   description: "",
-  paperStockId: "",
   config: defaultConfig,
   hasQrCode: false,
   hasPhotoSlot: false,
@@ -91,9 +88,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
     payload.append("label", label);
     payload.append("description", description);
     payload.append("config", JSON.stringify(configObject));
-    if (form.paperStockId) {
-      payload.append("paperStockId", form.paperStockId);
-    }
     payload.append("hasQrCode", form.hasQrCode ? "true" : "false");
     payload.append("hasPhotoSlot", form.hasPhotoSlot ? "true" : "false");
 
@@ -202,13 +196,6 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
               </p>
             </div>
           </div>
-        </div>
-        <div className="md:col-span-2">
-          <PaperStockSelector
-            value={form.paperStockId}
-            onChange={(next) => handleChange("paperStockId")(next)}
-            helperText={t("create.hints.paperStock")}
-          />
         </div>
       </div>
 

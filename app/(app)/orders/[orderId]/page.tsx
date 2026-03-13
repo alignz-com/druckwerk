@@ -114,7 +114,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm text-slate-500">{t.ordersPage.detail.title}</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{order.referenceCode}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{order.referenceCode}</h1>
           <p className="mt-1 text-sm text-slate-500">
             {formatDate(order.createdAt, locale)} • {order.template?.label ?? templateKey ?? order.templateId ?? "—"}
           </p>

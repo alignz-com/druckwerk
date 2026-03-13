@@ -22,13 +22,15 @@ import { CSS } from "@dnd-kit/utilities"
 import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon, EyeIcon } from "lucide-react"
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useTranslations } from "@/components/providers/locale-provider"
+import { useTranslations, useLocale } from "@/components/providers/locale-provider"
+import { matchProduct, getProductsForSize, getProductLabel, type ProductForMatching } from "@/lib/product-matching"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pantoneTable = require("pantone-table") as Record<string, string>
 
 export type SortableFile = PdfFileInfo & {
   id: string
   quantity: number
+  productId: string | null
   /** Original File for direct PDFs; parent archive for ZIP/7z-extracted */
   _sourceFile?: File
 }
@@ -37,20 +39,25 @@ function SortableRow({
   file,
   onRemove,
   onQuantityChange,
+  onProductChange,
   isSelected,
   onSelect,
+  products,
 }: {
   file: SortableFile
   onRemove: (id: string) => void
   onQuantityChange: (id: string, qty: number) => void
+  onProductChange: (id: string, productId: string | null) => void
   isSelected: boolean
   onSelect: (id: string) => void
+  products: ProductForMatching[]
 }) {
+  const { locale } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: file.id })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform) ?? undefined,
     transition,
     opacity: isDragging ? 0.4 : 1,
   }
@@ -75,15 +82,15 @@ function SortableRow({
           <GripVerticalIcon className="h-4 w-4" />
         </button>
       </td>
-      <td className="px-3 py-3">
-        <div className="flex items-center gap-2 min-w-0">
+      <td className="px-3 py-3 overflow-hidden">
+        <div className="flex items-center gap-2">
           {file.fromZip && (
             <ArchiveIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           )}
-          <span className="font-medium text-sm truncate max-w-[200px]">{file.filename}</span>
+          <span className="font-medium text-sm truncate" title={file.filename}>{file.filename}</span>
         </div>
         {file.fromZip && (
-          <p className="text-[11px] text-muted-foreground truncate max-w-[220px] mt-0.5 pl-5">
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5 pl-5">
             {file.fromZip}
           </p>
         )}
@@ -100,6 +107,32 @@ function SortableRow({
       <td className="px-3 py-3 text-xs text-muted-foreground">
         {file.pages > 0 ? file.pages : "—"}
       </td>
+      {products.length > 0 && (
+        <td className="px-3 py-3 w-36" onClick={(e) => e.stopPropagation()}>
+          {(() => {
+            const sizeMatches = file.error ? [] : getProductsForSize(file.trimWidthMm, file.trimHeightMm, products)
+            if (sizeMatches.length === 0) {
+              return (
+                <span className="text-xs text-muted-foreground italic">No match</span>
+              )
+            }
+            return (
+              <select
+                value={file.productId ?? ""}
+                onChange={(e) => onProductChange(file.id, e.target.value || null)}
+                className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">—</option>
+                {sizeMatches.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {getProductLabel(p, locale)}
+                  </option>
+                ))}
+              </select>
+            )
+          })()}
+        </td>
+      )}
       <td className="px-3 py-3 w-24" onClick={(e) => e.stopPropagation()}>
         <input
           type="number"
@@ -256,12 +289,14 @@ function fmtMb(bytes: number) {
   return (bytes / 1024 / 1024).toFixed(1) + " MB"
 }
 
-export function PdfDropzone({
+export function PrintFileUploader({
   files,
   onChange,
+  products = [],
 }: {
   files: SortableFile[]
   onChange: (files: SortableFile[]) => void
+  products?: ProductForMatching[]
 }) {
   const t = useTranslations()
   const [phase, setPhase] = React.useState<Phase>("idle")
@@ -324,10 +359,14 @@ export function PdfDropzone({
         const sourceFile = f.fromZip
           ? acceptedFiles.find((af) => af.name === f.fromZip)
           : acceptedFiles.find((af) => af.name === f.filename)
+        const matched = !f.error
+          ? matchProduct(f.trimWidthMm, f.trimHeightMm, f.pages, products)
+          : null
         return {
           ...f,
           id: `${f.filename}-${Date.now()}-${i}`,
           quantity: 1,
+          productId: matched?.id ?? null,
           _sourceFile: sourceFile,
         }
       })
@@ -364,6 +403,10 @@ export function PdfDropzone({
 
   function handleQuantityChange(id: string, qty: number) {
     onChange(files.map((f) => f.id === id ? { ...f, quantity: qty } : f))
+  }
+
+  function handleProductChange(id: string, productId: string | null) {
+    onChange(files.map((f) => f.id === id ? { ...f, productId } : f))
   }
 
   function handleSetAll() {
@@ -491,15 +534,25 @@ export function PdfDropzone({
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: products.length > 0 ? "620px" : "460px" }}>
+                <colgroup>
+                  <col style={{ width: "32px" }} />
+                  <col />
+                  <col style={{ width: "130px" }} />
+                  <col style={{ width: "58px" }} />
+                  {products.length > 0 && <col style={{ width: "144px" }} />}
+                  <col style={{ width: "88px" }} />
+                  <col style={{ width: "32px" }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b bg-muted/20">
-                    <th className="w-8 px-2" />
+                    <th className="px-2" />
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColFile")}</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColFormat")}</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColPages")}</th>
+                    {products.length > 0 && <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Product</th>}
                     <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColQty")}</th>
-                    <th className="w-8 px-2" />
+                    <th className="px-2" />
                   </tr>
                 </thead>
                 <DndContext
@@ -515,8 +568,10 @@ export function PdfDropzone({
                           file={f}
                           onRemove={handleRemove}
                           onQuantityChange={handleQuantityChange}
+                          onProductChange={handleProductChange}
                           isSelected={selectedFile?.id === f.id}
                           onSelect={setSelectedId}
+                          products={products}
                         />
                       ))}
                     </tbody>

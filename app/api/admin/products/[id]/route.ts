@@ -12,8 +12,9 @@ async function requireAdmin() {
 
 const bodySchema = z.object({
   name: z.string().min(1).optional(),
+  nameEn: z.string().nullable().optional(),
+  nameDe: z.string().nullable().optional(),
   description: z.string().optional(),
-  type: z.enum(["BUSINESS_CARD", "PDF_PRINT"]).optional(),
   trimWidthMm: z.number().positive().optional(),
   trimHeightMm: z.number().positive().optional(),
   toleranceMm: z.number().nonnegative().optional(),
@@ -22,6 +23,8 @@ const bodySchema = z.object({
   canvasHeightMm: z.number().positive().nullable().optional(),
   printDpi: z.number().int().positive().nullable().optional(),
   pcmCode: z.string().nullable().optional(),
+  minPages: z.number().int().positive().nullable().optional(),
+  maxPages: z.number().int().positive().nullable().optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,8 +43,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name }),
+      ...(body.nameEn !== undefined && { nameEn: body.nameEn }),
+      ...(body.nameDe !== undefined && { nameDe: body.nameDe }),
       ...(body.description !== undefined && { description: body.description || null }),
-      ...(body.type !== undefined && { type: body.type }),
       ...(body.trimWidthMm !== undefined && { trimWidthMm: body.trimWidthMm }),
       ...(body.trimHeightMm !== undefined && { trimHeightMm: body.trimHeightMm }),
       ...(body.toleranceMm !== undefined && { toleranceMm: body.toleranceMm }),
@@ -50,6 +54,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.canvasHeightMm !== undefined && { canvasHeightMm: body.canvasHeightMm }),
       ...(body.printDpi !== undefined && { printDpi: body.printDpi }),
       ...(body.pcmCode !== undefined && { pcmCode: body.pcmCode }),
+      ...(body.minPages !== undefined && { minPages: body.minPages }),
+      ...(body.maxPages !== undefined && { maxPages: body.maxPages }),
     },
   })
   return NextResponse.json(product)

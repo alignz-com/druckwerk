@@ -45,6 +45,8 @@ const itemMetaSchema = z.object({
   pantoneColors: z.array(z.string()).default([]),
   pages: z.number().int().nullable().optional(),
   fileSlot: z.number().int().nullable().optional(),
+  thumbnailDataUrl: z.string().nullable().optional(),
+  productId: z.string().nullable().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -123,10 +125,14 @@ export async function POST(req: NextRequest) {
       // For direct PDFs: storagePath = the uploaded file path
       // For ZIP-extracted: storagePath = same as archive path (file lives inside it)
       const storagePath = slotKey ?? `orders/${referenceCode}/pdf/${i + 1}-${safeName}`
+      const thumbnailStoragePath = meta.thumbnailDataUrl
+        ? `orders/${referenceCode}/thumbs/${i + 1}.png`
+        : null
       return {
         filename: meta.filename,
         sourceZipFilename: meta.sourceZipFilename ?? null,
         storagePath,
+        thumbnailStoragePath,
         quantity: meta.quantity,
         trimWidthMm: meta.trimWidthMm ?? null,
         trimHeightMm: meta.trimHeightMm ?? null,
@@ -134,6 +140,8 @@ export async function POST(req: NextRequest) {
         colorSpaces: meta.colorSpaces,
         pantoneColors: meta.pantoneColors,
         pages: meta.pages ?? null,
+        productId: meta.productId ?? null,
+        _thumbnailDataUrl: meta.thumbnailDataUrl ?? null,
       }
     })
 
@@ -156,7 +164,7 @@ export async function POST(req: NextRequest) {
       })
 
       await tx.pdfOrderItem.createMany({
-        data: lineItems.map((item) => ({ ...item, orderId: o.id })),
+        data: lineItems.map(({ _thumbnailDataUrl: _, ...item }) => ({ ...item, orderId: o.id })),
       })
 
       return o
@@ -174,6 +182,22 @@ export async function POST(req: NextRequest) {
           Metadata: { orderId: order.id, originalName: file.name },
         })
       )
+    }
+
+    // Upload thumbnails to MinIO
+    for (const item of lineItems) {
+      if (item.thumbnailStoragePath && item._thumbnailDataUrl) {
+        try {
+          const base64 = item._thumbnailDataUrl.replace(/^data:image\/\w+;base64,/, "")
+          const buffer = Buffer.from(base64, "base64")
+          await s3.send(new PutObjectCommand({
+            Bucket: ORDERS_BUCKET,
+            Key: item.thumbnailStoragePath,
+            Body: buffer,
+            ContentType: "image/png",
+          }))
+        } catch { /* non-critical, thumbnail missing is fine */ }
+      }
     }
 
     return NextResponse.json({ orderId: order.id, referenceCode })

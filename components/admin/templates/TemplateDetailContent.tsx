@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { hasInlineDesignConfig } from "@/lib/template-design";
 import { formatDateTime } from "@/lib/formatDateTime";
-import { PaperStockSelector } from "./PaperStockSelector";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -76,7 +75,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   const [metadata, setMetadata] = useState(() => ({
     label: template.label ?? "",
     description: template.description ?? "",
-    paperStockId: template.paperStock?.id ?? "",
     productId: template.productId ?? "",
     config: stringifyConfig(template.config),
     hasQrCode: template.hasQrCode,
@@ -263,7 +261,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     setMetadata({
       label: template.label ?? "",
       description: template.description ?? "",
-      paperStockId: template.paperStock?.id ?? "",
       productId: template.productId ?? "",
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
@@ -350,7 +347,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
         body: JSON.stringify({
           label,
           description: metadata.description.trim(),
-          paperStockId: metadata.paperStockId || null,
           productId: metadata.productId || null,
           config: parsedConfig,
           hasQrCode: metadata.hasQrCode,
@@ -701,17 +697,6 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               </div>
             </div>
           </div>
-        <div className="md:col-span-2">
-          <PaperStockSelector
-            value={metadata.paperStockId}
-            onChange={(next) => {
-              setMetadata((current) => ({ ...current, paperStockId: next }));
-              setMetadataSuccess(null);
-            }}
-            helperText={t("paperStock.helper")}
-          />
-        </div>
-
         <div className="md:col-span-2 space-y-1.5">
           <Label htmlFor="template-product">Product</Label>
           <Select

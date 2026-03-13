@@ -8,7 +8,8 @@ import { isLocale } from "@/lib/i18n/messages";
 import { getServerAuthSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { fontMono, fontSans } from "@/lib/fonts";
-import { QueryProvider } from "@/components/providers/query-provider";
+import { QueryProvider } from "@/components/providers/query-provider"
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Druckwerk - Druckerei Thurnher",
@@ -51,6 +52,7 @@ export default async function RootLayout({
             <QueryProvider>{children}</QueryProvider>
           </LocaleProvider>
         </SessionProviderWrapper>
+        <Toaster position="top-center" richColors />
         <SpeedInsights />
       </body>
     </html>

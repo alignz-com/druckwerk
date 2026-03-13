@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { PdfDropzone, type SortableFile } from "@/components/pdf-dropzone"
+import { PrintFileUploader, type SortableFile } from "@/components/print-file-uploader"
+import type { ProductForMatching } from "@/lib/product-matching"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,9 +24,10 @@ type Brand = { id: string; name: string }
 type Props = {
   availableBrands: Brand[]
   initialBrandId: string | null
+  products: ProductForMatching[]
 }
 
-export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
+export function PdfOrderForm({ availableBrands, initialBrandId, products }: Props) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -90,6 +92,8 @@ export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
           pantoneColors: f.pantoneColors,
           pages: f.pages,
           fileSlot,
+          thumbnailDataUrl: f.thumbnailDataUrl ?? null,
+          productId: f.productId ?? null,
         }
       })
       formData.append("itemsMeta", JSON.stringify(itemsMeta))
@@ -126,10 +130,10 @@ export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
       </div>
 
       {/* Order info strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 rounded-xl border bg-muted/20 p-4">
+      <div className="flex flex-wrap items-start gap-4 rounded-xl border bg-muted/20 p-4">
         {/* Brand — only shown if multiple brands available */}
         {availableBrands.length > 1 && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 w-40 shrink-0">
             <Label>{t("pdfOrder.brand")}</Label>
             <Select value={brandId} onValueChange={setBrandId}>
               <SelectTrigger>
@@ -146,28 +150,37 @@ export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
           </div>
         )}
 
-        {/* Delivery */}
-        <div className="space-y-1.5">
+        {/* Delivery toggle */}
+        <div className="space-y-1.5 shrink-0">
           <Label>{t("pdfOrder.delivery")}</Label>
-          <Select value={deliveryTime} onValueChange={(v) => setDeliveryTime(v as "standard" | "express")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="standard">{t("pdfOrder.deliveryStandard")}</SelectItem>
-              <SelectItem value="express">{t("pdfOrder.deliveryExpress")}</SelectItem>
-            </SelectContent>
-          </Select>
-          {deliveryTime === "express" && (
-            <p className="text-xs text-destructive">{t("pdfOrder.expressNotice")}</p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            {t("pdfOrder.estimatedDelivery")}: {estimatedLabel}
-          </p>
+          <div className="flex w-fit rounded-lg bg-muted p-0.5 gap-0.5 h-9">
+            <button
+              type="button"
+              onClick={() => setDeliveryTime("standard")}
+              className={`px-4 text-sm font-medium rounded-md transition-all ${
+                deliveryTime === "standard"
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Standard
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeliveryTime("express")}
+              className={`px-4 text-sm font-medium rounded-md transition-all ${
+                deliveryTime === "express"
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Express
+            </button>
+          </div>
         </div>
 
         {/* Reference */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 w-44 shrink-0">
           <Label>{t("pdfOrder.reference")}</Label>
           <Input
             value={customerReference}
@@ -177,20 +190,28 @@ export function PdfOrderForm({ availableBrands, initialBrandId }: Props) {
         </div>
 
         {/* Notes */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 flex-1 min-w-[200px]">
           <Label>{t("pdfOrder.notes")}</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t("pdfOrder.notesPlaceholder")}
-            className="min-h-[38px] resize-none"
-            rows={1}
+            className="resize-none"
+            rows={2}
           />
         </div>
       </div>
 
+      {/* Delivery info */}
+      <div className="text-xs text-muted-foreground -mt-4">
+        <span>{t("pdfOrder.estimatedDelivery")}: {estimatedLabel}</span>
+        {deliveryTime === "express" && (
+          <span className="text-destructive ml-2">{t("pdfOrder.expressNotice")}</span>
+        )}
+      </div>
+
       {/* Drop zone + file list */}
-      <PdfDropzone files={files} onChange={setFiles} />
+      <PrintFileUploader files={files} onChange={setFiles} products={products} />
 
       {/* Error */}
       {error && (

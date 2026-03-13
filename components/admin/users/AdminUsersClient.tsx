@@ -74,7 +74,7 @@ export default function AdminUsersClient({ users, brands }: Props) {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t("title")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-slate-500">{t("description")}</p>
         </div>
         <Button onClick={() => setSheetState({ mode: "create" })} className="inline-flex items-center gap-2 self-start sm:self-auto">

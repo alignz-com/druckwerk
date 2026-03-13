@@ -5,7 +5,6 @@ import { Plus, Pencil, Trash2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -13,13 +12,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations } from "@/components/providers/locale-provider"
 import { ProductPaperSection } from "./ProductPaperSection"
@@ -27,8 +19,9 @@ import { ProductPaperSection } from "./ProductPaperSection"
 type Product = {
   id: string
   name: string
+  nameEn: string | null
+  nameDe: string | null
   description: string | null
-  type: "BUSINESS_CARD" | "PDF_PRINT"
   trimWidthMm: number
   trimHeightMm: number
   toleranceMm: number
@@ -37,14 +30,17 @@ type Product = {
   canvasHeightMm: number | null
   printDpi: number | null
   pcmCode: string | null
+  minPages: number | null
+  maxPages: number | null
   createdAt: string
   _count?: { pdfOrderItems: number }
 }
 
 type FormState = {
   name: string
+  nameEn: string
+  nameDe: string
   description: string
-  type: "BUSINESS_CARD" | "PDF_PRINT"
   trimWidthMm: string
   trimHeightMm: string
   toleranceMm: string
@@ -53,12 +49,15 @@ type FormState = {
   canvasHeightMm: string
   printDpi: string
   pcmCode: string
+  minPages: string
+  maxPages: string
 }
 
 const emptyForm: FormState = {
   name: "",
+  nameEn: "",
+  nameDe: "",
   description: "",
-  type: "PDF_PRINT",
   trimWidthMm: "",
   trimHeightMm: "",
   toleranceMm: "1",
@@ -67,13 +66,16 @@ const emptyForm: FormState = {
   canvasHeightMm: "",
   printDpi: "",
   pcmCode: "",
+  minPages: "",
+  maxPages: "",
 }
 
 function formToPayload(form: FormState) {
   return {
     name: form.name,
+    nameEn: form.nameEn || null,
+    nameDe: form.nameDe || null,
     description: form.description,
-    type: form.type,
     trimWidthMm: parseFloat(form.trimWidthMm),
     trimHeightMm: parseFloat(form.trimHeightMm),
     toleranceMm: parseFloat(form.toleranceMm) || 1,
@@ -82,6 +84,8 @@ function formToPayload(form: FormState) {
     canvasHeightMm: form.canvasHeightMm ? parseFloat(form.canvasHeightMm) : null,
     printDpi: form.printDpi ? parseInt(form.printDpi) : null,
     pcmCode: form.pcmCode || null,
+    minPages: form.minPages ? parseInt(form.minPages) : null,
+    maxPages: form.maxPages ? parseInt(form.maxPages) : null,
   }
 }
 
@@ -113,8 +117,9 @@ export function AdminProductsView() {
   function openEdit(p: Product) {
     setForm({
       name: p.name,
+      nameEn: p.nameEn ?? "",
+      nameDe: p.nameDe ?? "",
       description: p.description ?? "",
-      type: p.type,
       trimWidthMm: String(p.trimWidthMm),
       trimHeightMm: String(p.trimHeightMm),
       toleranceMm: String(p.toleranceMm),
@@ -123,6 +128,8 @@ export function AdminProductsView() {
       canvasHeightMm: p.canvasHeightMm != null ? String(p.canvasHeightMm) : "",
       printDpi: p.printDpi != null ? String(p.printDpi) : "",
       pcmCode: p.pcmCode ?? "",
+      minPages: p.minPages != null ? String(p.minPages) : "",
+      maxPages: p.maxPages != null ? String(p.maxPages) : "",
     })
     setError(null)
     setDialog({ edit: p })
@@ -152,11 +159,18 @@ export function AdminProductsView() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t("empty"))) return
+    if (!confirm(t("deleteConfirm"))) return
     setDeleting(id)
-    await fetch(`/api/admin/products/${id}`, { method: "DELETE" })
-    setDeleting(null)
-    await load()
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        alert(b.error ?? t("deleteFailed"))
+      }
+    } finally {
+      setDeleting(null)
+      await load()
+    }
   }
 
   const f = (key: keyof FormState) => ({
@@ -169,7 +183,7 @@ export function AdminProductsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("description")}</p>
         </div>
         <Button onClick={openCreate}>
@@ -190,7 +204,6 @@ export function AdminProductsView() {
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.name")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.type")}</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.format")}</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.bleed")}</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.pcmCode")}</th>
@@ -201,11 +214,6 @@ export function AdminProductsView() {
               {products.map((p) => (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={p.type === "BUSINESS_CARD" ? "default" : "secondary"} className="text-xs">
-                      {t(`types.${p.type}`)}
-                    </Badge>
-                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                     {p.trimWidthMm} × {p.trimHeightMm} mm
                     <span className="ml-1 text-muted-foreground/60">(±{p.toleranceMm})</span>
@@ -251,18 +259,21 @@ export function AdminProductsView() {
               <Label>{t("fields.name")}</Label>
               <Input {...f("name")} placeholder="e.g. A5 Flyer" />
             </div>
-            <div className="space-y-1.5">
-              <Label>{t("fields.type")}</Label>
-              <Select
-                value={form.type}
-                onValueChange={(v) => setForm((prev) => ({ ...prev, type: v as FormState["type"] }))}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PDF_PRINT">{t("types.PDF_PRINT")}</SelectItem>
-                  <SelectItem value="BUSINESS_CARD">{t("types.BUSINESS_CARD")}</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("fields.nameEn")}</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">EN</span>
+                  <Input {...f("nameEn")} className="pl-8" placeholder="A5 Flyer" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("fields.nameDe")}</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">DE</span>
+                  <Input {...f("nameDe")} className="pl-8" placeholder="A5 Flyer" />
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -297,6 +308,15 @@ export function AdminProductsView() {
             <div className="space-y-1.5">
               <Label>{t("fields.printDpi")}</Label>
               <Input {...f("printDpi")} type="number" step="1" placeholder="300" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("fields.pageRange")}</Label>
+              <div className="flex items-center gap-2">
+                <Input {...f("minPages")} type="number" step="1" placeholder={t("fields.pageMin")} className="w-full" />
+                <span className="text-muted-foreground shrink-0">–</span>
+                <Input {...f("maxPages")} type="number" step="1" placeholder={t("fields.pageMax")} className="w-full" />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("fields.pageRangeHint")}</p>
             </div>
             <div className="space-y-1.5">
               <Label>{t("fields.pcmCode")}</Label>

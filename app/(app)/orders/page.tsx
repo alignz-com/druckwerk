@@ -64,10 +64,24 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     include: {
-      template: true,
+      template: {
+        include: {
+          product: { select: { name: true, nameEn: true, nameDe: true } },
+        },
+      },
       brand: true,
       user: { select: { name: true, email: true } },
       _count: { select: { pdfOrderItems: true } },
+      pdfOrderItems: {
+        select: {
+          filename: true,
+          pages: true,
+          quantity: true,
+          thumbnailStoragePath: true,
+          product: { select: { name: true, nameEn: true, nameDe: true } },
+        },
+        orderBy: { createdAt: "asc" as const },
+      },
     },
   });
 
@@ -158,21 +172,63 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     const deliveryDueAtLabel = order.deliveryDueAt
       ? formatDateTime(order.deliveryDueAt, localeTag, { dateStyle: "medium" })
       : null;
+    const firstThumbPath = order.pdfOrderItems.find(i => i.thumbnailStoragePath)?.thumbnailStoragePath ?? null;
+    const thumbnailUrl =
+      order.type === "BUSINESS_CARD"
+        ? (order.template?.previewFrontPath ?? null)
+        : firstThumbPath
+          ? `${process.env.S3_PUBLIC_URL ?? ""}/${process.env.S3_ORDERS_BUCKET ?? "orders"}/${firstThumbPath}`
+          : null;
+    const firstItem = order.pdfOrderItems[0] ?? null;
+    const isBC = order.type === "BUSINESS_CARD";
+
+    // For BC: product name from template.product (localized)
+    const bcProductName = (() => {
+      if (!isBC) return null;
+      const prod = order.template?.product;
+      if (!prod) return null;
+      return (locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name;
+    })();
+
+    // For PDF: joined distinct product names
+    const pdfProductLabel = (() => {
+      if (isBC) return null;
+      const names = Array.from(new Set(
+        order.pdfOrderItems
+          .filter(i => i.product)
+          .map(i => (locale === "de" ? i.product!.nameDe : i.product!.nameEn) ?? i.product!.name)
+      ));
+      if (names.length === 0) return null;
+      return names.slice(0, 2).join(" · ") + (names.length > 2 ? ` +${names.length - 2}` : "");
+    })();
+
+    // Quantity: BC uses order.quantity; PDF sums item quantities
+    const totalQuantity = isBC
+      ? (order.quantity ?? null)
+      : order.pdfOrderItems.reduce((s, i) => s + i.quantity, 0) || null;
+
     return {
       id: order.id,
       referenceCode: order.referenceCode,
       orderType: order.type as "BUSINESS_CARD" | "PDF_PRINT",
       deliveryTime: order.deliveryTime,
+      brandId: order.brandId ?? null,
       brandName: order.brand?.name ?? null,
-      templateLabel:
-        order.type === "BUSINESS_CARD"
-          ? (order.template?.label ?? (typeof templateKey === "string" ? templateKey : null))
-          : null,
+      // BC: template.label for pill; PDF: joined product names
+      templateLabel: isBC
+        ? (order.template?.label ?? (typeof templateKey === "string" ? templateKey : null))
+        : pdfProductLabel,
+      productName: bcProductName,
+      thumbnailUrl,
+      company: order.company ?? order.brand?.name ?? null,
       requesterName: order.requesterName ?? null,
       requesterRole: order.requesterRole ?? null,
       requesterSeniority: order.requesterSeniority ?? null,
-      quantity: order.quantity ?? null,
+      orderedByName: order.user?.name ?? null,
+      quantity: totalQuantity,
       fileCount: order._count.pdfOrderItems || null,
+      primaryFileName: isBC ? null : (firstItem?.filename ?? null),
+      primaryPageCount: isBC ? null : (firstItem?.pages ?? null),
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryDueAtLabel,
@@ -184,7 +240,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t.ordersPage.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.ordersPage.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{t.ordersPage.subtitle}</p>
         </div>
         <Button asChild className="inline-flex items-center gap-2">
@@ -208,6 +264,51 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           searchPlaceholder={t.ordersPage.table.searchPlaceholder}
           emptyState={t.ordersPage.table.empty}
           noResults={t.ordersPage.table.noResults}
+          allStatusesLabel={t.ordersPage.table.filters.allStatuses}
+          allBrandsLabel={t.ordersPage.table.filters.allBrands}
+          statusOptions={statusOptions}
+          brandOptions={
+            isAdmin || isPrinter
+              ? Array.from(
+                  new Map(
+                    orders
+                      .filter((o) => o.brandId && o.brand?.name)
+                      .map((o) => [o.brandId as string, o.brand!.name]),
+                  ).entries(),
+                )
+                  .map(([value, label]) => ({ value, label }))
+                  .sort((a, b) => a.label.localeCompare(b.label))
+              : []
+          }
+          paginationLabelTemplate={t.ordersPage.table.pagination.label}
+          previousLabel={t.ordersPage.table.pagination.previous}
+          nextLabel={t.ordersPage.table.pagination.next}
+          bulkLabels={
+            isAdmin || isPrinter
+              ? {
+                  selectMode: t.ordersPage.cardList.select,
+                  cancelSelect: t.ordersPage.cardList.cancelSelect,
+                  selectedCount: t.ordersPage.table.selection,
+                  statusPlaceholder: t.ordersPage.table.bulkActions.placeholder,
+                  applyStatus: t.ordersPage.table.bulkActions.apply,
+                  applying: t.ordersPage.cardList.applying,
+                  statusSuccess: t.ordersPage.table.bulkActions.success,
+                  statusError: t.ordersPage.table.bulkActions.error,
+                  createDelivery: t.ordersPage.cardList.createDelivery,
+                  deliveryTitle: t.ordersPage.table.bulkDelivery.title,
+                  deliveryAddress: t.ordersPage.cardList.deliveryAddress,
+                  loadingAddresses: t.ordersPage.cardList.loadingAddresses,
+                  noAddresses: t.ordersPage.cardList.noAddresses,
+                  deliveryNoteLabel: t.ordersPage.table.bulkDelivery.noteLabel,
+                  deliveryNotePlaceholder: t.ordersPage.table.bulkDelivery.notePlaceholder,
+                  deliveryCreate: t.ordersPage.table.bulkDelivery.apply,
+                  deliveryCreating: t.ordersPage.table.bulkDelivery.creating,
+                  deliverySuccess: t.ordersPage.table.bulkDelivery.success,
+                  deliveryError: t.ordersPage.table.bulkDelivery.error,
+                  deliveryMixedBrands: t.ordersPage.cardList.mixedBrands,
+                }
+              : undefined
+          }
         />
       ) : (
       <OrdersTable

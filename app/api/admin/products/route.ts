@@ -12,8 +12,9 @@ async function requireAdmin() {
 
 const bodySchema = z.object({
   name: z.string().min(1),
+  nameEn: z.string().nullable().optional(),
+  nameDe: z.string().nullable().optional(),
   description: z.string().optional().default(""),
-  type: z.enum(["BUSINESS_CARD", "PDF_PRINT"]),
   trimWidthMm: z.number().positive(),
   trimHeightMm: z.number().positive(),
   toleranceMm: z.number().nonnegative().default(1.0),
@@ -22,6 +23,8 @@ const bodySchema = z.object({
   canvasHeightMm: z.number().positive().nullable().optional(),
   printDpi: z.number().int().positive().nullable().optional(),
   pcmCode: z.string().nullable().optional(),
+  minPages: z.number().int().positive().nullable().optional(),
+  maxPages: z.number().int().positive().nullable().optional(),
 })
 
 export async function GET() {
@@ -45,8 +48,10 @@ export async function POST(req: NextRequest) {
   const product = await prisma.product.create({
     data: {
       name: body.name,
+      nameEn: body.nameEn ?? null,
+      nameDe: body.nameDe ?? null,
       description: body.description || null,
-      type: body.type,
+      type: "PDF_PRINT" as const,
       trimWidthMm: body.trimWidthMm,
       trimHeightMm: body.trimHeightMm,
       toleranceMm: body.toleranceMm,
@@ -55,6 +60,8 @@ export async function POST(req: NextRequest) {
       canvasHeightMm: body.canvasHeightMm ?? null,
       printDpi: body.printDpi ?? null,
       pcmCode: body.pcmCode ?? null,
+      minPages: body.minPages ?? null,
+      maxPages: body.maxPages ?? null,
     },
   })
   return NextResponse.json(product, { status: 201 })
