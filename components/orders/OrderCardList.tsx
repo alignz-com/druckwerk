@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, LayoutList, Kanban } from "lucide-react";
+import { Search, X, LayoutList, Kanban, ListChecks } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -266,8 +266,8 @@ export function OrderCardList({
   const showBrandFilter = showBrand && brandOptions.length > 0;
 
   return (
-    <div className="space-y-4">
-      {/* Row 1: Search + view toggle + Select button */}
+    <div className="space-y-4 overflow-x-hidden">
+      {/* Row 1: Search + brand filter + view/select toggle */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -278,6 +278,24 @@ export function OrderCardList({
             className="pl-9"
           />
         </div>
+
+        {/* Brand filter — compact, inline */}
+        {showBrandFilter && (
+          <select
+            value={brandFilter ?? ""}
+            onChange={(e) => setBrandFilter(e.target.value || null)}
+            className="shrink-0 h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 max-w-[160px]"
+          >
+            <option value="">{allBrandsLabel}</option>
+            {brandOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* View toggle */}
         {bulkLabels && (
           <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shrink-0">
             <button
@@ -294,95 +312,59 @@ export function OrderCardList({
             </button>
           </div>
         )}
-        {bulkLabels && view === "list" && (
-          <Button
-            variant={selectMode ? "outline" : "ghost"}
-            size="sm"
+
+        {/* Select mode — separate from view toggle */}
+        {bulkLabels && (
+          <button
             onClick={() => {
-              if (selectMode) {
-                exitSelectMode();
-              } else {
-                setSelectMode(true);
-                setSelected(new Set());
-              }
+              if (selectMode) exitSelectMode();
+              else { setSelectMode(true); setSelected(new Set()); }
             }}
-            className="shrink-0 text-sm"
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors shrink-0 ${
+              selectMode
+                ? "bg-slate-900 border-slate-900 text-white"
+                : "border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300"
+            }`}
           >
-            {selectMode ? bulkLabels.cancelSelect : bulkLabels.selectMode}
-          </Button>
+            <ListChecks className="h-4 w-4" />
+          </button>
         )}
       </div>
 
-      {/* Row 2: Status pills + Brand filter (list view only) */}
-      {view === "list" && (
-        <div className="flex items-start gap-3">
-          {/* Status pills — horizontally scrollable */}
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-1.5 min-w-max pb-1">
+      {/* Row 2: Status pills — always rendered to reserve height, invisible in kanban */}
+      <div className={view === "kanban" ? "invisible" : ""}>
+        <div className="overflow-x-auto">
+          <div className="flex gap-1.5 min-w-max pb-1">
+            <button
+              onClick={() => setStatusFilter(null)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${
+                statusFilter === null
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {allStatusesLabel}
+            </button>
+            {statusOptions.map((opt) => (
               <button
-                onClick={() => setStatusFilter(null)}
+                key={opt.value}
+                onClick={() => setStatusFilter(statusFilter === opt.value ? null : opt.value)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${
-                  statusFilter === null
+                  statusFilter === opt.value
                     ? "bg-slate-900 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {allStatusesLabel}
+                {opt.label}
               </button>
-              {statusOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setStatusFilter(statusFilter === opt.value ? null : opt.value)}
-                  className={`text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${
-                    statusFilter === opt.value
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
-
-          {/* Brand filter */}
-          {showBrandFilter && (
-            <select
-              value={brandFilter ?? ""}
-              onChange={(e) => setBrandFilter(e.target.value || null)}
-              className="shrink-0 h-8 rounded-lg border border-slate-200 bg-white px-2 py-0 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-            >
-              <option value="">{allBrandsLabel}</option>
-              {brandOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
-      )}
+      </div>
 
       {/* Kanban view */}
       {view === "kanban" && (
         <>
-          {/* Brand filter above kanban */}
-          {showBrandFilter && (
-            <div className="flex items-center gap-2">
-              <select
-                value={brandFilter ?? ""}
-                onChange={(e) => setBrandFilter(e.target.value || null)}
-                className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-0 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                <option value="">{allBrandsLabel}</option>
-                {brandOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           {orders.length === 0 ? (
             <p className="py-12 text-center text-sm text-slate-400">{emptyState}</p>
           ) : (
@@ -390,6 +372,9 @@ export function OrderCardList({
               orders={filtered}
               showBrand={showBrand}
               statusOptions={statusOptions}
+              selectMode={selectMode}
+              selected={selected}
+              onToggle={toggleSelect}
             />
           )}
         </>
@@ -442,54 +427,60 @@ export function OrderCardList({
         )
       )}
 
-      {/* Floating action bar */}
-      {selectMode && selected.size > 0 && bulkLabels && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-white">
-          {/* Count */}
+      {/* Floating action bar — always visible in select mode */}
+      {selectMode && bulkLabels && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-white shadow-xl">
+          {/* Count / empty hint */}
           <span className="text-sm font-medium whitespace-nowrap">
-            {bulkLabels.selectedCount.replace("{n}", String(selected.size)).replace("{count}", String(selected.size))}
+            {selected.size === 0
+              ? bulkLabels.selectMode
+              : bulkLabels.selectedCount.replace("{n}", String(selected.size)).replace("{count}", String(selected.size))}
           </span>
 
-          <div className="w-px h-5 bg-slate-600 shrink-0" />
+          {selected.size > 0 && (
+            <>
+              <div className="w-px h-5 bg-slate-600 shrink-0" />
 
-          {/* Status select */}
-          <select
-            value={bulkStatus}
-            onChange={(e) => setBulkStatus(e.target.value)}
-            disabled={bulkActionState === "loading"}
-            className="h-7 rounded-lg bg-slate-700 border border-slate-600 px-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-          >
-            <option value="">{bulkLabels.statusPlaceholder}</option>
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+              {/* Status select */}
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                disabled={bulkActionState === "loading"}
+                className="h-7 rounded-lg bg-slate-700 border border-slate-600 px-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+              >
+                <option value="">{bulkLabels.statusPlaceholder}</option>
+                {statusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
 
-          {/* Apply status */}
-          <button
-            onClick={handleApplyStatus}
-            disabled={!bulkStatus || bulkActionState === "loading"}
-            className="h-7 px-3 rounded-lg bg-white text-slate-900 text-xs font-medium disabled:opacity-40 hover:bg-slate-100 transition-colors"
-          >
-            {bulkActionState === "loading" ? bulkLabels.applying : bulkLabels.applyStatus}
-          </button>
+              {/* Apply status */}
+              <button
+                onClick={handleApplyStatus}
+                disabled={!bulkStatus || bulkActionState === "loading"}
+                className="h-7 px-3 rounded-lg bg-white text-slate-900 text-xs font-medium disabled:opacity-40 hover:bg-slate-100 transition-colors"
+              >
+                {bulkActionState === "loading" ? bulkLabels.applying : bulkLabels.applyStatus}
+              </button>
 
-          {/* Delivery button */}
-          <button
-            onClick={handleOpenDelivery}
-            disabled={bulkActionState === "loading"}
-            className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap"
-          >
-            {bulkLabels.createDelivery}
-          </button>
+              {/* Delivery button */}
+              <button
+                onClick={handleOpenDelivery}
+                disabled={bulkActionState === "loading"}
+                className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap"
+              >
+                {bulkLabels.createDelivery}
+              </button>
 
-          {/* Feedback message */}
-          {bulkMessage && (
-            <span className={`text-xs whitespace-nowrap ${bulkActionState === "error" ? "text-red-300" : "text-emerald-300"}`}>
-              {bulkMessage}
-            </span>
+              {/* Feedback message */}
+              {bulkMessage && (
+                <span className={`text-xs whitespace-nowrap ${bulkActionState === "error" ? "text-red-300" : "text-emerald-300"}`}>
+                  {bulkMessage}
+                </span>
+              )}
+            </>
           )}
 
           {/* Close */}

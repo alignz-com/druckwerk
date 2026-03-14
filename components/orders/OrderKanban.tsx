@@ -52,10 +52,13 @@ type Props = {
   orders: OrderCardData[];
   showBrand: boolean;
   statusOptions: StatusOption[];
+  selectMode?: boolean;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 };
 
 // Compact kanban card — no thumbnail, no status badge
-function KanbanCardContent({ order, showBrand }: { order: OrderCardData; showBrand: boolean }) {
+function KanbanCardContent({ order, showBrand, isSelected }: { order: OrderCardData; showBrand: boolean; isSelected?: boolean }) {
   const isExpress = order.deliveryTime === "express";
   const isBC = order.orderType === "BUSINESS_CARD";
 
@@ -78,7 +81,7 @@ function KanbanCardContent({ order, showBrand }: { order: OrderCardData; showBra
   // Line 3: ref · date
   const dateLabel = order.deliveryDueAtLabel ?? order.createdAtLabel;
   return (
-    <div className="flex flex-col gap-1 px-3 py-2.5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow min-w-0">
+    <div className={`flex flex-col gap-1 px-3 py-2.5 bg-white rounded-xl border min-w-0 transition-shadow ${isSelected ? "border-blue-500 shadow-sm" : "border-slate-200 shadow-sm hover:shadow-md"}`}>
       {/* Line 1 */}
       <p className="text-sm font-semibold text-slate-900 truncate leading-snug">
         {headlineParts.join(" · ") || "–"}
@@ -111,11 +114,38 @@ function KanbanCardContent({ order, showBrand }: { order: OrderCardData; showBra
   );
 }
 
-function DraggableCard({ order, showBrand }: { order: OrderCardData; showBrand: boolean }) {
+function DraggableCard({
+  order,
+  showBrand,
+  selectMode,
+  isSelected,
+  onToggle,
+}: {
+  order: OrderCardData;
+  showBrand: boolean;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggle?: (id: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.id,
     data: { status: order.status },
+    disabled: selectMode,
   });
+
+  const content = <KanbanCardContent order={order} showBrand={showBrand} isSelected={isSelected} />;
+
+  if (selectMode) {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggle?.(order.id)}
+        className={`w-full text-left transition-opacity ${isDragging ? "opacity-40" : ""}`}
+      >
+        {content}
+      </button>
+    );
+  }
 
   return (
     <div
@@ -126,7 +156,7 @@ function DraggableCard({ order, showBrand }: { order: OrderCardData; showBrand: 
       className={`cursor-grab active:cursor-grabbing touch-none transition-opacity ${isDragging ? "opacity-40" : ""}`}
     >
       <Link href={`/orders/${order.id}`} tabIndex={-1} className="block">
-        <KanbanCardContent order={order} showBrand={showBrand} />
+        {content}
       </Link>
     </div>
   );
@@ -140,9 +170,12 @@ type ColumnProps = {
   collapsed: boolean;
   onToggle: () => void;
   isOver: boolean;
+  selectMode?: boolean;
+  selected?: Set<string>;
+  onSelectToggle?: (id: string) => void;
 };
 
-function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onToggle, isOver }: ColumnProps) {
+function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onToggle, isOver, selectMode, selected, onSelectToggle }: ColumnProps) {
   const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
   const bodyStyle = COLUMN_BODY_STYLES[status] ?? "bg-slate-50";
 
@@ -164,7 +197,10 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
   }
 
   return (
-    <div className={`flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80 transition-all ${isOver ? "ring-2 ring-slate-300 ring-offset-1" : ""}`}>
+    <div className="relative h-full flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80">
+      {/* Drop target ring overlay — renders on top of header */}
+      {isOver && <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />}
+
       {/* Header */}
       <button
         onClick={onToggle}
@@ -175,9 +211,16 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
       </button>
 
       {/* Cards area with tinted body */}
-      <div className={`flex flex-col gap-2 min-h-20 p-2 ${bodyStyle}`}>
+      <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
         {orders.map((order) => (
-          <DraggableCard key={order.id} order={order} showBrand={showBrand} />
+          <DraggableCard
+            key={order.id}
+            order={order}
+            showBrand={showBrand}
+            selectMode={selectMode}
+            isSelected={selected?.has(order.id)}
+            onToggle={onSelectToggle}
+          />
         ))}
       </div>
     </div>
@@ -189,7 +232,7 @@ function KanbanColumn(props: Omit<ColumnProps, "isOver">) {
   return (
     <div
       ref={setNodeRef}
-      className="flex-shrink-0"
+      className="flex-shrink-0 self-stretch"
       style={{ width: props.collapsed ? "2.5rem" : "280px" }}
     >
       <KanbanColumnInner {...props} isOver={isOver} />
@@ -206,13 +249,13 @@ function GhostCard({ order, showBrand }: { order: OrderCardData; showBrand: bool
   );
 }
 
-export function OrderKanban({ orders, showBrand, statusOptions }: Props) {
+export function OrderKanban({ orders, showBrand, statusOptions, selectMode, selected, onToggle }: Props) {
   const router = useRouter();
 
   const [localOrders, setLocalOrders] = useState<OrderCardData[]>(orders);
   useEffect(() => setLocalOrders(orders), [orders]);
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["DRAFT", "CANCELLED"]));
   useEffect(() => {
     try {
       const stored = localStorage.getItem(COLLAPSED_KEY);
@@ -299,7 +342,7 @@ export function OrderKanban({ orders, showBrand, statusOptions }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 items-start">
+      <div className="flex gap-3 overflow-x-auto pb-4 items-stretch min-w-0">
         {STATUS_ORDER.map((status) => (
           <KanbanColumn
             key={status}
@@ -309,6 +352,9 @@ export function OrderKanban({ orders, showBrand, statusOptions }: Props) {
             showBrand={showBrand}
             collapsed={collapsed.has(status)}
             onToggle={() => toggleCollapsed(status)}
+            selectMode={selectMode}
+            selected={selected}
+            onSelectToggle={onToggle}
           />
         ))}
       </div>

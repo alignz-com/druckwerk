@@ -249,15 +249,15 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
     return (
       <div
         onClick={() => onToggle?.(order.id)}
-        className={`relative flex rounded-2xl border-2 transition-all overflow-hidden cursor-pointer select-none ${
+        className={`relative flex rounded-2xl border bg-white overflow-hidden cursor-pointer select-none transition-shadow ${
           selected
-            ? "border-slate-900 bg-white shadow-md"
-            : "border-slate-200 bg-white shadow-sm hover:border-slate-400 hover:shadow-md"
+            ? "border-blue-500 shadow-md"
+            : "border-slate-200 shadow-sm hover:shadow-md"
         }`}
       >
         {cardContent}
         {selected && (
-          <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center shadow-sm pointer-events-none">
+          <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shadow-sm pointer-events-none z-10">
             <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-none stroke-white stroke-2">
               <polyline points="1,4 4,7 9,1" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
