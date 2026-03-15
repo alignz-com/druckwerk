@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon, EyeIcon } from "lucide-react"
+import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon } from "lucide-react"
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslations, useLocale } from "@/components/providers/locale-provider"
@@ -175,110 +175,108 @@ function FileDetailPanel({ file, onView }: { file: SortableFile; onView: () => v
   const t = useTranslations()
   const canView = !!file.previewUrl
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      {/* Filename + archive source */}
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate leading-snug" title={file.filename}>
+          {file.filename}
+        </p>
+        {file.fromZip && (
+          <div className="flex items-center gap-1 mt-1">
+            <ArchiveIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground truncate">{file.fromZip}</span>
+          </div>
+        )}
+      </div>
+
       {/* Thumbnail */}
       <div className="flex justify-center">
-        {file.thumbnailDataUrl ? (
-          <img
-            src={file.thumbnailDataUrl}
-            alt={file.filename}
-            className="max-h-48 max-w-full object-contain rounded bg-white"
-            style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.18))" }}
-          />
-        ) : (
-          <div className="h-40 w-32 rounded border bg-muted flex items-center justify-center">
-            <FileTextIcon className="h-8 w-8 text-muted-foreground" />
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={canView ? onView : undefined}
+          disabled={!canView}
+          title={canView ? undefined : "Not available for files extracted from .7z archives"}
+          className="group relative rounded-lg border border-border bg-muted/40 overflow-hidden flex items-center justify-center disabled:cursor-default"
+          style={{ width: "120px", height: "160px" }}
+        >
+          {file.thumbnailDataUrl ? (
+            <img
+              src={file.thumbnailDataUrl}
+              alt={file.filename}
+              className="w-full h-full object-contain p-2"
+            />
+          ) : (
+            <FileTextIcon className="h-8 w-8 text-muted-foreground/50" />
+          )}
+          {canView && (
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-slate-800 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm">
+                {t("pdfOrder.dropzoneViewFile")}
+              </span>
+            </div>
+          )}
+        </button>
       </div>
-      {/* View button */}
-      <button
-        type="button"
-        onClick={onView}
-        disabled={!canView}
-        title={canView ? undefined : "Not available for files extracted from .7z archives"}
-        className="flex items-center justify-center gap-1.5 w-full rounded border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        <EyeIcon className="h-3.5 w-3.5" />
-        {t("pdfOrder.dropzoneViewFile")}
-      </button>
 
-      {/* File info */}
-      <div className="space-y-2 text-sm">
-        <div className="font-medium truncate">{file.filename}</div>
-        {file.fromZip && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ArchiveIcon className="h-3 w-3" />
-            {file.fromZip}
-          </div>
-        )}
-
-        {file.error ? (
-          <p className="text-destructive text-xs">{file.error}</p>
-        ) : (
-          <div className="space-y-2 pt-1">
-            <Row label={t("pdfOrder.dropzoneFormat")}>
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono text-xs">{file.trimWidthMm} × {file.trimHeightMm} mm</span>
-                {file.trimSource === "MediaBox" && (
-                  <span className="text-[10px] text-destructive font-medium">{t("pdfOrder.dropzoneNoTrimBox")}</span>
-                )}
-              </div>
-            </Row>
-            <Row label={t("pdfOrder.dropzoneBleed")}>
-              {file.bleedMm === null ? (
-                <span className="text-xs text-muted-foreground">—</span>
-              ) : file.bleedMm === 0 ? (
-                <span className="text-xs text-destructive font-medium">{t("pdfOrder.dropzoneNoBleed")}</span>
-              ) : (
-                <span className="text-xs font-mono">{file.bleedMm} mm</span>
-              )}
-            </Row>
-            <Row label={t("pdfOrder.dropzonePages")}>
-              <span className="text-xs">{file.pages}</span>
-            </Row>
-            <Row label={t("pdfOrder.dropzoneColors")}>
-              <div className="flex flex-wrap gap-1">
-                {file.colorSpaces
-                  .filter((cs) => cs !== "Grayscale" || (!file.colorSpaces.includes("CMYK") && !file.colorSpaces.includes("RGB")))
-                  .map((cs) => <Pill key={cs}>{cs}</Pill>)}
-                {file.colorSpaces.length === 0 && (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
-              </div>
-            </Row>
-            {file.pantoneColors.length > 0 && (
-              <Row label="Pantone">
-                <div className="flex flex-wrap gap-1">
-                  {file.pantoneColors.map((p) => {
-                    const hex = pantoneHex(p)
-                    return (
-                      <Pill key={p}>
-                        {hex && (
-                          <span
-                            className="h-2.5 w-2.5 rounded-full shrink-0 border border-black/10"
-                            style={{ backgroundColor: hex }}
-                          />
-                        )}
-                        {p}
-                      </Pill>
-                    )
-                  })}
-                </div>
-              </Row>
+      {/* Specs */}
+      {file.error ? (
+        <p className="text-xs text-destructive">{file.error}</p>
+      ) : (
+        <div className="space-y-0 divide-y divide-border/60">
+          <SpecRow label={t("pdfOrder.dropzoneFormat")}>
+            <span className="font-mono text-xs">{file.trimWidthMm} × {file.trimHeightMm} mm</span>
+            {file.trimSource === "MediaBox" && (
+              <span className="text-[10px] text-destructive font-medium ml-1.5">{t("pdfOrder.dropzoneNoTrimBox")}</span>
             )}
-          </div>
-        )}
-      </div>
+          </SpecRow>
+          <SpecRow label={t("pdfOrder.dropzoneBleed")}>
+            {file.bleedMm === null ? (
+              <span className="text-xs text-muted-foreground">—</span>
+            ) : file.bleedMm === 0 ? (
+              <span className="text-xs text-destructive font-semibold">{t("pdfOrder.dropzoneNoBleed")}</span>
+            ) : (
+              <span className="font-mono text-xs">{file.bleedMm} mm</span>
+            )}
+          </SpecRow>
+          <SpecRow label={t("pdfOrder.dropzonePages")}>
+            <span className="text-xs tabular-nums">{file.pages}</span>
+          </SpecRow>
+          <SpecRow label={t("pdfOrder.dropzoneColors")}>
+            <div className="flex flex-wrap gap-1">
+              {file.colorSpaces
+                .filter((cs) => cs !== "Grayscale" || (!file.colorSpaces.includes("CMYK") && !file.colorSpaces.includes("RGB")))
+                .map((cs) => <Pill key={cs}>{cs}</Pill>)}
+              {file.colorSpaces.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+            </div>
+          </SpecRow>
+          {file.pantoneColors.length > 0 && (
+            <SpecRow label="Pantone">
+              <div className="flex flex-wrap gap-1">
+                {file.pantoneColors.map((p) => {
+                  const hex = pantoneHex(p)
+                  return (
+                    <Pill key={p}>
+                      {hex && (
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0 border border-black/10" style={{ backgroundColor: hex }} />
+                      )}
+                      {p}
+                    </Pill>
+                  )
+                })}
+              </div>
+            </SpecRow>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2">
-      <span className="text-xs text-muted-foreground w-14 shrink-0 pt-0.5">{label}</span>
-      <div className="flex-1 min-w-0">{children}</div>
+    <div className="flex items-center gap-3 py-2.5">
+      <span className="text-xs text-muted-foreground w-16 shrink-0">{label}</span>
+      <div className="flex-1 min-w-0 flex items-center flex-wrap gap-1">{children}</div>
     </div>
   )
 }
@@ -287,6 +285,19 @@ type Phase = "idle" | "uploading" | "processing"
 
 function fmtMb(bytes: number) {
   return (bytes / 1024 / 1024).toFixed(1) + " MB"
+}
+
+async function triggerDownload(url: string, filename: string) {
+  const res = await fetch(url)
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
 }
 
 export function PrintFileUploader({
@@ -308,6 +319,12 @@ export function PrintFileUploader({
   const [setAllQty, setSetAllQty] = React.useState("")
   const [viewingFile, setViewingFile] = React.useState<SortableFile | null>(null)
   const [viewObjectUrl, setViewObjectUrl] = React.useState<string | null>(null)
+  const [downloading, setDownloading] = React.useState(false)
+
+  const handleDownload = React.useCallback(async (url: string, filename: string) => {
+    setDownloading(true)
+    try { await triggerDownload(url, filename) } finally { setDownloading(false) }
+  }, [])
 
   React.useEffect(() => {
     setViewObjectUrl(viewingFile?.previewUrl ?? null)
@@ -428,6 +445,16 @@ export function PrintFileUploader({
         <DialogContent showClose={false} className="p-0 gap-0 overflow-hidden flex flex-col" style={{ width: "96vw", maxWidth: "96vw", height: "96vh" }}>
           <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b shrink-0">
             <DialogTitle className="text-sm font-medium truncate flex-1">{viewingFile?.filename}</DialogTitle>
+            {viewObjectUrl && (
+              <button
+                type="button"
+                onClick={() => handleDownload(viewObjectUrl!, viewingFile?.filename ?? "file.pdf")}
+                disabled={downloading}
+                className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {downloading ? "…" : t("pdfOrder.dropzoneDownload")}
+              </button>
+            )}
             <DialogClose className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0">
               <XIcon className="h-4 w-4" />
             </DialogClose>
@@ -583,7 +610,7 @@ export function PrintFileUploader({
 
           {/* Right: detail panel */}
           {selectedFile && (
-            <div className="rounded-lg border p-4">
+            <div className="rounded-lg border p-5">
               <FileDetailPanel file={selectedFile} onView={() => setViewingFile(selectedFile)} />
             </div>
           )}

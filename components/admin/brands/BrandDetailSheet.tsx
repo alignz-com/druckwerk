@@ -48,6 +48,7 @@ type BrandForm = {
   quantityStep: string;
   quantityOptions: string;
   addresses: BrandAddressForm[];
+  azureTenantId: string;
 };
 
 type BrandAddressForm = BrandAddressDraft;
@@ -274,6 +275,7 @@ export default function BrandDetailSheet({
       quantityMax: quantityMaxResult.value,
       quantityStep: quantityStepResult.value,
       quantityOptions: quantityOptionsResult.value,
+      azureTenantId: form.azureTenantId.trim() || null,
       addresses: form.addresses.map((address) => ({
         id: address.id,
         label: address.label.trim() ? address.label.trim() : null,
@@ -776,6 +778,17 @@ export default function BrandDetailSheet({
                       <h3 className="text-sm font-semibold text-slate-900">{t("domains.title")}</h3>
                       <p className="text-xs text-slate-500">{t("domains.description")}</p>
                     </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="azureTenantId" className="text-xs text-slate-600">{t("domains.azureTenantId")}</Label>
+                      <Input
+                        id="azureTenantId"
+                        value={form.azureTenantId}
+                        onChange={(e) => setForm((f) => ({ ...f, azureTenantId: e.target.value }))}
+                        placeholder={t("domains.azureTenantIdPlaceholder")}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-slate-400">{t("domains.azureTenantIdHint")}</p>
+                    </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
                       <Input
                         value={domainInput}
@@ -997,6 +1010,7 @@ function emptyForm(): BrandForm {
     quantityStep: "",
     quantityOptions: "",
     addresses: [],
+    azureTenantId: "",
   };
 }
 
@@ -1016,6 +1030,7 @@ function mapBrandToForm(brand: AdminBrandSummary): BrandForm {
     quantityStep: brand.quantityStep ? String(brand.quantityStep) : "",
     quantityOptions: brand.quantityOptions?.length ? brand.quantityOptions.join(", ") : "",
     addresses: brand.addresses.map((address) => mapAddress(address)),
+    azureTenantId: brand.azureTenantId ?? "",
   };
 }
 

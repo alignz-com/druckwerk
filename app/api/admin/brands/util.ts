@@ -28,6 +28,7 @@ export const brandSchema = z.object({
   quantityStep: z.number().int().positive().optional().nullable(),
   quantityOptions: z.array(z.number().int().positive()).optional().nullable(),
   addresses: z.array(addressSchema).optional(),
+  azureTenantId: z.string().trim().max(100).optional().nullable(),
 });
 
 export type BrandPayload = z.infer<typeof brandSchema>;

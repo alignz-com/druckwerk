@@ -46,6 +46,7 @@ export type AdminBrandSummary = {
   publicDomains: { id: string; domain: string; isPrimary: boolean }[];
   canOrderBusinessCards: boolean;
   canOrderPdfPrint: boolean;
+  azureTenantId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -161,6 +162,7 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
       .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.domain.localeCompare(b.domain)),
     canOrderBusinessCards: brand.canOrderBusinessCards,
     canOrderPdfPrint: brand.canOrderPdfPrint,
+    azureTenantId: brand.azureTenantId ?? null,
     createdAt: brand.createdAt.toISOString(),
     updatedAt: brand.updatedAt.toISOString(),
   };

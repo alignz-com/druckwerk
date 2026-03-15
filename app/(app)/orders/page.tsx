@@ -306,6 +306,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   deliverySuccess: t.ordersPage.table.bulkDelivery.success,
                   deliveryError: t.ordersPage.table.bulkDelivery.error,
                   deliveryMixedBrands: t.ordersPage.cardList.mixedBrands,
+                  kanbanShowMore: t.ordersPage.cardList.kanbanShowMore,
                 }
               : undefined
           }

@@ -1,11 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { FileText } from "lucide-react";
+import { useState, useCallback } from "react";
+import { FileText, X } from "lucide-react";
+
+async function triggerDownload(url: string, filename: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
 
 import {
   Dialog,
   DialogContent,
+  DialogClose,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -29,6 +43,12 @@ type Props = {
 
 export function OrderDetailPdfViewer({ items, expandLabel, downloadLabel }: Props) {
   const [openItem, setOpenItem] = useState<PdfItem | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = useCallback(async (url: string, filename: string) => {
+    setDownloading(true);
+    try { await triggerDownload(url, filename); } finally { setDownloading(false); }
+  }, []);
 
   return (
     <>
@@ -78,41 +98,30 @@ export function OrderDetailPdfViewer({ items, expandLabel, downloadLabel }: Prop
       </div>
 
       <Dialog open={openItem != null} onOpenChange={(open) => { if (!open) setOpenItem(null); }}>
-        <DialogContent className="max-w-4xl w-full">
-          <DialogHeader>
-            <DialogTitle className="truncate">{openItem?.filename}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
+        <DialogContent showClose={false} className="p-0 gap-0 overflow-hidden flex flex-col" style={{ width: "96vw", maxWidth: "96vw", height: "96vh" }}>
+          <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b shrink-0">
+            <DialogTitle className="text-sm font-medium truncate flex-1">{openItem?.filename}</DialogTitle>
             {openItem?.pdfUrl && (
-              <>
-                <object
-                  data={openItem.pdfUrl}
-                  type="application/pdf"
-                  className="w-full rounded-lg border border-slate-200"
-                  style={{ minHeight: "600px" }}
-                >
-                  <div className="flex items-center justify-center h-40 text-sm text-slate-500">
-                    PDF preview not supported.{" "}
-                    <a
-                      href={openItem.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-1 text-blue-600 hover:underline"
-                    >
-                      Open PDF
-                    </a>
-                  </div>
-                </object>
-                <div className="flex justify-end">
-                  <a
-                    href={openItem.pdfUrl}
-                    download
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    {downloadLabel}
-                  </a>
-                </div>
-              </>
+              <button
+                type="button"
+                onClick={() => handleDownload(openItem.pdfUrl!, openItem.filename)}
+                disabled={downloading}
+                className="shrink-0 text-xs text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50"
+              >
+                {downloading ? "…" : downloadLabel}
+              </button>
+            )}
+            <DialogClose className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0">
+              <X className="h-4 w-4" />
+            </DialogClose>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {openItem?.pdfUrl && (
+              <iframe
+                src={openItem.pdfUrl}
+                className="w-full h-full border-0 block"
+                title={openItem.filename}
+              />
             )}
           </div>
         </DialogContent>

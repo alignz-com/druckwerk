@@ -161,6 +161,7 @@ model Brand {
   quantityOptions         Int[]       @default([])
   canOrderBusinessCards   Boolean     @default(true)
   canOrderPdfPrint        Boolean     @default(false)
+  azureTenantId           String?     @unique
   users              User[]
   orders             Order[]
   templates          BrandTemplate[]

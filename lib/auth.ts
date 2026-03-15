@@ -9,15 +9,6 @@ import type { AppUserRole } from "@/types/auth";
 import { prisma } from "./prisma";
 import { ensureBrandAssignmentForUser } from "./brand-auto-assign";
 
-const allowedDomains = (process.env.ALLOWED_DOMAINS ?? "")
-  .split(",")
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean);
-
-const allowedTenants = (process.env.ALLOWED_TENANTS ?? "")
-  .split(",")
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean);
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -91,13 +82,12 @@ export const authOptions: NextAuthOptions = {
 
       console.log("[auth] login attempt", { email, domain, tenantId });
 
-      const domainOk =
-        allowedDomains.length === 0 || allowedDomains.includes(domain);
+      const [domainMatch, tenantMatch] = await Promise.all([
+        domain ? prisma.brandDomain.findFirst({ where: { domain }, select: { brandId: true } }) : null,
+        tenantId ? prisma.brand.findFirst({ where: { azureTenantId: tenantId }, select: { id: true } }) : null,
+      ]);
 
-      const tenantOk =
-        allowedTenants.length === 0 || (tenantId && allowedTenants.includes(tenantId));
-
-      const allowed = domainOk || tenantOk;
+      const allowed = Boolean(domainMatch || tenantMatch);
 
       if (!allowed) {
         return false;
@@ -109,6 +99,7 @@ export const authOptions: NextAuthOptions = {
           domain,
           email,
           currentBrandId: (user as any).brandId ?? null,
+          brandIdHint: !domainMatch && tenantMatch ? tenantMatch.id : undefined,
         });
         if (assignedBrandId) {
           (user as any).brandId = assignedBrandId;

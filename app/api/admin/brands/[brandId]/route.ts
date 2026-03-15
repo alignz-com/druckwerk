@@ -89,6 +89,9 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
           quantityMax,
           quantityStep,
           quantityOptions,
+          azureTenantId: Object.prototype.hasOwnProperty.call(payload, "azureTenantId")
+            ? (payload.azureTenantId?.trim().toLowerCase() || null)
+            : existingBrand.azureTenantId,
         },
       });
 

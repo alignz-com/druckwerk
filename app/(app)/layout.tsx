@@ -90,7 +90,7 @@ export default async function AppLayout({ children }: Props) {
           hasPassword={hasPassword}
         />
 
-        <main className="flex-1 lg:pl-6">
+        <main className="flex-1 min-w-0 lg:pl-6">
           {/* Extra bottom padding on mobile so content clears the bottom nav bar */}
           <div className="bg-white px-4 pb-24 sm:px-6 sm:pb-24 lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-sm lg:px-12 lg:py-10 lg:pb-10">
             {children}

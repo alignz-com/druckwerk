@@ -5,6 +5,7 @@ type EnsureBrandAssignmentParams = {
   domain?: string | null;
   email?: string | null;
   currentBrandId?: string | null;
+  brandIdHint?: string;
 };
 
 const normalizeDomain = (value?: string | null) => value?.toLowerCase().trim() ?? "";
@@ -20,6 +21,7 @@ export async function ensureBrandAssignmentForUser({
   domain,
   email,
   currentBrandId,
+  brandIdHint,
 }: EnsureBrandAssignmentParams): Promise<string | null> {
   if (!userId) return currentBrandId ?? null;
   if (currentBrandId) return currentBrandId;
@@ -31,22 +33,18 @@ export async function ensureBrandAssignmentForUser({
   if (!userRecord) return null;
   if (userRecord.brandId) return userRecord.brandId;
 
+  // Try domain-based assignment first, fall back to tenant-based hint
   const normalizedDomain = normalizeDomain(domain) || domainFromEmail(email) || domainFromEmail(userRecord.email);
-  if (!normalizedDomain) {
-    return null;
-  }
+  const brandDomain = normalizedDomain
+    ? await prisma.brandDomain.findFirst({ where: { domain: normalizedDomain }, select: { brandId: true } })
+    : null;
 
-  const brandDomain = await prisma.brandDomain.findFirst({
-    where: { domain: normalizedDomain },
-    select: { brandId: true },
-  });
-  if (!brandDomain?.brandId) {
-    return null;
-  }
+  const resolvedBrandId = brandDomain?.brandId ?? brandIdHint ?? null;
+  if (!resolvedBrandId) return null;
 
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { brandId: brandDomain.brandId },
+    data: { brandId: resolvedBrandId },
     select: { brandId: true },
   });
   return updated.brandId;

@@ -45,6 +45,7 @@ const COLUMN_BODY_STYLES: Record<string, string> = {
 
 
 const COLLAPSED_KEY = "orders-kanban-collapsed";
+const COLUMN_LIMIT = 20;
 
 type StatusOption = { value: string; label: string };
 
@@ -55,6 +56,7 @@ type Props = {
   selectMode?: boolean;
   selected?: Set<string>;
   onToggle?: (id: string) => void;
+  showMoreLabel?: string;
 };
 
 // Compact kanban card — no thumbnail, no status badge
@@ -173,11 +175,16 @@ type ColumnProps = {
   selectMode?: boolean;
   selected?: Set<string>;
   onSelectToggle?: (id: string) => void;
+  showMoreLabel?: string;
 };
 
-function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onToggle, isOver, selectMode, selected, onSelectToggle }: ColumnProps) {
+function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onToggle, isOver, selectMode, selected, onSelectToggle, showMoreLabel }: ColumnProps) {
   const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
   const bodyStyle = COLUMN_BODY_STYLES[status] ?? "bg-slate-50";
+  const [showAll, setShowAll] = useState(false);
+
+  const visibleOrders = showAll ? orders : orders.slice(0, COLUMN_LIMIT);
+  const hiddenCount = orders.length - COLUMN_LIMIT;
 
   if (collapsed) {
     return (
@@ -212,7 +219,7 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
 
       {/* Cards area with tinted body */}
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <DraggableCard
             key={order.id}
             order={order}
@@ -222,6 +229,15 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
             onToggle={onSelectToggle}
           />
         ))}
+        {!showAll && hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="mt-1 w-full py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors text-center"
+          >
+            {(showMoreLabel ?? "Show {n} more").replace("{n}", String(hiddenCount))}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -249,7 +265,7 @@ function GhostCard({ order, showBrand }: { order: OrderCardData; showBrand: bool
   );
 }
 
-export function OrderKanban({ orders, showBrand, statusOptions, selectMode, selected, onToggle }: Props) {
+export function OrderKanban({ orders, showBrand, statusOptions, selectMode, selected, onToggle, showMoreLabel }: Props) {
   const router = useRouter();
 
   const [localOrders, setLocalOrders] = useState<OrderCardData[]>(orders);
@@ -342,7 +358,7 @@ export function OrderKanban({ orders, showBrand, statusOptions, selectMode, sele
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 items-stretch min-w-0">
+      <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0">
         {STATUS_ORDER.map((status) => (
           <KanbanColumn
             key={status}
@@ -355,6 +371,7 @@ export function OrderKanban({ orders, showBrand, statusOptions, selectMode, sele
             selectMode={selectMode}
             selected={selected}
             onSelectToggle={onToggle}
+            showMoreLabel={showMoreLabel}
           />
         ))}
       </div>

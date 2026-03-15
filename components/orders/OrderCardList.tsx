@@ -43,6 +43,7 @@ type BulkLabels = {
   deliverySuccess: string;
   deliveryError: string;
   deliveryMixedBrands: string;
+  kanbanShowMore: string;
 };
 
 type Props = {
@@ -266,7 +267,7 @@ export function OrderCardList({
   const showBrandFilter = showBrand && brandOptions.length > 0;
 
   return (
-    <div className="space-y-4 overflow-x-hidden">
+    <div className="space-y-4">
       {/* Row 1: Search + brand filter + view/select toggle */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -362,9 +363,9 @@ export function OrderCardList({
         </div>
       </div>
 
-      {/* Kanban view */}
+      {/* Kanban view — bleeds to right edge, gradient fade indicates scroll */}
       {view === "kanban" && (
-        <>
+        <div className="relative -mr-4 sm:-mr-6 lg:-mr-12">
           {orders.length === 0 ? (
             <p className="py-12 text-center text-sm text-slate-400">{emptyState}</p>
           ) : (
@@ -375,9 +376,12 @@ export function OrderCardList({
               selectMode={selectMode}
               selected={selected}
               onToggle={toggleSelect}
+              showMoreLabel={bulkLabels?.kanbanShowMore}
             />
           )}
-        </>
+          {/* Right-edge gradient fade */}
+          <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+        </div>
       )}
 
       {/* List view */}
