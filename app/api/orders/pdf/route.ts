@@ -89,6 +89,12 @@ export async function POST(req: NextRequest) {
       ? brandOptions.find((b) => b.id === resolvedBrandId) ?? null
       : null
 
+    // Demo users: skip all DB writes and file uploads, return a fake success
+    if ((session.user as any).isDemo) {
+      const fakeRef = `DEMO-${Date.now().toString(36).toUpperCase()}`
+      return NextResponse.json({ orderId: "demo", referenceCode: fakeRef })
+    }
+
     const { referenceCode, referenceYear, referenceSequence } = await reserveReferenceCode()
 
     const cfg = DELIVERY_OPTIONS[deliveryTime as keyof typeof DELIVERY_OPTIONS] ?? DELIVERY_OPTIONS.standard
