@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { FileTextIcon } from "lucide-react";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pantoneTable = require("pantone-table") as Record<string, string>;
+function pantoneHex(name: string): string | null {
+  const key = name.trim().toLowerCase().replace(/^pantone\s+/, "pantone_").replace(/\s+/g, "_");
+  return pantoneTable[key] ?? pantoneTable[`${key}_c`] ?? null;
+}
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { XIcon } from "lucide-react";
 
@@ -47,6 +53,7 @@ export type OrderProductsTableLabels = {
   pages: string;
   bleed: string;
   colors: string;
+  pantone: string;
   noBleed: string;
   name: string;
   role: string;
@@ -89,7 +96,7 @@ function SpecRow({ label, children }: { label: string; children: React.ReactNode
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-foreground">
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-foreground">
       {children}
     </span>
   );
@@ -313,14 +320,28 @@ export function OrderProductsTable(props: Props) {
                       {selected.colorSpaces.map((cs) => (
                         <Pill key={cs}>{cs}</Pill>
                       ))}
-                      {selected.pantoneColors.map((pc) => (
-                        <Pill key={pc}>{pc}</Pill>
-                      ))}
                     </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </SpecRow>
+                {selected.pantoneColors.length > 0 && (
+                  <SpecRow label={labels.pantone}>
+                    <div className="flex flex-wrap gap-1">
+                      {selected.pantoneColors.map((pc) => {
+                        const hex = pantoneHex(pc);
+                        return (
+                          <Pill key={pc}>
+                            {hex && (
+                              <span className="h-2.5 w-2.5 rounded-full shrink-0 border border-black/10" style={{ backgroundColor: hex }} />
+                            )}
+                            {pc}
+                          </Pill>
+                        );
+                      })}
+                    </div>
+                  </SpecRow>
+                )}
                 <SpecRow label={labels.qty}>
                   <span className="text-xs tabular-nums">{selected.quantity}</span>
                 </SpecRow>

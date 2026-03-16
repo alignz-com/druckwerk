@@ -209,6 +209,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     pages: "Pages",
     bleed: t.ordersPage.detail.bleed,
     colors: "Colors",
+    pantone: "Pantone",
     noBleed: t.ordersPage.detail.noBleed,
     name: t.ordersPage.detail.name,
     role: t.ordersPage.detail.role,
