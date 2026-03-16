@@ -94,7 +94,7 @@ function buildFileBaseName(brandName: string | null | undefined, requesterName: 
 
 function toStorageKey(referenceCode: string, baseName: string, extension: string) {
   const safeSegment = baseName.replace(/\s+/g, "_") || referenceCode;
-  return `orders/${referenceCode}/${safeSegment}.${extension}`;
+  return `${referenceCode}/${safeSegment}.${extension}`;
 }
 
 function formatAddressSummary(address?: {

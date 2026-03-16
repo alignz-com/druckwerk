@@ -150,7 +150,7 @@ async function handleBusinessCardOrder(
   });
 
   const jdfFileName = `${order!.referenceCode}.jdf`;
-  const jdfStorageKey = `orders/${order!.referenceCode}/${jdfFileName}`;
+  const jdfStorageKey = `${order!.referenceCode}/${jdfFileName}`;
   const jdfBlob = new Blob([jdfXml], { type: "application/xml" });
   const jdfUpload = await put(jdfStorageKey, jdfBlob, {
     access: "public",
@@ -327,7 +327,7 @@ async function handlePdfOrder(
 
     // JDF filename mirrors the PDF filename
     const jdfFileName = pdfFileName.replace(/\.pdf$/i, ".jdf");
-    const jdfStorageKey = `orders/${order!.referenceCode}/jdf/${jdfFileName}`;
+    const jdfStorageKey = `${order!.referenceCode}/jdf/${jdfFileName}`;
     const jdfBlob = new Blob([jdfXml], { type: "application/xml" });
     const jdfUpload = await put(jdfStorageKey, jdfBlob, {
       access: "public",

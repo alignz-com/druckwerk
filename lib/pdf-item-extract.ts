@@ -135,7 +135,7 @@ export async function extractAndUploadPdfItem(params: {
   }
 
   const pdfFileName = buildPdfFileName(referenceCode, archiveName, originalFilename)
-  const storageKey = `orders/${referenceCode}/pdfs/${pdfFileName}`
+  const storageKey = `${referenceCode}/pdfs/${pdfFileName}`
 
   await s3.send(new PutObjectCommand({
     Bucket: ORDERS_BUCKET,

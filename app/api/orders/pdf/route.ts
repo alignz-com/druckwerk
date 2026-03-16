@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     const slotStorageKeys = new Map<number, string>()
     for (const [slotIdx, file] of sourceFiles.entries()) {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
-      slotStorageKeys.set(slotIdx, `orders/${referenceCode}/src/${safeName}`)
+      slotStorageKeys.set(slotIdx, `${referenceCode}/src/${safeName}`)
     }
 
     // Build line items with storage paths
@@ -131,9 +131,9 @@ export async function POST(req: NextRequest) {
       const safeName = meta.filename.replace(/[^a-zA-Z0-9._-]/g, "_")
       // For direct PDFs: storagePath = the uploaded file path
       // For ZIP-extracted: storagePath = same as archive path (file lives inside it)
-      const storagePath = slotKey ?? `orders/${referenceCode}/pdf/${i + 1}-${safeName}`
+      const storagePath = slotKey ?? `${referenceCode}/pdf/${i + 1}-${safeName}`
       const thumbnailStoragePath = meta.thumbnailDataUrl
-        ? `orders/${referenceCode}/thumbs/${i + 1}.png`
+        ? `${referenceCode}/thumbs/${i + 1}.png`
         : null
       return {
         filename: meta.filename,
