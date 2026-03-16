@@ -10,7 +10,10 @@ const sevenZip = require("7zip-min") as {
 // Linux (Docker/Synology): Dockerfile must include: apk add --no-cache poppler-utils p7zip qpdf
 // macOS (dev): install via `brew install 7-zip`
 if (process.platform === "linux") {
-  sevenZip.config({ binaryPath: "/usr/bin/7zz" })
+  const linuxBin = ["/usr/bin/7zz", "/usr/bin/7z"].find((p) => {
+    try { require("fs").accessSync(p, require("fs").constants.X_OK); return true } catch { return false }
+  })
+  if (linuxBin) sevenZip.config({ binaryPath: linuxBin })
 } else if (process.platform === "darwin") {
   // Apple Silicon or Intel Homebrew locations
   const darwinBin = ["/opt/homebrew/bin/7zz", "/usr/local/bin/7zz"].find((p) => {

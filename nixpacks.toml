@@ -1,2 +1,2 @@
 [phases.setup]
-aptPkgs = ["7zip"]
+aptPkgs = ["p7zip-full"]

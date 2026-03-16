@@ -21,7 +21,10 @@ const sevenZip = require("7zip-min") as {
   unpack: (src: string, dest: string, cb: (err: Error | null) => void) => void
 }
 if (process.platform === "linux") {
-  sevenZip.config({ binaryPath: "/usr/bin/7zz" })
+  const linuxBin = ["/usr/bin/7zz", "/usr/bin/7z"].find((p) => {
+    try { require("fs").accessSync(p, require("fs").constants.X_OK); return true } catch { return false }
+  })
+  if (linuxBin) sevenZip.config({ binaryPath: linuxBin })
 } else if (process.platform === "darwin") {
   const darwinBin = ["/opt/homebrew/bin/7zz", "/usr/local/bin/7zz"].find((p) => {
     try { require("fs").accessSync(p, require("fs").constants.X_OK); return true } catch { return false }
