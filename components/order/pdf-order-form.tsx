@@ -161,29 +161,22 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
         {/* Delivery toggle */}
         <div className="space-y-1.5 shrink-0">
           <Label>{t("pdfOrder.delivery")}</Label>
-          <div className="flex w-fit rounded-lg bg-muted p-0.5 gap-0.5 h-9">
-            <button
-              type="button"
-              onClick={() => setDeliveryTime("standard")}
-              className={`px-4 text-sm font-medium rounded-md transition-all ${
-                deliveryTime === "standard"
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Standard
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeliveryTime("express")}
-              className={`px-4 text-sm font-medium rounded-md transition-all ${
-                deliveryTime === "express"
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Express
-            </button>
+          <div className="flex w-fit gap-2">
+            {(["standard", "express"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setDeliveryTime(value)}
+                className={`flex flex-col items-center justify-center rounded-xl border-2 px-5 py-2.5 transition-all ${
+                  deliveryTime === value
+                    ? "border-slate-400 bg-background shadow-sm"
+                    : "border-border bg-muted/30 text-muted-foreground hover:border-slate-300 hover:bg-muted/50"
+                }`}
+              >
+                <span className="text-sm font-semibold leading-none">{t(`orderForm.deliveryTimeLabels.${value}`)}</span>
+                <span className="text-xs mt-1 opacity-70">{t(`orderForm.deliveryTimeDurations.${value}`)}</span>
+              </button>
+            ))}
           </div>
         </div>
 

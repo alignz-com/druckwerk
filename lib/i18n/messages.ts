@@ -145,6 +145,14 @@ export const messages = {
         express: "1 Week (Express)",
         standard: "3 Weeks (Standard)",
       } as Record<string, string>,
+      deliveryTimeLabels: {
+        standard: "Standard",
+        express: "Express",
+      } as Record<string, string>,
+      deliveryTimeDurations: {
+        standard: "3 Weeks",
+        express: "1 Week",
+      } as Record<string, string>,
       expressNotice: "⚠️ Express delivery will cause additional costs.",
       estimatedDelivery: "Estimated delivery",
       demoBanner: "Demo mode — orders are not saved",
@@ -1381,6 +1389,14 @@ export const messages = {
         express: "1 Woche (Express)",
         standard: "3 Wochen (Standard)",
       },
+      deliveryTimeLabels: {
+        standard: "Standard",
+        express: "Express",
+      } as Record<string, string>,
+      deliveryTimeDurations: {
+        standard: "3 Wochen",
+        express: "1 Woche",
+      } as Record<string, string>,
       expressNotice: "⚠️ Expressversand verursacht zusätzliche Kosten.",
       estimatedDelivery: "Voraussichtliche Lieferung",
       demoBanner: "Demo-Modus — Bestellungen werden nicht gespeichert",

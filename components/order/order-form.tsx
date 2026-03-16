@@ -1034,7 +1034,7 @@ export default function OrderForm({
   }, [isPublicQrMode, draftContactId, buildDraftPayload, saveDraft]);
 
   useEffect(() => {
-    if (!isPublicQrMode || isDemo) {
+    if (!isPublicQrMode) {
       if (draftSaveTimerRef.current) {
         clearTimeout(draftSaveTimerRef.current);
         draftSaveTimerRef.current = null;
@@ -1401,28 +1401,30 @@ export default function OrderForm({
                 ) : null}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="delivery">{tOrder("deliveryTime")}</Label>
-                  <Select
-                    value={deliveryTime}
-                    onValueChange={(value) => setDeliveryTime(value as DeliveryOption)}
-                  >
-                    <SelectTrigger id="delivery">
-                      <SelectValue placeholder={tOrder("placeholders.deliveryTime")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(DELIVERY_OPTIONS) as DeliveryOption[]).map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {tOrder(`deliveryTimes.${value}`) ?? value}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{tOrder("deliveryTime")}</Label>
+                  <div className="flex w-fit gap-2">
+                    {(["standard", "express"] as DeliveryOption[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setDeliveryTime(value)}
+                        className={`flex flex-col items-center justify-center rounded-xl border-2 px-5 py-2.5 transition-all ${
+                          deliveryTime === value
+                            ? "border-slate-400 bg-background shadow-sm"
+                            : "border-border bg-muted/30 text-muted-foreground hover:border-slate-300 hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold leading-none">{tOrder(`deliveryTimeLabels.${value}`)}</span>
+                        <span className="text-xs mt-1 opacity-70">{tOrder(`deliveryTimeDurations.${value}`)}</span>
+                      </button>
+                    ))}
+                  </div>
                   {deliveryTime === "express" && (
                     <p className="mt-1 text-xs text-red-600">{tOrder("expressNotice")}</p>
                   )}
                   {estimatedDeliveryDate ? (
                     <p className="text-xs text-slate-500">
-                    {tOrder("estimatedDelivery")}: {estimatedDeliveryDate}
+                      {tOrder("estimatedDelivery")}: {estimatedDeliveryDate}
                     </p>
                   ) : null}
                 </div>

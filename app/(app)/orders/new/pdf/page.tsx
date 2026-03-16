@@ -67,7 +67,7 @@ export default async function NewPdfOrderPage() {
       availableBrands={brandOptions}
       initialBrandId={initialBrandId}
       products={products}
-      isDemo={(dbUser as any)?.isDemo ?? false}
+      isDemo={session.user.isDemo ?? false}
     />
   )
 }
