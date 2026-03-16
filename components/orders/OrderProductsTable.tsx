@@ -19,6 +19,7 @@ export type PdfProductItem = {
   trimHeightMm: number | null;
   bleedMm: number | null;
   colorSpaces: string[];
+  pantoneColors: string[];
 };
 
 export type BcProductItem = {
@@ -311,6 +312,9 @@ export function OrderProductsTable(props: Props) {
                     <div className="flex flex-wrap gap-1">
                       {selected.colorSpaces.map((cs) => (
                         <Pill key={cs}>{cs}</Pill>
+                      ))}
+                      {selected.pantoneColors.map((pc) => (
+                        <Pill key={pc}>{pc}</Pill>
                       ))}
                     </div>
                   ) : (

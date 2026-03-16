@@ -177,6 +177,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     trimHeightMm: item.trimHeightMm ?? null,
     bleedMm: item.bleedMm ?? null,
     colorSpaces: (item.colorSpaces as string[]) ?? [],
+    pantoneColors: (item.pantoneColors as string[]) ?? [],
   }));
 
   // BC item for products table
