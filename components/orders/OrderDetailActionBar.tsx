@@ -110,10 +110,13 @@ export function OrderDetailActionBar({
     setJdfBusy(true);
     try {
       const res = await fetch(`/api/orders/${orderId}/jdf`, { method: "POST" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? labels.jdfRebuildError);
+      }
       showFeedback(labels.jdfRebuildSuccess, true);
-    } catch {
-      showFeedback(labels.jdfRebuildError, false);
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : labels.jdfRebuildError, false);
     } finally {
       setJdfBusy(false);
     }

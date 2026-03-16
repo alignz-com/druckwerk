@@ -9,6 +9,7 @@ import { s3, ORDERS_BUCKET } from "@/lib/s3"
 import { getBrandsForUser } from "@/lib/brand-access"
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options"
 import { addBusinessDays } from "@/lib/date-utils"
+import { extractAndUploadPdfItem } from "@/lib/pdf-item-extract"
 
 export const runtime = "nodejs"
 export const maxDuration = 120
@@ -205,6 +206,29 @@ export async function POST(req: NextRequest) {
         } catch { /* non-critical, thumbnail missing is fine */ }
       }
     }
+
+    // Extract individual PDFs from archives and store with order-prefixed names.
+    // Runs concurrently; failures are non-fatal — the archive remains the source of truth.
+    const orderItems = await prisma.pdfOrderItem.findMany({ where: { orderId: order.id } })
+    await Promise.allSettled(
+      orderItems.map(async (item) => {
+        if (!item.storagePath || !item.sourceZipFilename) return
+        try {
+          const extracted = await extractAndUploadPdfItem({
+            referenceCode,
+            archiveStorageKey: item.storagePath,
+            archiveName: item.sourceZipFilename,
+            originalFilename: item.filename,
+          })
+          await prisma.pdfOrderItem.update({
+            where: { id: item.id },
+            data: { pdfUrl: extracted.pdfUrl, pdfFileName: extracted.pdfFileName },
+          })
+        } catch (err) {
+          console.error(`[orders/pdf] failed to extract PDF for item ${item.id}:`, err)
+        }
+      })
+    )
 
     return NextResponse.json({ orderId: order.id, referenceCode })
   } catch (err) {

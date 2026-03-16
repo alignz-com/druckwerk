@@ -90,6 +90,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         orderBy: { createdAt: "asc" },
         include: {
           productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
+          jdfJob: { select: { jdfUrl: true, jdfFileName: true } },
         },
       },
       deliveryItems: {
@@ -163,7 +164,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     id: item.id,
     filename: item.filename,
     thumbnailUrl: item.thumbnailStoragePath ? `${S3_BASE}/${item.thumbnailStoragePath}` : null,
-    pdfUrl: item.storagePath ? `${S3_BASE}/${item.storagePath}` : null,
+    pdfUrl: item.pdfUrl ?? (item.storagePath ? `${S3_BASE}/${item.storagePath}` : null),
+    jdfUrl: item.jdfJob?.jdfUrl ?? null,
+    jdfFileName: item.jdfJob?.jdfFileName ?? null,
     pages: item.pages ?? null,
     quantity: item.quantity,
     productName:
@@ -263,6 +266,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               labels={tableLabels}
               orderId={order.id}
               canEditQty={canEditQuantity}
+              canDownloadFiles={isAdmin || isPrinter}
             />
           ) : (
             <OrderProductsTable

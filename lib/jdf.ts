@@ -2,6 +2,12 @@ import { create } from "xmlbuilder2";
 
 import type { TemplatePaperStock } from "@/lib/templates";
 
+// UnitsPerInch="25.4" on the root JDF element sets 1 unit = 1mm.
+// Dimension values can then be passed directly as mm numbers — readable by operators and Prinect.
+function fmtMm(mm: number): string {
+  return mm.toFixed(4);
+}
+
 export type JdfContact = {
   company?: string | null;
   personName?: string | null;
@@ -37,6 +43,10 @@ export type BuildJdfParams = {
   quantity: number;
   pdfUrl: string;
   pdfFileName: string;
+  /** Finished trim width in mm (default: 85mm = standard business card) */
+  trimWidthMm?: number | null;
+  /** Finished trim height in mm (default: 55mm = standard business card) */
+  trimHeightMm?: number | null;
   customerReference?: string;
   deliveryDueAt?: Date;
   createdAt?: Date;
@@ -133,11 +143,17 @@ export function buildJdfDocument(params: BuildJdfParams) {
     quantity,
     pdfUrl,
     pdfFileName,
+    trimWidthMm,
+    trimHeightMm,
     customerReference,
     deliveryDueAt,
     createdAt,
     paperStock,
   } = params;
+
+  // Business card default: 85×55mm.
+  const widthMm = fmtMm(trimWidthMm ?? 85);
+  const heightMm = fmtMm(trimHeightMm ?? 55);
 
   const descriptiveName = `${brandName ?? "Brand"} Business Card`.trim();
   const doc = create({ version: "1.0", encoding: "UTF-8" });
@@ -149,6 +165,7 @@ export function buildJdfDocument(params: BuildJdfParams) {
     Status: "Waiting",
     Type: "Product",
     Version: "1.5",
+    UnitsPerInch: "25.4",
     xmlns: CIP4_NAMESPACE,
     "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
   });
@@ -198,9 +215,9 @@ export function buildJdfDocument(params: BuildJdfParams) {
   const layoutIntent = productResourcePool.ele("LayoutIntent", { ID: layoutIntentId, Class: "Intent", Status: "Available" });
   layoutIntent.ele("Pages", { Actual: "2", DataType: "IntegerSpan", Preferred: "2" });
   layoutIntent.ele("FinishedDimensions", {
-    Actual: "8.5 5.5 0",
+    Actual: `${widthMm} ${heightMm} 0`,
     DataType: "ShapeSpan",
-    Preferred: "8.5 5.5 0",
+    Preferred: `${widthMm} ${heightMm} 0`,
   });
 
   const mediaIntentDescription = paperStock?.name
@@ -301,6 +318,269 @@ export function buildJdfDocument(params: BuildJdfParams) {
     businessInfo.ele("Comment", { Name: "Data_Delivery" }).txt(deliveryDueAt.toISOString());
   }
   businessInfo.ele("Comment", { Name: "Job_ID" }).txt(referenceCode);
+
+  return doc.end({ prettyPrint: true });
+}
+
+// ─── Per-item PDF JDF (Heidelberg Prinect: 1 JDF = 1 print job) ──────────────
+
+export type BuildPdfItemJdfParams = {
+  /** Order reference, e.g. "2026-00018" */
+  referenceCode: string;
+  /** 1-based index of this item within the order */
+  itemIndex: number;
+  /** Total number of items in the order */
+  itemCount: number;
+  /** Renamed PDF filename, e.g. "2026-00018-SO11049112-CMC-500.pdf" */
+  pdfFileName: string;
+  /** Public URL of the extracted PDF */
+  pdfUrl: string;
+  /** Original filename from the archive (for identification) */
+  originalFilename: string;
+  /** Original archive name, e.g. "SO11049112.7z" */
+  archiveName: string;
+  /** PCM code for Heidelberg press routing (CatalogID) */
+  pcmCode?: string | null;
+  /** Human-readable product name, e.g. "Brochure A4" */
+  productName?: string | null;
+  trimWidthMm: number;
+  trimHeightMm: number;
+  pages: number;
+  quantity: number;
+  colorSpaces?: string[];
+  brandName?: string | null;
+  requester: JdfContact;
+  administrator?: JdfContact;
+  deliveryAddress?: DeliveryAddress;
+  customerReference?: string;
+  deliveryDueAt?: Date;
+  createdAt?: Date;
+};
+
+/**
+ * Builds a single-job JDF for one PDF print item.
+ * Each item in a multi-product order gets its own JDF file (Prinect requirement).
+ * All JDFs share the same JobID (order reference) so Prinect can group them.
+ */
+export function buildPdfItemJdfDocument(params: BuildPdfItemJdfParams): string {
+  const {
+    referenceCode,
+    itemIndex,
+    itemCount,
+    pdfFileName,
+    pdfUrl,
+    originalFilename,
+    archiveName,
+    pcmCode,
+    productName,
+    trimWidthMm,
+    trimHeightMm,
+    pages,
+    quantity,
+    colorSpaces = [],
+    brandName,
+    requester,
+    administrator,
+    deliveryAddress,
+    customerReference,
+    deliveryDueAt,
+    createdAt,
+  } = params;
+
+  const partId = `${referenceCode}-${itemIndex}`;
+  const descriptiveName = `${brandName ?? "Order"} ${referenceCode} – ${productName ?? pdfFileName}`.trim();
+
+  const doc = create({ version: "1.0", encoding: "UTF-8" });
+  const root = doc.ele("JDF", {
+    DescriptiveName: descriptiveName,
+    ID: `JDF-${partId}`,
+    JobID: referenceCode,
+    JobPartID: partId,
+    Status: "Waiting",
+    Type: "Product",
+    Version: "1.5",
+    UnitsPerInch: "25.4",
+    xmlns: CIP4_NAMESPACE,
+    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+  });
+
+  const catalogId = pcmCode?.trim() || "pdf-print";
+  root.ele("GeneralID", { IDUsage: "CatalogID", IDValue: catalogId });
+
+  const auditPool = root.ele("AuditPool");
+  auditPool.ele("Created", {
+    AgentName: "druckwerk",
+    AgentVersion: "1.0",
+    TimeStamp: iso(createdAt),
+  });
+
+  const customerInfo = root.ele("CustomerInfo");
+  appendContact(customerInfo, "Customer", {
+    ...requester,
+    company: requester.company ?? brandName ?? undefined,
+  });
+  appendContact(customerInfo, "Administrator", administrator);
+
+  // Product node
+  const componentId = `${partId}-COMPONENT`;
+  const colorIntentId = `${partId}-COLOR`;
+  const layoutIntentId = `${partId}-LAYOUT`;
+  const mediaIntentId = `${partId}-MEDIA`;
+
+  const productNode = root.ele("JDF", {
+    ID: `${partId}-PRODUCT`,
+    Type: "Product",
+    Status: "Waiting",
+    JobPartID: `${partId}-PRODUCT-PART`,
+    DescriptiveName: productName ?? pdfFileName,
+  });
+
+  const productLinkPool = productNode.ele("ResourceLinkPool");
+  productLinkPool.ele("ColorIntentLink", { rRef: colorIntentId, Usage: "Input" });
+  productLinkPool.ele("LayoutIntentLink", { rRef: layoutIntentId, Usage: "Input" });
+  productLinkPool.ele("MediaIntentLink", { rRef: mediaIntentId, Usage: "Input" });
+  productLinkPool.ele("ComponentLink", { rRef: componentId, Usage: "Output", Amount: quantity });
+
+  const productResourcePool = productNode.ele("ResourcePool");
+
+  const colorIntent = productResourcePool.ele("ColorIntent", {
+    ID: colorIntentId,
+    Class: "Intent",
+    Status: "Available",
+  });
+  const colorsUsed = colorIntent.ele("ColorsUsed");
+  const cmykColors = ["Cyan", "Magenta", "Yellow", "Black"];
+  const separations = colorSpaces.includes("CMYK") || colorSpaces.length === 0 ? cmykColors : cmykColors;
+  separations.forEach((name) => colorsUsed.ele("SeparationSpec", { Name: name }));
+
+  const widthMm = fmtMm(trimWidthMm);
+  const heightMm = fmtMm(trimHeightMm);
+  const layoutIntent = productResourcePool.ele("LayoutIntent", {
+    ID: layoutIntentId,
+    Class: "Intent",
+    Status: "Available",
+  });
+  layoutIntent.ele("Pages", {
+    Actual: String(pages),
+    DataType: "IntegerSpan",
+    Preferred: String(pages),
+  });
+  layoutIntent.ele("FinishedDimensions", {
+    Actual: `${widthMm} ${heightMm} 0`,
+    DataType: "ShapeSpan",
+    Preferred: `${widthMm} ${heightMm} 0`,
+  });
+
+  productResourcePool.ele("MediaIntent", {
+    ID: mediaIntentId,
+    Class: "Intent",
+    Status: "Available",
+  });
+
+  productResourcePool.ele("Component", {
+    ID: componentId,
+    Class: "Quantity",
+    Status: "Unavailable",
+    ComponentType: "PartialProduct",
+  });
+
+  // Digital printing node
+  const digitalPrintingId = `${partId}-DIGITAL`;
+  const runListId = `${partId}-RUNLIST`;
+  const printingParamsId = `${partId}-PRINTPARAMS`;
+  const digitalComponentId = `${partId}-DIGITAL-COMP`;
+
+  const digitalNode = root.ele("JDF", {
+    ID: digitalPrintingId,
+    Type: "Combined",
+    Types: "DigitalPrinting",
+    JobPartID: `${partId}-DIGITAL-PART`,
+    Status: "Waiting",
+  });
+
+  const digitalLinkPool = digitalNode.ele("ResourceLinkPool");
+  digitalLinkPool.ele("DigitalPrintingParamsLink", { rRef: printingParamsId, Usage: "Input" });
+  digitalLinkPool.ele("RunListLink", { rRef: runListId, Usage: "Input" });
+  digitalLinkPool.ele("ComponentLink", { rRef: digitalComponentId, Usage: "Output", Amount: quantity });
+
+  const digitalResourcePool = digitalNode.ele("ResourcePool");
+  digitalResourcePool.ele("DigitalPrintingParams", {
+    ID: printingParamsId,
+    Class: "Parameter",
+    Status: "Available",
+    Sides: pages > 1 ? "TwoSidedFlipY" : "OneSided",
+  });
+
+  const runList = digitalResourcePool.ele("RunList", {
+    ID: runListId,
+    Class: "Parameter",
+    Status: "Available",
+    Pages: "0 ~ -1",
+  });
+  runList.ele("LayoutElement").ele("FileSpec", {
+    URL: pdfUrl,
+    UserFileName: pdfFileName,
+  });
+
+  digitalResourcePool.ele("Component", {
+    ID: digitalComponentId,
+    Class: "Quantity",
+    Status: "Unavailable",
+    ComponentType: "PartialProduct",
+  });
+
+  // Delivery node
+  const deliveryNode = root.ele("JDF", {
+    ID: `${partId}-DELIVERY`,
+    JobPartID: `${partId}-DELIVERY-PART`,
+    Status: "Waiting",
+    Type: "Delivery",
+  });
+
+  const deliveryLinkPool = deliveryNode.ele("ResourceLinkPool");
+  deliveryLinkPool.ele("DeliveryParamsLink", { Usage: "Input", rRef: `${partId}-DELIVERY-PARAMS` });
+  deliveryLinkPool.ele("ComponentLink", { Usage: "Output", rRef: digitalComponentId, Amount: quantity });
+
+  const deliveryResourcePool = deliveryNode.ele("ResourcePool");
+  const deliveryParams = deliveryResourcePool.ele("DeliveryParams", { ID: `${partId}-DELIVERY-PARAMS` });
+  if (deliveryAddress) {
+    const streetParts = [deliveryAddress.street, deliveryAddress.addressExtra].filter(Boolean);
+    deliveryParams.ele("Address", {
+      Street: streetParts.length ? streetParts.join(" ") : undefined,
+      City: deliveryAddress.city ?? undefined,
+      PostalCode: deliveryAddress.postalCode ?? undefined,
+      Country: deliveryAddress.country ?? undefined,
+      CountryCode: deliveryAddress.countryCode ?? undefined,
+    });
+    if (deliveryAddress.companyName) {
+      deliveryParams
+        .ele("Contact", { ContactTypes: "Delivery" })
+        .ele("Company", { OrganizationName: deliveryAddress.companyName });
+    }
+  }
+  deliveryResourcePool.ele("Component", {
+    ID: digitalComponentId,
+    Class: "Quantity",
+    Status: "Unavailable",
+    ComponentType: "PartialProduct",
+  });
+
+  // NodeInfo with full job identification
+  const nodeInfo = root.ele("NodeInfo");
+  const businessInfo = nodeInfo.ele("BusinessInfo");
+  businessInfo.ele("Comment", { Name: "Job_ID" }).txt(referenceCode);
+  businessInfo.ele("Comment", { Name: "Item_Index" }).txt(`${itemIndex} of ${itemCount}`);
+  businessInfo.ele("Comment", { Name: "Source_Archive" }).txt(archiveName);
+  businessInfo.ele("Comment", { Name: "Source_File" }).txt(originalFilename);
+  if (pcmCode) {
+    businessInfo.ele("Comment", { Name: "PCM_Code" }).txt(pcmCode);
+  }
+  if (customerReference) {
+    businessInfo.ele("Comment", { Name: "Customer_Reference" }).txt(customerReference);
+  }
+  if (deliveryDueAt) {
+    businessInfo.ele("Comment", { Name: "Data_Delivery" }).txt(deliveryDueAt.toISOString());
+  }
 
   return doc.end({ prettyPrint: true });
 }

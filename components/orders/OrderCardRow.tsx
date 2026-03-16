@@ -23,6 +23,7 @@ export type OrderCardData = {
   fileCount: number | null;
   primaryFileName: string | null;  // PDF: first/only file name
   primaryPageCount: number | null; // PDF: first/only file page count
+  productBreakdown: Array<{ name: string; quantity: number }> | null; // PDF: per-product qty
   status: string;
   statusLabel: string;
   deliveryDueAtLabel: string | null;
@@ -41,7 +42,9 @@ const STATUS_STYLES: Record<string, string> = {
 function ThumbnailContent({ order }: { order: OrderCardData }) {
   const isBC = order.orderType === "BUSINESS_CARD";
 
-  if (order.thumbnailUrl) {
+  const isMultiFile = (order.fileCount ?? 0) > 1;
+
+  if (order.thumbnailUrl && !isMultiFile) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -142,24 +145,31 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
 
   // PDF
   const parts: React.ReactNode[] = [];
-  if (order.templateLabel)
-    parts.push(
-      <span key="label" className="text-sm font-semibold text-slate-900 shrink-0">
-        {order.templateLabel}
-      </span>
-    );
-  if (qtyText)
-    parts.push(
-      <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
-    );
-  if (isMultiFile)
-    parts.push(
-      <span key="files" className="text-xs text-slate-400 shrink-0">{order.fileCount} Dateien</span>
-    );
-  else if (order.primaryPageCount != null)
-    parts.push(
-      <span key="pages" className="text-xs text-slate-400 shrink-0">{order.primaryPageCount} Seiten</span>
-    );
+  if (isMultiFile && order.productBreakdown && order.productBreakdown.length > 0) {
+    // Multi-file: show "2 × Broschüre · 6 × Leaflet"
+    order.productBreakdown.forEach(({ name, quantity }, i) => {
+      parts.push(
+        <span key={`bd-${i}`} className="text-sm font-semibold text-slate-900 shrink-0">
+          {quantity} × {name}
+        </span>
+      );
+    });
+  } else {
+    if (order.templateLabel)
+      parts.push(
+        <span key="label" className="text-sm font-semibold text-slate-900 shrink-0">
+          {order.templateLabel}
+        </span>
+      );
+    if (qtyText)
+      parts.push(
+        <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
+      );
+    if (order.primaryPageCount != null)
+      parts.push(
+        <span key="pages" className="text-xs text-slate-400 shrink-0">{order.primaryPageCount} Seiten</span>
+      );
+  }
 
   return (
     <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">

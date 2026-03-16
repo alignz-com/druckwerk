@@ -207,6 +207,22 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       ? (order.quantity ?? null)
       : order.pdfOrderItems.reduce((s, i) => s + i.quantity, 0) || null;
 
+    // PDF multi-file: per-product quantity breakdown
+    const productBreakdown = (() => {
+      if (isBC || order.pdfOrderItems.length <= 1) return null;
+      const map = new Map<string, number>();
+      for (const item of order.pdfOrderItems) {
+        const prod = item.productFormat?.product;
+        const name = prod
+          ? ((locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name)
+          : null;
+        if (!name) continue;
+        map.set(name, (map.get(name) ?? 0) + item.quantity);
+      }
+      if (map.size === 0) return null;
+      return Array.from(map.entries()).map(([name, quantity]) => ({ name, quantity }));
+    })();
+
     return {
       id: order.id,
       referenceCode: order.referenceCode,
@@ -229,6 +245,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       fileCount: order._count.pdfOrderItems || null,
       primaryFileName: isBC ? null : (firstItem?.filename ?? null),
       primaryPageCount: isBC ? null : (firstItem?.pages ?? null),
+      productBreakdown,
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryDueAtLabel,

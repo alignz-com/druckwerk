@@ -6,7 +6,9 @@ import { prisma } from "./prisma";
 export type JdfExportJob = {
   id: string;
   orderId: string;
-  pdfUrl: string;
+  pdfOrderItemId: string | null;
+  pdfUrl: string | null;
+  jdfFileName: string | null;
   jdfXml: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   attemptCount: number;
@@ -91,16 +93,18 @@ async function lockJob(jobId: string): Promise<JdfExportJob | null> {
 }
 
 async function processJob(job: JdfExportJob, config: JdfWorkerConfig) {
-  const pdfReady = await waitForPdf(job.pdfUrl, config);
-  if (!pdfReady) {
-    throw new Error("PDF not reachable within timeout");
+  if (job.pdfUrl) {
+    const pdfReady = await waitForPdf(job.pdfUrl, config);
+    if (!pdfReady) {
+      throw new Error("PDF not reachable within timeout");
+    }
   }
 
   const order = await prisma.order.findUnique({
     where: { id: job.orderId },
     select: { referenceCode: true },
   });
-  const fileName = `${order?.referenceCode ?? job.orderId}.jdf`;
+  const fileName = job.jdfFileName ?? `${order?.referenceCode ?? job.orderId}.jdf`;
 
   await uploadToFtp(job.jdfXml, fileName, config);
 

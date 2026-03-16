@@ -10,6 +10,8 @@ export type PdfProductItem = {
   filename: string;
   thumbnailUrl: string | null;
   pdfUrl: string | null;
+  jdfUrl: string | null;
+  jdfFileName: string | null;
   pages: number | null;
   quantity: number;
   productName: string | null;
@@ -64,6 +66,7 @@ type PdfProps = {
   labels: OrderProductsTableLabels;
   orderId?: string;
   canEditQty?: boolean;
+  canDownloadFiles?: boolean;
 };
 
 type BcProps = {
@@ -101,7 +104,7 @@ export function OrderProductsTable(props: Props) {
 
   if (props.type === "PDF_PRINT") {
     const selected = props.items[selectedIndex] ?? props.items[0];
-    const { canEditQty, orderId } = props;
+    const { canEditQty, orderId, canDownloadFiles } = props;
 
     async function handleQtyChange(itemId: string, qty: number) {
       if (!orderId) return;
@@ -318,6 +321,30 @@ export function OrderProductsTable(props: Props) {
                   <span className="text-xs tabular-nums">{selected.quantity}</span>
                 </SpecRow>
               </div>
+
+              {/* Download links */}
+              {canDownloadFiles && (selected.pdfUrl || selected.jdfUrl) && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selected.pdfUrl && (
+                    <a
+                      href={selected.pdfUrl}
+                      download={selected.filename}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      PDF
+                    </a>
+                  )}
+                  {selected.jdfUrl && (
+                    <a
+                      href={selected.jdfUrl}
+                      download={selected.jdfFileName ?? undefined}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      JDF
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -400,7 +400,7 @@ model Order {
   template       Template?   @relation(fields: [templateId], references: [id])
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
-  jdfJob         JdfExportJob?
+  jdfJobs        JdfExportJob[]
   deliveryItems  DeliveryItem[]
   pdfOrderItems  PdfOrderItem[]
 
@@ -410,16 +410,22 @@ model Order {
 }
 
 model JdfExportJob {
-  id           String           @id @default(cuid())
-  orderId      String           @unique
-  order        Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  pdfUrl       String
-  jdfXml       String
-  status       JdfExportStatus  @default(PENDING)
-  attemptCount Int              @default(0)
-  lastError    String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id              String          @id @default(cuid())
+  orderId         String
+  pdfOrderItemId  String?         @unique
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  pdfOrderItem    PdfOrderItem?   @relation(fields: [pdfOrderItemId], references: [id], onDelete: Cascade)
+  pdfUrl          String?
+  jdfUrl          String?
+  jdfFileName     String?
+  jdfXml          String
+  status          JdfExportStatus @default(PENDING)
+  attemptCount    Int             @default(0)
+  lastError       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([orderId])
 }
 
 model OrderReferenceCounter {
@@ -587,11 +593,14 @@ model PdfOrderItem {
   colorSpaces          String[] @default([])
   pantoneColors        String[] @default([])
   pages                Int?
+  pdfUrl               String?
+  pdfFileName          String?
   productFormatId      String?
   coverPaperStockId    String?
   contentPaperStockId  String?
   finishId             String?
   order                Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  jdfJob               JdfExportJob?
   productFormat        ProductFormat? @relation(fields: [productFormatId], references: [id])
   coverPaperStock      PaperStock?   @relation("OrderItemCoverPaper", fields: [coverPaperStockId], references: [id])
   contentPaperStock    PaperStock?   @relation("OrderItemContentPaper", fields: [contentPaperStockId], references: [id])
