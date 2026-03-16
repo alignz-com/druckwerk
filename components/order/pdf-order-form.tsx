@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { PrintFileUploader, type SortableFile } from "@/components/print-file-uploader"
-import type { ProductForMatching } from "@/lib/product-matching"
+import type { ProductFormatForMatching } from "@/lib/product-matching"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,10 +24,11 @@ type Brand = { id: string; name: string }
 type Props = {
   availableBrands: Brand[]
   initialBrandId: string | null
-  products: ProductForMatching[]
+  products: ProductFormatForMatching[]
+  isDemo?: boolean
 }
 
-export function PdfOrderForm({ availableBrands, initialBrandId, products }: Props) {
+export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo = false }: Props) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -93,7 +94,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products }: Prop
           pages: f.pages,
           fileSlot,
           thumbnailDataUrl: f.thumbnailDataUrl ?? null,
-          productId: f.productId ?? null,
+          productFormatId: f.productFormatId ?? null,
         }
       })
       formData.append("itemsMeta", JSON.stringify(itemsMeta))
@@ -117,8 +118,15 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products }: Prop
     }
   }
 
+  const tOrder = useTranslations("orderForm")
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {isDemo ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          {tOrder("demoBanner")}
+        </div>
+      ) : null}
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">

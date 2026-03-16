@@ -47,9 +47,8 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
 
   let payload;
   try {
-    const json = await req.json();
-    payload = brandUpdateSchema.parse(json);
-  } catch (error) {
+    payload = brandUpdateSchema.parse(await req.json());
+  } catch {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 

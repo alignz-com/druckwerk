@@ -36,6 +36,16 @@ export type AdminPaperStockSummary = {
   weightGsm: number | null;
 };
 
+export type AdminProductFormatSummary = {
+  id: string;
+  formatId: string;
+  format: { id: string; name: string; trimWidthMm: number; trimHeightMm: number };
+  canvasWidthMm: number | null;
+  canvasHeightMm: number | null;
+  printDpi: number | null;
+  pcmCode: string | null;
+};
+
 export type AdminTemplateSummary = {
   id: string;
   key: string;
@@ -49,7 +59,9 @@ export type AdminTemplateSummary = {
   canvasHeightMm: number | null;
   pcmCode: string | null;
   productId: string | null;
-  product: { id: string; name: string; trimWidthMm: number; trimHeightMm: number; canvasWidthMm: number | null; canvasHeightMm: number | null; printDpi: number | null; pcmCode: string | null } | null;
+  product: { id: string; name: string; trimWidthMm: number | null; trimHeightMm: number | null; canvasWidthMm: number | null; canvasHeightMm: number | null; printDpi: number | null; pcmCode: string | null } | null;
+  productFormatId: string | null;
+  productFormat: AdminProductFormatSummary | null;
   paperStock: AdminPaperStockSummary | null;
   hasQrCode: boolean;
   hasPhotoSlot: boolean;
@@ -129,6 +141,13 @@ export const adminTemplateSummaryInclude = {
       pcmCode: true,
     },
   },
+  productFormat: {
+    include: {
+      format: {
+        select: { id: true, name: true, trimWidthMm: true, trimHeightMm: true },
+      },
+    },
+  },
 } satisfies Prisma.TemplateInclude;
 
 type TemplateWithRelations = Prisma.TemplateGetPayload<{
@@ -150,6 +169,18 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
     pcmCode: template.pcmCode ?? null,
     productId: template.productId ?? null,
     product: template.product ?? null,
+    productFormatId: template.productFormatId ?? null,
+    productFormat: template.productFormat
+      ? {
+          id: template.productFormat.id,
+          formatId: template.productFormat.formatId,
+          format: template.productFormat.format,
+          canvasWidthMm: template.productFormat.canvasWidthMm ?? null,
+          canvasHeightMm: template.productFormat.canvasHeightMm ?? null,
+          printDpi: template.productFormat.printDpi ?? null,
+          pcmCode: template.productFormat.pcmCode ?? null,
+        }
+      : null,
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
     paperStock: template.paperStock

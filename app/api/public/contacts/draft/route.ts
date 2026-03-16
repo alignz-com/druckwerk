@@ -60,7 +60,10 @@ export async function POST(req: Request) {
     orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
   });
 
-  const fallbackDomain = process.env.VCARD_FALLBACK_DOMAIN || "druckwerk.dth.at";
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
+  let systemHost = "";
+  try { systemHost = new URL(appUrl).host; } catch { /* ignore */ }
+  const fallbackDomain = process.env.VCARD_FALLBACK_DOMAIN || systemHost || "druckwerk.dth.at";
   const host = brandDomain?.domain?.trim() || fallbackDomain;
   const publicId = randomBytes(10).toString("base64url");
   const { firstName, lastName } = splitName(data.name);

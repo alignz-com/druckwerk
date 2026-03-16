@@ -136,6 +136,12 @@ export async function POST(req: Request) {
       );
     }
 
+    // Demo users: skip all DB writes and return a fake success
+    if ((session.user as any).isDemo) {
+      const fakeRef = `DEMO-${Date.now().toString(36).toUpperCase()}`;
+      return NextResponse.json({ success: true, orderId: "demo", referenceCode: fakeRef }, { status: 201 });
+    }
+
     const data = parsed.data;
     const rawUrl = data.url?.trim() ?? "";
     const rawLinkedin = data.linkedin?.trim() ?? "";

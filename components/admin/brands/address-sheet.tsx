@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -31,20 +32,25 @@ export type AddressSheetState = {
 };
 
 type AddressSheetProps = {
+  brandId: string;
   state: AddressSheetState | null;
   onClose: () => void;
-  onSave: (address: BrandAddressDraft) => void;
+  onSaved: (brand: AdminBrandSummary) => void;
 };
 
-export function AddressSheet({ state, onClose, onSave }: AddressSheetProps) {
+export function AddressSheet({ brandId, state, onClose, onSaved }: AddressSheetProps) {
   const t = useTranslations("admin.brands");
   const [draft, setDraft] = useState<BrandAddressDraft>(state?.address ?? emptyDraft());
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (state?.address) {
       setDraft(state.address);
+      setError(null);
     } else {
       setDraft(emptyDraft());
+      setError(null);
     }
   }, [state]);
 
@@ -61,13 +67,54 @@ export function AddressSheet({ state, onClose, onSave }: AddressSheetProps) {
     setDraft((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+  const buildBody = () => ({
+    label: draft.label.trim() || null,
+    company: draft.company.trim() || null,
+    street: draft.street.trim() || null,
+    addressExtra: draft.addressExtra.trim() || null,
+    postalCode: draft.postalCode.trim() || null,
+    city: draft.city.trim() || null,
+    countryCode: draft.countryCode.trim().toUpperCase() || null,
+    cardAddressText: draft.cardAddressText.trim() || null,
+    url: draft.url.trim() || null,
+  });
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
-    onSave(draft);
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      let res: Response;
+      if (state.mode === "edit" && draft.id) {
+        res = await fetch(`/api/admin/brands/${brandId}/addresses/${draft.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildBody()),
+        });
+      } else {
+        res = await fetch(`/api/admin/brands/${brandId}/addresses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildBody()),
+        });
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.brand) {
+        throw new Error(data?.error ?? t("addresses.sheet.saveFailed"));
+      }
+
+      onSaved(data.brand);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("addresses.sheet.saveFailed"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <Sheet open={Boolean(state)} onOpenChange={(next) => (!next ? onClose() : null)}>
+    <Sheet open={Boolean(state)} onOpenChange={(next) => (!next && !isSaving ? onClose() : null)}>
       <SheetContent className="flex h-full max-w-md flex-col p-0">
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
           <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
@@ -75,6 +122,11 @@ export function AddressSheet({ state, onClose, onSave }: AddressSheetProps) {
             <SheetDescription>{t("addresses.sheet.description")}</SheetDescription>
           </SheetHeader>
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+            {error ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            ) : null}
             <div className="space-y-1.5">
               <Label htmlFor="address-label-field">{t("addresses.fields.label")}</Label>
               <Input
@@ -156,10 +208,12 @@ export function AddressSheet({ state, onClose, onSave }: AddressSheetProps) {
             </div>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               {t("addresses.sheet.cancelButton")}
             </Button>
-            <Button type="submit">{primaryLabel}</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? t("actions.saving") : primaryLabel}
+            </Button>
           </div>
         </form>
       </SheetContent>

@@ -132,6 +132,87 @@ function UserAccessSection({ userId, initialValues }: { userId: string; initialV
   )
 }
 
+function DemoSection({ userId, initialIsDemo }: { userId: string; initialIsDemo: boolean }) {
+  const [isDemo, setIsDemo] = useState(initialIsDemo);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsDemo(initialIsDemo);
+    setSaved(false);
+  }, [userId, initialIsDemo]);
+
+  const hasChanges = isDemo !== initialIsDemo;
+
+  async function save() {
+    setSaving(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDemo }),
+      });
+      if (!res.ok) throw new Error();
+      setSaved(true);
+    } catch {
+      setErr("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">Demo Account</h3>
+        <p className="text-xs text-slate-500">Demo users can use the order form but orders are not saved to the database.</p>
+      </div>
+
+      {err && <p className="text-xs text-red-600">{err}</p>}
+      {saved && <p className="text-xs text-emerald-600">Saved</p>}
+
+      <div className="flex items-center gap-3">
+        <Select
+          value={isDemo ? "yes" : "no"}
+          onValueChange={(v) => {
+            setIsDemo(v === "yes");
+            setSaved(false);
+          }}
+        >
+          <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="no">No</SelectItem>
+            <SelectItem value="yes">Demo</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-slate-700">Demo account</span>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={!hasChanges || saving}
+          onClick={() => {
+            setIsDemo(initialIsDemo);
+            setSaved(false);
+          }}
+        >
+          Reset
+        </Button>
+        <Button type="button" size="sm" disabled={!hasChanges || saving} onClick={save}>
+          {saving ? "…" : "Save"}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export function UserDetailSheet({
   user,
   brandOptions,
@@ -307,6 +388,10 @@ export function UserDetailSheet({
                   canOrderPdfPrint: user.canOrderPdfPrint,
                 }}
               />
+
+              <Separator />
+
+              <DemoSection userId={user.id} initialIsDemo={user.isDemo} />
 
               {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}

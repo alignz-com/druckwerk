@@ -22,7 +22,6 @@ import {
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
 import BrandTemplateSection from "./BrandTemplateSection";
 import { BrandAccessSection } from "./BrandAccessSection";
-import { BrandPaperDefaultsSection } from "./BrandPaperDefaultsSection";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 export type BrandDetailClientProps = {
@@ -115,26 +114,36 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
     }
   };
 
-  const handleAddressSaved = (draft: BrandAddressForm) => {
-    setForm((current) => {
-      const exists = current.addresses.some((address) => address.clientKey === draft.clientKey);
-      const addresses = exists
-        ? current.addresses.map((address) => (address.clientKey === draft.clientKey ? draft : address))
-        : [...current.addresses, draft];
-      return { ...current, addresses };
-    });
+  const handleAddressSaved = (updatedBrand: AdminBrandSummary) => {
+    setBrandSnapshot(updatedBrand);
+    setForm(mapBrandToForm(updatedBrand));
     setAddressSheetState(null);
   };
 
   const closeAddressSheet = () => setAddressSheetState(null);
 
-  const handleAddressDelete = (clientKey: string) => {
+  const handleAddressDelete = async (clientKey: string) => {
+    if (!brandSnapshot?.id) return;
     const confirmed = window.confirm(t("addresses.confirmDelete"));
     if (!confirmed) return;
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
-    }));
+
+    // clientKey === address.id for all DB-persisted addresses
+    const addressId = clientKey;
+
+    try {
+      const res = await fetch(`/api/admin/brands/${brandSnapshot.id}/addresses/${addressId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.brand) {
+        throw new Error(data?.error ?? "Delete failed");
+      }
+      const updatedBrand = data.brand as AdminBrandSummary;
+      setBrandSnapshot(updatedBrand);
+      setForm(mapBrandToForm(updatedBrand));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    }
   };
 
   const navigateBack = () => {
@@ -152,18 +161,6 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
       contactName: form.contactName.trim() ? form.contactName.trim() : null,
       contactEmail: form.contactEmail.trim() ? form.contactEmail.trim() : null,
       contactPhone: form.contactPhone.trim() ? form.contactPhone.trim() : null,
-      addresses: form.addresses.map((address) => ({
-        id: address.id,
-        label: address.label.trim() ? address.label.trim() : null,
-        company: address.company.trim() ? address.company.trim() : null,
-        street: address.street.trim() ? address.street.trim() : null,
-        addressExtra: address.addressExtra.trim() ? address.addressExtra.trim() : null,
-        postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
-        city: address.city.trim() ? address.city.trim() : null,
-        countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
-        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
-        url: address.url?.trim() ? address.url.trim() : null,
-      })),
     };
 
     try {
@@ -379,8 +376,6 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
                 canOrderPdfPrint={brandSnapshot.canOrderPdfPrint ?? false}
               />
               <Separator />
-              <BrandPaperDefaultsSection brandId={brandSnapshot.id} />
-              <Separator />
             </>
           ) : (
             <Separator />
@@ -543,7 +538,7 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
           ) : null}
         </div>
       </ScrollArea>
-      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} />
+      <AddressSheet brandId={brandSnapshot?.id ?? ""} state={addressSheetState} onClose={closeAddressSheet} onSaved={handleAddressSaved} />
     </form>
   );
 }

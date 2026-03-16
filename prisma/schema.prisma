@@ -99,6 +99,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   canOrderBusinessCards Boolean?
   canOrderPdfPrint      Boolean?
+  isDemo                Boolean   @default(false)
   orders         Order[]
   orderProfiles  UserOrderProfile[]
   deliveriesCreated Delivery[] @relation("UserDeliveries")
@@ -165,7 +166,7 @@ model Brand {
   users              User[]
   orders             Order[]
   templates          BrandTemplate[]
-  productPaperDefaults BrandProductPaper[]
+  productFormatPreferences BrandProductFormatPreference[]
   defaultTemplateId String?
   defaultTemplate   Template?      @relation("BrandDefaultTemplate", fields: [defaultTemplateId], references: [id])
   addresses BrandAddress[]
@@ -307,6 +308,8 @@ model Template {
   fonts            TemplateFont[]
   paperStock       PaperStock?     @relation(fields: [paperStockId], references: [id])
   product          Product?        @relation(fields: [productId], references: [id])
+  productFormatId  String?
+  productFormat    ProductFormat?  @relation(fields: [productFormatId], references: [id])
   addressAssignments TemplateAddress[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -335,36 +338,14 @@ model PaperStock {
   weightGsm       Int?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
-  templates       Template[]
-  productStocks   ProductPaperStock[]
-  brandDefaults   BrandProductPaper[]
+  templates               Template[]
+  productFormatPapers     ProductFormatPaper[]
+  brandCoverPreferences   BrandProductFormatPreference[] @relation("BrandCoverPaper")
+  brandContentPreferences BrandProductFormatPreference[] @relation("BrandContentPaper")
+  orderItemsCover         PdfOrderItem[]                 @relation("OrderItemCoverPaper")
+  orderItemsContent       PdfOrderItem[]                 @relation("OrderItemContentPaper")
 }
 
-model ProductPaperStock {
-  id           String     @id @default(cuid())
-  productId    String
-  paperStockId String
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  paperStock   PaperStock @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
-
-  @@unique([productId, paperStockId])
-  @@index([productId])
-}
-
-model BrandProductPaper {
-  id           String     @id @default(cuid())
-  brandId      String
-  productId    String
-  paperStockId String
-  brand        Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  paperStock   PaperStock @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
-
-  @@unique([brandId, productId])
-  @@index([brandId])
-}
 
 model BrandTemplate {
   id             String   @id @default(cuid())
@@ -572,9 +553,9 @@ model Product {
   name            String
   description     String?
   type            ProductType
-  trimWidthMm     Float
-  trimHeightMm    Float
-  toleranceMm     Float          @default(1.0)
+  trimWidthMm     Float?
+  trimHeightMm    Float?
+  toleranceMm     Float?
   expectedBleedMm Float?
   canvasWidthMm   Float?
   canvasHeightMm  Float?
@@ -585,9 +566,7 @@ model Product {
   minPages        Int?
   maxPages        Int?
   templates       Template[]
-  pdfOrderItems   PdfOrderItem[]
-  paperStocks     ProductPaperStock[]
-  brandPaperDefaults BrandProductPaper[]
+  productFormats  ProductFormat[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -608,11 +587,119 @@ model PdfOrderItem {
   colorSpaces          String[] @default([])
   pantoneColors        String[] @default([])
   pages                Int?
-  productId            String?
-  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product              Product? @relation(fields: [productId], references: [id])
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  productFormatId      String?
+  coverPaperStockId    String?
+  contentPaperStockId  String?
+  finishId             String?
+  order                Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productFormat        ProductFormat? @relation(fields: [productFormatId], references: [id])
+  coverPaperStock      PaperStock?   @relation("OrderItemCoverPaper", fields: [coverPaperStockId], references: [id])
+  contentPaperStock    PaperStock?   @relation("OrderItemContentPaper", fields: [contentPaperStockId], references: [id])
+  finish               Finish?       @relation(fields: [finishId], references: [id])
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   @@index([orderId])
+  @@index([productFormatId])
+}
+
+// ─── Format / ProductFormat ───────────────────────────────────────────────────
+
+model Format {
+  id             String          @id @default(cuid())
+  name           String
+  nameDe         String?
+  slug           String          @unique
+  trimWidthMm    Float
+  trimHeightMm   Float
+  defaultBleedMm Float           @default(3.0)
+  toleranceMm    Float           @default(1.0)
+  productFormats ProductFormat[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ProductFormat {
+  id              String                         @id @default(cuid())
+  productId       String
+  formatId        String
+  pcmCode         String?
+  printDpi        Int?
+  canvasWidthMm   Float?
+  canvasHeightMm  Float?
+  productionSteps String[]                       @default([])
+  minPages        Int?
+  maxPages        Int?
+  isActive        Boolean                        @default(true)
+  product         Product                        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  format          Format                         @relation(fields: [formatId], references: [id], onDelete: Cascade)
+  papers          ProductFormatPaper[]
+  finishes        ProductFormatFinish[]
+  brandPreferences BrandProductFormatPreference[]
+  templates       Template[]
+  pdfOrderItems   PdfOrderItem[]
+  createdAt       DateTime                       @default(now())
+  updatedAt       DateTime                       @updatedAt
+
+  @@unique([productId, formatId])
+  @@index([productId])
+  @@index([formatId])
+}
+
+model ProductFormatPaper {
+  id              String        @id @default(cuid())
+  productFormatId String
+  paperStockId    String
+  role            String?       // "cover" | "content" | null (null = single-paper product)
+  isDefault       Boolean       @default(false)
+  productFormat   ProductFormat @relation(fields: [productFormatId], references: [id], onDelete: Cascade)
+  paperStock      PaperStock    @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@index([productFormatId])
+}
+
+model Finish {
+  id               String                         @id @default(cuid())
+  name             String
+  nameDe           String?
+  code             String?
+  productFinishes  ProductFormatFinish[]
+  brandPreferences BrandProductFormatPreference[]
+  orderItems       PdfOrderItem[]
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+}
+
+model ProductFormatFinish {
+  id              String        @id @default(cuid())
+  productFormatId String
+  finishId        String
+  isDefault       Boolean       @default(false)
+  productFormat   ProductFormat @relation(fields: [productFormatId], references: [id], onDelete: Cascade)
+  finish          Finish        @relation(fields: [finishId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@unique([productFormatId, finishId])
+  @@index([productFormatId])
+}
+
+model BrandProductFormatPreference {
+  id                  String        @id @default(cuid())
+  brandId             String
+  productFormatId     String
+  coverPaperStockId   String?
+  contentPaperStockId String?
+  finishId            String?
+  notes               String?
+  brand               Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  productFormat       ProductFormat @relation(fields: [productFormatId], references: [id], onDelete: Cascade)
+  coverPaperStock     PaperStock?   @relation("BrandCoverPaper", fields: [coverPaperStockId], references: [id])
+  contentPaperStock   PaperStock?   @relation("BrandContentPaper", fields: [contentPaperStockId], references: [id])
+  finish              Finish?       @relation(fields: [finishId], references: [id])
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([brandId, productFormatId])
+  @@index([brandId])
 }

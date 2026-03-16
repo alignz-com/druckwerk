@@ -26,6 +26,7 @@ export default async function NewOrderPage() {
       jobTitle: true,
       mobilePhone: true,
       businessPhone: true,
+      isDemo: true,
     },
   });
 
@@ -105,6 +106,7 @@ export default async function NewOrderPage() {
       initialBrandQuantityOptions={quantityOptions}
       initialProfile={initialProfile}
       initialBrandProfile={initialBrandProfile}
+      isDemo={dbUser?.isDemo ?? false}
     />
   );
 }

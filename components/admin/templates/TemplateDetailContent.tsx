@@ -76,6 +76,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     label: template.label ?? "",
     description: template.description ?? "",
     productId: template.productId ?? "",
+    productFormatId: template.productFormatId ?? "",
     config: stringifyConfig(template.config),
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
@@ -88,6 +89,19 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       .then((data) => setProductOptions(data))
       .catch(() => {});
   }, []);
+
+  type FormatOption = { id: string; format: { name: string; trimWidthMm: number; trimHeightMm: number }; canvasWidthMm: number | null; canvasHeightMm: number | null; printDpi: number | null; pcmCode: string | null };
+  const [formatOptions, setFormatOptions] = useState<FormatOption[]>([]);
+  useEffect(() => {
+    if (!metadata.productId) {
+      setFormatOptions([]);
+      return;
+    }
+    fetch(`/api/admin/products/${metadata.productId}/formats`)
+      .then((r) => r.json())
+      .then((data: FormatOption[]) => setFormatOptions(data))
+      .catch(() => setFormatOptions([]));
+  }, [metadata.productId]);
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
   const [brandSearch, setBrandSearch] = useState("");
@@ -262,6 +276,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       label: template.label ?? "",
       description: template.description ?? "",
       productId: template.productId ?? "",
+      productFormatId: template.productFormatId ?? "",
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
@@ -348,6 +363,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           label,
           description: metadata.description.trim(),
           productId: metadata.productId || null,
+          productFormatId: metadata.productFormatId || null,
           config: parsedConfig,
           hasQrCode: metadata.hasQrCode,
           hasPhotoSlot: metadata.hasPhotoSlot,
@@ -697,33 +713,65 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
               </div>
             </div>
           </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <Label htmlFor="template-product">Product</Label>
-          <Select
-            value={metadata.productId || "none"}
-            onValueChange={(v) => {
-              setMetadata((c) => ({ ...c, productId: v === "none" ? "" : v }));
-              setMetadataSuccess(null);
-            }}
-          >
-            <SelectTrigger id="template-product">
-              <SelectValue placeholder="No product linked" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No product linked</SelectItem>
-              {productOptions.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name} ({p.type === "BUSINESS_CARD" ? "BC" : "PDF"})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {template.product && (
-            <p className="text-xs text-muted-foreground">
-              Linked product dimensions: {template.product.trimWidthMm} × {template.product.trimHeightMm} mm
-              {template.product.canvasWidthMm ? `, canvas ${template.product.canvasWidthMm} × ${template.product.canvasHeightMm} mm` : ""}
-              {template.product.printDpi ? `, ${template.product.printDpi} DPI` : ""}
-            </p>
+        <div className="md:col-span-2 space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="template-product">Product</Label>
+            <Select
+              value={metadata.productId || "none"}
+              onValueChange={(v) => {
+                setMetadata((c) => ({ ...c, productId: v === "none" ? "" : v, productFormatId: "" }));
+                setMetadataSuccess(null);
+              }}
+            >
+              <SelectTrigger id="template-product">
+                <SelectValue placeholder="No product linked" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No product linked</SelectItem>
+                {productOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} ({p.type === "BUSINESS_CARD" ? "BC" : "PDF"})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {metadata.productId && (
+            <div className="space-y-1.5">
+              <Label htmlFor="template-product-format">Format</Label>
+              <Select
+                value={metadata.productFormatId || "none"}
+                onValueChange={(v) => {
+                  setMetadata((c) => ({ ...c, productFormatId: v === "none" ? "" : v }));
+                  setMetadataSuccess(null);
+                }}
+              >
+                <SelectTrigger id="template-product-format">
+                  <SelectValue placeholder="No format selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No format selected</SelectItem>
+                  {formatOptions.map((pf) => (
+                    <SelectItem key={pf.id} value={pf.id}>
+                      {pf.format.name} ({pf.format.trimWidthMm} × {pf.format.trimHeightMm} mm)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(() => {
+                const selected = formatOptions.find((pf) => pf.id === metadata.productFormatId);
+                if (!selected) return null;
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    {selected.format.trimWidthMm} × {selected.format.trimHeightMm} mm trim
+                    {selected.canvasWidthMm ? `, canvas ${selected.canvasWidthMm} × ${selected.canvasHeightMm} mm` : ""}
+                    {selected.printDpi ? `, ${selected.printDpi} DPI` : ""}
+                    {selected.pcmCode ? `, PCM: ${selected.pcmCode}` : ""}
+                  </p>
+                );
+              })()}
+            </div>
           )}
         </div>
       </div>

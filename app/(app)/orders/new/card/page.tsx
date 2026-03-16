@@ -25,6 +25,7 @@ export default async function NewCardOrderPage() {
       jobTitle: true,
       mobilePhone: true,
       businessPhone: true,
+      isDemo: true,
     },
   });
 
@@ -94,6 +95,7 @@ export default async function NewCardOrderPage() {
       initialBrandQuantityOptions={quantityOptions}
       initialProfile={initialProfile}
       initialBrandProfile={initialBrandProfile}
+      isDemo={dbUser?.isDemo ?? false}
     />
   );
 }

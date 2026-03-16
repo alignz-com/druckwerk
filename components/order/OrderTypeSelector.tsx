@@ -2,13 +2,16 @@
 
 import Link from "next/link"
 import { CreditCard, FileUp } from "lucide-react"
+import { useTranslations } from "@/components/providers/locale-provider"
 
 export function OrderTypeSelector() {
+  const t = useTranslations("nav")
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New Order</h1>
-        <p className="text-sm text-muted-foreground mt-1">Choose an order type to continue.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("orderTypeTitle")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("orderTypeSubtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
@@ -18,8 +21,8 @@ export function OrderTypeSelector() {
         >
           <CreditCard className="h-10 w-10 text-muted-foreground" />
           <div>
-            <p className="font-semibold">Business Cards</p>
-            <p className="text-xs text-muted-foreground mt-1">Design and order personalised business cards</p>
+            <p className="font-semibold">{t("orderTypeBusinessCards")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("orderTypeBusinessCardsDesc")}</p>
           </div>
         </Link>
 
@@ -29,8 +32,8 @@ export function OrderTypeSelector() {
         >
           <FileUp className="h-10 w-10 text-muted-foreground" />
           <div>
-            <p className="font-semibold">PDF Print</p>
-            <p className="text-xs text-muted-foreground mt-1">Upload print-ready PDFs for any format</p>
+            <p className="font-semibold">{t("orderTypePdfPrint")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("orderTypePdfPrintDesc")}</p>
           </div>
         </Link>
       </div>

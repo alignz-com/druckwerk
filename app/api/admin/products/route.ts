@@ -14,17 +14,8 @@ const bodySchema = z.object({
   name: z.string().min(1),
   nameEn: z.string().nullable().optional(),
   nameDe: z.string().nullable().optional(),
-  description: z.string().optional().default(""),
-  trimWidthMm: z.number().positive(),
-  trimHeightMm: z.number().positive(),
-  toleranceMm: z.number().nonnegative().default(1.0),
-  expectedBleedMm: z.number().nonnegative().nullable().optional(),
-  canvasWidthMm: z.number().positive().nullable().optional(),
-  canvasHeightMm: z.number().positive().nullable().optional(),
-  printDpi: z.number().int().positive().nullable().optional(),
-  pcmCode: z.string().nullable().optional(),
-  minPages: z.number().int().positive().nullable().optional(),
-  maxPages: z.number().int().positive().nullable().optional(),
+  description: z.string().nullable().optional().default(""),
+  type: z.enum(["BUSINESS_CARD", "PDF_PRINT"]).optional().default("PDF_PRINT"),
 })
 
 export async function GET() {
@@ -34,7 +25,7 @@ export async function GET() {
   const products = await prisma.product.findMany({
     orderBy: [{ type: "asc" }, { name: "asc" }],
     include: {
-      _count: { select: { pdfOrderItems: true } },
+      _count: { select: { productFormats: true } },
     },
   })
   return NextResponse.json(products)
@@ -51,17 +42,10 @@ export async function POST(req: NextRequest) {
       nameEn: body.nameEn ?? null,
       nameDe: body.nameDe ?? null,
       description: body.description || null,
-      type: "PDF_PRINT" as const,
-      trimWidthMm: body.trimWidthMm,
-      trimHeightMm: body.trimHeightMm,
-      toleranceMm: body.toleranceMm,
-      expectedBleedMm: body.expectedBleedMm ?? null,
-      canvasWidthMm: body.canvasWidthMm ?? null,
-      canvasHeightMm: body.canvasHeightMm ?? null,
-      printDpi: body.printDpi ?? null,
-      pcmCode: body.pcmCode ?? null,
-      minPages: body.minPages ?? null,
-      maxPages: body.maxPages ?? null,
+      type: body.type,
+      trimWidthMm: null,
+      trimHeightMm: null,
+      toleranceMm: null,
     },
   })
   return NextResponse.json(product, { status: 201 })

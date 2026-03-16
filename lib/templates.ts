@@ -76,8 +76,8 @@ export type TemplatePhotoSlot = TemplatePhotoSlotConfig & {
 export type ResolvedTemplateProduct = {
   id: string;
   name: string;
-  trimWidthMm: number;
-  trimHeightMm: number;
+  trimWidthMm: number | null;
+  trimHeightMm: number | null;
   canvasWidthMm: number | null;
   canvasHeightMm: number | null;
   printDpi: number | null;
@@ -227,6 +227,13 @@ const templateInclude = {
       pcmCode: true,
     },
   },
+  productFormat: {
+    include: {
+      format: {
+        select: { id: true, name: true, trimWidthMm: true, trimHeightMm: true },
+      },
+    },
+  },
 };
 
 type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateInclude }>;
@@ -293,19 +300,20 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
       }
     : null;
 
-  // Dimension fallback chain: template → product → fallback default
+  // Dimension fallback chain: template → productFormat → product → fallback default
   const product = tpl.product ?? null;
-  const resolvedPageWidthMm = tpl.pageWidthMm ?? product?.trimWidthMm ?? fallback?.pageWidthMm ?? null;
-  const resolvedPageHeightMm = tpl.pageHeightMm ?? product?.trimHeightMm ?? fallback?.pageHeightMm ?? null;
-  const resolvedCanvasWidthMm = tpl.canvasWidthMm ?? product?.canvasWidthMm ?? fallback?.canvasWidthMm ?? null;
-  const resolvedCanvasHeightMm = tpl.canvasHeightMm ?? product?.canvasHeightMm ?? fallback?.canvasHeightMm ?? null;
+  const productFormat = tpl.productFormat ?? null;
+  const resolvedPageWidthMm = tpl.pageWidthMm ?? productFormat?.format?.trimWidthMm ?? product?.trimWidthMm ?? fallback?.pageWidthMm ?? null;
+  const resolvedPageHeightMm = tpl.pageHeightMm ?? productFormat?.format?.trimHeightMm ?? product?.trimHeightMm ?? fallback?.pageHeightMm ?? null;
+  const resolvedCanvasWidthMm = tpl.canvasWidthMm ?? productFormat?.canvasWidthMm ?? product?.canvasWidthMm ?? fallback?.canvasWidthMm ?? null;
+  const resolvedCanvasHeightMm = tpl.canvasHeightMm ?? productFormat?.canvasHeightMm ?? product?.canvasHeightMm ?? fallback?.canvasHeightMm ?? null;
 
   const resolved: ResolvedTemplate = {
     id: tpl.id,
     key: tpl.key,
     label: tpl.label ?? fallback?.label ?? tpl.key,
     description: tpl.description ?? fallback?.description,
-    pcmCode: tpl.pcmCode ?? product?.pcmCode ?? fallback?.pcmCode ?? null,
+    pcmCode: tpl.pcmCode ?? productFormat?.pcmCode ?? product?.pcmCode ?? fallback?.pcmCode ?? null,
     pageWidthMm: resolvedPageWidthMm,
     pageHeightMm: resolvedPageHeightMm,
     canvasWidthMm: resolvedCanvasWidthMm,
@@ -314,12 +322,12 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
       ? {
           id: product.id,
           name: product.name,
-          trimWidthMm: product.trimWidthMm,
-          trimHeightMm: product.trimHeightMm,
-          canvasWidthMm: product.canvasWidthMm ?? null,
-          canvasHeightMm: product.canvasHeightMm ?? null,
-          printDpi: product.printDpi ?? null,
-          pcmCode: product.pcmCode ?? null,
+          trimWidthMm: resolvedPageWidthMm,
+          trimHeightMm: resolvedPageHeightMm,
+          canvasWidthMm: resolvedCanvasWidthMm,
+          canvasHeightMm: resolvedCanvasHeightMm,
+          printDpi: productFormat?.printDpi ?? product.printDpi ?? null,
+          pcmCode: productFormat?.pcmCode ?? product.pcmCode ?? null,
         }
       : null,
     pdfPath: pdfAsset?.publicUrl ?? tpl.pdfPath ?? fallback?.pdfPath ?? "",

@@ -42,6 +42,17 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { designHasBinding } from "@/lib/template-design";
 import { DEFAULT_ORDER_QUANTITIES } from "@/lib/order-quantities";
 
+const DEMO_PROFILE: ProfilePrefill = {
+  name: "Anna Berger",
+  jobTitle: "Projektleiterin",
+  seniority: "",
+  email: "anna.berger@beispiel.at",
+  businessPhone: "+43 1 234 56 78",
+  mobilePhone: "+43 664 123 456 78",
+  url: "www.beispiel.at",
+  linkedin: "linkedin.com/in/anna-berger",
+};
+
 function PreviewSkeleton() {
   return <div className="h-full w-full rounded-2xl border border-slate-200 bg-slate-50" />;
 }
@@ -80,7 +91,6 @@ const getCroppedPhoto = async (imageSrc: string, pixelCrop: Area) => {
 
 const FlipCard = dynamic(() => import("@/components/FlipCard"), {
   ssr: false,
-  loading: () => <PreviewSkeleton />,
 });
 
 const MAX_ADDRESS_BLOCK_LINES = 4;
@@ -266,6 +276,7 @@ export type OrderFormProps = {
   initialBrandQuantityOptions?: number[] | null;
   initialProfile?: ProfilePrefill | null;
   initialBrandProfile?: BrandProfilePayload | null;
+  isDemo?: boolean;
 };
 
 export default function OrderForm({
@@ -283,6 +294,7 @@ export default function OrderForm({
   initialBrandQuantityOptions = null,
   initialProfile = null,
   initialBrandProfile = null,
+  isDemo = false,
 }: OrderFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -634,9 +646,6 @@ export default function OrderForm({
   const [selectedAddressEntry, setSelectedAddressEntry] = useState<BrandAddressEntry | null>(null);
   const [frontOverflow, setFrontOverflow] = useState(false);
   const [backOverflow, setBackOverflow] = useState(false);
-  const [frontPreviewReady, setFrontPreviewReady] = useState(false);
-  const [backPreviewReady, setBackPreviewReady] = useState(false);
-  const previewReady = frontPreviewReady && backPreviewReady;
   const overflowFieldSet = useMemo(() => {
     const set = new Set<OverflowFieldKey>();
     const register = (fields: string[]) => {
@@ -670,7 +679,6 @@ export default function OrderForm({
   const linkedinOverflow = overflowFieldSet.has("linkedin");
   const addressBlockOverflow = overflowFieldSet.has("addressBlock") || addressBlockHasOverflow;
   const hasOverflow = frontOverflow || backOverflow || addressBlockOverflow;
-  const [showPreviewSkeleton, setShowPreviewSkeleton] = useState(true);
 
   const getAddressBlockFromEntry = useCallback(
     (entry?: BrandAddressEntry | null) => {
@@ -720,25 +728,6 @@ export default function OrderForm({
     [formatPhoneValue],
   );
 
-  useEffect(() => {
-    setFrontPreviewReady(false);
-    setBackPreviewReady(false);
-    setShowPreviewSkeleton(true);
-  }, [selectedTemplateKey]);
-
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    if (previewReady) {
-      timeout = setTimeout(() => {
-        setShowPreviewSkeleton(false);
-      }, 400);
-    } else {
-      setShowPreviewSkeleton(true);
-    }
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [previewReady]);
 
   const countryOptions = useMemo(() => {
     return COUNTRY_CODES.map((code) => ({ code, label: getCountryLabel(localeShort, code) })).sort((a, b) =>
@@ -821,6 +810,7 @@ export default function OrderForm({
   }, [deliveryTime, deliveryLocale]);
 
   const resolvedProfile = useMemo<ProfilePrefill | null>(() => {
+    if (isDemo) return DEMO_PROFILE;
     const merged: ProfilePrefill = { ...(initialProfile ?? {}) };
 
     const assignIfMissing = (key: keyof ProfilePrefill, value?: string | null) => {
@@ -1044,7 +1034,7 @@ export default function OrderForm({
   }, [isPublicQrMode, draftContactId, buildDraftPayload, saveDraft]);
 
   useEffect(() => {
-    if (!isPublicQrMode) {
+    if (!isPublicQrMode || isDemo) {
       if (draftSaveTimerRef.current) {
         clearTimeout(draftSaveTimerRef.current);
         draftSaveTimerRef.current = null;
@@ -1301,6 +1291,11 @@ export default function OrderForm({
 
   return (
     <section>
+      {isDemo ? (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          {tOrder("demoBanner")}
+        </div>
+      ) : null}
       <header className="hidden lg:block">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{tOrder("title")}</h1>
         {tOrder("subtitle") ? (
@@ -1874,9 +1869,16 @@ export default function OrderForm({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex items-center justify-center pt-0 px-0 pb-2 lg:px-6 lg:pb-6 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
-              <div className="w-full max-w-[1100px]">
-                <div className="relative aspect-[85/55] w-full">
+            <CardContent className="flex items-center justify-center pt-0 px-0 pb-4 lg:p-6">
+              <div className="w-full flex flex-col items-center gap-2 px-6 py-10 sm:px-10 sm:py-12">
+                <div
+                  className="relative overflow-visible"
+                  style={{
+                    aspectRatio: `${selectedTemplate?.pageWidthMm ?? 85} / ${selectedTemplate?.pageHeightMm ?? 55}`,
+                    width: `min(100%, calc(55dvh * ${((selectedTemplate?.pageWidthMm ?? 85) / (selectedTemplate?.pageHeightMm ?? 55)).toFixed(4)}))`,
+                    maxHeight: `55dvh`,
+                  }}
+                >
                   {/* Mobile front/back overlay buttons */}
                   <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 lg:hidden">
                     <button
@@ -1904,18 +1906,7 @@ export default function OrderForm({
                       {tOrder("confirm.back")}
                     </button>
                   </div>
-                  {showPreviewSkeleton && selectedTemplate ? (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-opacity duration-300">
-                      <div className="animate-pulse text-sm font-medium text-slate-500">
-                        {tOrder("preview.loading")}
-                      </div>
-                    </div>
-                  ) : null}
-                  <div
-                    className={`h-full w-full transition-opacity duration-300 ${
-                      selectedTemplate ? (previewReady ? "opacity-100" : "opacity-0") : "opacity-100"
-                    }`}
-                  >
+                  <div className="h-full w-full">
                     {!currentBrandId ? (
                       <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
                         {tOrder("selectBrandPrompt")}
@@ -1953,7 +1944,7 @@ export default function OrderForm({
                             linkedin={effectiveLinkedin}
                             onOverflowChange={setFrontOverflow}
                             addressFields={previewAddressFields}
-                            onReadyChange={setFrontPreviewReady}
+
                             onFieldOverflowChange={handleFrontOverflowFields}
                             forcedBindingPrefixes={forcedBindingPrefixes}
                             qrPreviewMode={selectedQrMode}
@@ -1974,7 +1965,7 @@ export default function OrderForm({
                             linkedin={effectiveLinkedin}
                             onOverflowChange={setBackOverflow}
                             addressFields={previewAddressFields}
-                            onReadyChange={setBackPreviewReady}
+
                             onFieldOverflowChange={handleBackOverflowFields}
                             forcedBindingPrefixes={forcedBindingPrefixes}
                             qrPreviewMode={selectedQrMode}
@@ -2066,13 +2057,13 @@ export default function OrderForm({
           setIsConfirmOpen(open);
         }}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{tOrder("confirm.title")}</DialogTitle>
             <DialogDescription>{tOrder("confirm.description")}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex w-full justify-end gap-2">
               <Button
                 variant={confirmView === "front" ? "default" : "ghost"}
@@ -2091,9 +2082,16 @@ export default function OrderForm({
                 {tOrder("confirm.back")}
               </Button>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
-              <div className="mx-auto w-full max-w-[920px]">
-                <div className="relative mx-auto aspect-[85/55] w-full max-w-[600px]">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-12 overflow-hidden">
+              <div className="mx-auto w-full flex justify-center">
+                <div
+                  className="relative"
+                  style={{
+                    aspectRatio: `${selectedTemplate?.pageWidthMm ?? 85} / ${selectedTemplate?.pageHeightMm ?? 55}`,
+                    width: `min(100%, calc(38dvh * ${((selectedTemplate?.pageWidthMm ?? 85) / (selectedTemplate?.pageHeightMm ?? 55)).toFixed(4)}))`,
+                    maxHeight: `38dvh`,
+                  }}
+                >
                   {selectedTemplate ? (
                     <FlipCard
                       activeSide={confirmView}

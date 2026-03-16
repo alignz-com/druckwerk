@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
   }
 
-let payload: { brandId?: string | null; role?: string | null };
+  let payload: { brandId?: string | null; role?: string | null; isDemo?: boolean };
   try {
     payload = await req.json();
   } catch {
@@ -33,6 +33,8 @@ let payload: { brandId?: string | null; role?: string | null };
 
   const roleRaw = payload?.role;
   const role = typeof roleRaw === "string" && roleRaw.trim().length > 0 ? roleRaw.trim().toUpperCase() : null;
+
+  const isDemo = typeof payload?.isDemo === "boolean" ? payload.isDemo : undefined;
 
   if (role && !Object.values(UserRole).includes(role as UserRole)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
@@ -54,6 +56,7 @@ let payload: { brandId?: string | null; role?: string | null };
     data: {
       brandId,
       role: role ? (role as UserRole) : undefined,
+      ...(isDemo !== undefined ? { isDemo } : {}),
     },
   });
 

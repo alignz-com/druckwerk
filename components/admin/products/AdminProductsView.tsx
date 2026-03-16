@@ -12,9 +12,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations } from "@/components/providers/locale-provider"
-import { ProductPaperSection } from "./ProductPaperSection"
+import { ProductFormatsSection } from "./ProductFormatsSection"
 
 type Product = {
   id: string
@@ -22,18 +29,15 @@ type Product = {
   nameEn: string | null
   nameDe: string | null
   description: string | null
-  trimWidthMm: number
-  trimHeightMm: number
-  toleranceMm: number
-  expectedBleedMm: number | null
+  type: "BUSINESS_CARD" | "PDF_PRINT"
+  trimWidthMm: number | null
+  trimHeightMm: number | null
   canvasWidthMm: number | null
   canvasHeightMm: number | null
   printDpi: number | null
   pcmCode: string | null
-  minPages: number | null
-  maxPages: number | null
   createdAt: string
-  _count?: { pdfOrderItems: number }
+  _count?: { productFormats: number }
 }
 
 type FormState = {
@@ -41,52 +45,18 @@ type FormState = {
   nameEn: string
   nameDe: string
   description: string
+  type: "BUSINESS_CARD" | "PDF_PRINT"
   trimWidthMm: string
   trimHeightMm: string
-  toleranceMm: string
-  expectedBleedMm: string
   canvasWidthMm: string
   canvasHeightMm: string
   printDpi: string
   pcmCode: string
-  minPages: string
-  maxPages: string
 }
 
 const emptyForm: FormState = {
-  name: "",
-  nameEn: "",
-  nameDe: "",
-  description: "",
-  trimWidthMm: "",
-  trimHeightMm: "",
-  toleranceMm: "1",
-  expectedBleedMm: "",
-  canvasWidthMm: "",
-  canvasHeightMm: "",
-  printDpi: "",
-  pcmCode: "",
-  minPages: "",
-  maxPages: "",
-}
-
-function formToPayload(form: FormState) {
-  return {
-    name: form.name,
-    nameEn: form.nameEn || null,
-    nameDe: form.nameDe || null,
-    description: form.description,
-    trimWidthMm: parseFloat(form.trimWidthMm),
-    trimHeightMm: parseFloat(form.trimHeightMm),
-    toleranceMm: parseFloat(form.toleranceMm) || 1,
-    expectedBleedMm: form.expectedBleedMm ? parseFloat(form.expectedBleedMm) : null,
-    canvasWidthMm: form.canvasWidthMm ? parseFloat(form.canvasWidthMm) : null,
-    canvasHeightMm: form.canvasHeightMm ? parseFloat(form.canvasHeightMm) : null,
-    printDpi: form.printDpi ? parseInt(form.printDpi) : null,
-    pcmCode: form.pcmCode || null,
-    minPages: form.minPages ? parseInt(form.minPages) : null,
-    maxPages: form.maxPages ? parseInt(form.maxPages) : null,
-  }
+  name: "", nameEn: "", nameDe: "", description: "", type: "PDF_PRINT",
+  trimWidthMm: "", trimHeightMm: "", canvasWidthMm: "", canvasHeightMm: "", printDpi: "", pcmCode: "",
 }
 
 export function AdminProductsView() {
@@ -120,16 +90,13 @@ export function AdminProductsView() {
       nameEn: p.nameEn ?? "",
       nameDe: p.nameDe ?? "",
       description: p.description ?? "",
-      trimWidthMm: String(p.trimWidthMm),
-      trimHeightMm: String(p.trimHeightMm),
-      toleranceMm: String(p.toleranceMm),
-      expectedBleedMm: p.expectedBleedMm != null ? String(p.expectedBleedMm) : "",
+      type: p.type,
+      trimWidthMm: p.trimWidthMm != null ? String(p.trimWidthMm) : "",
+      trimHeightMm: p.trimHeightMm != null ? String(p.trimHeightMm) : "",
       canvasWidthMm: p.canvasWidthMm != null ? String(p.canvasWidthMm) : "",
       canvasHeightMm: p.canvasHeightMm != null ? String(p.canvasHeightMm) : "",
       printDpi: p.printDpi != null ? String(p.printDpi) : "",
       pcmCode: p.pcmCode ?? "",
-      minPages: p.minPages != null ? String(p.minPages) : "",
-      maxPages: p.maxPages != null ? String(p.maxPages) : "",
     })
     setError(null)
     setDialog({ edit: p })
@@ -143,14 +110,28 @@ export function AdminProductsView() {
       const res = await fetch(id ? `/api/admin/products/${id}` : "/api/admin/products", {
         method: id ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formToPayload(form)),
+        body: JSON.stringify({
+          name: form.name,
+          nameEn: form.nameEn || null,
+          nameDe: form.nameDe || null,
+          description: form.description || null,
+          ...(id ? {} : { type: form.type }),
+          ...(id ? {
+            trimWidthMm: form.trimWidthMm ? parseFloat(form.trimWidthMm) : null,
+            trimHeightMm: form.trimHeightMm ? parseFloat(form.trimHeightMm) : null,
+            canvasWidthMm: form.canvasWidthMm ? parseFloat(form.canvasWidthMm) : null,
+            canvasHeightMm: form.canvasHeightMm ? parseFloat(form.canvasHeightMm) : null,
+            printDpi: form.printDpi ? parseInt(form.printDpi) : null,
+            pcmCode: form.pcmCode || null,
+          } : {}),
+        }),
       })
       if (!res.ok) {
         const b = await res.json().catch(() => ({}))
         throw new Error(b.error ?? `Error ${res.status}`)
       }
       await load()
-      setDialog(null)
+      if (dialog === "create") setDialog(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : t("save"))
     } finally {
@@ -204,25 +185,19 @@ export function AdminProductsView() {
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.name")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.format")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.bleed")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.pcmCode")}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Format Variants</th>
                 <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
             <tbody>
               {products.map((p) => (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {p.trimWidthMm} × {p.trimHeightMm} mm
-                    <span className="ml-1 text-muted-foreground/60">(±{p.toleranceMm})</span>
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{p.name}</p>
+                    {p.nameDe && <p className="text-xs text-muted-foreground">{p.nameDe}</p>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {p.expectedBleedMm != null ? `${p.expectedBleedMm} mm` : "—"}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {p.pcmCode ?? "—"}
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {p._count?.productFormats ?? 0}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
@@ -248,92 +223,102 @@ export function AdminProductsView() {
       )}
 
       <Dialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {dialog === "create" ? t("newProduct") : t("editProduct")}
             </DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4 py-2">
+            {dialog === "create" && (
+              <div className="space-y-1.5">
+                <Label>{t("fields.type")}</Label>
+                <Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v as FormState["type"] }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PDF_PRINT">{t("types.PDF_PRINT")}</SelectItem>
+                    <SelectItem value="BUSINESS_CARD">{t("types.BUSINESS_CARD")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>{t("fields.name")}</Label>
-              <Input {...f("name")} placeholder="e.g. A5 Flyer" />
+              <Input {...f("name")} placeholder="e.g. Flyer" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>{t("fields.nameEn")}</Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">EN</span>
-                  <Input {...f("nameEn")} className="pl-8" placeholder="A5 Flyer" />
+                  <Input {...f("nameEn")} className="pl-8" placeholder="Flyer" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>{t("fields.nameDe")}</Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">DE</span>
-                  <Input {...f("nameDe")} className="pl-8" placeholder="A5 Flyer" />
+                  <Input {...f("nameDe")} className="pl-8" placeholder="Flyer" />
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t("fields.widthMm")}</Label>
-                <Input {...f("trimWidthMm")} type="number" step="0.1" placeholder="148" />
+
+            {/* Dimensions — only on edit, only for BC */}
+            {dialog !== null && dialog !== "create" && form.type === "BUSINESS_CARD" && (
+              <div className="space-y-3 border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Print Specifications</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.widthMm")}</Label>
+                    <Input {...f("trimWidthMm")} type="number" step="0.1" placeholder="55" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.heightMm")}</Label>
+                    <Input {...f("trimHeightMm")} type="number" step="0.1" placeholder="85" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.canvasWidthMm")}</Label>
+                    <Input {...f("canvasWidthMm")} type="number" step="0.1" placeholder="58" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.canvasHeightMm")}</Label>
+                    <Input {...f("canvasHeightMm")} type="number" step="0.1" placeholder="88" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.printDpi")}</Label>
+                    <Input {...f("printDpi")} type="number" step="1" placeholder="300" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("fields.pcmCode")}</Label>
+                    <Input {...f("pcmCode")} className="font-mono text-sm" placeholder="pcm_vk_standard" />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.heightMm")}</Label>
-                <Input {...f("trimHeightMm")} type="number" step="0.1" placeholder="210" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t("fields.toleranceMm")}</Label>
-                <Input {...f("toleranceMm")} type="number" step="0.1" placeholder="1" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.expectedBleedMm")}</Label>
-                <Input {...f("expectedBleedMm")} type="number" step="0.1" placeholder="3" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t("fields.canvasWidthMm")}</Label>
-                <Input {...f("canvasWidthMm")} type="number" step="0.1" placeholder="80" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.canvasHeightMm")}</Label>
-                <Input {...f("canvasHeightMm")} type="number" step="0.1" placeholder="50" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("fields.printDpi")}</Label>
-              <Input {...f("printDpi")} type="number" step="1" placeholder="300" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("fields.pageRange")}</Label>
-              <div className="flex items-center gap-2">
-                <Input {...f("minPages")} type="number" step="1" placeholder={t("fields.pageMin")} className="w-full" />
-                <span className="text-muted-foreground shrink-0">–</span>
-                <Input {...f("maxPages")} type="number" step="1" placeholder={t("fields.pageMax")} className="w-full" />
-              </div>
-              <p className="text-xs text-muted-foreground">{t("fields.pageRangeHint")}</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("fields.pcmCode")}</Label>
-              <Input {...f("pcmCode")} placeholder="e.g. BC_85x55_CMYK" className="font-mono" />
-              <p className="text-xs text-muted-foreground">{t("fields.pcmCodeHint")}</p>
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {dialog !== null && dialog !== "create" && (
-              <ProductPaperSection productId={dialog.edit.id} />
             )}
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>{t("cancel")}</Button>
             <LoadingButton loading={saving} onClick={handleSave}>
               {dialog === "create" ? t("create") : t("save")}
             </LoadingButton>
           </DialogFooter>
+
+          {/* Format variants — only shown when editing an existing product */}
+          {dialog !== null && dialog !== "create" && (
+            <div className="border-t pt-4 mt-2">
+              <ProductFormatsSection productId={dialog.edit.id} />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -78,7 +78,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           pages: true,
           quantity: true,
           thumbnailStoragePath: true,
-          product: { select: { name: true, nameEn: true, nameDe: true } },
+          productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
         },
         orderBy: { createdAt: "asc" as const },
       },
@@ -195,8 +195,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       if (isBC) return null;
       const names = Array.from(new Set(
         order.pdfOrderItems
-          .filter(i => i.product)
-          .map(i => (locale === "de" ? i.product!.nameDe : i.product!.nameEn) ?? i.product!.name)
+          .filter(i => i.productFormat?.product)
+          .map(i => (locale === "de" ? i.productFormat!.product!.nameDe : i.productFormat!.product!.nameEn) ?? i.productFormat!.product!.name)
       ));
       if (names.length === 0) return null;
       return names.slice(0, 2).join(" · ") + (names.length > 2 ? ` +${names.length - 2}` : "");

@@ -5,24 +5,19 @@ import { notFound, redirect } from "next/navigation";
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
-import { OrderJdfRegenerateButton } from "@/components/orders/OrderJdfRegenerateButton";
 import { OrderQuantityEditor } from "@/components/orders/OrderQuantityEditor";
-import { OrderDetailActions } from "@/components/orders/OrderDetailActions";
-import { OrderDetailPdfViewer } from "@/components/orders/OrderDetailPdfViewer";
+import { OrderDeliveryDateEditor } from "@/components/orders/OrderDeliveryDateEditor";
+import { OrderDetailActionBar } from "@/components/orders/OrderDetailActionBar";
+import {
+  OrderProductsTable,
+  type BcProductItem,
+  type PdfProductItem,
+  type OrderProductsTableLabels,
+} from "@/components/orders/OrderProductsTable";
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
 
 type OrderDetailPageProps = {
   params: Promise<{ orderId: string }>;
-};
-
-type AddressMeta = {
-  companyName?: string;
-  street?: string;
-  postalCode?: string;
-  city?: string;
-  country?: string;
-  countryCode?: string;
-  addressExtra?: string;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -56,19 +51,6 @@ const formatDeliveryDate = (date: Date | null, locale: Locale) => {
   }).format(date);
 };
 
-function getAddressLines(address?: AddressMeta | null) {
-  if (!address) return [];
-  return [
-    address.companyName,
-    address.street,
-    address.addressExtra,
-    [address.postalCode, address.city].filter(Boolean).join(" ").trim(),
-    address.country,
-  ]
-    .filter((line) => !!line && line.trim().length > 0)
-    .map((line) => line!.trim());
-}
-
 export default async function OrderDetailPage({ params }: OrderDetailPageProps) {
   const { orderId } = await params;
 
@@ -95,12 +77,25 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           product: { select: { name: true, nameEn: true, nameDe: true } },
         },
       },
-      brand: true,
+      brand: {
+        include: {
+          addresses: {
+            select: { id: true, label: true, company: true, street: true, city: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      },
       user: { select: { name: true, email: true } },
       pdfOrderItems: {
         orderBy: { createdAt: "asc" },
         include: {
-          product: { select: { name: true, nameEn: true, nameDe: true } },
+          productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
+        },
+      },
+      deliveryItems: {
+        take: 1,
+        include: {
+          delivery: { select: { id: true, number: true, deliveryNoteUrl: true } },
         },
       },
     },
@@ -123,11 +118,15 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const canEditQuantity = isAdmin || isPrinter;
   const canRegenerateJdf = isAdmin || isPrinter;
   const canDelete = isAdmin && order.status === "CANCELLED";
+  const canCreateConfirmation =
+    (isAdmin || isPrinter) && !order.deliveryItems?.length;
+
+  const delivery = order.deliveryItems?.[0]?.delivery ?? null;
+  const brandAddresses = order.brand?.addresses ?? [];
 
   const meta =
     typeof order.meta === "object" && order.meta ? (order.meta as Record<string, unknown>) : {};
   const templateKey = typeof meta.templateKey === "string" ? meta.templateKey : null;
-  const addressMeta = (meta.address as AddressMeta | undefined) ?? undefined;
   const customerReference =
     typeof meta.customerReference === "string" || typeof meta.customerReference === "number"
       ? String(meta.customerReference)
@@ -142,7 +141,6 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const deliveryDueAtLabel = formatDeliveryDate(order.deliveryDueAt, locale);
   const createdAtLabel = formatDate(order.createdAt, locale);
 
-  const addressLines = getAddressLines(addressMeta);
   const allowedQuantities = resolveAllowedQuantities(order.brand ?? undefined);
 
   // Product name for BC orders
@@ -161,7 +159,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
 
   // PDF items
   const S3_BASE = `${process.env.S3_PUBLIC_URL ?? ""}/${process.env.S3_ORDERS_BUCKET ?? "orders"}`;
-  const pdfItems = order.pdfOrderItems.map((item) => ({
+  const pdfItems: PdfProductItem[] = order.pdfOrderItems.map((item) => ({
     id: item.id,
     filename: item.filename,
     thumbnailUrl: item.thumbnailStoragePath ? `${S3_BASE}/${item.thumbnailStoragePath}` : null,
@@ -169,13 +167,60 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     pages: item.pages ?? null,
     quantity: item.quantity,
     productName:
-      (locale === "de" ? item.product?.nameDe : item.product?.nameEn) ??
-      item.product?.name ??
+      (locale === "de" ? item.productFormat?.product?.nameDe : item.productFormat?.product?.nameEn) ??
+      item.productFormat?.product?.name ??
       null,
+    trimWidthMm: item.trimWidthMm ?? null,
+    trimHeightMm: item.trimHeightMm ?? null,
+    bleedMm: item.bleedMm ?? null,
+    colorSpaces: (item.colorSpaces as string[]) ?? [],
   }));
 
+  // BC item for products table
+  const bcItem: BcProductItem = {
+    productName: bcProductName,
+    templateLabel: order.template?.label ?? null,
+    previewFrontPath: order.template?.previewFrontPath ?? null,
+    quantity: order.quantity ?? 0,
+    requesterName: order.requesterName ?? null,
+    requesterRole: order.requesterRole ?? null,
+    requesterSeniority: order.requesterSeniority ?? null,
+    requesterEmail: order.requesterEmail ?? null,
+    phone: order.phone ?? null,
+    mobile: order.mobile ?? null,
+    url: order.url ?? null,
+    linkedin: order.linkedin ?? null,
+    pdfUrl: order.pdfUrl ?? null,
+    jdfUrl: order.jdfUrl ?? null,
+  };
+
+  const tableLabels: OrderProductsTableLabels = {
+    product:
+      order.type === "PDF_PRINT"
+        ? locale === "de" ? "Produkt" : "Product"
+        : t.ordersPage.detail.template,
+    qty: t.ordersPage.detail.quantity,
+    file: "File",
+    format: "Format",
+    pages: "Pages",
+    bleed: t.ordersPage.detail.bleed,
+    colors: "Colors",
+    noBleed: t.ordersPage.detail.noBleed,
+    name: t.ordersPage.detail.name,
+    role: t.ordersPage.detail.role,
+    seniority: t.ordersPage.detail.seniority,
+    email: t.ordersPage.detail.email,
+    phone: t.ordersPage.detail.phone,
+    mobile: t.ordersPage.detail.mobile,
+    url: t.ordersPage.detail.url,
+    linkedin: t.ordersPage.detail.linkedin,
+    details: t.ordersPage.detail.details,
+    download: t.ordersPage.detail.downloadFile,
+    open: t.ordersPage.detail.expandPreview,
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-400">
         <Link href="/orders" className="hover:text-slate-600 transition-colors">
@@ -210,30 +255,120 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         {/* LEFT COLUMN */}
         <div className="space-y-6">
-          {/* Order details card */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <dl className="space-y-3 text-sm">
-              {/* BC: template / product name */}
-              {order.type === "BUSINESS_CARD" && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">
-                    {t.ordersPage.detail.template}
+          {/* Products */}
+          {order.type === "PDF_PRINT" ? (
+            <OrderProductsTable
+              type="PDF_PRINT"
+              items={pdfItems}
+              labels={tableLabels}
+              orderId={order.id}
+              canEditQty={canEditQuantity}
+            />
+          ) : (
+            <OrderProductsTable
+              type="BUSINESS_CARD"
+              item={bcItem}
+              labels={tableLabels}
+            />
+          )}
+
+          {/* BC: notes + customer reference (if present) */}
+          {(customerReference || order.notes) && (
+            <section className="rounded-lg border p-5">
+              <dl className="space-y-3 text-sm">
+                {customerReference && (
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-slate-400">
+                      {t.ordersPage.detail.customerReference}
+                    </dt>
+                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
+                      {customerReference}
+                    </dd>
+                  </div>
+                )}
+                {order.notes && (
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-slate-400">Notes</dt>
+                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
+                      {order.notes}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="space-y-4">
+          {/* Order metadata */}
+          <section className="rounded-lg border p-4">
+            <h2 className="text-sm font-semibold text-slate-900 mb-1">
+              {t.ordersPage.detail.orderInfo}
+            </h2>
+            <dl className="divide-y divide-slate-100">
+              <div className="flex items-start gap-4 py-2.5">
+                <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                  {locale === "de" ? "Nummer" : "Number"}
+                </dt>
+                <dd className="text-sm text-slate-900 font-medium">{order.referenceCode}</dd>
+              </div>
+              <div className="flex items-start gap-4 py-2.5">
+                <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                  {locale === "de" ? "Datum" : "Date"}
+                </dt>
+                <dd className="text-sm text-slate-900">{createdAtLabel}</dd>
+              </div>
+              {order.brand?.name && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {locale === "de" ? "Firma" : "Company"}
                   </dt>
-                  <dd className="mt-1 text-base text-slate-900">
-                    {bcProductName
-                      ? `${bcProductName}${order.template?.label ? ` — ${order.template.label}` : ""}`
-                      : (order.template?.label ?? templateKey ?? order.templateId ?? "—")}
+                  <dd className="text-sm text-slate-900">{order.brand.name}</dd>
+                </div>
+              )}
+              {order.user && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {t.ordersPage.detail.contact}
+                  </dt>
+                  <dd className="text-sm text-slate-900">
+                    <p>{order.user.name}</p>
+                    <p className="text-xs text-slate-400">{order.user.email}</p>
                   </dd>
                 </div>
               )}
-
+              <div className="flex items-start gap-4 py-2.5">
+                <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                  {t.ordersPage.detail.delivery}
+                </dt>
+                <dd className="text-sm text-slate-900">
+                  {deliveryTimeLabel}
+                </dd>
+              </div>
+              <div className="flex items-start gap-4 py-2.5">
+                <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                  {locale === "de" ? "Lieferdatum" : "Due date"}
+                </dt>
+                <dd className="text-sm text-slate-900">
+                  <OrderDeliveryDateEditor
+                    orderId={order.id}
+                    deliveryDueAt={order.deliveryDueAt?.toISOString() ?? null}
+                    canEdit={canEditQuantity}
+                    labels={{
+                      saved: t.ordersPage.detail.deliveryDateSaved,
+                      error: t.ordersPage.detail.deliveryDateError,
+                    }}
+                  />
+                </dd>
+              </div>
               {/* BC: quantity editor */}
               {order.type === "BUSINESS_CARD" && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
                     {t.ordersPage.detail.quantity}
                   </dt>
-                  <dd className="mt-1 text-base text-slate-900">
+                  <dd className="text-sm text-slate-900">
                     <OrderQuantityEditor
                       orderId={order.id}
                       quantity={order.quantity ?? 0}
@@ -244,336 +379,65 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   </dd>
                 </div>
               )}
-
-              {/* Delivery */}
-              <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-400">
-                  {t.ordersPage.detail.delivery}
-                </dt>
-                <dd className="mt-1 text-base text-slate-900">
-                  {deliveryTimeLabel}
-                  {deliveryDueAtLabel ? ` · ${deliveryDueAtLabel}` : ""}
-                </dd>
-              </div>
-
-              {/* Customer reference */}
-              {customerReference ? (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">
-                    {t.ordersPage.detail.customerReference}
+              {/* Confirmation link */}
+              {delivery && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {t.ordersPage.detail.confirmation}
                   </dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
-                    {customerReference}
+                  <dd className="text-sm text-slate-900">
+                    {delivery.deliveryNoteUrl ? (
+                      <a
+                        href={delivery.deliveryNoteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {delivery.number}
+                      </a>
+                    ) : (
+                      delivery.number
+                    )}
                   </dd>
                 </div>
-              ) : null}
-
-              {/* Notes */}
-              {order.notes ? (
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Notes</dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
-                    {order.notes}
-                  </dd>
-                </div>
-              ) : null}
-
-              {/* Legacy PDF download link for BC orders */}
-              {order.pdfUrl && order.type === "BUSINESS_CARD" ? (
-                <div className="pt-2 flex flex-wrap gap-3">
-                  <a
-                    href={order.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    PDF
-                  </a>
-                  {order.jdfUrl ? (
-                    <a
-                      href={order.jdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      JDF
-                    </a>
-                  ) : null}
-                </div>
-              ) : null}
+              )}
             </dl>
           </section>
 
-          {/* PDF: large preview gallery */}
-          {order.type === "PDF_PRINT" && pdfItems.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
-                {t.ordersPage.detail.previewTitle}
-              </h2>
-              <OrderDetailPdfViewer
-                items={pdfItems}
-                expandLabel={t.ordersPage.detail.expandPreview}
-                downloadLabel={t.ordersPage.detail.downloadFile}
-                closeLabel={t.ordersPage.detail.close}
-              />
-            </section>
-          )}
-
-          {/* PDF files table */}
-          {order.type === "PDF_PRINT" && order.pdfOrderItems.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
-                {t.ordersPage.detail.filesSection}
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-slate-50">
-                      <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        File
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Product
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Format
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Bleed
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Colors
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Pages
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Qty
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.pdfOrderItems.map((item) => (
-                      <tr key={item.id} className="border-b last:border-0">
-                        <td className="px-4 py-3 max-w-[200px]">
-                          <p className="font-medium truncate">{item.filename}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
-                          {item.product?.name ? (
-                            (locale === "de" ? item.product.nameDe : item.product.nameEn) ??
-                            item.product.name
-                          ) : "—"}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                          {item.trimWidthMm != null && item.trimHeightMm != null
-                            ? `${item.trimWidthMm} × ${item.trimHeightMm} mm`
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">
-                          {item.bleedMm != null ? (
-                            item.bleedMm === 0 ? (
-                              <span className="text-red-600">
-                                {t.ordersPage.detail.noBleed}
-                              </span>
-                            ) : (
-                              `${item.bleedMm} mm`
-                            )
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {(item.colorSpaces as string[]).map((cs) => (
-                              <span
-                                key={cs}
-                                className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700"
-                              >
-                                {cs}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-600">
-                          {item.pages ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                          {item.quantity}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="space-y-4">
-          {/* Actions card — admin/printer only */}
-          {(canChangeStatus || canDelete || canRegenerateJdf) && (
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="p-4">
-                <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                  {t.ordersPage.detail.actionsTitle}
-                </h2>
-                <OrderDetailActions
-                  orderId={order.id}
-                  currentStatus={order.status}
-                  statusOptions={statusOptions}
-                  canChangeStatus={canChangeStatus}
-                  canDelete={canDelete}
-                  canRegenerateJdf={canRegenerateJdf}
-                  labels={{
-                    changeStatus: t.ordersPage.detail.changeStatus,
-                    applyStatus: t.ordersPage.detail.applyStatus,
-                    statusUpdated: t.ordersPage.detail.statusUpdated,
-                    statusUpdateError: t.ordersPage.detail.statusUpdateError,
-                    deleteAction: t.ordersPage.detail.deleteAction,
-                    deleteRunning: t.ordersPage.detail.deleteRunning,
-                    deleteConfirm: t.ordersPage.detail.deleteConfirm,
-                    deleteError: t.ordersPage.detail.deleteError,
-                  }}
-                />
-              </div>
-              {order.user && (
-                <div className="border-t border-slate-100 px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
-                    {t.ordersPage.detail.orderedBy}
-                  </p>
-                  <p className="text-sm text-slate-700">{order.user.name}</p>
-                  <p className="text-xs text-slate-400">{order.user.email}</p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* BC: template preview image */}
-          {order.type === "BUSINESS_CARD" && order.template?.previewFrontPath && (
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 shadow-sm overflow-hidden">
-              <img
-                src={order.template.previewFrontPath}
-                alt=""
-                className="w-full object-contain"
-              />
-            </section>
-          )}
-
-          {/* BC: Person details */}
-          {order.type === "BUSINESS_CARD" && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                {t.ordersPage.detail.requester}
-              </h2>
-              <dl className="space-y-3 text-sm">
-                {order.requesterName && (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.name}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.requesterName}</dd>
-                  </div>
-                )}
-                {order.requesterRole ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.role}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.requesterRole}</dd>
-                  </div>
-                ) : null}
-                {order.requesterSeniority ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.seniority}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.requesterSeniority}</dd>
-                  </div>
-                ) : null}
-                {order.requesterEmail && (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.email}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.requesterEmail}</dd>
-                  </div>
-                )}
-                {order.phone ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.phone}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.phone}</dd>
-                  </div>
-                ) : null}
-                {order.mobile ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.mobile}
-                    </dt>
-                    <dd className="mt-0.5 text-slate-900">{order.mobile}</dd>
-                  </div>
-                ) : null}
-                {order.url ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.url}
-                    </dt>
-                    <dd className="mt-0.5">
-                      <a
-                        href={order.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline break-all"
-                      >
-                        {order.url}
-                      </a>
-                    </dd>
-                  </div>
-                ) : null}
-                {order.linkedin ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.linkedin}
-                    </dt>
-                    <dd className="mt-0.5">
-                      <a
-                        href={order.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline break-all"
-                      >
-                        {order.linkedin}
-                      </a>
-                    </dd>
-                  </div>
-                ) : null}
-              </dl>
-            </section>
-          )}
-
-          {/* Company */}
-          {(order.company || addressLines.length > 0) && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                {t.ordersPage.detail.company}
-              </h2>
-              {order.company && (
-                <p className="text-sm text-slate-900 font-medium mb-2">{order.company}</p>
-              )}
-              {addressLines.length > 0 && (
-                <div className="text-sm text-slate-600 space-y-0.5">
-                  {addressLines.map((line, index) => (
-                    <p key={index}>{line}</p>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
         </div>
       </div>
+
+      {/* Bottom action bar — admin/printer only */}
+      <OrderDetailActionBar
+        orderId={order.id}
+        currentStatus={order.status}
+        statusOptions={statusOptions}
+        canChangeStatus={canChangeStatus}
+        canRegenerateJdf={canRegenerateJdf}
+        canDelete={canDelete}
+        canCreateConfirmation={canCreateConfirmation}
+        addresses={brandAddresses}
+        labels={{
+          changeStatus: t.ordersPage.detail.changeStatus,
+          applyStatus: t.ordersPage.detail.applyStatus,
+          statusUpdated: t.ordersPage.detail.statusUpdated,
+          statusUpdateError: t.ordersPage.detail.statusUpdateError,
+          deleteAction: t.ordersPage.detail.deleteAction,
+          deleteRunning: t.ordersPage.detail.deleteRunning,
+          deleteConfirm: t.ordersPage.detail.deleteConfirm,
+          deleteError: t.ordersPage.detail.deleteError,
+          jdfRebuild: t.ordersPage.detail.jdfRebuild,
+          jdfRebuildRunning: t.ordersPage.detail.jdfRebuildRunning,
+          jdfRebuildSuccess: t.ordersPage.detail.jdfRebuildSuccess,
+          jdfRebuildError: t.ordersPage.detail.jdfRebuildError,
+          createConfirmation: t.ordersPage.detail.createConfirmation,
+          confirmationCreated: t.ordersPage.detail.confirmationCreated,
+          confirmationCreateError: t.ordersPage.detail.confirmationCreateError,
+          confirmationNoAddresses: t.ordersPage.detail.confirmationNoAddresses,
+          confirmationNote: t.ordersPage.detail.confirmationNote,
+          confirmationSelectAddress: t.ordersPage.detail.confirmationSelectAddress,
+        }}
+      />
     </div>
   );
 }

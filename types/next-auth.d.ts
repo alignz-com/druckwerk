@@ -15,6 +15,7 @@ declare module "next-auth" {
       locale?: string;
       url?: string | null;
       hasPassword?: boolean;
+      isDemo?: boolean;
     };
   }
 
@@ -28,6 +29,7 @@ declare module "next-auth" {
     locale?: string;
     url?: string | null;
     hasPassword?: boolean;
+    isDemo?: boolean;
   }
 }
 
@@ -43,5 +45,6 @@ declare module "next-auth/jwt" {
     locale?: string;
     url?: string | null;
     hasPassword?: boolean;
+    isDemo?: boolean;
   }
 }

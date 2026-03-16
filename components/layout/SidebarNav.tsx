@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Package, PlusCircle, ShieldCheck, Type, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Package, PlusCircle, Ruler, ShieldCheck, Sparkles, Type, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,10 +12,12 @@ const ICONS: Record<string, LucideIcon> = {
   deliveries: ClipboardCheck,
   "admin-brands": ShieldCheck,
   "admin-users": Users,
+  "admin-products": Package,
+  "admin-formats": Ruler,
+  "admin-finishes": Sparkles,
+  "admin-papers": Layers,
   "admin-templates": LayoutTemplate,
   "admin-fonts": Type,
-  "admin-products": Package,
-  "admin-papers": Layers,
 };
 
 export type NavItem = {
@@ -64,7 +66,8 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
           ) : null}
           <div className={cn("flex flex-col", itemsGap)}>
             {group.items.map(({ href, label, icon }) => {
-              const active = pathname === href;
+              const segments = href.split("/").filter(Boolean).length;
+              const active = pathname === href || (segments >= 2 && pathname.startsWith(`${href}/`));
               const IconComponent = icon ? ICONS[icon] : undefined;
               const linkClasses = cn(
                 "relative flex items-center text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white",

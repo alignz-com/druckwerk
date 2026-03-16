@@ -14,17 +14,13 @@ const bodySchema = z.object({
   name: z.string().min(1).optional(),
   nameEn: z.string().nullable().optional(),
   nameDe: z.string().nullable().optional(),
-  description: z.string().optional(),
-  trimWidthMm: z.number().positive().optional(),
-  trimHeightMm: z.number().positive().optional(),
-  toleranceMm: z.number().nonnegative().optional(),
-  expectedBleedMm: z.number().nonnegative().nullable().optional(),
-  canvasWidthMm: z.number().positive().nullable().optional(),
-  canvasHeightMm: z.number().positive().nullable().optional(),
-  printDpi: z.number().int().positive().nullable().optional(),
+  description: z.string().nullable().optional(),
+  trimWidthMm: z.number().nullable().optional(),
+  trimHeightMm: z.number().nullable().optional(),
+  canvasWidthMm: z.number().nullable().optional(),
+  canvasHeightMm: z.number().nullable().optional(),
+  printDpi: z.number().int().nullable().optional(),
   pcmCode: z.string().nullable().optional(),
-  minPages: z.number().int().positive().nullable().optional(),
-  maxPages: z.number().int().positive().nullable().optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -48,14 +44,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.description !== undefined && { description: body.description || null }),
       ...(body.trimWidthMm !== undefined && { trimWidthMm: body.trimWidthMm }),
       ...(body.trimHeightMm !== undefined && { trimHeightMm: body.trimHeightMm }),
-      ...(body.toleranceMm !== undefined && { toleranceMm: body.toleranceMm }),
-      ...(body.expectedBleedMm !== undefined && { expectedBleedMm: body.expectedBleedMm }),
       ...(body.canvasWidthMm !== undefined && { canvasWidthMm: body.canvasWidthMm }),
       ...(body.canvasHeightMm !== undefined && { canvasHeightMm: body.canvasHeightMm }),
       ...(body.printDpi !== undefined && { printDpi: body.printDpi }),
       ...(body.pcmCode !== undefined && { pcmCode: body.pcmCode }),
-      ...(body.minPages !== undefined && { minPages: body.minPages }),
-      ...(body.maxPages !== undefined && { maxPages: body.maxPages }),
     },
   })
   return NextResponse.json(product)

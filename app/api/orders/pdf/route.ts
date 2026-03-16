@@ -46,7 +46,7 @@ const itemMetaSchema = z.object({
   pages: z.number().int().nullable().optional(),
   fileSlot: z.number().int().nullable().optional(),
   thumbnailDataUrl: z.string().nullable().optional(),
-  productId: z.string().nullable().optional(),
+  productFormatId: z.string().nullable().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         colorSpaces: meta.colorSpaces,
         pantoneColors: meta.pantoneColors,
         pages: meta.pages ?? null,
-        productId: meta.productId ?? null,
+        productFormatId: meta.productFormatId ?? null,
         _thumbnailDataUrl: meta.thumbnailDataUrl ?? null,
       }
     })

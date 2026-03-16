@@ -23,14 +23,14 @@ import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon } f
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslations, useLocale } from "@/components/providers/locale-provider"
-import { matchProduct, getProductsForSize, getProductLabel, type ProductForMatching } from "@/lib/product-matching"
+import { matchProductFormat, getProductFormatsForSize, getProductFormatLabel, type ProductFormatForMatching } from "@/lib/product-matching"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pantoneTable = require("pantone-table") as Record<string, string>
 
 export type SortableFile = PdfFileInfo & {
   id: string
   quantity: number
-  productId: string | null
+  productFormatId: string | null
   /** Original File for direct PDFs; parent archive for ZIP/7z-extracted */
   _sourceFile?: File
 }
@@ -47,10 +47,10 @@ function SortableRow({
   file: SortableFile
   onRemove: (id: string) => void
   onQuantityChange: (id: string, qty: number) => void
-  onProductChange: (id: string, productId: string | null) => void
+  onProductChange: (id: string, productFormatId: string | null) => void
   isSelected: boolean
   onSelect: (id: string) => void
-  products: ProductForMatching[]
+  products: ProductFormatForMatching[]
 }) {
   const { locale } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -110,7 +110,7 @@ function SortableRow({
       {products.length > 0 && (
         <td className="px-3 py-3 w-36" onClick={(e) => e.stopPropagation()}>
           {(() => {
-            const sizeMatches = file.error ? [] : getProductsForSize(file.trimWidthMm, file.trimHeightMm, products)
+            const sizeMatches = file.error ? [] : getProductFormatsForSize(file.trimWidthMm, file.trimHeightMm, products)
             if (sizeMatches.length === 0) {
               return (
                 <span className="text-xs text-muted-foreground italic">No match</span>
@@ -118,14 +118,14 @@ function SortableRow({
             }
             return (
               <select
-                value={file.productId ?? ""}
+                value={file.productFormatId ?? ""}
                 onChange={(e) => onProductChange(file.id, e.target.value || null)}
                 className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="">—</option>
                 {sizeMatches.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {getProductLabel(p, locale)}
+                    {getProductFormatLabel(p, locale)}
                   </option>
                 ))}
               </select>
@@ -307,7 +307,7 @@ export function PrintFileUploader({
 }: {
   files: SortableFile[]
   onChange: (files: SortableFile[]) => void
-  products?: ProductForMatching[]
+  products?: ProductFormatForMatching[]
 }) {
   const t = useTranslations()
   const [phase, setPhase] = React.useState<Phase>("idle")
@@ -377,13 +377,13 @@ export function PrintFileUploader({
           ? acceptedFiles.find((af) => af.name === f.fromZip)
           : acceptedFiles.find((af) => af.name === f.filename)
         const matched = !f.error
-          ? matchProduct(f.trimWidthMm, f.trimHeightMm, f.pages, products)
+          ? matchProductFormat(f.trimWidthMm, f.trimHeightMm, f.pages, products)
           : null
         return {
           ...f,
           id: `${f.filename}-${Date.now()}-${i}`,
           quantity: 1,
-          productId: matched?.id ?? null,
+          productFormatId: matched?.id ?? null,
           _sourceFile: sourceFile,
         }
       })
@@ -422,8 +422,8 @@ export function PrintFileUploader({
     onChange(files.map((f) => f.id === id ? { ...f, quantity: qty } : f))
   }
 
-  function handleProductChange(id: string, productId: string | null) {
-    onChange(files.map((f) => f.id === id ? { ...f, productId } : f))
+  function handleProductChange(id: string, productFormatId: string | null) {
+    onChange(files.map((f) => f.id === id ? { ...f, productFormatId } : f))
   }
 
   function handleSetAll() {

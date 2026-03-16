@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getBrandsForUser } from "@/lib/brand-access"
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign"
 import { PdfOrderForm } from "@/components/order/pdf-order-form"
-import type { ProductForMatching } from "@/lib/product-matching"
+import type { ProductFormatForMatching } from "@/lib/product-matching"
 
 export default async function NewPdfOrderPage() {
   const session = await getServerAuthSession()
@@ -39,26 +39,35 @@ export default async function NewPdfOrderPage() {
     initialBrandId = brandOptions[0]!.id
   }
 
-  const products: ProductForMatching[] = await prisma.product.findMany({
-    select: {
-      id: true,
-      name: true,
-      nameEn: true,
-      nameDe: true,
-      trimWidthMm: true,
-      trimHeightMm: true,
-      toleranceMm: true,
-      minPages: true,
-      maxPages: true,
+  const rawFormats = await prisma.productFormat.findMany({
+    where: { isActive: true },
+    include: {
+      product: { select: { id: true, name: true, nameEn: true, nameDe: true } },
+      format: { select: { trimWidthMm: true, trimHeightMm: true, toleranceMm: true, defaultBleedMm: true } },
     },
-    orderBy: { name: "asc" },
+    orderBy: { product: { name: "asc" } },
   })
+
+  const products: ProductFormatForMatching[] = rawFormats.map((pf) => ({
+    id: pf.id,
+    productId: pf.productId,
+    productName: pf.product.name,
+    productNameEn: pf.product.nameEn,
+    productNameDe: pf.product.nameDe,
+    trimWidthMm: pf.format.trimWidthMm,
+    trimHeightMm: pf.format.trimHeightMm,
+    toleranceMm: pf.format.toleranceMm,
+    defaultBleedMm: pf.format.defaultBleedMm,
+    minPages: pf.minPages,
+    maxPages: pf.maxPages,
+  }))
 
   return (
     <PdfOrderForm
       availableBrands={brandOptions}
       initialBrandId={initialBrandId}
       products={products}
+      isDemo={(dbUser as any)?.isDemo ?? false}
     />
   )
 }

@@ -1164,6 +1164,8 @@ export function BusinessCardFront({
   useEffect(() => {
     onFieldOverflowChange?.(frontOverflowFields);
   }, [frontOverflowKey, frontOverflowFields, onFieldOverflowChange]);
+  const trimW = template.pageWidthMm ?? LEGACY_CARD_W;
+  const trimH = template.pageHeightMm ?? LEGACY_CARD_H;
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -1171,9 +1173,10 @@ export function BusinessCardFront({
         viewBox={`0 0 ${canvasW} ${canvasH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.18))" }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.28))" }}
         aria-label="Business card front"
       >
+        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
         {frontBackground ? (
           <SmoothSvgImage
             src={frontBackground}
@@ -1190,6 +1193,8 @@ export function BusinessCardFront({
         <g transform={`translate(${offsetX}, ${offsetY})`} className="[&>g]:opacity-100">
           {frontNodes}
         </g>
+
+        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
@@ -1371,6 +1376,8 @@ export function BusinessCardBack({
   useEffect(() => {
     onFieldOverflowChange?.(backOverflowFields);
   }, [backOverflowKey, backOverflowFields, onFieldOverflowChange]);
+  const trimW = template.pageWidthMm ?? LEGACY_CARD_W;
+  const trimH = template.pageHeightMm ?? LEGACY_CARD_H;
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
@@ -1378,9 +1385,10 @@ export function BusinessCardBack({
         viewBox={`0 0 ${canvasW} ${canvasH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.18))" }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.28))" }}
         aria-label="Business card back"
       >
+        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
         {backBackground ? (
           <SmoothSvgImage
             src={backBackground}
@@ -1395,6 +1403,8 @@ export function BusinessCardBack({
         ) : null}
 
         <g transform={`translate(${offsetX}, ${offsetY})`}>{backNodes}</g>
+
+        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>

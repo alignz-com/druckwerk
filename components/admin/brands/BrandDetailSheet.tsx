@@ -206,26 +206,33 @@ export default function BrandDetailSheet({
     }
   };
 
-  const handleAddressSaved = (value: BrandAddressForm) => {
-    setForm((current) => {
-      const exists = current.addresses.some((address) => address.clientKey === value.clientKey);
-      const addresses = exists
-        ? current.addresses.map((address) => (address.clientKey === value.clientKey ? value : address))
-        : [...current.addresses, value];
-      return { ...current, addresses };
-    });
+  const handleAddressSaved = (updatedBrand: AdminBrandSummary) => {
+    applyBrandUpdate(updatedBrand);
     setAddressSheetState(null);
   };
 
   const closeAddressSheet = () => setAddressSheetState(null);
 
-  const handleAddressDelete = (clientKey: string) => {
+  const handleAddressDelete = async (clientKey: string) => {
+    if (!brand?.id) return;
     const confirmed = window.confirm(t("addresses.confirmDelete"));
     if (!confirmed) return;
-    setForm((current) => ({
-      ...current,
-      addresses: current.addresses.filter((address) => address.clientKey !== clientKey),
-    }));
+
+    // clientKey === address.id for all DB-persisted addresses
+    const addressId = clientKey;
+
+    try {
+      const res = await fetch(`/api/admin/brands/${brand.id}/addresses/${addressId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.brand) {
+        throw new Error(data?.error ?? t("toast.updateFailed"));
+      }
+      applyBrandUpdate(data.brand as AdminBrandSummary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("toast.updateFailed"));
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -276,18 +283,6 @@ export default function BrandDetailSheet({
       quantityStep: quantityStepResult.value,
       quantityOptions: quantityOptionsResult.value,
       azureTenantId: form.azureTenantId.trim() || null,
-      addresses: form.addresses.map((address) => ({
-        id: address.id,
-        label: address.label.trim() ? address.label.trim() : null,
-        company: address.company.trim() ? address.company.trim() : null,
-        street: address.street.trim() ? address.street.trim() : null,
-        addressExtra: address.addressExtra.trim() ? address.addressExtra.trim() : null,
-        postalCode: address.postalCode.trim() ? address.postalCode.trim() : null,
-        city: address.city.trim() ? address.city.trim() : null,
-        countryCode: address.countryCode.trim() ? address.countryCode.trim().toUpperCase() : null,
-        cardAddressText: address.cardAddressText.trim() ? address.cardAddressText.trim() : null,
-        url: address.url.trim() ? address.url.trim() : null,
-      })),
     };
 
     try {
@@ -614,8 +609,8 @@ export default function BrandDetailSheet({
                           )}
                           disabled={form.qrMode !== "BOTH"}
                         >
-                          <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
-                          <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
+                          <option value="VCARD_ONLY">{t("form.defaultQrModes.vcard")}</option>
+                          <option value="PUBLIC_PROFILE_ONLY">{t("form.defaultQrModes.public")}</option>
                         </select>
                         {form.qrMode !== "BOTH" ? (
                           <p className="text-xs text-slate-500">{t("form.defaultQrModeHint")}</p>
@@ -979,7 +974,7 @@ export default function BrandDetailSheet({
           ) : null}
         </SheetContent>
       </Sheet>
-      <AddressSheet state={addressSheetState} onClose={closeAddressSheet} onSave={handleAddressSaved} />
+      <AddressSheet brandId={brand?.id ?? ""} state={addressSheetState} onClose={closeAddressSheet} onSaved={handleAddressSaved} />
     </>
   );
 }

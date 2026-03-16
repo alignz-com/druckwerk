@@ -5,9 +5,14 @@ import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
 
-const updateSchema = z.object({
-  quantity: z.number().int().positive(),
-});
+const updateSchema = z
+  .object({
+    quantity: z.number().int().positive().optional(),
+    deliveryDueAt: z.string().datetime().nullable().optional(),
+  })
+  .refine((d) => d.quantity !== undefined || d.deliveryDueAt !== undefined, {
+    message: "Provide quantity or deliveryDueAt",
+  });
 
 type RouteParams = { orderId: string };
 
@@ -56,15 +61,24 @@ export async function PATCH(req: Request, context: { params: RouteParams | Promi
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const allowed = resolveAllowedQuantities(order.brand ?? undefined);
-  if (!allowed.includes(payload.quantity)) {
-    return NextResponse.json({ error: "Invalid quantity selection" }, { status: 400 });
+  const updateData: Record<string, unknown> = {};
+
+  if (payload.quantity !== undefined) {
+    const allowed = resolveAllowedQuantities(order.brand ?? undefined);
+    if (!allowed.includes(payload.quantity)) {
+      return NextResponse.json({ error: "Invalid quantity selection" }, { status: 400 });
+    }
+    updateData.quantity = payload.quantity;
+  }
+
+  if (payload.deliveryDueAt !== undefined) {
+    updateData.deliveryDueAt = payload.deliveryDueAt ? new Date(payload.deliveryDueAt) : null;
   }
 
   const updated = await prisma.order.update({
     where: { id: orderId },
-    data: { quantity: payload.quantity },
-    select: { id: true, quantity: true },
+    data: updateData,
+    select: { id: true, quantity: true, deliveryDueAt: true },
   });
 
   return NextResponse.json({ order: updated });

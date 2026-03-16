@@ -9,6 +9,7 @@ export type AdminUserSummary = {
   brandName: string | null;
   canOrderBusinessCards: boolean | null;
   canOrderPdfPrint: boolean | null;
+  isDemo: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -27,6 +28,7 @@ export function mapAdminUser(user: RawUser): AdminUserSummary {
     brandName: user.brand?.name ?? null,
     canOrderBusinessCards: user.canOrderBusinessCards ?? null,
     canOrderPdfPrint: user.canOrderPdfPrint ?? null,
+    isDemo: user.isDemo ?? false,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
