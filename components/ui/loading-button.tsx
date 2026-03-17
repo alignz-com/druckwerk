@@ -4,9 +4,9 @@ import { forwardRef } from "react";
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button, type ButtonProps } from "./button";
+import { Button } from "./button";
 
-type LoadingButtonProps = ButtonProps & {
+type LoadingButtonProps = React.ComponentProps<typeof Button> & {
   loading?: boolean;
   loadingText?: string;
   spinner?: React.ReactNode;
