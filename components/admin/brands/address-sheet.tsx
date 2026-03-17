@@ -249,8 +249,8 @@ function CountrySelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-0 overflow-hidden">
-        <div className="border-b border-slate-100 px-3 py-2">
+      <PopoverContent align="start" className="w-72 p-0 flex flex-col" style={{ maxHeight: "min(18rem, var(--radix-popover-content-available-height, 18rem))" }}>
+        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
           <Input
             ref={inputRef}
             value={search}
@@ -259,7 +259,7 @@ function CountrySelect({
             className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
           />
         </div>
-        <ul className="max-h-64 overflow-y-auto py-1">
+        <ul className="min-h-0 flex-1 overflow-y-auto py-1">
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-slate-400">Keine Treffer</li>
           ) : (
