@@ -2478,7 +2478,7 @@ export const messages = {
             removed: "Domain entfernt.",
           },
         },
-        confirmDelete: "Marke \u201E{name}\u201C löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.',
+        confirmDelete: "Marke \"{name}\" löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.",
         tabs: {
           general: "Allgemein",
           settings: "Einstellungen",
