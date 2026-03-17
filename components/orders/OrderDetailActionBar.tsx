@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useTranslations } from "@/components/providers/locale-provider";
 
 type Address = {
   id: string;
@@ -167,7 +166,6 @@ export function OrderDetailActionBar({
     } catch {
       showFeedback(labels.deleteError, false);
       setDeleting(false);
-      setDeleteConfirming(false);
     }
   }
 
