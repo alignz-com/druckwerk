@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTranslations } from "@/components/providers/locale-provider";
@@ -698,49 +697,39 @@ export default function TemplateDetailPage({ template }: Props) {
 
   return (
     <>
-      <div className="flex h-full flex-col">
-        {/* Sticky header */}
-        <div className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-start gap-3">
-              <Button type="button" variant="ghost" size="sm" asChild className="-ml-2">
-                <Link href="/admin/templates" className="flex items-center gap-2 text-slate-600">
-                  <ArrowLeft className="h-4 w-4" />
-                  {t("detail.back")}
-                </Link>
-              </Button>
-              <div className="space-y-0.5">
-                <h1 className="text-xl font-semibold text-slate-900">{template.label}</h1>
-                <p className="text-sm text-slate-500">{template.key}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {metadataError ? (
-                <p className="text-sm text-red-600">{metadataError}</p>
-              ) : metadataSuccess ? (
-                <p className="text-sm text-emerald-600">{metadataSuccess}</p>
-              ) : null}
-              <Button
-                type="button"
-                onClick={handleSaveMetadata}
-                disabled={isSavingMetadata}
-              >
-                {isSavingMetadata ? t("detail.saving") : t("detail.saveButton")}
-              </Button>
-            </div>
+      <div className="space-y-6 pb-24">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-slate-400">
+          <Link href="/admin/templates" className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            {t("detail.back")}
+          </Link>
+          <span>/</span>
+          <span className="font-medium text-slate-700">{template.label}</span>
+        </nav>
+
+        {/* Page header */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{template.label}</h1>
+            <p className="mt-1 text-sm text-slate-500">{template.key}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {metadataError && <span className="text-sm text-red-600">{metadataError}</span>}
+            {metadataSuccess && <span className="text-sm text-emerald-600">{metadataSuccess}</span>}
+            <Button type="button" onClick={handleSaveMetadata} disabled={isSavingMetadata}>
+              {isSavingMetadata ? t("detail.saving") : t("detail.saveButton")}
+            </Button>
           </div>
         </div>
 
-        {/* Scrollable content with tabs */}
-        <ScrollArea className="flex-1">
-          <div className="mx-auto w-full max-w-5xl px-4 py-6">
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList variant="line" className="mb-6 w-full justify-start">
-                <TabsTrigger value="general">{t("detail.tabs.general")}</TabsTrigger>
-                <TabsTrigger value="brands">{t("detail.tabs.brands")}</TabsTrigger>
-                <TabsTrigger value="assets">{t("detail.tabs.assets")}</TabsTrigger>
-                <TabsTrigger value="config">{t("detail.tabs.config")}</TabsTrigger>
-              </TabsList>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="mb-6 h-auto flex-wrap gap-1 bg-slate-100 p-1">
+            <TabsTrigger value="general" className="data-[state=active]:bg-white">{t("detail.tabs.general")}</TabsTrigger>
+            <TabsTrigger value="brands" className="data-[state=active]:bg-white">{t("detail.tabs.brands")}</TabsTrigger>
+            <TabsTrigger value="assets" className="data-[state=active]:bg-white">{t("detail.tabs.assets")}</TabsTrigger>
+            <TabsTrigger value="config" className="data-[state=active]:bg-white">{t("detail.tabs.config")}</TabsTrigger>
+          </TabsList>
 
               {/* ── General Tab ─────────────────────────────────────────────── */}
               <TabsContent value="general" className="space-y-8">
@@ -1334,9 +1323,7 @@ export default function TemplateDetailPage({ template }: Props) {
                   </div>
                 </section>
               </TabsContent>
-            </Tabs>
-          </div>
-        </ScrollArea>
+        </Tabs>
       </div>
 
       {/* Font picker dialog */}
