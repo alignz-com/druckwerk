@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
@@ -9,53 +10,24 @@ import { Button } from "@/components/ui/button";
 
 import { BrandsTable } from "./brands-table";
 import { createBrandColumns } from "./columns";
-import BrandCreateSheet from "./BrandCreateSheet";
-import BrandDetailSheet from "./BrandDetailSheet";
 
 type Props = {
   brands: AdminBrandSummary[];
 };
 
-type SheetState = { mode: "view"; brandId: string } | { mode: "create" } | null;
-
 export default function AdminBrandsClient({ brands }: Props) {
   const t = useTranslations("admin.brands");
+  const router = useRouter();
   const [rows, setRows] = useState(brands);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [sheetState, setSheetState] = useState<SheetState>(null);
 
-  const columns = useMemo(() => createBrandColumns(t, (id) => setSheetState({ mode: "view", brandId: id })), [t]);
+  // No onManage callback → columns render "Manage" as a direct <Link>
+  const columns = useMemo(() => createBrandColumns(t, undefined), [t]);
 
   useEffect(() => {
     setRows(brands);
   }, [brands]);
-
-  const activeBrand = useMemo(() => {
-    if (sheetState?.mode !== "view") return null;
-    return rows.find((brand) => brand.id === sheetState.brandId) ?? null;
-  }, [sheetState, rows]);
-
-  const handleBrandCreated = (brand: AdminBrandSummary) => {
-    setRows((current) => {
-      const next = [...current, brand];
-      return next.sort((a, b) => a.name.localeCompare(b.name));
-    });
-    setSheetState({ mode: "view", brandId: brand.id });
-    setFeedback({ type: "success", message: t("toast.created", { name: brand.name }) });
-  };
-
-  const handleBrandUpdated = (brand: AdminBrandSummary) => {
-    setRows((current) => current.map((item) => (item.id === brand.id ? brand : item)));
-    setSheetState({ mode: "view", brandId: brand.id });
-    setFeedback({ type: "success", message: t("toast.updated", { name: brand.name }) });
-  };
-
-  const handleBrandDeleted = (brandId: string) => {
-    setRows((current) => current.filter((brand) => brand.id !== brandId));
-    setSheetState(null);
-    setFeedback({ type: "success", message: t("toast.deleted") });
-  };
 
   const handleDeleteSelected = async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -89,7 +61,7 @@ export default function AdminBrandsClient({ brands }: Props) {
           <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
         </div>
         <Button
-          onClick={() => setSheetState({ mode: "create" })}
+          onClick={() => router.push("/admin/brands/new")}
           className="inline-flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="size-4" aria-hidden="true" />
@@ -125,20 +97,6 @@ export default function AdminBrandsClient({ brands }: Props) {
         selectionLabel={(count) => t("table.bulkDelete.selection", { count })}
         onDeleteSelected={handleDeleteSelected}
         isDeleting={isDeleting}
-      />
-
-      <BrandDetailSheet
-        brand={activeBrand}
-        open={sheetState?.mode === "view" && Boolean(activeBrand)}
-        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
-        onBrandUpdated={handleBrandUpdated}
-        onBrandDeleted={handleBrandDeleted}
-      />
-
-      <BrandCreateSheet
-        open={sheetState?.mode === "create"}
-        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
-        onBrandCreated={handleBrandCreated}
       />
     </div>
   );

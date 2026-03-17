@@ -1,4 +1,4 @@
-import BrandDetailClient from "@/components/admin/brands/BrandDetailClient";
+import BrandFormPage from "@/components/admin/brands/BrandFormPage";
 import { redirect } from "next/navigation";
 
 import { getServerAuthSession } from "@/lib/auth";
@@ -10,5 +10,5 @@ export default async function AdminBrandNewPage() {
     redirect("/orders");
   }
 
-  return <BrandDetailClient brand={null} />;
+  return <BrandFormPage brand={null} />;
 }

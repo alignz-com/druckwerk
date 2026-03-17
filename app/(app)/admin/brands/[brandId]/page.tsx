@@ -1,4 +1,4 @@
-import BrandDetailClient from "@/components/admin/brands/BrandDetailClient";
+import BrandFormPage from "@/components/admin/brands/BrandFormPage";
 import { getAdminBrand } from "@/lib/admin/brands-data";
 import { getServerAuthSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
@@ -31,5 +31,5 @@ export default async function AdminBrandDetailPage({
     notFound();
   }
 
-  return <BrandDetailClient brand={brand} />;
+  return <BrandFormPage brand={brand} />;
 }
