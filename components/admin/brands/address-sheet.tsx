@@ -6,7 +6,6 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,51 +63,54 @@ function CountrySelect({
   const selected = countries.find((c) => c.code === value.toUpperCase());
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setTimeout(() => inputRef.current?.focus(), 0); }}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700",
-            "focus:outline-none focus:ring-2 focus:ring-slate-400",
-            !selected && "text-slate-400"
-          )}
-        >
-          {selected ? `${selected.code} – ${selected.name}` : (placeholder ?? "Land wählen …")}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-0 flex flex-col" style={{ maxHeight: "min(18rem, var(--radix-popover-content-available-height, 18rem))" }}>
-        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
-          <Input
-            ref={inputRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen …"
-            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
-          />
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); setTimeout(() => inputRef.current?.focus(), 0); }}
+        className={cn(
+          "flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700",
+          "focus:outline-none focus:ring-2 focus:ring-slate-400",
+          !selected && "text-slate-400"
+        )}
+      >
+        {selected ? `${selected.code} – ${selected.name}` : (placeholder ?? "Land wählen …")}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg flex flex-col" style={{ maxHeight: "16rem" }}>
+          <div className="shrink-0 border-b border-slate-100 px-3 py-2">
+            <Input
+              ref={inputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+              placeholder="Suchen …"
+              className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+            />
+          </div>
+          <ul className="overflow-y-scroll py-1" style={{ minHeight: 0 }}>
+            {filtered.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-slate-400">Keine Treffer</li>
+            ) : (
+              filtered.map((c) => (
+                <li key={c.code}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
+                    onClick={() => { onChange(c.code); setOpen(false); setSearch(""); }}
+                  >
+                    <Check className={cn("h-4 w-4 shrink-0", value.toUpperCase() === c.code ? "text-slate-700" : "invisible")} />
+                    <span className="font-mono text-xs text-slate-400 w-6">{c.code}</span>
+                    {c.name}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
         </div>
-        <ul className="min-h-0 flex-1 overflow-y-auto py-1">
-          {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-slate-400">Keine Treffer</li>
-          ) : (
-            filtered.map((c) => (
-              <li key={c.code}>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
-                  onClick={() => { onChange(c.code); setOpen(false); setSearch(""); }}
-                >
-                  <Check className={cn("h-4 w-4 shrink-0", value.toUpperCase() === c.code ? "text-slate-700" : "invisible")} />
-                  <span className="font-mono text-xs text-slate-400 w-6">{c.code}</span>
-                  {c.name}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
 
