@@ -601,6 +601,8 @@ export const messages = {
         assetStatus: {
           allPresent: "All required assets available",
           missingPlural: "{count} missing: {list}",
+          present: "Present",
+          missing: "Missing",
         },
         paperStock: {
           label: "Paper stock",
@@ -633,6 +635,47 @@ export const messages = {
           },
         },
         detail: {
+          back: "Templates",
+          tabs: {
+            general: "General",
+            brands: "Brands",
+            assets: "Assets",
+            config: "Config",
+          },
+          sections: {
+            general: {
+              title: "Basic information",
+              description: "Label, description, and key for this template.",
+            },
+            product: {
+              title: "Product & format",
+              description: "Link this template to a product and format to inherit dimensions and PCM code.",
+            },
+            metadata: {
+              title: "Metadata",
+              description: "Timestamps and identifiers.",
+            },
+            assets: {
+              title: "Asset status",
+              description: "Overview of which assets have been uploaded for this template.",
+            },
+            danger: {
+              title: "Danger zone",
+              description: "Deleting a template removes all its assets and brand assignments permanently.",
+            },
+            config: {
+              title: "Feature flags",
+              description: "Toggle special fields shown on the order form.",
+            },
+            designConfig: {
+              title: "Design config (JSON)",
+              description: "The raw JSON layout config used for rendering front and back layouts.",
+            },
+          },
+          metadata: {
+            createdAt: "Created",
+            updatedAt: "Last updated",
+          },
           noDescription: "No description provided.",
           layoutVersion: "Layout version",
           printDpi: "Print DPI",
@@ -661,6 +704,7 @@ export const messages = {
           saveSuccess: "Template updated.",
           saveFailed: "Template update failed.",
           errors: {
+            labelRequired: "Label is required.",
             layoutVersionInvalid: "Layout version must be a non-negative number.",
             printDpiInvalid: "Print DPI must be a non-negative number.",
             pageWidthInvalid: "Page width must be a positive number.",
@@ -669,6 +713,7 @@ export const messages = {
             canvasHeightInvalid: "Canvas height must be a positive number.",
           },
           assets: {
+            listHeading: "Uploaded assets",
             uploadHeading: "Upload assets",
             uploadDescription: "Replace existing assets by uploading new files. They are stored in Supabase automatically.",
             uploadButton: "Upload selected files",
@@ -1937,6 +1982,8 @@ export const messages = {
         assetStatus: {
           allPresent: "Alle Pflicht-Assets vorhanden",
           missingPlural: "{count} fehlen: {list}",
+          present: "Vorhanden",
+          missing: "Fehlt",
         },
         paperStock: {
           label: "Papier",
@@ -1969,6 +2016,47 @@ export const messages = {
           },
         },
         detail: {
+          back: "Vorlagen",
+          tabs: {
+            general: "Allgemein",
+            brands: "Brands",
+            assets: "Assets",
+            config: "Konfiguration",
+          },
+          sections: {
+            general: {
+              title: "Grunddaten",
+              description: "Bezeichnung, Beschreibung und Schlüssel der Vorlage.",
+            },
+            product: {
+              title: "Produkt & Format",
+              description: "Verknüpfe die Vorlage mit einem Produkt und Format, um Maße und PCM-Code zu übernehmen.",
+            },
+            metadata: {
+              title: "Metadaten",
+              description: "Zeitstempel und Kennzeichner.",
+            },
+            assets: {
+              title: "Asset-Status",
+              description: "Übersicht, welche Assets für diese Vorlage hochgeladen wurden.",
+            },
+            danger: {
+              title: "Gefahrenbereich",
+              description: "Das Löschen einer Vorlage entfernt alle Assets und Brand-Zuweisungen dauerhaft.",
+            },
+            config: {
+              title: "Feature-Flags",
+              description: "Optionale Felder im Bestellformular aktivieren.",
+            },
+            designConfig: {
+              title: "Design-Konfiguration (JSON)",
+              description: "Die JSON-Layoutkonfiguration für die Vorder- und Rückseite.",
+            },
+          },
+          metadata: {
+            createdAt: "Erstellt",
+            updatedAt: "Zuletzt geändert",
+          },
           noDescription: "Keine Beschreibung hinterlegt.",
           layoutVersion: "Layout-Version",
           printDpi: "Print DPI",
@@ -1997,6 +2085,7 @@ export const messages = {
           saveSuccess: "Vorlage wurde aktualisiert.",
           saveFailed: "Vorlage konnte nicht aktualisiert werden.",
           errors: {
+            labelRequired: "Bezeichnung ist erforderlich.",
             layoutVersionInvalid: "Layout-Version muss eine nichtnegative Zahl sein.",
             printDpiInvalid: "Druck-DPI muss eine nichtnegative Zahl sein.",
             pageWidthInvalid: "Seitenbreite muss größer als 0 sein.",
@@ -2005,6 +2094,7 @@ export const messages = {
             canvasHeightInvalid: "Canvas-Höhe muss größer als 0 sein.",
           },
           assets: {
+            listHeading: "Hochgeladene Assets",
             uploadHeading: "Assets hochladen",
             uploadDescription: "Lade neue Dateien hoch, um bestehende Assets in Supabase zu ersetzen.",
             uploadButton: "Ausgewählte Dateien hochladen",
