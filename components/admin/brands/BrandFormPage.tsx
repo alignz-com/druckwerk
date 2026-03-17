@@ -651,22 +651,21 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                       <option value="BOTH">{t("form.qrModes.both")}</option>
                     </select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="fp-default-qr-mode">{t("form.defaultQrMode")}</Label>
-                    <select
-                      id="fp-default-qr-mode"
-                      value={form.defaultQrMode}
-                      onChange={(e) => setField("defaultQrMode", e.target.value as FormState["defaultQrMode"])}
-                      disabled={form.qrMode !== "BOTH"}
-                      className={cn(selectClass, "disabled:cursor-not-allowed disabled:opacity-50")}
-                    >
-                      <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
-                      <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
-                    </select>
-                    {form.qrMode !== "BOTH" && (
+                  {form.qrMode === "BOTH" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fp-default-qr-mode">{t("form.defaultQrMode")}</Label>
+                      <select
+                        id="fp-default-qr-mode"
+                        value={form.defaultQrMode}
+                        onChange={(e) => setField("defaultQrMode", e.target.value as FormState["defaultQrMode"])}
+                        className={selectClass}
+                      >
+                        <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
+                        <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
+                      </select>
                       <p className="text-xs text-slate-500">{t("form.defaultQrModeHint")}</p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Quantities */}
