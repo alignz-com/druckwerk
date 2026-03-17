@@ -78,7 +78,7 @@ function CountrySelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg flex flex-col" style={{ maxHeight: "16rem" }}>
+        <div className="absolute z-50 bottom-full mb-1 w-full rounded-md border border-slate-200 bg-white shadow-lg flex flex-col" style={{ maxHeight: "16rem" }}>
           <div className="shrink-0 border-b border-slate-100 px-3 py-2">
             <Input
               ref={inputRef}
