@@ -1895,8 +1895,8 @@ export default function OrderForm({
                   <div
                     className="relative overflow-visible"
                     style={{
-                      aspectRatio: `${selectedTemplate.pageWidthMm} / ${selectedTemplate.pageHeightMm}`,
-                      width: `min(100%, calc(55dvh * ${(selectedTemplate.pageWidthMm / selectedTemplate.pageHeightMm).toFixed(4)}))`,
+                      aspectRatio: `${selectedTemplate.pageWidthMm ?? 85} / ${selectedTemplate.pageHeightMm ?? 55}`,
+                      width: `min(100%, calc(55dvh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
                       maxHeight: `55dvh`,
                     }}
                   >
