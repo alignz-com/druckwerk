@@ -388,7 +388,9 @@ export function buildPdfItemJdfDocument(params: BuildPdfItemJdfParams): string {
   } = params;
 
   const partId = `${referenceCode}-${itemIndex}`;
-  const descriptiveName = `${brandName ?? "Order"} ${referenceCode} – ${productName ?? pdfFileName}`.trim();
+  const archiveBase = /\.(7z|zip)$/i.test(archiveName) ? archiveName.replace(/\.(7z|zip)$/i, "") : null;
+  const sourceBase = originalFilename.replace(/\.[^.]+$/, "");
+  const descriptiveName = [referenceCode, archiveBase, sourceBase].filter(Boolean).join("-");
 
   const doc = create({ version: "1.0", encoding: "UTF-8" });
   const root = doc.ele("JDF", {
