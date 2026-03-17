@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, Sparkles } from "lucide-react"
+import { Plus, Trash2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations } from "@/components/providers/locale-provider"
 
@@ -109,69 +122,69 @@ export function AdminFinishesClient() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("description")}</p>
+          <p className="text-sm text-slate-500">{t("description")}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" /> {t("newFinish")}
+        <Button onClick={openCreate} className="inline-flex items-center gap-2 self-start sm:self-auto">
+          <Plus className="size-4" aria-hidden="true" />
+          {t("newFinish")}
         </Button>
-      </div>
+      </header>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">{t("loading")}</p>
+        <p className="text-sm text-slate-500">{t("loading")}</p>
       ) : finishes.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
           <Sparkles className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t("empty")}</p>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.name")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.nameDe")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.code")}</th>
-                <th className="px-4 py-3 w-20" />
-              </tr>
-            </thead>
-            <tbody>
+        <div className={dataTableContainerClass}>
+          <Table>
+            <TableHeader className={dataTableHeaderClass}>
+              <TableRow className={dataTableRowClass}>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.nameDe")}</TableHead>
+                <TableHead>{t("table.code")}</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {finishes.map((f) => (
-                <tr key={f.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3 font-medium">{f.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{f.nameDe ?? "—"}</td>
-                  <td className="px-4 py-3">
+                <TableRow
+                  key={f.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => openEdit(f)}
+                >
+                  <TableCell className="font-semibold text-slate-900">{f.name}</TableCell>
+                  <TableCell className="text-sm text-slate-600">{f.nameDe ?? "—"}</TableCell>
+                  <TableCell>
                     {f.code ? (
                       <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-mono font-medium text-slate-500">
                         {f.code}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground text-xs">—</span>
+                      <span className="text-sm text-slate-400">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(f)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(f.id)}
-                        disabled={deleting === f.id}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="w-10 text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-destructive"
+                      onClick={() => handleDelete(f.id)}
+                      disabled={deleting === f.id}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 

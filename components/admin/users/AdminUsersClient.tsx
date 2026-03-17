@@ -92,13 +92,11 @@ export default function AdminUsersClient({ users, brands }: Props) {
         previousLabel={t("table.pagination.previous")}
         nextLabel={t("table.pagination.next")}
         resetLabel={t("table.pagination.reset")}
-        manageLabel={t("table.manage")}
         columns={{
           user: t("table.headers.user"),
           email: t("table.headers.email"),
           role: t("table.headers.role"),
           brand: t("table.headers.brand"),
-          actions: t("table.headers.actions"),
         }}
         onManage={(id) => setSheetState({ mode: "view", userId: id })}
       />

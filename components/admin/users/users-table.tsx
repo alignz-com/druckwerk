@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +35,11 @@ type UsersTableProps = {
   previousLabel: string;
   nextLabel: string;
   resetLabel: string;
-  manageLabel: string;
   columns: {
     user: string;
     email: string;
     role: string;
     brand: string;
-    actions: string;
   };
   onManage?: (id: string) => void;
 };
@@ -57,7 +55,6 @@ export function UsersTable({
   previousLabel,
   nextLabel,
   resetLabel,
-  manageLabel,
   columns,
   onManage,
 }: UsersTableProps) {
@@ -142,15 +139,9 @@ export function UsersTable({
                     getIsSorted: () => (sort?.id === "user" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "user") {
-                          return { id: "user", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "user", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "user") return { id: "user", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "user", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "user", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -165,15 +156,9 @@ export function UsersTable({
                     getIsSorted: () => (sort?.id === "email" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "email") {
-                          return { id: "email", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "email", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "email") return { id: "email", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "email", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "email", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -188,15 +173,9 @@ export function UsersTable({
                     getIsSorted: () => (sort?.id === "role" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "role") {
-                          return { id: "role", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "role", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "role") return { id: "role", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "role", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "role", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -211,26 +190,16 @@ export function UsersTable({
                     getIsSorted: () => (sort?.id === "brand" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "brand") {
-                          return { id: "brand", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "brand", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "brand") return { id: "brand", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "brand", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "brand", direction: desc ? "desc" : "asc" };
                       }),
                   }}
                   title={columns.brand}
                 />
               </TableHead>
-              <TableHead className="text-right">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {columns.actions}
-                </span>
-              </TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -242,7 +211,11 @@ export function UsersTable({
               </TableRow>
             ) : (
               pageData.map((row) => (
-                <TableRow key={row.id} className={dataTableRowClass}>
+                <TableRow
+                  key={row.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => onManage?.(row.id)}
+                >
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-semibold text-slate-900">{row.displayName}</div>
@@ -252,10 +225,8 @@ export function UsersTable({
                   <TableCell className="text-sm text-slate-600">{row.email}</TableCell>
                   <TableCell className="text-sm uppercase tracking-wide text-slate-500">{row.roleLabel}</TableCell>
                   <TableCell className="text-sm text-slate-600">{row.brandName ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => onManage?.(row.id)}>
-                      {manageLabel}
-                    </Button>
+                  <TableCell className="w-10 text-right">
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
                   </TableCell>
                 </TableRow>
               ))
@@ -274,6 +245,7 @@ export function UsersTable({
             disabled={page === 0}
             className="h-9"
           >
+            <ChevronLeft className="mr-1 h-4 w-4" />
             {previousLabel}
           </Button>
           <Button
@@ -284,6 +256,7 @@ export function UsersTable({
             className="h-9"
           >
             {nextLabel}
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       </div>

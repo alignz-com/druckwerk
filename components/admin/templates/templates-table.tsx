@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,13 +40,11 @@ type TemplatesTableProps = {
   resetLabel: string;
   deleteLabel: string;
   selectionLabel: (count: number) => string;
-  manageLabel: string;
   columns: {
     template: string;
     brands: string;
     assetStatus: string;
     updated: string;
-    actions: string;
   };
   unassignedLabel: string;
   onManage?: (id: string) => void;
@@ -65,7 +63,6 @@ export function TemplatesTable({
   resetLabel,
   deleteLabel,
   selectionLabel,
-  manageLabel,
   columns,
   unassignedLabel,
   onManage,
@@ -300,11 +297,7 @@ export function TemplatesTable({
                   align="right"
                 />
               </TableHead>
-              <TableHead className="text-right">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {columns.actions}
-                </span>
-              </TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -316,8 +309,12 @@ export function TemplatesTable({
               </TableRow>
             ) : (
               pageData.map((row) => (
-                <TableRow key={row.id} className={dataTableRowClass}>
-                  <TableCell className="w-12 px-4">
+                <TableRow
+                  key={row.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => onManage?.(row.id)}
+                >
+                  <TableCell className="w-12 px-4" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       aria-label={`Select ${row.label}`}
                       checked={selected.has(row.id)}
@@ -355,10 +352,8 @@ export function TemplatesTable({
                     </span>
                   </TableCell>
                   <TableCell className="text-right text-xs text-slate-500">{row.updatedAtLabel}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => onManage?.(row.id)}>
-                      {manageLabel}
-                    </Button>
+                  <TableCell className="w-10 text-right">
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
                   </TableCell>
                 </TableRow>
               ))
@@ -377,6 +372,7 @@ export function TemplatesTable({
             disabled={page === 0}
             className="h-9"
           >
+            <ChevronLeft className="mr-1 h-4 w-4" />
             {previousLabel}
           </Button>
           <Button
@@ -387,6 +383,7 @@ export function TemplatesTable({
             className="h-9"
           >
             {nextLabel}
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       </div>

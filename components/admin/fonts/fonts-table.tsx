@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,13 +41,11 @@ type FontsTableProps = {
   previousLabel: string;
   nextLabel: string;
   resetLabel: string;
-  manageLabel: string;
   columns: {
     family: string;
     slug: string;
     variants: string;
     updated: string;
-    actions: string;
   };
   onManage?: (id: string) => void;
 };
@@ -62,7 +61,6 @@ export function FontsTable({
   previousLabel,
   nextLabel,
   resetLabel,
-  manageLabel,
   columns,
   onManage,
 }: FontsTableProps) {
@@ -144,15 +142,9 @@ export function FontsTable({
                     getIsSorted: () => (sort?.id === "family" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "family") {
-                          return { id: "family", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "family", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "family") return { id: "family", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "family", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "family", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -167,15 +159,9 @@ export function FontsTable({
                     getIsSorted: () => (sort?.id === "slug" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "slug") {
-                          return { id: "slug", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "slug", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "slug") return { id: "slug", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "slug", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "slug", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -190,15 +176,9 @@ export function FontsTable({
                     getIsSorted: () => (sort?.id === "variants" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "variants") {
-                          return { id: "variants", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "variants", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "variants") return { id: "variants", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "variants", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "variants", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -214,15 +194,9 @@ export function FontsTable({
                     getIsSorted: () => (sort?.id === "updated" ? sort.direction : false),
                     toggleSorting: (desc) =>
                       setSort((current) => {
-                        if (!current || current.id !== "updated") {
-                          return { id: "updated", direction: desc ? "desc" : "asc" };
-                        }
-                        if (current.direction === "asc") {
-                          return desc ? { id: "updated", direction: "desc" } : current;
-                        }
-                        if (current.direction === "desc") {
-                          return desc ? current : null;
-                        }
+                        if (!current || current.id !== "updated") return { id: "updated", direction: desc ? "desc" : "asc" };
+                        if (current.direction === "asc") return desc ? { id: "updated", direction: "desc" } : current;
+                        if (current.direction === "desc") return desc ? current : null;
                         return { id: "updated", direction: desc ? "desc" : "asc" };
                       }),
                   }}
@@ -230,11 +204,7 @@ export function FontsTable({
                   align="right"
                 />
               </TableHead>
-              <TableHead className="text-right">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {columns.actions}
-                </span>
-              </TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -246,7 +216,11 @@ export function FontsTable({
               </TableRow>
             ) : (
               pageData.map((row) => (
-                <TableRow key={row.id} className={dataTableRowClass}>
+                <TableRow
+                  key={row.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => onManage?.(row.id)}
+                >
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-semibold text-slate-900">{row.name}</div>
@@ -254,12 +228,12 @@ export function FontsTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">{row.slug}</TableCell>
-                  <TableCell className="text-right text-sm text-slate-600">{row.variantCount}</TableCell>
-                  <TableCell className="text-right text-sm text-slate-600">{row.updatedAtLabel}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => onManage?.(row.id)}>
-                      {manageLabel}
-                    </Button>
+                    <Badge variant="secondary">{row.variantCount}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm text-slate-600">{row.updatedAtLabel}</TableCell>
+                  <TableCell className="w-10 text-right">
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
                   </TableCell>
                 </TableRow>
               ))
@@ -278,6 +252,7 @@ export function FontsTable({
             disabled={page === 0}
             className="h-9"
           >
+            <ChevronLeft className="mr-1 h-4 w-4" />
             {previousLabel}
           </Button>
           <Button
@@ -288,6 +263,7 @@ export function FontsTable({
             className="h-9"
           >
             {nextLabel}
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       </div>

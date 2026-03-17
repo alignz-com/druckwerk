@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +12,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles"
 import { useTranslations } from "@/components/providers/locale-provider"
 
 type Format = {
@@ -153,50 +167,67 @@ export function AdminFormatsView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("description")}</p>
+          <p className="text-sm text-slate-500">{t("description")}</p>
         </div>
-        <Button onClick={openCreate}>{t("newFormat")}</Button>
-      </div>
+        <Button onClick={openCreate} className="inline-flex items-center gap-2 self-start sm:self-auto">
+          <Plus className="size-4" aria-hidden="true" />
+          {t("newFormat")}
+        </Button>
+      </header>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">{t("loading")}</p>
+        <p className="text-sm text-slate-500">{t("loading")}</p>
       ) : formats.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("empty")}</p>
+        <p className="text-sm text-slate-500">{t("empty")}</p>
       ) : (
-        <div className="rounded-lg border divide-y">
-          {/* Header */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-4 py-2 text-xs font-medium text-muted-foreground">
-            <span>{t("table.name")}</span>
-            <span>{t("table.dimensions")}</span>
-            <span>{t("table.bleed")}</span>
-            <span>{t("table.tolerance")}</span>
-            <span>{t("table.variants")}</span>
-            <span />
-          </div>
-          {formats.map((f) => (
-            <div
-              key={f.id}
-              className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center text-sm"
-            >
-              <div>
-                <p className="font-medium">{f.name}</p>
-                {f.nameDe && <p className="text-xs text-muted-foreground">{f.nameDe}</p>}
-                <p className="text-xs text-muted-foreground font-mono">{f.slug}</p>
-              </div>
-              <span>{f.trimWidthMm} × {f.trimHeightMm} mm</span>
-              <span>{f.defaultBleedMm} mm</span>
-              <span>± {f.toleranceMm} mm</span>
-              <span>{f._count?.productFormats ?? 0}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => openEdit(f)}>Edit</Button>
-                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f.id)}>Delete</Button>
-              </div>
-            </div>
-          ))}
+        <div className={dataTableContainerClass}>
+          <Table>
+            <TableHeader className={dataTableHeaderClass}>
+              <TableRow className={dataTableRowClass}>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.dimensions")}</TableHead>
+                <TableHead>{t("table.bleed")}</TableHead>
+                <TableHead>{t("table.tolerance")}</TableHead>
+                <TableHead>{t("table.variants")}</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {formats.map((f) => (
+                <TableRow
+                  key={f.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => openEdit(f)}
+                >
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-slate-900">{f.name}</div>
+                      {f.nameDe && <div className="text-xs text-slate-500">{f.nameDe}</div>}
+                      <div className="text-xs text-slate-400 font-mono">{f.slug}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-600">{f.trimWidthMm} × {f.trimHeightMm} mm</TableCell>
+                  <TableCell className="text-sm text-slate-600">{f.defaultBleedMm} mm</TableCell>
+                  <TableCell className="text-sm text-slate-600">± {f.toleranceMm} mm</TableCell>
+                  <TableCell className="text-sm text-slate-600">{f._count?.productFormats ?? 0}</TableCell>
+                  <TableCell className="w-10 text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-destructive"
+                      onClick={() => handleDelete(f.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -229,7 +260,7 @@ export function AdminFormatsView() {
                 onChange={(e) => setField("slug", e.target.value)}
                 className="font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground">{t("fields.slugHint")}</p>
+              <p className="text-xs text-slate-500">{t("fields.slugHint")}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -251,7 +282,7 @@ export function AdminFormatsView() {
               <div className="space-y-1.5">
                 <Label>{t("fields.toleranceMm")}</Label>
                 <Input type="number" value={form.toleranceMm} onChange={(e) => setField("toleranceMm", e.target.value)} />
-                <p className="text-xs text-muted-foreground">{t("fields.toleranceHint")}</p>
+                <p className="text-xs text-slate-500">{t("fields.toleranceHint")}</p>
               </div>
             </div>
           </div>

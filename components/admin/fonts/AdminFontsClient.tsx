@@ -113,13 +113,11 @@ export default function AdminFontsClient({ fontFamilies }: Props) {
         previousLabel={t("table.pagination.previous")}
         nextLabel={t("table.pagination.next")}
         resetLabel={t("table.pagination.reset")}
-        manageLabel={t("table.manage")}
         columns={{
           family: t("table.headers.family"),
           slug: t("table.headers.slug"),
           variants: t("table.headers.variants"),
           updated: t("table.headers.updated"),
-          actions: t("table.headers.actions"),
         }}
         onManage={(id) => setSheetState({ mode: "view", familyId: id })}
       />

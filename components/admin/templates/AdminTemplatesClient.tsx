@@ -154,13 +154,11 @@ export default function AdminTemplatesClient({ templates }: Props) {
         resetLabel={t("table.pagination.reset")}
         deleteLabel={t("table.bulkDelete.action")}
         selectionLabel={(count) => t("table.bulkDelete.selection", { count })}
-        manageLabel={t("table.manage")}
         columns={{
           template: t("table.headers.template"),
           brands: t("table.headers.brands"),
           assetStatus: t("table.headers.assetStatus"),
           updated: t("table.headers.updated"),
-          actions: t("table.headers.actions"),
         }}
         unassignedLabel={t("table.unassigned")}
         onManage={(id) => setSheetState({ mode: "view", templateId: id })}

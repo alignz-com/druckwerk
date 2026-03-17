@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, Layers } from "lucide-react"
+import { Plus, Trash2, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  dataTableContainerClass,
+  dataTableHeaderClass,
+  dataTableRowClass,
+} from "@/components/admin/shared/data-table-styles"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations } from "@/components/providers/locale-provider"
 
@@ -128,70 +141,72 @@ export function AdminPaperStocksClient() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("description")}</p>
+          <p className="text-sm text-slate-500">{t("description")}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" /> {t("newPaper")}
+        <Button onClick={openCreate} className="inline-flex items-center gap-2 self-start sm:self-auto">
+          <Plus className="size-4" aria-hidden="true" />
+          {t("newPaper")}
         </Button>
-      </div>
+      </header>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">{t("loading")}</p>
+        <p className="text-sm text-slate-500">{t("loading")}</p>
       ) : papers.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
           <Layers className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t("empty")}</p>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.name")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.weight")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.finish")}</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t("table.color")}</th>
-                <th className="px-4 py-3 w-20" />
-              </tr>
-            </thead>
-            <tbody>
+        <div className={dataTableContainerClass}>
+          <Table>
+            <TableHeader className={dataTableHeaderClass}>
+              <TableRow className={dataTableRowClass}>
+                <TableHead>{t("table.name")}</TableHead>
+                <TableHead>{t("table.weight")}</TableHead>
+                <TableHead>{t("table.finish")}</TableHead>
+                <TableHead>{t("table.color")}</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {papers.map((p) => (
-                <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3 font-medium">
-                    {p.name}
-                    {p.description && (
-                      <p className="text-xs text-muted-foreground font-normal mt-0.5">{p.description}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {p.weightGsm != null ? `${p.weightGsm} g/m²` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{p.finish ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{p.color ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(p.id)}
-                        disabled={deleting === p.id}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                <TableRow
+                  key={p.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => openEdit(p)}
+                >
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-slate-900">{p.name}</div>
+                      {p.description && (
+                        <div className="text-xs text-slate-500">{p.description}</div>
+                      )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-600">
+                    {p.weightGsm != null ? `${p.weightGsm} g/m²` : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-600">{p.finish ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-slate-600">{p.color ?? "—"}</TableCell>
+                  <TableCell className="w-10 text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-destructive"
+                      onClick={() => handleDelete(p.id)}
+                      disabled={deleting === p.id}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
