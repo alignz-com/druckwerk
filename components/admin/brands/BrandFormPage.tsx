@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   Building2,
   LayoutTemplate,
   MapPin,
@@ -479,7 +480,8 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
       <div className="space-y-6 pb-24">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-slate-400">
-          <Link href="/admin/brands" className="hover:text-slate-600 transition-colors">
+          <Link href="/admin/brands" className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" />
             {t("detail.back")}
           </Link>
           <span>/</span>

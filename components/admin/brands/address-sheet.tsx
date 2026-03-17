@@ -1,14 +1,134 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+// ISO 3166-1 alpha-2 country list (name → code)
+const COUNTRIES: { code: string; name: string }[] = [
+  { code: "AT", name: "Österreich" },
+  { code: "DE", name: "Deutschland" },
+  { code: "CH", name: "Schweiz" },
+  { code: "LI", name: "Liechtenstein" },
+  { code: "LU", name: "Luxemburg" },
+  { code: "BE", name: "Belgien" },
+  { code: "NL", name: "Niederlande" },
+  { code: "FR", name: "Frankreich" },
+  { code: "IT", name: "Italien" },
+  { code: "ES", name: "Spanien" },
+  { code: "PT", name: "Portugal" },
+  { code: "GB", name: "Vereinigtes Königreich" },
+  { code: "IE", name: "Irland" },
+  { code: "DK", name: "Dänemark" },
+  { code: "SE", name: "Schweden" },
+  { code: "NO", name: "Norwegen" },
+  { code: "FI", name: "Finnland" },
+  { code: "PL", name: "Polen" },
+  { code: "CZ", name: "Tschechien" },
+  { code: "SK", name: "Slowakei" },
+  { code: "HU", name: "Ungarn" },
+  { code: "SI", name: "Slowenien" },
+  { code: "HR", name: "Kroatien" },
+  { code: "RO", name: "Rumänien" },
+  { code: "BG", name: "Bulgarien" },
+  { code: "GR", name: "Griechenland" },
+  { code: "TR", name: "Türkei" },
+  { code: "RU", name: "Russland" },
+  { code: "UA", name: "Ukraine" },
+  { code: "US", name: "Vereinigte Staaten" },
+  { code: "CA", name: "Kanada" },
+  { code: "AU", name: "Australien" },
+  { code: "NZ", name: "Neuseeland" },
+  { code: "JP", name: "Japan" },
+  { code: "CN", name: "China" },
+  { code: "IN", name: "Indien" },
+  { code: "BR", name: "Brasilien" },
+  { code: "MX", name: "Mexiko" },
+  { code: "ZA", name: "Südafrika" },
+  { code: "AE", name: "Vereinigte Arabische Emirate" },
+  { code: "SG", name: "Singapur" },
+];
+
+function CountrySelect({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return COUNTRIES;
+    return COUNTRIES.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const selected = COUNTRIES.find((c) => c.code === value.toUpperCase());
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setTimeout(() => inputRef.current?.focus(), 0); }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700",
+            "focus:outline-none focus:ring-2 focus:ring-slate-400",
+            !selected && "text-slate-400"
+          )}
+        >
+          {selected ? `${selected.code} – ${selected.name}` : (placeholder ?? "Land wählen …")}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-0">
+        <div className="border-b border-slate-100 px-3 py-2">
+          <Input
+            ref={inputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Suchen …"
+            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+          />
+        </div>
+        <ul className="max-h-56 overflow-y-auto py-1">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-slate-400">Keine Treffer</li>
+          ) : (
+            filtered.map((c) => (
+              <li key={c.code}>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
+                  onClick={() => { onChange(c.code); setOpen(false); setSearch(""); }}
+                >
+                  <Check className={cn("h-4 w-4 shrink-0", value.toUpperCase() === c.code ? "text-slate-700" : "invisible")} />
+                  <span className="font-mono text-xs text-slate-400 w-6">{c.code}</span>
+                  {c.name}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export type BrandAddressDraft = {
   id?: string;
@@ -197,14 +317,11 @@ export function AddressSheet({ brandId, state, onClose, onSaved }: AddressSheetP
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="address-country-field">{t("addresses.fields.countryCode")}</Label>
-              <Input
-                id="address-country-field"
+              <Label>{t("addresses.fields.countryCode")}</Label>
+              <CountrySelect
                 value={draft.countryCode}
-                onChange={(event) => handleChange("countryCode", event.target.value)}
-                placeholder="AT"
+                onChange={(code) => handleChange("countryCode", code)}
               />
-              <p className="text-xs text-slate-500">{t("addresses.countryHint")}</p>
             </div>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
