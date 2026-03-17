@@ -1,10 +1,8 @@
-import Link from "next/link";
-import { Building2, Mail, Phone } from "lucide-react";
+import { Building2, ChevronRight, Mail, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 export type TranslationFn = (
   key: string,
@@ -20,7 +18,7 @@ export type BrandColumn<TData> = {
   sortAccessor?: (row: TData) => string | number;
 };
 
-export function createBrandColumns(t: TranslationFn, onManage?: (id: string) => void): BrandColumn<AdminBrandSummary>[] {
+export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSummary>[] {
   return [
     {
       id: "name",
@@ -76,22 +74,11 @@ export function createBrandColumns(t: TranslationFn, onManage?: (id: string) => 
       renderCell: (row) => <Badge variant="outline">{row.addresses.length}</Badge>,
     },
     {
-      id: "actions",
-      title: t("table.headers.actions"),
+      id: "chevron",
+      title: "",
       align: "right",
       enableSorting: false,
-      renderCell: (row) => (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => (onManage ? onManage(row.id) : undefined)}
-            asChild={!onManage}
-          >
-            {onManage ? <span>{t("actions.manage")}</span> : <Link href={`/admin/brands/${row.id}`}>{t("actions.manage")}</Link>}
-          </Button>
-        </div>
-      ),
+      renderCell: () => <ChevronRight className="h-4 w-4 text-slate-300" />,
     },
   ];
 }

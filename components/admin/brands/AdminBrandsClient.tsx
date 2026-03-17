@@ -22,8 +22,7 @@ export default function AdminBrandsClient({ brands }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // No onManage callback → columns render "Manage" as a direct <Link>
-  const columns = useMemo(() => createBrandColumns(t, undefined), [t]);
+  const columns = useMemo(() => createBrandColumns(t), [t]);
 
   useEffect(() => {
     setRows(brands);

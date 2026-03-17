@@ -282,7 +282,7 @@ export function BrandsTable({
                     <TableCell
                       key={column.id}
                       className={column.align === "right" ? "text-right" : undefined}
-                      onClick={column.id === "actions" ? (e) => e.stopPropagation() : undefined}
+                      onClick={column.id === "chevron" ? (e) => e.stopPropagation() : undefined}
                     >
                       {column.renderCell(brand)}
                     </TableCell>
