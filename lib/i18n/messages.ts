@@ -1055,10 +1055,6 @@ export const messages = {
             public: "Public profile only",
             both: "Allow both",
           },
-          defaultQrModes: {
-            vcard: "vCard",
-            public: "Public profile",
-          },
         },
         publicDomains: {
           title: "Public domains",
@@ -2394,10 +2390,6 @@ export const messages = {
             vcard: "Nur vCard",
             public: "Nur öffentliches Profil",
             both: "Beides erlauben",
-          },
-          defaultQrModes: {
-            vcard: "vCard",
-            public: "Öffentliches Profil",
           },
         },
         publicDomains: {
