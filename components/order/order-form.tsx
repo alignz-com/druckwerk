@@ -1871,124 +1871,120 @@ export default function OrderForm({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex items-center justify-center pt-0 px-0 pb-4 lg:p-6">
-              <div className="w-full flex flex-col items-center gap-2 p-6">
+            <CardContent className="p-0">
+              {!selectedTemplate ? (
+                /* Placeholder — grey panel fills the full preview area */
                 <div
-                  className="relative overflow-visible"
-                  style={{
-                    aspectRatio: `${selectedTemplate?.pageWidthMm ?? 85} / ${selectedTemplate?.pageHeightMm ?? 55}`,
-                    width: `min(100%, calc(55dvh * ${((selectedTemplate?.pageWidthMm ?? 85) / (selectedTemplate?.pageHeightMm ?? 55)).toFixed(4)}))`,
-                    maxHeight: `55dvh`,
-                  }}
+                  className={`flex w-full min-h-[55dvh] items-center justify-center lg:rounded-b-xl bg-slate-50 border border-dashed border-slate-200 ${
+                    templateError ? "text-red-600" : "text-slate-500"
+                  }`}
                 >
-                  {/* Mobile front/back overlay buttons */}
-                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 lg:hidden">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewView("front")}
-                      className={cn(
-                        "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
-                        previewView === "front"
-                          ? "bg-slate-900 text-white"
-                          : "bg-white/90 text-slate-600",
-                      )}
-                    >
-                      {tOrder("confirm.front")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewView("back")}
-                      className={cn(
-                        "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
-                        previewView === "back"
-                          ? "bg-slate-900 text-white"
-                          : "bg-white/90 text-slate-600",
-                      )}
-                    >
-                      {tOrder("confirm.back")}
-                    </button>
-                  </div>
-                  <div className="h-full w-full">
-                    {!currentBrandId ? (
-                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
-                        {tOrder("selectBrandPrompt")}
-                      </div>
-                    ) : templates.length === 0 ? (
-                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
-                        {tOrder("preview.noTemplates")}
-                      </div>
-                    ) : !selectedSummary ? (
-                      <div className={`${PREVIEW_MESSAGE_CLASS} text-slate-500`}>
-                        {tOrder("preview.selectTemplate")}
-                      </div>
-                    ) : !selectedTemplate ? (
-                      <div
-                        className={`${PREVIEW_MESSAGE_CLASS} ${
-                          templateError ? "text-red-600" : "text-slate-500"
-                        }`}
-                      >
-                        {templateError ?? tOrder("preview.loading")}
-                      </div>
-                    ) : (
-                      <FlipCard
-                        activeSide={previewView}
-                        front={
-                          <BusinessCardFront
-                            template={selectedTemplate}
-                            name={name}
-                            role={role}
-                            seniority={seniority}
-                            email={email}
-                            phone={phone}
-                            mobile={mobile}
-                            company={addressBlock}
-                            url={url}
-                            linkedin={effectiveLinkedin}
-                            onOverflowChange={setFrontOverflow}
-                            addressFields={previewAddressFields}
-
-                            onFieldOverflowChange={handleFrontOverflowFields}
-                            forcedBindingPrefixes={forcedBindingPrefixes}
-                            qrPreviewMode={selectedQrMode}
-                            qrPayload={isPublicQrMode ? draftPublicUrl : undefined}
-                          />
-                        }
-                        back={
-                          <BusinessCardBack
-                            template={selectedTemplate}
-                            name={name}
-                            role={role}
-                            seniority={seniority}
-                            email={email}
-                            phone={phone}
-                            mobile={mobile}
-                            company={addressBlock}
-                            url={url}
-                            linkedin={effectiveLinkedin}
-                            onOverflowChange={setBackOverflow}
-                            addressFields={previewAddressFields}
-
-                            onFieldOverflowChange={handleBackOverflowFields}
-                            forcedBindingPrefixes={forcedBindingPrefixes}
-                            qrPreviewMode={selectedQrMode}
-                            qrPayload={isPublicQrMode ? draftPublicUrl : undefined}
-                          />
-                        }
-                        className="h-full w-full"
-                      />
-                    )}
-                  </div>
+                  <p className="text-sm font-medium text-center px-6">
+                    {!currentBrandId
+                      ? tOrder("selectBrandPrompt")
+                      : templates.length === 0
+                      ? tOrder("preview.noTemplates")
+                      : !selectedSummary
+                      ? tOrder("preview.selectTemplate")
+                      : templateError ?? tOrder("preview.loading")}
+                  </p>
                 </div>
-                {templateError ? (
-                  <p className="mt-2 text-center text-xs text-red-600">{templateError}</p>
-                ) : null}
-                {showPublicQrNote ? (
-                  <p className="mt-2 text-center text-xs text-slate-500">{tOrder("preview.publicQrNote")}</p>
-                ) : null}
-                {draftError ? (
-                  <p className="mt-2 text-center text-xs text-red-600">{draftError}</p>
-                ) : null}
-              </div>
+              ) : (
+                /* Card loaded — white background, card centered with generous padding */
+                <div className="flex w-full flex-col items-center py-10 px-8 pb-6">
+                  <div
+                    className="relative overflow-visible"
+                    style={{
+                      aspectRatio: `${selectedTemplate.pageWidthMm} / ${selectedTemplate.pageHeightMm}`,
+                      width: `min(100%, calc(55dvh * ${(selectedTemplate.pageWidthMm / selectedTemplate.pageHeightMm).toFixed(4)}))`,
+                      maxHeight: `55dvh`,
+                    }}
+                  >
+                    {/* Mobile front/back overlay buttons */}
+                    <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 lg:hidden">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewView("front")}
+                        className={cn(
+                          "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
+                          previewView === "front"
+                            ? "bg-slate-900 text-white"
+                            : "bg-white/90 text-slate-600",
+                        )}
+                      >
+                        {tOrder("confirm.front")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewView("back")}
+                        className={cn(
+                          "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
+                          previewView === "back"
+                            ? "bg-slate-900 text-white"
+                            : "bg-white/90 text-slate-600",
+                        )}
+                      >
+                        {tOrder("confirm.back")}
+                      </button>
+                    </div>
+                    <FlipCard
+                      activeSide={previewView}
+                      front={
+                        <BusinessCardFront
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          seniority={seniority}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={effectiveLinkedin}
+                          onOverflowChange={setFrontOverflow}
+                          addressFields={previewAddressFields}
+
+                          onFieldOverflowChange={handleFrontOverflowFields}
+                          forcedBindingPrefixes={forcedBindingPrefixes}
+                          qrPreviewMode={selectedQrMode}
+                          qrPayload={isPublicQrMode ? draftPublicUrl : undefined}
+                        />
+                      }
+                      back={
+                        <BusinessCardBack
+                          template={selectedTemplate}
+                          name={name}
+                          role={role}
+                          seniority={seniority}
+                          email={email}
+                          phone={phone}
+                          mobile={mobile}
+                          company={addressBlock}
+                          url={url}
+                          linkedin={effectiveLinkedin}
+                          onOverflowChange={setBackOverflow}
+                          addressFields={previewAddressFields}
+
+                          onFieldOverflowChange={handleBackOverflowFields}
+                          forcedBindingPrefixes={forcedBindingPrefixes}
+                          qrPreviewMode={selectedQrMode}
+                          qrPayload={isPublicQrMode ? draftPublicUrl : undefined}
+                        />
+                      }
+                      className="h-full w-full"
+                    />
+                  </div>
+                  {templateError && (
+                    <p className="mt-2 text-center text-xs text-red-600">{templateError}</p>
+                  )}
+                  {showPublicQrNote && (
+                    <p className="mt-2 text-center text-xs text-slate-500">{tOrder("preview.publicQrNote")}</p>
+                  )}
+                  {draftError && (
+                    <p className="mt-2 text-center text-xs text-red-600">{draftError}</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
           <div className="hidden lg:flex lg:justify-end">
