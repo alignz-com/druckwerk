@@ -21,6 +21,8 @@ type Props = {
   canRegenerateJdf: boolean;
   canDelete: boolean;
   canCreateConfirmation: boolean;
+  downloadPdfUrl?: string;
+  downloadJdfUrl?: string;
   addresses: Address[];
   labels: {
     changeStatus: string;
@@ -41,6 +43,8 @@ type Props = {
     confirmationNoAddresses: string;
     confirmationNote: string;
     confirmationSelectAddress: string;
+    downloadAllPdfs: string;
+    downloadAllJdfs: string;
   };
 };
 
@@ -56,6 +60,8 @@ export function OrderDetailActionBar({
   canRegenerateJdf,
   canDelete,
   canCreateConfirmation,
+  downloadPdfUrl,
+  downloadJdfUrl,
   addresses,
   labels,
 }: Props) {
@@ -156,7 +162,7 @@ export function OrderDetailActionBar({
     }
   }
 
-  const hasActions = canChangeStatus || canRegenerateJdf || canCreateConfirmation || canDelete;
+  const hasActions = canChangeStatus || canRegenerateJdf || canCreateConfirmation || canDelete || !!downloadPdfUrl || !!downloadJdfUrl;
   if (!hasActions) return null;
 
   return (
@@ -245,16 +251,37 @@ export function OrderDetailActionBar({
           </>
         )}
 
-        {/* JDF */}
+        {/* JDF regenerate */}
         {canRegenerateJdf && (
+          <button
+            onClick={handleJdf}
+            disabled={jdfBusy}
+            className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap"
+          >
+            {jdfBusy ? "…" : labels.jdfRebuild}
+          </button>
+        )}
+
+        {/* Bulk downloads */}
+        {(downloadPdfUrl || downloadJdfUrl) && (
           <>
-            <button
-              onClick={handleJdf}
-              disabled={jdfBusy}
-              className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap"
-            >
-              {jdfBusy ? "…" : labels.jdfRebuild}
-            </button>
+            <div className="w-px h-5 bg-slate-600 shrink-0" />
+            {downloadPdfUrl && (
+              <a
+                href={downloadPdfUrl}
+                className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center"
+              >
+                {labels.downloadAllPdfs}
+              </a>
+            )}
+            {downloadJdfUrl && (
+              <a
+                href={downloadJdfUrl}
+                className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center"
+              >
+                {labels.downloadAllJdfs}
+              </a>
+            )}
           </>
         )}
 

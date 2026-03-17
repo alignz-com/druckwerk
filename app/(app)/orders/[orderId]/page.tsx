@@ -122,6 +122,10 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const canCreateConfirmation =
     (isAdmin || isPrinter) && !order.deliveryItems?.length;
 
+  const hasPdfItems = order.type === "PDF_PRINT" && order.pdfOrderItems.length > 1;
+  const downloadPdfUrl = hasPdfItems ? `/api/orders/${orderId}/download-all?type=pdf` : undefined;
+  const downloadJdfUrl = hasPdfItems && (isAdmin || isPrinter) ? `/api/orders/${orderId}/download-all?type=jdf` : undefined;
+
   const delivery = order.deliveryItems?.[0]?.delivery ?? null;
   const brandAddresses = order.brand?.addresses ?? [];
 
@@ -423,6 +427,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         canRegenerateJdf={canRegenerateJdf}
         canDelete={canDelete}
         canCreateConfirmation={canCreateConfirmation}
+        downloadPdfUrl={downloadPdfUrl}
+        downloadJdfUrl={downloadJdfUrl}
         addresses={brandAddresses}
         labels={{
           changeStatus: t.ordersPage.detail.changeStatus,
@@ -443,6 +449,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           confirmationNoAddresses: t.ordersPage.detail.confirmationNoAddresses,
           confirmationNote: t.ordersPage.detail.confirmationNote,
           confirmationSelectAddress: t.ordersPage.detail.confirmationSelectAddress,
+          downloadAllPdfs: t.ordersPage.detail.downloadAllPdfs,
+          downloadAllJdfs: t.ordersPage.detail.downloadAllJdfs,
         }}
       />
     </div>
