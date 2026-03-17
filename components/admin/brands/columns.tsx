@@ -14,6 +14,7 @@ export type BrandColumn<TData> = {
   title: string;
   align?: "left" | "right";
   enableSorting?: boolean;
+  className?: string;
   renderCell: (row: TData) => ReactNode;
   sortAccessor?: (row: TData) => string | number;
 };
@@ -71,12 +72,13 @@ export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSumm
       align: "right",
       enableSorting: true,
       sortAccessor: (row) => row.addresses.length,
-      renderCell: (row) => <Badge variant="outline">{row.addresses.length}</Badge>,
+      renderCell: (row) => <Badge variant="secondary">{row.addresses.length}</Badge>,
     },
     {
       id: "chevron",
       title: "",
       align: "right",
+      className: "w-10",
       enableSorting: false,
       renderCell: () => <ChevronRight className="h-4 w-4 text-slate-300" />,
     },

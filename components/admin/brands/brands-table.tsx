@@ -250,7 +250,7 @@ export function BrandsTable({
                   },
                 };
                 return (
-                  <TableHead key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                  <TableHead key={column.id} className={[column.className, column.align === "right" ? "text-right" : undefined].filter(Boolean).join(" ") || undefined}>
                     <DataTableColumnHeader column={columnState} title={column.title} align={column.align} />
                   </TableHead>
                 );
@@ -281,7 +281,7 @@ export function BrandsTable({
                   {columns.map((column) => (
                     <TableCell
                       key={column.id}
-                      className={column.align === "right" ? "text-right" : undefined}
+                      className={[column.className, column.align === "right" ? "text-right" : undefined].filter(Boolean).join(" ") || undefined}
                       onClick={column.id === "chevron" ? (e) => e.stopPropagation() : undefined}
                     >
                       {column.renderCell(brand)}
