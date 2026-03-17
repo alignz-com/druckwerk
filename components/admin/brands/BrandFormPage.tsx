@@ -476,7 +476,7 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 pb-24 space-y-6">
+      <div className="space-y-6 pb-24">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-slate-400">
           <Link href="/admin/brands" className="hover:text-slate-600 transition-colors">
