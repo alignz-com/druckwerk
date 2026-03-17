@@ -290,9 +290,17 @@ async function handlePdfOrder(
       });
     }
 
-    if (!pdfUrl || !pdfFileName) {
+    if (!pdfUrl) {
       console.error(`[jdf] skipping item ${item.id} — no PDF URL available`);
       continue;
+    }
+
+    // Derive pdfFileName for staging items (direct PDF uploads — no archive, no pdfFileName in DB)
+    if (!pdfFileName) {
+      const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/__+/g, "_").replace(/^_|_$/g, "");
+      const sourceBase = safe(item.filename.replace(/\.pdf$/i, ""));
+      const archivePart = item.sourceZipFilename ? `-${safe(item.sourceZipFilename.replace(/\.(7z|zip)$/i, ""))}` : "";
+      pdfFileName = `${safe(order!.referenceCode)}${archivePart}-${sourceBase}.pdf`;
     }
 
     const pcmCode = item.productFormat?.pcmCode ?? null;
