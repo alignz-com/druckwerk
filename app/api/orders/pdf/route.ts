@@ -10,6 +10,7 @@ import { getBrandsForUser } from "@/lib/brand-access"
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options"
 import { addBusinessDays } from "@/lib/date-utils"
 import { extractAndUploadPdfItem } from "@/lib/pdf-item-extract"
+import { generatePdfOrderJdfs } from "@/lib/generate-pdf-order-jdfs"
 
 export const runtime = "nodejs"
 export const maxDuration = 120
@@ -258,6 +259,11 @@ export async function POST(req: NextRequest) {
           console.error(`[orders/pdf] failed to extract PDF for item ${item.id}:`, err)
         }
       })
+    )
+
+    // Auto-generate JDFs in the background — non-blocking, failures are non-fatal
+    generatePdfOrderJdfs(order.id, { name: session.user.name, email: session.user.email }).catch((err) =>
+      console.error("[orders/pdf] JDF generation failed:", err)
     )
 
     return NextResponse.json({ orderId: order.id, referenceCode })
