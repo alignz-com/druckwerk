@@ -409,7 +409,7 @@ export const messages = {
         title: "Users",
         description: "Manage user access and brand assignments.",
         actions: {
-          new: "New user",
+          new: "New User",
         },
         table: {
           headers: {
@@ -503,7 +503,7 @@ export const messages = {
         title: "Templates",
         description: "Maintain the design assets used for new orders.",
         actions: {
-          add: "New template",
+          add: "New Template",
         },
         create: {
           title: "Create template",
@@ -772,7 +772,7 @@ export const messages = {
         title: "Fonts",
         description: "Manage font families used for PDF rendering and previews.",
         actions: {
-          newFamily: "New family",
+          newFamily: "New Family",
           cancel: "Cancel",
         },
         toast: {
@@ -917,7 +917,7 @@ export const messages = {
         title: "Brands",
         description: "Manage brand details and reusable contact addresses.",
         actions: {
-          newBrand: "New brand",
+          newBrand: "New Brand",
           manage: "Manage",
           create: "Create brand",
           creating: "Creating…",
