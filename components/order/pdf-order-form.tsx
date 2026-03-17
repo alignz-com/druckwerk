@@ -63,15 +63,17 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       formData.append("customerReference", customerReference)
       formData.append("notes", notes)
 
-      // Deduplicate source files: each unique File object is uploaded once.
-      // Direct PDFs get their own slot; ZIP-extracted files share the parent archive.
+      // Files that were preflighted already have a staging URL in MinIO (previewUrl).
+      // For those we skip the re-upload and let the server do a cheap server-side CopyObject.
+      // Only files without a staging URL (preflight failed / edge case) fall back to direct upload.
       const uploadedFileNames = new Map<string, number>()
       let slotIndex = 0
       const sourceSlots: File[] = []
 
       const itemsMeta = files.map((f) => {
         let fileSlot: number | null = null
-        if (f._sourceFile) {
+        if (f._sourceFile && !f.previewUrl) {
+          // No staging URL — fall back to uploading the file directly
           const key = f._sourceFile.name
           if (!uploadedFileNames.has(key)) {
             uploadedFileNames.set(key, slotIndex)
@@ -93,6 +95,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
           pantoneColors: f.pantoneColors,
           pages: f.pages,
           fileSlot,
+          stagingUrl: f.previewUrl ?? null,
           thumbnailDataUrl: f.thumbnailDataUrl ?? null,
           productFormatId: f.productFormatId ?? null,
         }

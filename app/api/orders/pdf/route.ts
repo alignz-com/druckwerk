@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { PutObjectCommand } from "@aws-sdk/client-s3"
+import { PutObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3"
 import { z } from "zod"
 
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { s3, ORDERS_BUCKET } from "@/lib/s3"
+import { s3, ORDERS_BUCKET, UPLOADS_BUCKET, S3_PUBLIC_URL } from "@/lib/s3"
 import { getBrandsForUser } from "@/lib/brand-access"
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options"
 import { addBusinessDays } from "@/lib/date-utils"
@@ -46,6 +46,7 @@ const itemMetaSchema = z.object({
   pantoneColors: z.array(z.string()).default([]),
   pages: z.number().int().nullable().optional(),
   fileSlot: z.number().int().nullable().optional(),
+  stagingUrl: z.string().nullable().optional(),
   thumbnailDataUrl: z.string().nullable().optional(),
   productFormatId: z.string().nullable().optional(),
 })
@@ -126,18 +127,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Build line items with storage paths
+    const S3_ORDERS_BASE = `${S3_PUBLIC_URL}/${ORDERS_BUCKET}`
     const lineItems = itemsMeta.map((meta, i) => {
+      const hasStaging = !!meta.stagingUrl
       const slotKey = meta.fileSlot != null ? slotStorageKeys.get(meta.fileSlot) : undefined
       const safeName = meta.filename.replace(/[^a-zA-Z0-9._-]/g, "_")
-      // For direct PDFs: storagePath = the uploaded file path
-      // For ZIP-extracted: storagePath = same as archive path (file lives inside it)
-      const storagePath = slotKey ?? `${referenceCode}/pdf/${i + 1}-${safeName}`
+      // Staging items: individual PDF already in MinIO — final path is pdf/{n}-{name}
+      // Fallback items: storagePath = uploaded source file (direct PDF or archive)
+      const storagePath = hasStaging
+        ? `${referenceCode}/pdf/${i + 1}-${safeName}`
+        : (slotKey ?? `${referenceCode}/pdf/${i + 1}-${safeName}`)
       const thumbnailStoragePath = meta.thumbnailDataUrl
         ? `${referenceCode}/thumbs/${i + 1}.png`
         : null
       return {
         filename: meta.filename,
-        sourceZipFilename: meta.sourceZipFilename ?? null,
+        // For staging items, skip extraction — individual PDF is already available
+        sourceZipFilename: hasStaging ? null : (meta.sourceZipFilename ?? null),
         storagePath,
         thumbnailStoragePath,
         quantity: meta.quantity,
@@ -152,8 +158,8 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Create order + line items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    // Create order + line items in a transaction; create items individually to get their IDs back
+    const { order, createdItems } = await prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
         data: {
           referenceCode,
@@ -170,11 +176,12 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      await tx.pdfOrderItem.createMany({
-        data: lineItems.map(({ _thumbnailDataUrl: _, ...item }) => ({ ...item, orderId: o.id })),
-      })
+      const items = []
+      for (const { _thumbnailDataUrl: _, ...item } of lineItems) {
+        items.push(await tx.pdfOrderItem.create({ data: { ...item, orderId: o.id } }))
+      }
 
-      return o
+      return { order: o, createdItems: items }
     })
 
     // Upload source files to MinIO (deduplicated by slot)
@@ -207,11 +214,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Copy staging files server-side from the uploads bucket to the orders bucket.
+    // These were already uploaded during preflight — no client re-upload needed.
+    await Promise.allSettled(
+      itemsMeta.map(async (meta, i) => {
+        if (!meta.stagingUrl) return
+        const stagingKey = meta.stagingUrl.replace(`${S3_PUBLIC_URL}/${UPLOADS_BUCKET}/`, "")
+        const finalKey = createdItems[i].storagePath!
+        try {
+          await s3.send(new CopyObjectCommand({
+            Bucket: ORDERS_BUCKET,
+            CopySource: `${UPLOADS_BUCKET}/${stagingKey}`,
+            Key: finalKey,
+          }))
+          await prisma.pdfOrderItem.update({
+            where: { id: createdItems[i].id },
+            data: { pdfUrl: `${S3_ORDERS_BASE}/${finalKey}` },
+          })
+        } catch (err) {
+          console.error(`[orders/pdf] CopyObject failed for ${meta.filename}:`, err)
+        }
+      })
+    )
+
     // Extract individual PDFs from archives and store with order-prefixed names.
     // Runs concurrently; failures are non-fatal — the archive remains the source of truth.
-    const orderItems = await prisma.pdfOrderItem.findMany({ where: { orderId: order.id } })
+    // Items with stagingUrl have sourceZipFilename=null so they are skipped here.
     await Promise.allSettled(
-      orderItems.map(async (item) => {
+      createdItems.map(async (item) => {
         if (!item.storagePath || !item.sourceZipFilename) return
         try {
           const extracted = await extractAndUploadPdfItem({
