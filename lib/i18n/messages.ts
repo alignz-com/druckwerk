@@ -991,6 +991,17 @@ export const messages = {
               description: "Deleting a brand removes all of its addresses permanently.",
               helper: "This action cannot be undone.",
             },
+            settings: {
+              title: "Settings",
+              description: "QR mode, quantity limits, and email domains for this brand.",
+            },
+            quantities: {
+              title: "Quantities",
+            },
+            access: {
+              title: "Order access",
+              description: "Control which order types users of this brand can place.",
+            },
           },
           stats: {
             templates: "Templates",
@@ -1132,6 +1143,19 @@ export const messages = {
           },
         },
         confirmDelete: "Delete brand \"{name}\"? This action cannot be undone.",
+        tabs: {
+          general: "General",
+          settings: "Settings",
+          access: "Access",
+          templates: "Templates",
+          addresses: "Addresses",
+        },
+        access: {
+          businessCards: "Business cards",
+          businessCardsHint: "Users can order business cards.",
+          pdfPrint: "PDF print",
+          pdfPrintHint: "Users can place PDF print orders.",
+        },
       },
       products: {
         title: "Products",
@@ -2303,6 +2327,17 @@ export const messages = {
               description: "Das Löschen entfernt sämtliche Adressen der Marke dauerhaft.",
               helper: "Dieser Vorgang kann nicht rückgängig gemacht werden.",
             },
+            settings: {
+              title: "Einstellungen",
+              description: "QR-Modus, Mengenlimits und E-Mail-Domains dieser Marke.",
+            },
+            quantities: {
+              title: "Mengen",
+            },
+            access: {
+              title: "Bestellzugang",
+              description: "Lege fest, welche Bestelltypen diese Marke aufgeben darf.",
+            },
           },
           stats: {
             templates: "Templates",
@@ -2443,7 +2478,20 @@ export const messages = {
             removed: "Domain entfernt.",
           },
         },
-        confirmDelete: "Marke „{name}“ löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.",
+        confirmDelete: “Marke „{name}” löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.”,
+        tabs: {
+          general: “Allgemein”,
+          settings: “Einstellungen”,
+          access: “Zugang”,
+          templates: “Templates”,
+          addresses: “Adressen”,
+        },
+        access: {
+          businessCards: “Visitenkarten”,
+          businessCardsHint: “Benutzer können Visitenkarten bestellen.”,
+          pdfPrint: “PDF-Druck”,
+          pdfPrintHint: “Benutzer können PDF-Druckaufträge aufgeben.”,
+        },
       },
       products: {
         title: "Produkte",
