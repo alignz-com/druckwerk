@@ -89,7 +89,7 @@ export async function DELETE(_req: Request, context: { params: RouteParams | Pro
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.role !== "ADMIN") {
+  if (session.user.role !== "ADMIN" && session.user.role !== "PRINTER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

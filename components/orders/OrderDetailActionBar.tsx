@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useTranslations } from "@/components/providers/locale-provider";
 
 type Address = {
@@ -83,7 +93,6 @@ export function OrderDetailActionBar({
   const [confError, setConfError] = useState<string | null>(null);
 
   // Delete
-  const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Feedback message (status/jdf)
@@ -306,24 +315,28 @@ export function OrderDetailActionBar({
         {canDelete && (
           <>
             <div className="w-px h-5 bg-slate-600 shrink-0" />
-            {!deleteConfirming ? (
-              <button onClick={() => setDeleteConfirming(true)}
-                className="h-7 px-3 rounded-lg text-red-400 text-xs font-medium hover:bg-slate-700 transition-colors whitespace-nowrap">
-                {labels.deleteAction}
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-300">{labels.deleteConfirm}</span>
-                <button onClick={handleDelete} disabled={deleting}
-                  className="h-7 px-3 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-                  {deleting ? labels.deleteRunning : "Yes"}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="h-7 px-3 rounded-lg text-red-400 text-xs font-medium hover:bg-slate-700 transition-colors whitespace-nowrap">
+                  {labels.deleteAction}
                 </button>
-                <button onClick={() => setDeleteConfirming(false)}
-                  className="h-7 px-3 rounded-lg bg-slate-700 text-xs text-slate-300 hover:bg-slate-600 transition-colors">
-                  No
-                </button>
-              </div>
-            )}
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{labels.deleteConfirm}</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>No</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  >
+                    {deleting ? labels.deleteRunning : "Yes"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
       </div>

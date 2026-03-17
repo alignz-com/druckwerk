@@ -118,7 +118,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const canChangeStatus = isAdmin || isPrinter;
   const canEditQuantity = isAdmin || isPrinter;
   const canRegenerateJdf = isAdmin || isPrinter;
-  const canDelete = isAdmin && order.status === "CANCELLED";
+  const canDelete = (isAdmin || isPrinter) && order.status === "CANCELLED";
   const canCreateConfirmation =
     (isAdmin || isPrinter) && !order.deliveryItems?.length;
 
