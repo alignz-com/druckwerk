@@ -1046,6 +1046,10 @@ export const messages = {
           qrMode: "QR mode",
           defaultQrMode: "Default QR mode",
           defaultQrModeHint: "Available when both modes are allowed.",
+          defaultQrModes: {
+            vcard: "vCard",
+            public: "Public profile",
+          },
           qrModes: {
             vcard: "vCard only",
             public: "Public profile only",
@@ -2382,6 +2386,10 @@ export const messages = {
           qrMode: "QR-Modus",
           defaultQrMode: "Standard-QR",
           defaultQrModeHint: "Verfügbar, wenn beide Modi erlaubt sind.",
+          defaultQrModes: {
+            vcard: "vCard",
+            public: "Öffentliches Profil",
+          },
           qrModes: {
             vcard: "Nur vCard",
             public: "Nur öffentliches Profil",

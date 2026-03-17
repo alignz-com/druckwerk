@@ -660,8 +660,8 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                         onChange={(e) => setField("defaultQrMode", e.target.value as FormState["defaultQrMode"])}
                         className={selectClass}
                       >
-                        <option value="VCARD_ONLY">{t("form.qrModes.vcard")}</option>
-                        <option value="PUBLIC_PROFILE_ONLY">{t("form.qrModes.public")}</option>
+                        <option value="VCARD_ONLY">{t("form.defaultQrModes.vcard")}</option>
+                        <option value="PUBLIC_PROFILE_ONLY">{t("form.defaultQrModes.public")}</option>
                       </select>
                       <p className="text-xs text-slate-500">{t("form.defaultQrModeHint")}</p>
                     </div>
