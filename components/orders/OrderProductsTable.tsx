@@ -297,10 +297,10 @@ export function OrderProductsTable(props: Props) {
               <div className="space-y-0 divide-y divide-border/60">
                 <SpecRow label={labels.format}>
                   {selected.trimWidthMm != null && selected.trimHeightMm != null ? (
-                    <div className="flex flex-col items-end">
+                    <>
                       {selected.formatName && <span className="text-xs font-medium">{selected.formatName}</span>}
                       <span className="font-mono text-[10px] text-muted-foreground">{selected.trimWidthMm} × {selected.trimHeightMm} mm</span>
-                    </div>
+                    </>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
