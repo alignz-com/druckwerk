@@ -1,7 +1,7 @@
 # Druckwerk – TODO
 
 ## JDF
-- [ ] **Filename hint parser** — parse structured info from PDF filenames (e.g. `{name}_{stock}_{qty}_{ref}_{format}_{duplex}_{gsm}_{variant}.pdf`) and enrich JDF BusinessInfo comments + MediaIntent weight. Customer-specific convention, so parser must be lenient/optional. Do not override authoritative sources (page count for duplex, order form for qty, product config for dimensions).
+- [ ] **Filename hint parser** — parse structured info from PDF filenames and enrich JDF BusinessInfo comments + MediaIntent weight. Must be lenient — same customer uses multiple conventions: format as name (`A4`) or dimensions (`21x28`), print mode as `duplex` or `booklet`, gsm standalone (`150`) or combined (`90150`). Most useful output: flag discrepancy between filename-encoded dimensions and preflight-detected dimensions (e.g. `21x28` in name vs `210×297` detected). Never override authoritative sources (page count for duplex, order form for qty, product config for dimensions).
 
 ## Orders
 - [ ] **Kanban board** — printer view with drag-and-drop status columns (see memory: kanban-todo.md spec)
