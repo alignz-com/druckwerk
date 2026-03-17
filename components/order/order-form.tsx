@@ -1875,7 +1875,7 @@ export default function OrderForm({
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
-                  className={`flex w-full min-h-[55dvh] items-center justify-center lg:rounded-b-xl bg-slate-50 border border-dashed border-slate-200 ${
+                  className={`flex min-h-[50dvh] items-center justify-center mx-6 mb-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 ${
                     templateError ? "text-red-600" : "text-slate-500"
                   }`}
                 >
