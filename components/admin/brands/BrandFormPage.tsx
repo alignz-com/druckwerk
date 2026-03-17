@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Building2,
   LayoutTemplate,
   MapPin,
@@ -477,31 +476,44 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        {/* Sticky header */}
-        <div className="border-b border-slate-200 bg-white sticky top-0 z-20">
-          <div className="mx-auto w-full max-w-5xl px-4 py-4 flex items-center gap-3">
-            <Button type="button" variant="ghost" size="sm" asChild className="-ml-2">
-              <Link href="/admin/brands" className="flex items-center gap-2 text-slate-600">
-                <ArrowLeft className="h-4 w-4" />
-                {t("detail.back")}
-              </Link>
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 pb-24 space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-slate-400">
+          <Link href="/admin/brands" className="hover:text-slate-600 transition-colors">
+            {t("detail.back")}
+          </Link>
+          <span>/</span>
+          <span className="text-slate-700 font-medium">
+            {mode === "create" ? t("dialog.createTitle") : (snapshot?.name ?? "")}
+          </span>
+        </nav>
+
+        {/* Page header */}
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{headerTitle}</h1>
+          <div className="flex items-center gap-3">
+            {feedback && (
+              <span className={`text-sm ${feedback.ok ? "text-emerald-600" : "text-red-600"}`}>
+                {feedback.text}
+              </span>
+            )}
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !form.name.trim()}
+            >
+              {saving ? "…" : mode === "create" ? t("actions.create") : t("actions.save")}
             </Button>
-            <div className="h-5 w-px bg-slate-200" />
-            <h1 className="text-lg font-semibold text-slate-900 truncate">{headerTitle}</h1>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-5xl px-4 py-6 pb-24">
-            {formError && (
-              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {formError}
-              </div>
-            )}
+        {formError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {formError}
+          </div>
+        )}
 
-            <Tabs defaultValue="general">
+        <Tabs defaultValue="general">
               <TabsList className="mb-6 h-auto flex-wrap gap-1 bg-slate-100 p-1">
                 <TabsTrigger value="general" className="flex items-center gap-2 data-[state=active]:bg-white">
                   <Building2 className="h-4 w-4" />
@@ -907,33 +919,10 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                   </div>
                 </TabsContent>
               )}
-            </Tabs>
-          </div>
-        </div>
+        </Tabs>
       </div>
 
-      {/* Floating action bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-2.5 text-white shadow-xl">
-        {feedback && (
-          <span className={`text-xs whitespace-nowrap ${feedback.ok ? "text-emerald-300" : "text-red-300"}`}>
-            {feedback.text}
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !form.name.trim()}
-          className="h-7 px-4 rounded-lg bg-white text-slate-900 text-xs font-medium disabled:opacity-40 hover:bg-slate-100 transition-colors whitespace-nowrap"
-        >
-          {saving
-            ? "…"
-            : mode === "create"
-            ? t("actions.create")
-            : t("actions.save")}
-        </button>
-      </div>
-
-      {/* Address sheet */}
+      {/* Address dialog */}
       {mode === "edit" && (
         <AddressSheet
           brandId={snapshot?.id ?? ""}

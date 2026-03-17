@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,13 +114,13 @@ export function AddressSheet({ brandId, state, onClose, onSaved }: AddressSheetP
   };
 
   return (
-    <Sheet open={Boolean(state)} onOpenChange={(next) => (!next && !isSaving ? onClose() : null)}>
-      <SheetContent className="flex h-full max-w-md flex-col p-0">
-        <form onSubmit={handleSubmit} className="flex h-full flex-col">
-          <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-            <SheetTitle>{title}</SheetTitle>
-            <SheetDescription>{t("addresses.sheet.description")}</SheetDescription>
-          </SheetHeader>
+    <Dialog open={Boolean(state)} onOpenChange={(next) => (!next && !isSaving ? onClose() : null)}>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col p-0">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <DialogHeader className="border-b border-slate-200 px-6 py-5 text-left">
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{t("addresses.sheet.description")}</DialogDescription>
+          </DialogHeader>
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
             {error ? (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -216,8 +216,8 @@ export function AddressSheet({ brandId, state, onClose, onSaved }: AddressSheetP
             </Button>
           </div>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
