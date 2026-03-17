@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
@@ -53,6 +54,7 @@ export function BrandsTable({
   onDeleteSelected,
   isDeleting = false,
 }: BrandsTableProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ id: string; direction: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(0);
@@ -264,8 +266,12 @@ export function BrandsTable({
               </TableRow>
             ) : (
               pageData.map((brand) => (
-                <TableRow key={brand.id} className={dataTableRowClass}>
-                  <TableCell className="w-12 px-4">
+                <TableRow
+                  key={brand.id}
+                  className={`${dataTableRowClass} cursor-pointer`}
+                  onClick={() => router.push(`/admin/brands/${brand.id}`)}
+                >
+                  <TableCell className="w-12 px-4" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       aria-label={`Select ${brand.name}`}
                       checked={selected.has(brand.id)}
@@ -273,7 +279,11 @@ export function BrandsTable({
                     />
                   </TableCell>
                   {columns.map((column) => (
-                    <TableCell key={column.id} className={column.align === "right" ? "text-right" : undefined}>
+                    <TableCell
+                      key={column.id}
+                      className={column.align === "right" ? "text-right" : undefined}
+                      onClick={column.id === "actions" ? (e) => e.stopPropagation() : undefined}
+                    >
                       {column.renderCell(brand)}
                     </TableCell>
                   ))}
