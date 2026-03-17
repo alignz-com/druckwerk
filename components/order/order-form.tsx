@@ -1297,7 +1297,7 @@ export default function OrderForm({
         </div>
       ) : null}
       <header className="hidden lg:block">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{tOrder("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{tOrder("title")}</h1>
         {tOrder("subtitle") ? (
           <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
         ) : null}
@@ -1872,7 +1872,7 @@ export default function OrderForm({
               </div>
             </CardHeader>
             <CardContent className="flex items-center justify-center pt-0 px-0 pb-4 lg:p-6">
-              <div className="w-full flex flex-col items-center gap-2 px-6 py-10 sm:px-10 sm:py-12">
+              <div className="w-full flex flex-col items-center gap-2 p-6">
                 <div
                   className="relative overflow-visible"
                   style={{
