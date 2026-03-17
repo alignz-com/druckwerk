@@ -43,7 +43,7 @@ export default async function NewPdfOrderPage() {
     where: { isActive: true },
     include: {
       product: { select: { id: true, name: true, nameEn: true, nameDe: true } },
-      format: { select: { trimWidthMm: true, trimHeightMm: true, toleranceMm: true, defaultBleedMm: true } },
+      format: { select: { name: true, nameDe: true, trimWidthMm: true, trimHeightMm: true, toleranceMm: true, defaultBleedMm: true } },
     },
     orderBy: { product: { name: "asc" } },
   })
@@ -54,6 +54,8 @@ export default async function NewPdfOrderPage() {
     productName: pf.product.name,
     productNameEn: pf.product.nameEn,
     productNameDe: pf.product.nameDe,
+    formatName: pf.format.name,
+    formatNameDe: pf.format.nameDe ?? null,
     trimWidthMm: pf.format.trimWidthMm,
     trimHeightMm: pf.format.trimHeightMm,
     toleranceMm: pf.format.toleranceMm,

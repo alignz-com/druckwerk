@@ -23,7 +23,7 @@ import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon } f
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslations, useLocale } from "@/components/providers/locale-provider"
-import { matchProductFormat, getProductFormatsForSize, getProductFormatLabel, type ProductFormatForMatching } from "@/lib/product-matching"
+import { matchProductFormat, getProductFormatsForSize, getProductFormatLabel, getFormatLabel, type ProductFormatForMatching } from "@/lib/product-matching"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pantoneTable = require("pantone-table") as Record<string, string>
 
@@ -98,11 +98,19 @@ function SortableRow({
       <td className="px-3 py-3 whitespace-nowrap">
         {file.error ? (
           <span className="text-destructive text-xs">{file.error}</span>
-        ) : (
-          <span className="font-mono text-xs text-muted-foreground">
-            {file.trimWidthMm} × {file.trimHeightMm} mm
-          </span>
-        )}
+        ) : (() => {
+          const matched = file.productFormatId ? products.find(p => p.id === file.productFormatId) : null
+          return matched ? (
+            <div className="flex flex-col">
+              <span className="text-xs font-medium">{getFormatLabel(matched, locale)}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{file.trimWidthMm} × {file.trimHeightMm} mm</span>
+            </div>
+          ) : (
+            <span className="font-mono text-xs text-muted-foreground">
+              {file.trimWidthMm} × {file.trimHeightMm} mm
+            </span>
+          )
+        })()}
       </td>
       <td className="px-3 py-3 text-xs text-muted-foreground">
         {file.pages > 0 ? file.pages : "—"}

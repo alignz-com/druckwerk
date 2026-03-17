@@ -89,7 +89,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
       pdfOrderItems: {
         orderBy: { createdAt: "asc" },
         include: {
-          productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
+          productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } }, format: { select: { name: true, nameDe: true } } } },
           jdfJob: { select: { jdfUrl: true, jdfFileName: true } },
         },
       },
@@ -178,6 +178,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     bleedMm: item.bleedMm ?? null,
     colorSpaces: (item.colorSpaces as string[]) ?? [],
     pantoneColors: (item.pantoneColors as string[]) ?? [],
+    formatName: (locale === "de" ? item.productFormat?.format?.nameDe : null) ?? item.productFormat?.format?.name ?? null,
   }));
 
   // BC item for products table

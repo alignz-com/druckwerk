@@ -24,6 +24,7 @@ export type PdfProductItem = {
   trimWidthMm: number | null;
   trimHeightMm: number | null;
   bleedMm: number | null;
+  formatName: string | null;
   colorSpaces: string[];
   pantoneColors: string[];
 };
@@ -230,10 +231,13 @@ export function OrderProductsTable(props: Props) {
                       <td className="px-3 py-3 max-w-[160px]">
                         <p className="font-medium text-sm truncate">{item.filename}</p>
                       </td>
-                      <td className="px-3 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                        {item.trimWidthMm != null && item.trimHeightMm != null
-                          ? `${item.trimWidthMm} × ${item.trimHeightMm} mm`
-                          : "—"}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {item.trimWidthMm != null && item.trimHeightMm != null ? (
+                          <div className="flex flex-col">
+                            {item.formatName && <span className="text-xs font-medium">{item.formatName}</span>}
+                            <span className="font-mono text-[10px] text-muted-foreground">{item.trimWidthMm} × {item.trimHeightMm} mm</span>
+                          </div>
+                        ) : "—"}
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums text-xs text-muted-foreground">
                         {item.pages ?? "—"}
@@ -293,9 +297,10 @@ export function OrderProductsTable(props: Props) {
               <div className="space-y-0 divide-y divide-border/60">
                 <SpecRow label={labels.format}>
                   {selected.trimWidthMm != null && selected.trimHeightMm != null ? (
-                    <span className="font-mono text-xs">
-                      {selected.trimWidthMm} × {selected.trimHeightMm} mm
-                    </span>
+                    <div className="flex flex-col items-end">
+                      {selected.formatName && <span className="text-xs font-medium">{selected.formatName}</span>}
+                      <span className="font-mono text-[10px] text-muted-foreground">{selected.trimWidthMm} × {selected.trimHeightMm} mm</span>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}

@@ -6,12 +6,19 @@ export type ProductFormatForMatching = {
   productName: string
   productNameEn: string | null
   productNameDe: string | null
+  formatName: string      // from Format
+  formatNameDe: string | null // from Format
   trimWidthMm: number     // from Format
   trimHeightMm: number    // from Format
   toleranceMm: number     // from Format
   defaultBleedMm: number  // from Format
   minPages: number | null // from ProductFormat
   maxPages: number | null // from ProductFormat
+}
+
+export function getFormatLabel(pf: ProductFormatForMatching, locale: string): string {
+  if (locale === "de" && pf.formatNameDe) return pf.formatNameDe
+  return pf.formatName
 }
 
 /**
