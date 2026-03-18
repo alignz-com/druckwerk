@@ -84,7 +84,6 @@ export async function generatePdfOrderJdfs(
     const itemIndex = i + 1;
 
     let pdfUrl = item.pdfUrl;
-    let pdfFileName = item.pdfFileName;
 
     if (!pdfUrl && item.storagePath && item.sourceZipFilename) {
       const extracted = await extractAndUploadPdfItem({
@@ -94,10 +93,9 @@ export async function generatePdfOrderJdfs(
         originalFilename: item.filename,
       });
       pdfUrl = extracted.pdfUrl;
-      pdfFileName = extracted.pdfFileName;
       await prisma.pdfOrderItem.update({
         where: { id: item.id },
-        data: { pdfUrl, pdfFileName },
+        data: { pdfUrl, pdfFileName: extracted.pdfFileName },
       });
     }
 
@@ -106,13 +104,12 @@ export async function generatePdfOrderJdfs(
       continue;
     }
 
-    // Derive pdfFileName for staging items (direct PDF uploads — no archive)
-    if (!pdfFileName) {
-      const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/__+/g, "_").replace(/^_|_$/g, "");
-      const sourceBase = safe(item.filename.replace(/\.pdf$/i, ""));
-      const archivePart = item.sourceZipFilename ? `-${safe(item.sourceZipFilename.replace(/\.(7z|zip)$/i, ""))}` : "";
-      pdfFileName = `${safe(order.referenceCode)}${archivePart}-${sourceBase}.pdf`;
-    }
+    // Always derive canonical JDF filename: [order]-[archive]-[file]
+    // This ensures consistent naming regardless of what was stored in the DB.
+    const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/__+/g, "_").replace(/^_|_$/g, "");
+    const sourceBase = safe(item.filename.replace(/\.pdf$/i, ""));
+    const archivePart = item.sourceZipFilename ? `-${safe(item.sourceZipFilename.replace(/\.(7z|zip)$/i, ""))}` : "";
+    const pdfFileName = `${safe(order.referenceCode)}${archivePart}-${sourceBase}.pdf`;
 
     const pcmCode = item.productFormat?.pcmCode ?? null;
     const productName = item.productFormat?.format?.name ?? null;

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2, Package, Search } from "lucide-react"
+import { Plus, Trash2, Package, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table"
 import {
   dataTableContainerClass,
+  dataTableFooterClass,
   dataTableHeaderClass,
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles"
@@ -72,11 +73,14 @@ const emptyForm: FormState = {
   trimWidthMm: "", trimHeightMm: "", canvasWidthMm: "", canvasHeightMm: "", printDpi: "", pcmCode: "",
 }
 
+const PAGE_SIZE = 10
+
 export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
   const t = useTranslations("admin.products")
   const [products, setProducts] = React.useState<Product[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
+  const [page, setPage] = React.useState(0)
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -85,6 +89,13 @@ export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
       [p.name, p.nameEn, p.nameDe].some((v) => v?.toLowerCase().includes(q))
     )
   }, [products, search])
+
+  React.useEffect(() => { setPage(0) }, [search, products])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const pageData = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const from = filtered.length === 0 ? 0 : page * PAGE_SIZE + 1
+  const to = filtered.length === 0 ? 0 : Math.min(filtered.length, (page + 1) * PAGE_SIZE)
   const [dialog, setDialog] = React.useState<"create" | { edit: Product } | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm)
   const [saving, setSaving] = React.useState(false)
@@ -224,7 +235,7 @@ export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
                 <TableRow>
                   <TableCell colSpan={3} className="py-12 text-center text-sm text-slate-500">{t("noResults")}</TableCell>
                 </TableRow>
-              ) : filtered.map((p) => (
+              ) : pageData.map((p) => (
                 <TableRow
                   key={p.id}
                   className={`${dataTableRowClass} cursor-pointer`}
@@ -254,6 +265,17 @@ export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
               ))}
             </TableBody>
           </Table>
+          </div>
+          <div className={dataTableFooterClass}>
+            <div>{t("pagination.label", { from, to, total: filtered.length })}</div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="h-9">
+                <ChevronLeft className="mr-1 h-4 w-4" />{t("pagination.previous")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1 || filtered.length === 0} className="h-9">
+                {t("pagination.next")}<ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

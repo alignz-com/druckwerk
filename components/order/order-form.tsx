@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Analytics } from "@vercel/analytics/next";
 import { AlertCircle, ChevronDown, Info, ImagePlus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -2176,7 +2175,6 @@ export default function OrderForm({
         </DialogContent>
       </Dialog>
 
-      <Analytics />
     </section>
   );
 }

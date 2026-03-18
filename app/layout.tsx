@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import "./globals.css";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import SessionProviderWrapper from "./SessionProviderWrapper"; // 👈 import
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { isLocale } from "@/lib/i18n/messages";
@@ -53,7 +52,6 @@ export default async function RootLayout({
           </LocaleProvider>
         </SessionProviderWrapper>
         <Toaster position="top-center" richColors />
-        <SpeedInsights />
       </body>
     </html>
   );

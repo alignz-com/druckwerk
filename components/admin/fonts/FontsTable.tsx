@@ -249,7 +249,7 @@ export function FontsTable({
       </div>
       )}
 
-      <div className={dataTableFooterClass}>
+      {(data.length > 0 || normalizedSearch) && <div className={dataTableFooterClass}>
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>
         <div className="flex items-center gap-2">
           <Button
@@ -273,7 +273,7 @@ export function FontsTable({
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
