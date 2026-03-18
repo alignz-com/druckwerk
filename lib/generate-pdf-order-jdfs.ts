@@ -87,7 +87,7 @@ export async function generatePdfOrderJdfs(
 
     let pdfUrl = item.pdfUrl;
 
-    if (!pdfUrl && item.storagePath && item.sourceZipFilename) {
+    if (!pdfUrl && item.storagePath && item.sourceZipFilename && /\.(7z|zip)$/i.test(item.storagePath)) {
       const extracted = await extractAndUploadPdfItem({
         referenceCode: order.referenceCode,
         archiveStorageKey: item.storagePath,
@@ -128,12 +128,14 @@ export async function generatePdfOrderJdfs(
           CopySource: `${ORDERS_BUCKET}/${sourceKey}`,
           Key: canonicalStorageKey,
         }));
-        await s3.send(new DeleteObjectCommand({ Bucket: ORDERS_BUCKET, Key: sourceKey }));
+        // Update DB and local var before deleting — if delete fails, file survives at both paths (harmless duplicate).
+        // If we deleted first and DB update failed, pdfUrl would point to a gone file.
         await prisma.pdfOrderItem.update({
           where: { id: item.id },
           data: { pdfUrl: canonicalPdfUrl, pdfFileName },
         });
         pdfUrl = canonicalPdfUrl;
+        await s3.send(new DeleteObjectCommand({ Bucket: ORDERS_BUCKET, Key: sourceKey }));
       } catch (err) {
         console.error(`[generate-pdf-order-jdfs] failed to rename PDF for item ${item.id}:`, err);
         // Continue with original URL — JDF will still reference the correct file
