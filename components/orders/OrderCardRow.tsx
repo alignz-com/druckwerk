@@ -109,7 +109,7 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ prod
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="cursor-default">{children}</span>
+          <span className="cursor-pointer">{children}</span>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
