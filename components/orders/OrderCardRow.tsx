@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, FileText, Info } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { useTranslations } from "@/components/providers/locale-provider";
 
@@ -104,14 +104,12 @@ function Dot() {
 }
 
 function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ product: string | null; format: string | null; pages: number }>; children: React.ReactNode }) {
+  const t = useTranslations("pdfOrder");
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="inline-flex items-center gap-1 cursor-default">
-            {children}
-            <Info className="h-3 w-3 text-slate-300 shrink-0" />
-          </span>
+          <span className="cursor-help">{children}</span>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
@@ -125,11 +123,11 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ prod
                   <span className="text-xs text-slate-300">
                     {[product, format].filter(Boolean).join(" · ")}
                   </span>
-                  <span className="text-xs text-white tabular-nums font-medium">{pages} S.</span>
+                  <span className="text-xs text-white tabular-nums font-medium">{pages} {t("dropzonePagesAbbr")}</span>
                 </div>
               ))}
             </div>
-            <TooltipPrimitive.Arrow className="fill-slate-900" />
+            <TooltipPrimitive.Arrow className="fill-slate-900 z-50" />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>
