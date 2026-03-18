@@ -143,8 +143,7 @@ export async function POST(req: NextRequest) {
         : null
       return {
         filename: meta.filename,
-        // For staging items, skip extraction — individual PDF is already available
-        sourceZipFilename: hasStaging ? null : (meta.sourceZipFilename ?? null),
+        sourceZipFilename: meta.sourceZipFilename ?? null,
         storagePath,
         thumbnailStoragePath,
         quantity: meta.quantity,
@@ -240,10 +239,10 @@ export async function POST(req: NextRequest) {
 
     // Extract individual PDFs from archives and store with order-prefixed names.
     // Runs concurrently; failures are non-fatal — the archive remains the source of truth.
-    // Items with stagingUrl have sourceZipFilename=null so they are skipped here.
+    // Staging items (storagePath ends in .pdf, not .7z/.zip) are skipped by the guard below.
     await Promise.allSettled(
       createdItems.map(async (item) => {
-        if (!item.storagePath || !item.sourceZipFilename) return
+        if (!item.storagePath || !item.sourceZipFilename || !/\.(7z|zip)$/i.test(item.storagePath)) return
         try {
           const extracted = await extractAndUploadPdfItem({
             referenceCode,
