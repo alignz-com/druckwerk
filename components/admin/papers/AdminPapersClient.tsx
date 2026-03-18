@@ -5,6 +5,7 @@ import { Plus, Trash2, Layers, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -59,14 +60,24 @@ export function AdminPaperStocksClient() {
   const [papers, setPapers] = React.useState<PaperStock[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
+  const [finishFilter, setFinishFilter] = React.useState<string | null>(null)
+
+  const availableFinishes = React.useMemo(() => {
+    const seen = new Set<string>()
+    for (const p of papers) {
+      if (p.finish) seen.add(p.finish)
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b))
+  }, [papers])
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return papers
-    return papers.filter((p) =>
-      [p.name, p.description, p.finish, p.color].some((v) => v?.toLowerCase().includes(q))
-    )
-  }, [papers, search])
+    return papers.filter((p) => {
+      if (finishFilter && p.finish !== finishFilter) return false
+      if (q && ![p.name, p.description, p.finish, p.color].some((v) => v?.toLowerCase().includes(q))) return false
+      return true
+    })
+  }, [papers, search, finishFilter])
   const [dialog, setDialog] = React.useState<"create" | { edit: PaperStock } | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm)
   const [saving, setSaving] = React.useState(false)
@@ -162,9 +173,24 @@ export function AdminPaperStocksClient() {
         </Button>
       </header>
 
-      <div className="relative w-full max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-9" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-9" />
+        </div>
+        {availableFinishes.length > 0 && (
+          <Select value={finishFilter ?? "all"} onValueChange={(v) => setFinishFilter(v === "all" ? null : v)}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t("allFinishes")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allFinishes")}</SelectItem>
+              {availableFinishes.map((finish) => (
+                <SelectItem key={finish} value={finish}>{finish}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {loading ? (

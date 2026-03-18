@@ -92,6 +92,8 @@ export default function AdminUsersClient({ users, brands }: Props) {
         previousLabel={t("table.pagination.previous")}
         nextLabel={t("table.pagination.next")}
         resetLabel={t("table.pagination.reset")}
+        allRolesLabel={t("table.allRoles")}
+        allBrandsLabel={t("table.allBrands")}
         columns={{
           user: t("table.headers.user"),
           email: t("table.headers.email"),
