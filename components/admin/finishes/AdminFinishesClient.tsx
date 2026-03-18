@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2, Sparkles } from "lucide-react"
+import { Plus, Trash2, Sparkles, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,6 +47,15 @@ export function AdminFinishesClient() {
   const t = useTranslations("admin.finishes")
   const [finishes, setFinishes] = React.useState<Finish[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [search, setSearch] = React.useState("")
+
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return finishes
+    return finishes.filter((f) =>
+      [f.name, f.nameDe, f.code].some((v) => v?.toLowerCase().includes(q))
+    )
+  }, [finishes, search])
   const [dialog, setDialog] = React.useState<"create" | { edit: Finish } | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm)
   const [saving, setSaving] = React.useState(false)
@@ -134,15 +143,21 @@ export function AdminFinishesClient() {
         </Button>
       </header>
 
+      <div className="relative w-full max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-9" />
+      </div>
+
       {loading ? (
         <p className="text-sm text-slate-500">{t("loading")}</p>
-      ) : finishes.length === 0 ? (
+      ) : finishes.length === 0 && !search ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
           <Sparkles className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t("empty")}</p>
         </div>
       ) : (
-        <div className={dataTableContainerClass}>
+        <div>
+          <div className={dataTableContainerClass}>
           <Table>
             <TableHeader className={dataTableHeaderClass}>
               <TableRow className={dataTableRowClass}>
@@ -153,7 +168,11 @@ export function AdminFinishesClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {finishes.map((f) => (
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-12 text-center text-sm text-slate-500">{t("noResults")}</TableCell>
+                </TableRow>
+              ) : filtered.map((f) => (
                 <TableRow
                   key={f.id}
                   className={`${dataTableRowClass} cursor-pointer`}
@@ -185,6 +204,7 @@ export function AdminFinishesClient() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

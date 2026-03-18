@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2, Layers } from "lucide-react"
+import { Plus, Trash2, Layers, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -58,6 +58,15 @@ export function AdminPaperStocksClient() {
   const t = useTranslations("admin.papers")
   const [papers, setPapers] = React.useState<PaperStock[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [search, setSearch] = React.useState("")
+
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return papers
+    return papers.filter((p) =>
+      [p.name, p.description, p.finish, p.color].some((v) => v?.toLowerCase().includes(q))
+    )
+  }, [papers, search])
   const [dialog, setDialog] = React.useState<"create" | { edit: PaperStock } | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm)
   const [saving, setSaving] = React.useState(false)
@@ -153,15 +162,21 @@ export function AdminPaperStocksClient() {
         </Button>
       </header>
 
+      <div className="relative w-full max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-9" />
+      </div>
+
       {loading ? (
         <p className="text-sm text-slate-500">{t("loading")}</p>
-      ) : papers.length === 0 ? (
+      ) : papers.length === 0 && !search ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
           <Layers className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t("empty")}</p>
         </div>
       ) : (
-        <div className={dataTableContainerClass}>
+        <div>
+          <div className={dataTableContainerClass}>
           <Table>
             <TableHeader className={dataTableHeaderClass}>
               <TableRow className={dataTableRowClass}>
@@ -173,7 +188,11 @@ export function AdminPaperStocksClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {papers.map((p) => (
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-12 text-center text-sm text-slate-500">{t("noResults")}</TableCell>
+                </TableRow>
+              ) : filtered.map((p) => (
                 <TableRow
                   key={p.id}
                   className={`${dataTableRowClass} cursor-pointer`}
@@ -207,6 +226,7 @@ export function AdminPaperStocksClient() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

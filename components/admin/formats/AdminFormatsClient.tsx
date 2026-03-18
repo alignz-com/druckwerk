@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Ruler, Trash2 } from "lucide-react"
+import { Plus, Ruler, Search, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -68,6 +68,15 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
   const t = useTranslations("admin.formats")
   const [formats, setFormats] = React.useState<Format[]>(initialFormats)
   const [loading, setLoading] = React.useState(false)
+  const [search, setSearch] = React.useState("")
+
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return formats
+    return formats.filter((f) =>
+      [f.name, f.nameDe, f.slug].some((v) => v?.toLowerCase().includes(q))
+    )
+  }, [formats, search])
   const [dialog, setDialog] = React.useState<"create" | "edit" | null>(null)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm())
@@ -178,15 +187,21 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
         </Button>
       </header>
 
+      <div className="relative w-full max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-9" />
+      </div>
+
       {loading ? (
         <p className="text-sm text-slate-500">{t("loading")}</p>
-      ) : formats.length === 0 ? (
+      ) : formats.length === 0 && !search ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
           <Ruler className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t("empty")}</p>
         </div>
       ) : (
-        <div className={dataTableContainerClass}>
+        <div>
+          <div className={dataTableContainerClass}>
           <Table>
             <TableHeader className={dataTableHeaderClass}>
               <TableRow className={dataTableRowClass}>
@@ -199,7 +214,11 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {formats.map((f) => (
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">{t("noResults")}</TableCell>
+                </TableRow>
+              ) : filtered.map((f) => (
                 <TableRow
                   key={f.id}
                   className={`${dataTableRowClass} cursor-pointer`}
@@ -230,6 +249,7 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 
