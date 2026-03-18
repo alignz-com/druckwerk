@@ -78,7 +78,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
             pages: true,
             quantity: true,
             thumbnailStoragePath: true,
-            productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
+            productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } }, format: { select: { name: true, nameDe: true } } } },
           },
           orderBy: { createdAt: "asc" as const },
         },
@@ -225,21 +225,17 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       return Array.from(map.entries()).map(([name, quantity]) => ({ name, quantity }));
     })();
 
-    // PDF: total pages + per-product page breakdown for tooltip
+    // PDF: total pages + per-file breakdown for tooltip
     const totalPageCount = isBC ? null : order.pdfOrderItems.reduce((s, i) => s + (i.pages ?? 0), 0) || null;
     const pageBreakdown = (() => {
       if (isBC || order.pdfOrderItems.length <= 1) return null;
-      const map = new Map<string, number>();
-      for (const item of order.pdfOrderItems) {
+      return order.pdfOrderItems.map((item) => {
         const prod = item.productFormat?.product;
-        const name = prod
-          ? ((locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name)
-          : null;
-        if (!name) continue;
-        map.set(name, (map.get(name) ?? 0) + (item.pages ?? 0));
-      }
-      if (map.size === 0) return null;
-      return Array.from(map.entries()).map(([name, pages]) => ({ name, pages }));
+        const fmt = item.productFormat?.format;
+        const product = prod ? ((locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name) : null;
+        const format = fmt ? ((locale === "de" ? fmt.nameDe : null) ?? fmt.name) : null;
+        return { product, format, pages: item.pages ?? 0 };
+      }).filter(i => i.pages > 0);
     })();
 
     return {

@@ -3,8 +3,9 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText, Info } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
+import { useTranslations } from "@/components/providers/locale-provider";
 
 export type OrderCardData = {
   id: string;
@@ -27,7 +28,7 @@ export type OrderCardData = {
   primaryPageCount: number | null; // PDF: first/only file page count
   productBreakdown: Array<{ name: string; quantity: number }> | null; // PDF: per-product qty
   totalPageCount: number | null;                                       // PDF: sum of all pages
-  pageBreakdown: Array<{ name: string; pages: number }> | null;        // PDF multi: pages per product
+  pageBreakdown: Array<{ product: string | null; format: string | null; pages: number }> | null;
   status: string;
   statusLabel: string;
   deliveryDueAtLabel: string | null;
@@ -56,7 +57,7 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
         width={40}
         height={56}
         className="rounded-md shadow-sm"
-        style={{ width: "auto", height: "auto", maxWidth: "40px", maxHeight: "56px" }}
+        style={{ width: "auto", height: "auto", maxWidth: "48px", maxHeight: "68px" }}
         sizes="40px"
       />
     );
@@ -102,12 +103,15 @@ function Dot() {
   return <span className="text-slate-300 text-xs shrink-0">·</span>;
 }
 
-function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ name: string; pages: number }>; children: React.ReactNode }) {
+function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ product: string | null; format: string | null; pages: number }>; children: React.ReactNode }) {
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="underline decoration-dotted underline-offset-2 cursor-default">{children}</span>
+          <span className="inline-flex items-center gap-1 cursor-default">
+            {children}
+            <Info className="h-3 w-3 text-slate-300 shrink-0" />
+          </span>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
@@ -115,10 +119,12 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ name
             sideOffset={6}
             className="z-50 rounded-lg bg-slate-900 px-3 py-2 shadow-lg"
           >
-            <div className="flex flex-col gap-1 min-w-[120px]">
-              {breakdown.map(({ name, pages }) => (
-                <div key={name} className="flex items-center justify-between gap-4">
-                  <span className="text-xs text-slate-300">{name}</span>
+            <div className="flex flex-col gap-1 min-w-[140px]">
+              {breakdown.map(({ product, format, pages }, i) => (
+                <div key={i} className="flex items-center justify-between gap-4">
+                  <span className="text-xs text-slate-300">
+                    {[product, format].filter(Boolean).join(" · ")}
+                  </span>
                   <span className="text-xs text-white tabular-nums font-medium">{pages} S.</span>
                 </div>
               ))}
@@ -139,6 +145,7 @@ type Line1Props = {
 };
 
 function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
+  const t = useTranslations("pdfOrder");
   // Build parts array so dots only appear between actual content
   if (isBC) {
     const parts: React.ReactNode[] = [];
@@ -191,7 +198,7 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
       );
     });
     if (order.totalPageCount) {
-      const label = `${order.totalPageCount} Seiten`;
+      const label = `${order.totalPageCount} ${t("dropzoneColPages")}`;
       parts.push(
         order.pageBreakdown && order.pageBreakdown.length > 1
           ? <PageBreakdownTooltip key="pages" breakdown={order.pageBreakdown}>
@@ -213,7 +220,7 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
       );
     if (order.primaryPageCount != null)
       parts.push(
-        <span key="pages" className="text-xs text-slate-400 shrink-0">{order.primaryPageCount} Seiten</span>
+        <span key="pages" className="text-xs text-slate-400 shrink-0">{order.primaryPageCount} {t("dropzoneColPages")}</span>
       );
   }
 
