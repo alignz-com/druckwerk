@@ -55,6 +55,26 @@ export type BuildJdfParams = {
 
 const CIP4_NAMESPACE = "http://www.CIP4.org/JDFSchema_1_1";
 
+/**
+ * Sanitize a string for JDF output.
+ * Heidelberg Prinect reads JDF as Windows-1252; UTF-8 multi-byte sequences
+ * for non-ASCII characters (e.g. umlauts) produce garbled characters (#, ?, Ã…).
+ * Transliterate common accented/German characters then strip any remaining non-ASCII.
+ */
+function jdfStr(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  return value
+    .replace(/Ä/g, "Ae").replace(/Ö/g, "Oe").replace(/Ü/g, "Ue")
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[àáâãåā]/gi, "a").replace(/[èéêëē]/gi, "e")
+    .replace(/[ìíîïī]/gi, "i").replace(/[òóôõøō]/gi, "o")
+    .replace(/[ùúûū]/gi, "u").replace(/[ýÿ]/gi, "y")
+    .replace(/[ñ]/gi, "n").replace(/[çć]/gi, "c").replace(/[žź]/gi, "z")
+    .replace(/[^a-zA-Z0-9 .,:;!?()\-_+@/&#%'"\[\]{}]/g, "")
+    .trim() || undefined;
+}
+
 function iso(value?: Date) {
   return (value ?? new Date()).toISOString();
 }
@@ -74,23 +94,23 @@ function appendContact(parent: any, type: string, contact?: JdfContact) {
 
   const contactNode = parent.ele("Contact", { ContactTypes: type });
   if (contact.company) {
-    contactNode.ele("Company", { OrganizationName: contact.company });
+    contactNode.ele("Company", { OrganizationName: jdfStr(contact.company) });
   }
   if (contact.street || contact.city || contact.postalCode) {
     contactNode.ele("Address", {
-      Street: contact.street ?? undefined,
-      City: contact.city ?? undefined,
-      PostalCode: contact.postalCode ?? undefined,
-      Country: contact.country ?? undefined,
+      Street: jdfStr(contact.street),
+      City: jdfStr(contact.city),
+      PostalCode: jdfStr(contact.postalCode),
+      Country: jdfStr(contact.country),
       CountryCode: contact.countryCode ?? undefined,
-      Region: contact.region ?? undefined,
+      Region: jdfStr(contact.region),
     });
   }
   if (contact.personName || contact.email || contact.phone || contact.mobile) {
     const { firstName, familyName } = splitName(contact.personName ?? "");
     const person = contactNode.ele("Person", {
-      FirstName: firstName || undefined,
-      FamilyName: familyName || undefined,
+      FirstName: jdfStr(firstName) || undefined,
+      FamilyName: jdfStr(familyName) || undefined,
     });
     if (contact.phone) {
       person.ele("ComChannel", { ChannelType: "Phone", Locator: contact.phone });
@@ -118,15 +138,15 @@ function appendDeliveryParams(parent: any, address?: DeliveryAddress) {
   if (!address) return deliveryParams;
   const streetParts = [address.street, address.addressExtra].filter(Boolean);
   deliveryParams.ele("Address", {
-    Street: streetParts.length ? streetParts.join(" ") : undefined,
-    City: address.city ?? undefined,
-    PostalCode: address.postalCode ?? undefined,
-    Country: address.country ?? undefined,
+    Street: streetParts.length ? jdfStr(streetParts.join(" ")) : undefined,
+    City: jdfStr(address.city),
+    PostalCode: jdfStr(address.postalCode),
+    Country: jdfStr(address.country),
     CountryCode: address.countryCode ?? undefined,
   });
   if (address.companyName) {
     deliveryParams.ele("Contact", { ContactTypes: "Delivery" }).ele("Company", {
-      OrganizationName: address.companyName,
+      OrganizationName: jdfStr(address.companyName),
     });
   }
   return deliveryParams;
@@ -155,7 +175,7 @@ export function buildJdfDocument(params: BuildJdfParams) {
   const widthMm = fmtMm(trimWidthMm ?? 85);
   const heightMm = fmtMm(trimHeightMm ?? 55);
 
-  const descriptiveName = `${brandName ?? "Brand"} Business Card`.trim();
+  const descriptiveName = jdfStr(`${brandName ?? "Brand"} Business Card`) ?? "Business Card";
   const doc = create({ version: "1.0", encoding: "UTF-8" });
   const root = doc.ele("JDF", {
     DescriptiveName: descriptiveName,
@@ -312,7 +332,7 @@ export function buildJdfDocument(params: BuildJdfParams) {
   const nodeInfo = root.ele("NodeInfo");
   const businessInfo = nodeInfo.ele("BusinessInfo");
   if (customerReference) {
-    businessInfo.ele("Comment", { Name: "Customer_Reference" }).txt(customerReference);
+    businessInfo.ele("Comment", { Name: "Customer_Reference" }).txt(jdfStr(customerReference) ?? customerReference);
   }
   if (deliveryDueAt) {
     businessInfo.ele("Comment", { Name: "Data_Delivery" }).txt(deliveryDueAt.toISOString());
@@ -390,7 +410,7 @@ export function buildPdfItemJdfDocument(params: BuildPdfItemJdfParams): string {
   const partId = `${referenceCode}-${itemIndex}`;
   const archiveBase = /\.(7z|zip)$/i.test(archiveName) ? archiveName.replace(/\.(7z|zip)$/i, "") : null;
   const sourceBase = originalFilename.replace(/\.[^.]+$/, "");
-  const descriptiveName = [referenceCode, archiveBase, sourceBase].filter(Boolean).join("-");
+  const descriptiveName = jdfStr([referenceCode, archiveBase, sourceBase].filter(Boolean).join("-")) ?? referenceCode;
 
   const doc = create({ version: "1.0", encoding: "UTF-8" });
   const root = doc.ele("JDF", {
@@ -434,7 +454,7 @@ export function buildPdfItemJdfDocument(params: BuildPdfItemJdfParams): string {
     Type: "Product",
     Status: "Waiting",
     JobPartID: `${partId}-PRODUCT-PART`,
-    DescriptiveName: productName ?? pdfFileName,
+    DescriptiveName: jdfStr(productName ?? pdfFileName) ?? pdfFileName,
   });
 
   const productLinkPool = productNode.ele("ResourceLinkPool");
@@ -572,13 +592,13 @@ export function buildPdfItemJdfDocument(params: BuildPdfItemJdfParams): string {
   const businessInfo = nodeInfo.ele("BusinessInfo");
   businessInfo.ele("Comment", { Name: "Job_ID" }).txt(referenceCode);
   businessInfo.ele("Comment", { Name: "Item_Index" }).txt(`${itemIndex} of ${itemCount}`);
-  businessInfo.ele("Comment", { Name: "Source_Archive" }).txt(archiveName);
-  businessInfo.ele("Comment", { Name: "Source_File" }).txt(originalFilename);
+  businessInfo.ele("Comment", { Name: "Source_Archive" }).txt(jdfStr(archiveName) ?? archiveName);
+  businessInfo.ele("Comment", { Name: "Source_File" }).txt(jdfStr(originalFilename) ?? originalFilename);
   if (pcmCode) {
     businessInfo.ele("Comment", { Name: "PCM_Code" }).txt(pcmCode);
   }
   if (customerReference) {
-    businessInfo.ele("Comment", { Name: "Customer_Reference" }).txt(customerReference);
+    businessInfo.ele("Comment", { Name: "Customer_Reference" }).txt(jdfStr(customerReference) ?? customerReference);
   }
   if (deliveryDueAt) {
     businessInfo.ele("Comment", { Name: "Data_Delivery" }).txt(deliveryDueAt.toISOString());

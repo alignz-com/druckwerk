@@ -2,8 +2,10 @@
  * Generates one JDF per PdfOrderItem for a PDF print order.
  * Called automatically on order submission and on manual regeneration.
  */
+import { CopyObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { put } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
+import { s3, ORDERS_BUCKET, S3_PUBLIC_URL } from "@/lib/s3";
 import { buildPdfItemJdfDocument } from "@/lib/jdf";
 import { extractAndUploadPdfItem } from "@/lib/pdf-item-extract";
 
@@ -104,12 +106,39 @@ export async function generatePdfOrderJdfs(
       continue;
     }
 
-    // Always derive canonical JDF filename: [order]-[archive]-[file]
+    // Always derive canonical production filename: [order]-[archive]-[file]
     // This ensures consistent naming regardless of what was stored in the DB.
     const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/__+/g, "_").replace(/^_|_$/g, "");
     const sourceBase = safe(item.filename.replace(/\.pdf$/i, ""));
     const archivePart = item.sourceZipFilename ? `-${safe(item.sourceZipFilename.replace(/\.(7z|zip)$/i, ""))}` : "";
     const pdfFileName = `${safe(order.referenceCode)}${archivePart}-${sourceBase}.pdf`;
+
+    // Rename the PDF in MinIO to the canonical production name if it isn't already.
+    // Staging items land at {ref}/pdf/{n}-{name} — copy to {ref}/pdfs/{canonical}, then
+    // delete the original so there are no duplicates.
+    const s3Base = `${S3_PUBLIC_URL}/${ORDERS_BUCKET}`;
+    const canonicalStorageKey = `${order.referenceCode}/pdfs/${pdfFileName}`;
+    const canonicalPdfUrl = `${s3Base}/${canonicalStorageKey}`;
+
+    if (pdfUrl !== canonicalPdfUrl && pdfUrl.startsWith(`${s3Base}/`)) {
+      const sourceKey = pdfUrl.replace(`${s3Base}/`, "");
+      try {
+        await s3.send(new CopyObjectCommand({
+          Bucket: ORDERS_BUCKET,
+          CopySource: `${ORDERS_BUCKET}/${sourceKey}`,
+          Key: canonicalStorageKey,
+        }));
+        await s3.send(new DeleteObjectCommand({ Bucket: ORDERS_BUCKET, Key: sourceKey }));
+        await prisma.pdfOrderItem.update({
+          where: { id: item.id },
+          data: { pdfUrl: canonicalPdfUrl, pdfFileName },
+        });
+        pdfUrl = canonicalPdfUrl;
+      } catch (err) {
+        console.error(`[generate-pdf-order-jdfs] failed to rename PDF for item ${item.id}:`, err);
+        // Continue with original URL — JDF will still reference the correct file
+      }
+    }
 
     const pcmCode = item.productFormat?.pcmCode ?? null;
     const productName = item.productFormat?.format?.name ?? null;
