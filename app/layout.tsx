@@ -13,10 +13,6 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "Druckwerk - Druckerei Thurnher",
   description: "Order and preview business cards online",
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-  },
 };
 
 export default async function RootLayout({
