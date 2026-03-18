@@ -56,6 +56,7 @@ export default async function AppLayout({ children }: Props) {
         { href: "/admin/papers", label: t.nav.adminPapers, icon: "admin-papers" },
         { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
         { href: "/admin/fonts", label: t.nav.adminFonts, icon: "admin-fonts" },
+        { href: "/admin/features", label: t.nav.adminFeatures, icon: "admin-features" },
       ]
     : [];
 
@@ -87,6 +88,7 @@ export default async function AppLayout({ children }: Props) {
       { href: "/admin/papers?new=1", label: t.nav.cmdKNewPaper, group: t.nav.cmdKGroupActions, iconKey: "admin-papers" },
       { href: "/admin/finishes?new=1", label: t.nav.cmdKNewFinish, group: t.nav.cmdKGroupActions, iconKey: "admin-finishes" },
       { href: "/admin/fonts?new=1", label: t.nav.cmdKNewFont, group: t.nav.cmdKGroupActions, iconKey: "admin-fonts" },
+      { href: "/admin/features", label: t.nav.adminFeatures, group: t.nav.cmdKGroupActions, iconKey: "admin-features" },
     ] : []),
   ];
 

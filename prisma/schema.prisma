@@ -78,6 +78,29 @@ enum FontFormat {
   WOFF2
 }
 
+enum FeatureStatus {
+  IDEA
+  PLANNED
+  IN_PROGRESS
+  DONE
+  PARKED
+}
+
+enum FeaturePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FeatureCategory {
+  UI
+  BACKEND
+  INFRASTRUCTURE
+  BUG
+  IDEA
+}
+
 model User {
   id             String    @id @default(cuid())
   email          String    @unique
@@ -715,4 +738,35 @@ model BrandProductFormatPreference {
 
   @@unique([brandId, productFormatId])
   @@index([brandId])
+}
+
+// ─── Feature Tracker ──────────────────────────────────────────────────────────
+
+model Feature {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      FeatureStatus   @default(IDEA)
+  priority    FeaturePriority @default(MEDIUM)
+  category    FeatureCategory @default(IDEA)
+  sortOrder   Int             @default(0)
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  comments    FeatureComment[]
+
+  @@index([status])
+  @@index([priority])
+}
+
+model FeatureComment {
+  id        String   @id @default(cuid())
+  featureId String
+  content   String
+  author    String
+  createdAt DateTime @default(now())
+
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@index([featureId])
 }

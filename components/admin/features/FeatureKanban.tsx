@@ -1,0 +1,224 @@
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import type { Feature, FeatureComment } from "@prisma/client";
+
+type FeatureWithComments = Feature & { comments: FeatureComment[] };
+
+const STATUS_ORDER = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "PARKED"] as const;
+
+const COLUMN_HEADER_STYLES: Record<string, string> = {
+  IDEA:        "bg-purple-100 text-purple-800",
+  PLANNED:     "bg-blue-100 text-blue-800",
+  IN_PROGRESS: "bg-amber-100 text-amber-800",
+  DONE:        "bg-emerald-100 text-emerald-800",
+  PARKED:      "bg-slate-200 text-slate-600",
+};
+
+const COLUMN_BODY_STYLES: Record<string, string> = {
+  IDEA:        "bg-purple-50/40",
+  PLANNED:     "bg-blue-50/40",
+  IN_PROGRESS: "bg-amber-50/40",
+  DONE:        "bg-emerald-50/40",
+  PARKED:      "bg-slate-50",
+};
+
+const PRIORITY_DOT: Record<string, string> = {
+  LOW:      "bg-slate-300",
+  MEDIUM:   "bg-blue-400",
+  HIGH:     "bg-amber-500",
+  CRITICAL: "bg-red-500",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  UI:             "bg-indigo-100 text-indigo-700",
+  BACKEND:        "bg-emerald-100 text-emerald-700",
+  INFRASTRUCTURE: "bg-orange-100 text-orange-700",
+  BUG:            "bg-red-100 text-red-700",
+  IDEA:           "bg-purple-100 text-purple-700",
+};
+
+type Props = {
+  features: FeatureWithComments[];
+  onStatusChange: (id: string, status: string) => void;
+  onSelect: (feature: FeatureWithComments) => void;
+  showMoreLabel: string;
+  statusLabels: Record<string, string>;
+};
+
+function FeatureCard({ feature, onSelect }: { feature: FeatureWithComments; onSelect: (f: FeatureWithComments) => void }) {
+  const priorityDot = PRIORITY_DOT[feature.priority] ?? "bg-slate-300";
+  const catStyle = CATEGORY_COLORS[feature.category] ?? "bg-slate-100 text-slate-600";
+  const commentCount = feature.comments.length;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(feature)}
+      className="w-full text-left flex flex-col gap-1.5 px-3 py-2.5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-start gap-2 min-w-0">
+        <span className={`mt-1.5 size-2 rounded-full shrink-0 ${priorityDot}`} />
+        <p className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2">{feature.title}</p>
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className={`inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium ${catStyle}`}>
+          {feature.category}
+        </span>
+        {commentCount > 0 && (
+          <span className="text-[10px] text-slate-400">{commentCount} comment{commentCount !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function DraggableCard({ feature, onSelect }: { feature: FeatureWithComments; onSelect: (f: FeatureWithComments) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: feature.id,
+    data: { status: feature.status },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
+      {...listeners}
+      {...attributes}
+      className={`cursor-grab active:cursor-grabbing touch-none transition-opacity ${isDragging ? "opacity-40" : ""}`}
+    >
+      <FeatureCard feature={feature} onSelect={onSelect} />
+    </div>
+  );
+}
+
+function KanbanColumn({
+  status,
+  label,
+  features,
+  onSelect,
+  isOver,
+  showMoreLabel,
+}: {
+  status: string;
+  label: string;
+  features: FeatureWithComments[];
+  onSelect: (f: FeatureWithComments) => void;
+  isOver: boolean;
+  showMoreLabel: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
+  const bodyStyle = COLUMN_BODY_STYLES[status] ?? "bg-slate-50";
+  const visible = showAll ? features : features.slice(0, 20);
+  const hidden = features.length - 20;
+
+  return (
+    <div className="relative h-full flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80">
+      {isOver && (
+        <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />
+      )}
+      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyle}`}>
+        <span className="text-sm font-semibold">{label}</span>
+        <span className="text-xs font-bold opacity-70 tabular-nums">{features.length}</span>
+      </div>
+      <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
+        {visible.map((f) => (
+          <DraggableCard key={f.id} feature={f} onSelect={onSelect} />
+        ))}
+        {!showAll && hidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="mt-1 w-full py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors text-center"
+          >
+            {showMoreLabel.replace("{n}", String(hidden))}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DroppableColumn(props: Omit<Parameters<typeof KanbanColumn>[0], "isOver">) {
+  const { setNodeRef, isOver } = useDroppable({ id: props.status });
+  return (
+    <div ref={setNodeRef} className="flex-shrink-0 self-stretch" style={{ width: "260px" }}>
+      <KanbanColumn {...props} isOver={isOver} />
+    </div>
+  );
+}
+
+export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabel, statusLabels }: Props) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const grouped = useMemo(() => {
+    const map: Record<string, FeatureWithComments[]> = {};
+    for (const s of STATUS_ORDER) map[s] = [];
+    for (const f of features) {
+      if (map[f.status]) map[f.status].push(f);
+      else map[f.status] = [f];
+    }
+    return map;
+  }, [features]);
+
+  const activeFeature = useMemo(
+    () => features.find((f) => f.id === activeId) ?? null,
+    [features, activeId],
+  );
+
+  const handleDragStart = useCallback((e: DragStartEvent) => {
+    setActiveId(String(e.active.id));
+  }, []);
+
+  const handleDragEnd = useCallback((e: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const featureId = String(active.id);
+    const newStatus = String(over.id);
+    const feature = features.find((f) => f.id === featureId);
+    if (!feature || feature.status === newStatus) return;
+    onStatusChange(featureId, newStatus);
+  }, [features, onStatusChange]);
+
+  return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex gap-3 overflow-x-auto pb-4 items-stretch min-w-0">
+        {STATUS_ORDER.map((status) => (
+          <DroppableColumn
+            key={status}
+            status={status}
+            label={statusLabels[status] ?? status}
+            features={grouped[status] ?? []}
+            onSelect={onSelect}
+            showMoreLabel={showMoreLabel}
+          />
+        ))}
+      </div>
+
+      <DragOverlay dropAnimation={null}>
+        {activeFeature ? (
+          <div className="w-[260px] rotate-1 shadow-2xl rounded-xl overflow-hidden">
+            <FeatureCard feature={activeFeature} onSelect={() => {}} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
