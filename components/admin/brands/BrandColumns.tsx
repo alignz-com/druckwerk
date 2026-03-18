@@ -2,7 +2,6 @@ import { Building2, ChevronRight, Mail, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
-import { Badge } from "@/components/ui/badge";
 
 export type TranslationFn = (
   key: string,
@@ -64,7 +63,7 @@ export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSumm
       align: "right",
       enableSorting: true,
       sortAccessor: (row) => row.templateCount,
-      renderCell: (row) => <Badge variant="secondary">{row.templateCount}</Badge>,
+      renderCell: (row) => <span className="text-sm text-slate-500">{row.templateCount}</span>,
     },
     {
       id: "addresses",
@@ -72,7 +71,7 @@ export function createBrandColumns(t: TranslationFn): BrandColumn<AdminBrandSumm
       align: "right",
       enableSorting: true,
       sortAccessor: (row) => row.addresses.length,
-      renderCell: (row) => <Badge variant="secondary">{row.addresses.length}</Badge>,
+      renderCell: (row) => <span className="text-sm text-slate-500">{row.addresses.length}</span>,
     },
     {
       id: "chevron",

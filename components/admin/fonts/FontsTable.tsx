@@ -235,7 +235,7 @@ export function FontsTable({
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">{row.slug}</TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="secondary">{row.variantCount}</Badge>
+                    <span className="text-sm text-slate-500">{row.variantCount}</span>
                   </TableCell>
                   <TableCell className="text-right text-sm text-slate-600">{row.updatedAtLabel}</TableCell>
                   <TableCell className="w-10 text-right">
