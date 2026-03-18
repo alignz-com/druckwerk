@@ -47,14 +47,15 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
 
   if (order.thumbnailUrl && !isMultiFile) {
     return (
-      <Image
-        src={order.thumbnailUrl}
-        alt=""
-        width={64}
-        height={64}
-        className="object-contain rounded shadow-md"
-        sizes="64px"
-      />
+      <div className="relative w-full h-full">
+        <Image
+          src={order.thumbnailUrl}
+          alt=""
+          fill
+          className="object-contain rounded shadow-md"
+          sizes="64px"
+        />
+      </div>
     );
   }
 
@@ -211,7 +212,7 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
     <>
       {/* Thumbnail panel */}
       <div className="relative w-[88px] shrink-0 self-stretch bg-slate-100">
-        <div className="absolute inset-3 flex items-center justify-center">
+        <div className="absolute inset-3 flex items-center justify-center overflow-hidden">
           <ThumbnailContent order={order} />
         </div>
       </div>
