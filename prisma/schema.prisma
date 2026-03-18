@@ -746,6 +746,7 @@ model Feature {
   id          String          @id @default(cuid())
   title       String
   description String?
+  imageUrl    String?
   status      FeatureStatus   @default(IDEA)
   priority    FeaturePriority @default(MEDIUM)
   category    FeatureCategory @default(IDEA)

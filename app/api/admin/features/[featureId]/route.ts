@@ -54,6 +54,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (typeof payload.sortOrder === "number") {
     data.sortOrder = payload.sortOrder;
   }
+  if (payload.imageUrl !== undefined) {
+    data.imageUrl = typeof payload.imageUrl === "string" ? payload.imageUrl.trim() || null : null;
+  }
 
   const feature = await prisma.feature.update({
     where: { id: featureId },

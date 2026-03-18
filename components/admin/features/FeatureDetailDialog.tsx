@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, MessageSquare } from "lucide-react";
+import { Trash2, MessageSquare, ImagePlus, X } from "lucide-react";
+import Image from "next/image";
 import type { Feature, FeatureComment } from "@prisma/client";
 
 import {
@@ -29,7 +30,16 @@ type Props = {
     status: Record<string, string>;
     priority: Record<string, string>;
     category: Record<string, string>;
-    create: { fields: Record<string, string> };
+    create: {
+      fields: Record<string, string>;
+      image?: {
+        label: string;
+        upload: string;
+        uploading: string;
+        remove: string;
+        maxSize: string;
+      };
+    };
     detail: {
       descriptionEmpty: string;
       comments: string;
@@ -46,6 +56,9 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
   const [status, setStatus] = useState(feature.status);
   const [priority, setPriority] = useState(feature.priority);
   const [category, setCategory] = useState(feature.category);
+  const [imageUrl, setImageUrl] = useState<string | null>(feature.imageUrl);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -55,9 +68,29 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
   const dirty =
     title !== feature.title ||
     description !== (feature.description ?? "") ||
+    imageUrl !== feature.imageUrl ||
     status !== feature.status ||
     priority !== feature.priority ||
     category !== feature.category;
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) { setError(t.create.image?.maxSize ?? "Max 5MB"); return; }
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error();
+      const { url } = await res.json();
+      setImageUrl(url);
+    } catch {
+      setError("Image upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }, [t.create.image?.maxSize]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) return;
@@ -67,7 +100,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       const res = await fetch(`/api/admin/features/${feature.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, status, priority, category }),
+        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, imageUrl, status, priority, category }),
       });
       if (!res.ok) throw new Error();
       const { feature: updated } = await res.json();
@@ -77,7 +110,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
     } finally {
       setSaving(false);
     }
-  }, [feature.id, title, description, status, priority, category, onUpdated]);
+  }, [feature.id, title, description, imageUrl, status, priority, category, onUpdated]);
 
   const handleDelete = useCallback(async () => {
     const msg = t.detail.deleteConfirm.replace("{title}", feature.title);
@@ -186,6 +219,50 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               placeholder={t.detail.descriptionEmpty}
             />
+          </div>
+
+          {/* Image */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Image"}</label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImageUpload(f);
+              }}
+            />
+            {imageUrl ? (
+              <div className="relative inline-block">
+                <Image
+                  src={imageUrl}
+                  alt=""
+                  width={400}
+                  height={240}
+                  className="rounded-lg border border-slate-200 object-cover max-h-48 w-auto"
+                  unoptimized
+                />
+                <button
+                  type="button"
+                  onClick={() => { setImageUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-600 transition disabled:opacity-50"
+              >
+                <ImagePlus className="size-4" />
+                {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
+              </button>
+            )}
           </div>
 
           {/* Metadata */}

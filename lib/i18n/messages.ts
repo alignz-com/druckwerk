@@ -1039,6 +1039,13 @@ export const messages = {
           },
           submit: "Create Feature",
           submitting: "Creating…",
+          image: {
+            label: "Image",
+            upload: "Add image",
+            uploading: "Uploading…",
+            remove: "Remove image",
+            maxSize: "Image must be under 5MB.",
+          },
         },
         detail: {
           descriptionEmpty: "No description.",
@@ -2530,6 +2537,13 @@ export const messages = {
           },
           submit: "Feature erstellen",
           submitting: "Erstellen…",
+          image: {
+            label: "Bild",
+            upload: "Bild hinzufügen",
+            uploading: "Hochladen…",
+            remove: "Bild entfernen",
+            maxSize: "Bild darf maximal 5MB gross sein.",
+          },
         },
         detail: {
           descriptionEmpty: "Keine Beschreibung.",

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { ImagePlus, X } from "lucide-react";
+import Image from "next/image";
 import type { Feature, FeatureComment } from "@prisma/client";
 
 import {
@@ -28,6 +30,13 @@ type Props = {
       placeholders: Record<string, string>;
       submit: string;
       submitting: string;
+      image?: {
+        label: string;
+        upload: string;
+        uploading: string;
+        remove: string;
+        maxSize: string;
+      };
     };
     actions: Record<string, string>;
     status: Record<string, string>;
@@ -42,8 +51,30 @@ export function FeatureCreateDialog({ onClose, onCreated, t }: Props) {
   const [status, setStatus] = useState<string>("IDEA");
   const [priority, setPriority] = useState<string>("MEDIUM");
   const [category, setCategory] = useState<string>("IDEA");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) { setError(t.create.image?.maxSize ?? "Max 5MB"); return; }
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error();
+      const { url } = await res.json();
+      setImageUrl(url);
+    } catch {
+      setError("Image upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }, [t.create.image?.maxSize]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +88,7 @@ export function FeatureCreateDialog({ onClose, onCreated, t }: Props) {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || null,
+          imageUrl,
           status,
           priority,
           category,
@@ -69,7 +101,7 @@ export function FeatureCreateDialog({ onClose, onCreated, t }: Props) {
       setError("Failed to create feature.");
       setSubmitting(false);
     }
-  }, [title, description, status, priority, category, onCreated]);
+  }, [title, description, imageUrl, status, priority, category, onCreated]);
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -103,6 +135,50 @@ export function FeatureCreateDialog({ onClose, onCreated, t }: Props) {
               rows={3}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
             />
+          </div>
+
+          {/* Image */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Image"}</label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImageUpload(f);
+              }}
+            />
+            {imageUrl ? (
+              <div className="relative inline-block">
+                <Image
+                  src={imageUrl}
+                  alt=""
+                  width={200}
+                  height={120}
+                  className="rounded-lg border border-slate-200 object-cover max-h-32"
+                  unoptimized
+                />
+                <button
+                  type="button"
+                  onClick={() => { setImageUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-600 transition disabled:opacity-50"
+              >
+                <ImagePlus className="size-4" />
+                {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
+              </button>
+            )}
           </div>
 
           {/* Status / Priority / Category */}

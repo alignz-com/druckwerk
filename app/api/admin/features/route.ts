@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
   let payload: {
     title?: string;
     description?: string | null;
+    imageUrl?: string | null;
     status?: string;
     priority?: string;
     category?: string;
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     data: {
       title,
       description: payload.description?.trim() || null,
+      imageUrl: payload.imageUrl?.trim() || null,
       status,
       priority,
       category,
