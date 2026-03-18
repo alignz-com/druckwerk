@@ -50,10 +50,10 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
       <Image
         src={order.thumbnailUrl}
         alt=""
-        width={80}
-        height={80}
+        width={64}
+        height={64}
         className="object-contain rounded shadow-md"
-        sizes="80px"
+        sizes="64px"
       />
     );
   }
