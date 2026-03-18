@@ -146,7 +146,10 @@ function sortSummaries(summaries: Iterable<TemplateSummary>) {
 export async function listTemplateSummariesForBrand(brandId?: string | null): Promise<TemplateSummary[]> {
   if (brandId) {
     const assignments = await prisma.brandTemplate.findMany({
-      where: { brandId },
+      where: {
+        brandId,
+        template: { assets: { some: { type: TemplateAssetType.PDF } } },
+      },
       include: {
         template: {
           select: {
@@ -176,6 +179,7 @@ export async function listTemplateSummariesForBrand(brandId?: string | null): Pr
   }
 
   const dbTemplates = await prisma.template.findMany({
+    where: { assets: { some: { type: TemplateAssetType.PDF } } },
     select: {
       id: true,
       key: true,
@@ -241,7 +245,7 @@ type TemplateWithAssets = Prisma.TemplateGetPayload<{ include: typeof templateIn
 const SIGNED_URL_TTL_SECONDS = 3600;
 const SIGNED_URL_TTL_MS = SIGNED_URL_TTL_SECONDS * 1000;
 
-async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): Promise<ResolvedTemplate> {
+async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: TemplateDefinition): Promise<ResolvedTemplate | null> {
   const baseConfig = fallback?.config ?? ((tpl.config ?? {}) as TemplateConfig);
   const mergedConfig = mergeConfigs(baseConfig, tpl.config ?? undefined);
   const assets: TemplateAssetSummary[] = tpl.assets.map((asset) => ({
@@ -344,7 +348,8 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
   };
 
   if (!resolved.pdfPath) {
-    throw new Error(`Template ${tpl.key} is missing pdfPath`);
+    console.warn(`[templates] Template ${tpl.key} is missing pdfPath — skipping`);
+    return null;
   }
 
   return resolved;
@@ -370,7 +375,7 @@ async function loadTemplateDesign(assets: TemplateWithAssets["assets"], fallback
 }
 
 
-export async function getTemplateByKey(key: string, brandId?: string | null): Promise<ResolvedTemplate> {
+export async function getTemplateByKey(key: string, brandId?: string | null): Promise<ResolvedTemplate | null> {
   if (brandId) {
     const assignment = await prisma.brandTemplate.findFirst({
       where: {
@@ -382,6 +387,7 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
 
     if (assignment?.template) {
       const resolved = await resolveTemplateFromDb(assignment.template, DEFAULT_TEMPLATES[key]);
+      if (!resolved) return null;
       const config = mergeConfigs(resolved.config, assignment.configOverride ?? undefined);
       return {
         ...resolved,
@@ -400,7 +406,7 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
   });
 
   if (tpl) {
-    return resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[key]);
+    return resolveTemplateFromDb(tpl, DEFAULT_TEMPLATES[key]) ?? null;
   }
 
   const fallback = DEFAULT_TEMPLATES[key];
@@ -411,7 +417,7 @@ export async function getTemplateByKey(key: string, brandId?: string | null): Pr
   throw new Error(`Unknown template key: ${key}`);
 }
 
-export async function getTemplateForBrandOrGlobal(key: string, brandId?: string | null): Promise<ResolvedTemplate> {
+export async function getTemplateForBrandOrGlobal(key: string, brandId?: string | null): Promise<ResolvedTemplate | null> {
   if (!brandId) {
     return getTemplateByKey(key, null);
   }

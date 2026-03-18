@@ -125,6 +125,9 @@ async function handleBusinessCardOrder(
     : undefined;
 
   const templateDefinition = await getTemplateForBrandOrGlobal(templateKey, order!.brandId ?? null);
+  if (!templateDefinition) {
+    return NextResponse.json({ error: "Template is missing PDF asset" }, { status: 422 });
+  }
   const customerReference =
     typeof meta.customerReference === "string" || typeof meta.customerReference === "number"
       ? String(meta.customerReference)

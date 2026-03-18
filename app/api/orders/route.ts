@@ -193,6 +193,9 @@ export async function POST(req: Request) {
     }
 
     const templateDefinition = await getTemplateForBrandOrGlobal(data.template, effectiveBrandId);
+    if (!templateDefinition) {
+      return NextResponse.json({ error: "Template is missing PDF asset" }, { status: 422 });
+    }
     const templateHasQrCode = Boolean(templateDefinition.hasQrCode);
     const localeShort = session.user.locale === "de" ? "de" : "en";
     const normalizedAddressId = templateHasQrCode ? data.addressId?.trim() || null : null;

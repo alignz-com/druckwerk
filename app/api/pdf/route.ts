@@ -14,6 +14,9 @@ export async function POST(req: Request): Promise<Response> {
       return NextResponse.json({ error: "template is required" }, { status: 400 });
     }
     const templateDefinition = await getTemplateByKey(templateKey);
+    if (!templateDefinition) {
+      return NextResponse.json({ error: "Template is missing PDF asset" }, { status: 422 });
+    }
 
     const { template: _ignored, ...fields } = body;
 

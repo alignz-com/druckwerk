@@ -97,13 +97,25 @@ export async function getBrandResources(brandId: string | null): Promise<BrandRe
     }),
   ]);
 
-  const initialSummary =
+  const preferredSummary =
     (brand?.defaultTemplateId
       ? templates.find((tpl) => tpl.id === brand.defaultTemplateId)
       : undefined) ?? templates[0] ?? null;
 
-  const initialTemplate =
-    initialSummary && brandId ? await getTemplateForBrandOrGlobal(initialSummary.key, brandId) : null;
+  // Try preferred first, then fall through remaining templates until one resolves
+  let initialTemplate = null;
+  let initialSummary = null;
+  const candidates = preferredSummary
+    ? [preferredSummary, ...templates.filter((t) => t.id !== preferredSummary.id)]
+    : templates;
+  for (const candidate of candidates) {
+    const resolved = brandId ? await getTemplateForBrandOrGlobal(candidate.key, brandId) : null;
+    if (resolved) {
+      initialTemplate = resolved;
+      initialSummary = candidate;
+      break;
+    }
+  }
 
   const addresses: BrandAddressEntry[] = addressRecords.map((address) => ({
     id: address.id,
