@@ -36,7 +36,7 @@ type Format = {
   trimHeightMm: number
   defaultBleedMm: number
   toleranceMm: number
-  createdAt: string
+  createdAt: string | Date
   _count?: { productFormats: number }
 }
 
