@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 import { UsersTable } from "./UsersTable";
-import { UserDetailSheet } from "./UserDetailSheet";
-import { UserCreateSheet } from "./UserCreateSheet";
+import { UserDetailDialog } from "./UserDetailDialog";
+import { UserCreateDialog } from "./UserCreateDialog";
 
 type BrandOption = {
   id: string;
@@ -104,7 +104,7 @@ export default function AdminUsersClient({ users, brands, autoOpen }: Props) {
         onManage={(id) => setSheetState({ mode: "view", userId: id })}
       />
 
-      <UserDetailSheet
+      <UserDetailDialog
         user={activeUser}
         brandOptions={brands}
         open={sheetState?.mode === "view" && Boolean(activeUser)}
@@ -113,7 +113,7 @@ export default function AdminUsersClient({ users, brands, autoOpen }: Props) {
         onUserDeleted={handleUserDeleted}
       />
 
-      <UserCreateSheet
+      <UserCreateDialog
         open={sheetState?.mode === "create"}
         onOpenChange={(open) => (!open ? setSheetState(null) : null)}
         brandOptions={brands}
