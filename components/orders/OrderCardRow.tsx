@@ -127,7 +127,6 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ prod
                 </div>
               ))}
             </div>
-            <TooltipPrimitive.Arrow className="fill-slate-900 z-50" />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>
