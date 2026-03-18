@@ -7,7 +7,7 @@ import type { NavGroup } from "@/components/layout/SidebarNav";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
-import { CommandPalette, NAV_ICONS } from "@/components/layout/CommandPalette";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 type Props = {
   children: ReactNode;
@@ -72,7 +72,7 @@ export default async function AppLayout({ children }: Props) {
       href: item.href,
       label: item.label,
       group: group.title ?? t.nav.newOrder,
-      icon: NAV_ICONS[item.icon ?? ""] ?? NAV_ICONS["orders"],
+      iconKey: item.icon ?? "",
     }))
   );
 

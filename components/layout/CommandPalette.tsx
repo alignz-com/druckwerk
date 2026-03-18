@@ -11,7 +11,7 @@ type NavItem = {
   href: string;
   label: string;
   group: string;
-  icon: LucideIcon;
+  iconKey: string;
   keywords?: string[];
 };
 
@@ -88,21 +88,24 @@ export function CommandPalette({ items, placeholder, noResultsLabel }: Props) {
                   "[&_[cmdk-group-heading]]:text-slate-400",
                 )}
               >
-                {items.filter((i) => i.group === group).map((item) => (
-                  <Command.Item
-                    key={item.href}
-                    value={[item.label, ...(item.keywords ?? [])].join(" ")}
-                    onSelect={() => navigate(item.href)}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-slate-700",
-                      "data-[selected=true]:bg-slate-900 data-[selected=true]:text-white",
-                      "transition-colors",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0 opacity-60" />
-                    <span>{item.label}</span>
-                  </Command.Item>
-                ))}
+                {items.filter((i) => i.group === group).map((item) => {
+                  const Icon = NAV_ICONS[item.iconKey];
+                  return (
+                    <Command.Item
+                      key={item.href}
+                      value={[item.label, ...(item.keywords ?? [])].join(" ")}
+                      onSelect={() => navigate(item.href)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-slate-700",
+                        "data-[selected=true]:bg-slate-900 data-[selected=true]:text-white",
+                        "transition-colors",
+                      )}
+                    >
+                      {Icon ? <Icon className="h-4 w-4 shrink-0 opacity-60" /> : null}
+                      <span>{item.label}</span>
+                    </Command.Item>
+                  );
+                })}
               </Command.Group>
             ))}
           </Command.List>
