@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutTemplate, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -211,6 +211,12 @@ export function TemplatesTable({
         </div>
       </div>
 
+      {sortedData.length === 0 && !normalizedSearch ? (
+        <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
+          <LayoutTemplate className="h-8 w-8 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">{emptyState}</p>
+        </div>
+      ) : (
       <div className={dataTableContainerClass}>
         <Table className="min-w-[720px]">
           <TableHeader className={dataTableHeaderClass}>
@@ -304,7 +310,7 @@ export function TemplatesTable({
             {pageData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
-                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+                  {noResults}
                 </TableCell>
               </TableRow>
             ) : (
@@ -361,6 +367,7 @@ export function TemplatesTable({
           </TableBody>
         </Table>
       </div>
+      )}
 
       <div className={dataTableFooterClass}>
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>

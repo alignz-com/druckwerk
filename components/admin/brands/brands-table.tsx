@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,12 @@ export function BrandsTable({
         ) : null}
       </div>
 
+      {sortedData.length === 0 && !normalizedSearch ? (
+        <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
+          <Building2 className="h-8 w-8 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">{emptyState}</p>
+        </div>
+      ) : (
       <div className={dataTableContainerClass}>
         <Table className="min-w-[720px]">
           <TableHeader className={dataTableHeaderClass}>
@@ -182,7 +188,7 @@ export function BrandsTable({
             {pageData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
-                  {sortedData.length === 0 ? (normalizedSearch ? noResults : emptyState) : emptyState}
+                  {noResults}
                 </TableCell>
               </TableRow>
             ) : (
@@ -207,6 +213,7 @@ export function BrandsTable({
           </TableBody>
         </Table>
       </div>
+      )}
 
       <div className={dataTableFooterClass}>
         <div>{paginationLabel({ from, to, total: sortedData.length })}</div>

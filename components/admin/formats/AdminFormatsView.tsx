@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Ruler, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -181,7 +181,10 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
       {loading ? (
         <p className="text-sm text-slate-500">{t("loading")}</p>
       ) : formats.length === 0 ? (
-        <p className="text-sm text-slate-500">{t("empty")}</p>
+        <div className="rounded-xl border border-dashed p-12 text-center text-slate-500">
+          <Ruler className="h-8 w-8 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">{t("empty")}</p>
+        </div>
       ) : (
         <div className={dataTableContainerClass}>
           <Table>
