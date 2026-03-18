@@ -77,13 +77,8 @@ export function OrderDeliveryDateEditor({ orderId, deliveryDueAt, canEdit, label
             onSelect={setSelected}
             initialFocus
           />
-          <div className="border-t px-3 py-2 flex items-center justify-between gap-2">
-            {message && (
-              <p className={`text-xs ${message.ok ? "text-emerald-600" : "text-red-600"}`}>
-                {message.text}
-              </p>
-            )}
-            <div className="flex gap-2 ml-auto">
+          <div className="border-t px-3 py-2 flex items-center justify-end gap-2">
+            <div className="flex gap-2">
               {selected && (
                 <Button
                   variant="ghost"

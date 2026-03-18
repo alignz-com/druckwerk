@@ -64,10 +64,10 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
-export function AdminFormatsView() {
+export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] }) {
   const t = useTranslations("admin.formats")
-  const [formats, setFormats] = React.useState<Format[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const [formats, setFormats] = React.useState<Format[]>(initialFormats)
+  const [loading, setLoading] = React.useState(false)
   const [dialog, setDialog] = React.useState<"create" | "edit" | null>(null)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<FormState>(emptyForm())
@@ -81,7 +81,6 @@ export function AdminFormatsView() {
     setLoading(false)
   }
 
-  React.useEffect(() => { load() }, [])
 
   function openCreate() {
     setForm(emptyForm())
