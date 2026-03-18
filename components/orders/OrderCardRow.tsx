@@ -47,15 +47,15 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
 
   if (order.thumbnailUrl && !isMultiFile) {
     return (
-      <div className="relative w-10 h-14 shrink-0">
-        <Image
-          src={order.thumbnailUrl}
-          alt=""
-          fill
-          className="object-contain rounded shadow-sm"
-          sizes="40px"
-        />
-      </div>
+      <Image
+        src={order.thumbnailUrl}
+        alt=""
+        width={40}
+        height={56}
+        className="rounded-md shadow-sm"
+        style={{ width: "auto", height: "auto", maxWidth: "40px", maxHeight: "56px" }}
+        sizes="40px"
+      />
     );
   }
 
