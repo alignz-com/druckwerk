@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
@@ -25,19 +26,25 @@ export default async function PublicContactPage({ params }: Props) {
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-10">
         <header className="flex flex-col items-center space-y-6">
           {contact.brand.logoUrl ? (
-            <img
+            <Image
               src={contact.brand.logoUrl}
               alt={contact.brand.name}
-              className="h-12 w-32 object-contain"
+              width={128}
+              height={48}
+              className="object-contain"
+              sizes="128px"
             />
           ) : (
             <div className="text-sm font-semibold text-slate-500">{contact.brand.name}</div>
           )}
           {contact.photoUrl ? (
-            <img
+            <Image
               src={contact.photoUrl}
               alt={fullName}
-              className="h-24 w-24 rounded-full object-cover"
+              width={96}
+              height={96}
+              className="rounded-full object-cover"
+              sizes="96px"
             />
           ) : null}
           <div className="space-y-2">

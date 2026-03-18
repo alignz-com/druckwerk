@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "postmark": {
+      "source": "ActiveCampaign/postmark-skills",
+      "sourceType": "github",
+      "computedHash": "4370e9820f7c49d00ad455ad74c33d912dc404b6251ad9d659ad95b72216bc62"
+    }
+  }
+}

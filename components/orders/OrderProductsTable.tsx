@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { FileTextIcon } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pantoneTable = require("pantone-table") as Record<string, string>;
@@ -275,10 +276,12 @@ export function OrderProductsTable(props: Props) {
                   style={{ width: "120px", height: "160px" }}
                 >
                   {selected.thumbnailUrl ? (
-                    <img
+                    <Image
                       src={selected.thumbnailUrl}
                       alt={selected.filename}
-                      className="w-full h-full object-contain p-2"
+                      fill
+                      className="object-contain p-2"
+                      sizes="120px"
                     />
                   ) : (
                     <FileTextIcon className="h-8 w-8 text-muted-foreground/50" />
@@ -420,13 +423,15 @@ export function OrderProductsTable(props: Props) {
         {item.previewFrontPath && (
           <div className="flex justify-center">
             <div
-              className="rounded-lg border border-border bg-muted/40 overflow-hidden flex items-center justify-center"
+              className="relative rounded-lg border border-border bg-muted/40 overflow-hidden flex items-center justify-center"
               style={{ width: "120px", height: "160px" }}
             >
-              <img
+              <Image
                 src={item.previewFrontPath}
                 alt=""
-                className="w-full h-full object-contain p-2"
+                fill
+                className="object-contain p-2"
+                sizes="120px"
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { FileText, X } from "lucide-react";
 
 async function triggerDownload(url: string, filename: string) {
@@ -63,10 +64,12 @@ export function OrderDetailPdfViewer({ items, expandLabel, downloadLabel }: Prop
               className="group relative w-full rounded-xl border border-slate-200 overflow-hidden bg-slate-50 aspect-[3/4] flex items-center justify-center hover:border-slate-300 transition-colors disabled:cursor-default"
             >
               {item.thumbnailUrl ? (
-                <img
+                <Image
                   src={item.thumbnailUrl}
                   alt={item.filename}
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 30vw, 150px"
                 />
               ) : (
                 <FileText className="w-8 h-8 text-slate-400" />

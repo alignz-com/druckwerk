@@ -57,34 +57,35 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
     value: status,
     label: t.statuses[status as keyof typeof t.statuses] ?? status,
   }));
-  // Determine which view to show
-  const access = await getUserAccessibleProductTypes(session.user.id, brandId);
+  // Determine which view to show — run both in parallel
+  const [access, orders] = await Promise.all([
+    getUserAccessibleProductTypes(session.user.id, brandId),
+    prisma.order.findMany({
+      where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        template: {
+          include: {
+            product: { select: { name: true, nameEn: true, nameDe: true } },
+          },
+        },
+        brand: true,
+        user: { select: { name: true, email: true } },
+        _count: { select: { pdfOrderItems: true } },
+        pdfOrderItems: {
+          select: {
+            filename: true,
+            pages: true,
+            quantity: true,
+            thumbnailStoragePath: true,
+            productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
+          },
+          orderBy: { createdAt: "asc" as const },
+        },
+      },
+    }),
+  ]);
   const useCardView = isAdmin || isPrinter || (access.hasBusinessCard && access.hasPdfPrint);
-
-  const orders = await prisma.order.findMany({
-    where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      template: {
-        include: {
-          product: { select: { name: true, nameEn: true, nameDe: true } },
-        },
-      },
-      brand: true,
-      user: { select: { name: true, email: true } },
-      _count: { select: { pdfOrderItems: true } },
-      pdfOrderItems: {
-        select: {
-          filename: true,
-          pages: true,
-          quantity: true,
-          thumbnailStoragePath: true,
-          productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } } } },
-        },
-        orderBy: { createdAt: "asc" as const },
-      },
-    },
-  });
 
   const wasCreated = searchParams?.created === "1";
 

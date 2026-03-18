@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
 
@@ -46,11 +47,13 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
 
   if (order.thumbnailUrl && !isMultiFile) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={order.thumbnailUrl}
         alt=""
-        className="max-w-full max-h-full object-contain rounded shadow-md"
+        width={80}
+        height={80}
+        className="object-contain rounded shadow-md"
+        sizes="80px"
       />
     );
   }
