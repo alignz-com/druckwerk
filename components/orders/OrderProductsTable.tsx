@@ -176,8 +176,8 @@ export function OrderProductsTable(props: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: table */}
-          <div className="rounded-lg border overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="rounded-lg border overflow-hidden flex flex-col">
+            <div className="overflow-auto flex-1 min-h-[320px]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
