@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   const canvasWidthMmRaw = form.get("canvasWidthMm");
   const canvasHeightMmRaw = form.get("canvasHeightMm");
   const paperStockIdRaw = form.get("paperStockId");
+  const brandIdRaw = form.get("brandId");
   const configRaw = form.get("config");
   const pdfFile = form.get("pdfFile");
   const previewFrontFile = form.get("previewFrontFile");
@@ -145,28 +146,50 @@ export async function POST(req: NextRequest) {
 
   const paperStockId =
     paperStockIdRaw === null || paperStockIdRaw === undefined ? "" : String(paperStockIdRaw).trim();
+  const brandId =
+    brandIdRaw === null || brandIdRaw === undefined ? "" : String(brandIdRaw).trim();
+
+  if (brandId) {
+    const brandExists = await prisma.brand.findUnique({ where: { id: brandId }, select: { id: true } });
+    if (!brandExists) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+  }
 
   try {
-    const template = await prisma.template.create({
-      data: {
-        key,
-        label,
-        description,
-        pdfPath: "",
-        previewFrontPath: "",
-        previewBackPath: "",
-        layoutVersion,
-        printDpi,
-        pageWidthMm,
-        pageHeightMm,
-        canvasWidthMm,
-        canvasHeightMm,
-        pcmCode: pcmCodeValue,
-        config,
-        hasQrCode,
-        hasPhotoSlot,
-        paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
-      },
+    const template = await prisma.$transaction(async (tx) => {
+      const created = await tx.template.create({
+        data: {
+          key,
+          label,
+          description,
+          pdfPath: "",
+          previewFrontPath: "",
+          previewBackPath: "",
+          layoutVersion,
+          printDpi,
+          pageWidthMm,
+          pageHeightMm,
+          canvasWidthMm,
+          canvasHeightMm,
+          pcmCode: pcmCodeValue,
+          config,
+          hasQrCode,
+          hasPhotoSlot,
+          paperStock: paperStockId ? { connect: { id: paperStockId } } : undefined,
+        },
+      });
+
+      if (brandId) {
+        await tx.brandTemplate.create({
+          data: {
+            brandId,
+            templateId: created.id,
+          },
+        });
+      }
+
+      return created;
     });
 
     const updateData: Prisma.TemplateUpdateInput = {};

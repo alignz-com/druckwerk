@@ -7,12 +7,20 @@ import { useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+
+type BrandOption = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 type TemplateCreateFormProps = {
   onCreated: (template: AdminTemplateSummary) => void;
   onCancel: () => void;
+  brandOptions: BrandOption[];
   className?: string;
 };
 
@@ -20,15 +28,17 @@ type FormState = {
   key: string;
   label: string;
   description: string;
+  brandId: string;
 };
 
 const emptyForm: FormState = {
   key: "",
   label: "",
   description: "",
+  brandId: "",
 };
 
-export default function TemplateCreateForm({ onCreated, onCancel, className }: TemplateCreateFormProps) {
+export default function TemplateCreateForm({ onCreated, onCancel, brandOptions, className }: TemplateCreateFormProps) {
   const t = useTranslations("admin.templates");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +59,9 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
     payload.append("key", key);
     payload.append("label", label);
     payload.append("description", form.description.trim());
+    if (form.brandId) {
+      payload.append("brandId", form.brandId);
+    }
     payload.append("config", "{}");
     payload.append("hasQrCode", "false");
     payload.append("hasPhotoSlot", "false");
@@ -99,6 +112,25 @@ export default function TemplateCreateForm({ onCreated, onCancel, className }: T
             placeholder={t("create.placeholders.description")}
             rows={3}
           />
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <Label htmlFor="template-brand">{t("create.fields.brand")}</Label>
+          <Select
+            value={form.brandId || "__none"}
+            onValueChange={(value) => setForm((c) => ({ ...c, brandId: value === "__none" ? "" : value }))}
+          >
+            <SelectTrigger id="template-brand">
+              <SelectValue placeholder={t("create.placeholders.brand")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">{t("table.unassigned")}</SelectItem>
+              {brandOptions.map((brand) => (
+                <SelectItem key={brand.id} value={brand.id}>
+                  {brand.name} ({brand.slug})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

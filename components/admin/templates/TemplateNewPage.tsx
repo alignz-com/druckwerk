@@ -8,7 +8,17 @@ import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import TemplateCreateForm from "./TemplateCreateForm";
 
-export default function TemplateNewPage() {
+type BrandOption = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type TemplateNewPageProps = {
+  brandOptions: BrandOption[];
+};
+
+export default function TemplateNewPage({ brandOptions }: TemplateNewPageProps) {
   const router = useRouter();
   const t = useTranslations("admin.templates");
 
@@ -37,7 +47,7 @@ export default function TemplateNewPage() {
         <p className="mt-1 text-sm text-slate-500">{t("create.description")}</p>
       </div>
 
-      <TemplateCreateForm onCreated={handleCreated} onCancel={handleCancel} />
+      <TemplateCreateForm onCreated={handleCreated} onCancel={handleCancel} brandOptions={brandOptions} />
     </div>
   );
 }

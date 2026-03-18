@@ -513,6 +513,7 @@ export const messages = {
             key: "Key",
             label: "Label",
             description: "Description",
+            brand: "Brand",
             layoutVersion: "Layout version",
             printDpi: "Print DPI",
             pageWidthMm: "Page width (mm)",
@@ -539,6 +540,7 @@ export const messages = {
           placeholders: {
             label: "Template name",
             description: "Optional description shown in the admin UI.",
+            brand: "Select a brand…",
           },
           uploads: {
             title: "Upload assets",
@@ -1894,6 +1896,7 @@ export const messages = {
             key: "Schlüssel",
             label: "Bezeichnung",
             description: "Beschreibung",
+            brand: "Marke",
             layoutVersion: "Layout-Version",
             printDpi: "Druck-DPI",
             pageWidthMm: "Seitenbreite (mm)",
@@ -1920,6 +1923,7 @@ export const messages = {
           placeholders: {
             label: "Name der Vorlage",
             description: "Optionale Beschreibung für die Admin-Oberfläche.",
+            brand: "Marke auswählen…",
           },
           uploads: {
             title: "Assets hochladen",
