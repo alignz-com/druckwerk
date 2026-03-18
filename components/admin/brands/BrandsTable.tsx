@@ -15,8 +15,8 @@ import {
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
 
-import { DataTableColumnHeader } from "./data-table-column-header";
-import type { BrandColumn } from "./columns";
+import { DataTableColumnHeader } from "@/components/admin/shared/DataTableColumnHeader";
+import type { BrandColumn } from "./BrandColumns";
 
 const PAGE_SIZE = 10;
 

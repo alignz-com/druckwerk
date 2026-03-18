@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getServerAuthSession } from "@/lib/auth"
-import { AdminProductsView } from "@/components/admin/products/AdminProductsView"
+import { AdminProductsView } from "@/components/admin/products/AdminProductsClient"
 
 export default async function AdminProductsPage() {
   const session = await getServerAuthSession()

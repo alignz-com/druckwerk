@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getServerAuthSession } from "@/lib/auth"
-import { AdminPaperStocksClient } from "@/components/admin/papers/AdminPaperStocksClient"
+import { AdminPaperStocksClient } from "@/components/admin/papers/AdminPapersClient"
 
 export default async function AdminPapersPage() {
   const session = await getServerAuthSession()

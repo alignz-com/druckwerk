@@ -8,8 +8,8 @@ import type { AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 
-import { BrandsTable } from "./brands-table";
-import { createBrandColumns } from "./columns";
+import { BrandsTable } from "./BrandsTable";
+import { createBrandColumns } from "./BrandColumns";
 
 type Props = {
   brands: AdminBrandSummary[];

@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/admin/shared/DataTableColumnHeader";
 import {
   dataTableContainerClass,
   dataTableFooterClass,

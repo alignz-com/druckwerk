@@ -12,7 +12,7 @@ import {
   dataTableHeaderClass,
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
-import { DataTableColumnHeader } from "@/components/admin/brands/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/admin/shared/DataTableColumnHeader";
 
 type TableRowData = {
   id: string;

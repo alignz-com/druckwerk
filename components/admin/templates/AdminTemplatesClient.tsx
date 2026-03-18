@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from "@/components/providers/locale-provid
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { hasInlineDesignConfig } from "@/lib/template-design";
-import { TemplatesTable } from "./templates-table";
+import { TemplatesTable } from "./TemplatesTable";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 type Props = {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { getServerAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { AdminFormatsView } from "@/components/admin/formats/AdminFormatsView"
+import { AdminFormatsView } from "@/components/admin/formats/AdminFormatsClient"
 
 export default async function AdminFormatsPage() {
   const session = await getServerAuthSession()

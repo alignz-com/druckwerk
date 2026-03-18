@@ -38,7 +38,7 @@ import {
   dataTableHeaderClass,
   dataTableRowClass,
 } from "@/components/admin/shared/data-table-styles";
-import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./address-sheet";
+import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./AddressSheet";
 import BrandTemplateSection from "./BrandTemplateSection";
 import LogoUpload from "./LogoUpload";
 

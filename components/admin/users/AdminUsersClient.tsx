@@ -8,9 +8,9 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/formatDateTime";
 
-import { UsersTable } from "./users-table";
-import { UserDetailSheet } from "./user-detail-sheet";
-import { UserCreateSheet } from "./user-create-sheet";
+import { UsersTable } from "./UsersTable";
+import { UserDetailSheet } from "./UserDetailSheet";
+import { UserCreateSheet } from "./UserCreateSheet";
 
 type BrandOption = {
   id: string;

@@ -1,7 +1,7 @@
 import { getAdminTemplateSummaries } from "@/lib/admin/templates-data";
 import { getServerAuthSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
-import TemplateDetailPage from "@/components/admin/templates/TemplateDetailPage";
+import TemplateDetailPage from "@/components/admin/templates/TemplateDetailClient";
 
 type RouteParams = {
   templateId: string;

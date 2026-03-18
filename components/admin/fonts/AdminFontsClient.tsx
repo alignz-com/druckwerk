@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import type { AdminFontFamily } from "@/lib/admin/templates-data";
 import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
-import { FontsTable } from "./fonts-table";
+import { FontsTable } from "./FontsTable";
 import { FontCreateSheet } from "./FontCreateSheet";
 import { FontDetailSheet } from "./FontDetailSheet";
 import { formatDateTime } from "@/lib/formatDateTime";
