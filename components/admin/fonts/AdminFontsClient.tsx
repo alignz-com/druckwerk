@@ -13,11 +13,12 @@ import { formatDateTime } from "@/lib/formatDateTime";
 
 type Props = {
   fontFamilies: AdminFontFamily[];
+  autoOpen?: boolean;
 };
 
 type SheetState = { mode: "create" } | { mode: "view"; familyId: string } | null;
 
-export default function AdminFontsClient({ fontFamilies }: Props) {
+export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
   const t = useTranslations("admin.fonts");
   const { locale } = useLocale();
   const [families, setFamilies] = useState<AdminFontFamily[]>(fontFamilies);
@@ -27,6 +28,10 @@ export default function AdminFontsClient({ fontFamilies }: Props) {
   useEffect(() => {
     setFamilies(fontFamilies);
   }, [fontFamilies]);
+
+  useEffect(() => {
+    if (autoOpen) setSheetState({ mode: "create" });
+  }, [autoOpen]);
 
   const activeFamily = useMemo(() => {
     if (sheetState?.mode !== "view") return null;

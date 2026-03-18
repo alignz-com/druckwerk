@@ -72,7 +72,7 @@ const emptyForm: FormState = {
   trimWidthMm: "", trimHeightMm: "", canvasWidthMm: "", canvasHeightMm: "", printDpi: "", pcmCode: "",
 }
 
-export function AdminProductsView() {
+export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
   const t = useTranslations("admin.products")
   const [products, setProducts] = React.useState<Product[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -99,6 +99,7 @@ export function AdminProductsView() {
   }
 
   React.useEffect(() => { load() }, [])
+  React.useEffect(() => { if (autoOpen) openCreate() }, [autoOpen])
 
   function openCreate() {
     setForm(emptyForm)

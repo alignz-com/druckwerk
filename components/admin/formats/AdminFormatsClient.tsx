@@ -64,7 +64,7 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
-export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] }) {
+export function AdminFormatsView({ initialFormats, autoOpen }: { initialFormats: Format[]; autoOpen?: boolean }) {
   const t = useTranslations("admin.formats")
   const [formats, setFormats] = React.useState<Format[]>(initialFormats)
   const [loading, setLoading] = React.useState(false)
@@ -90,6 +90,8 @@ export function AdminFormatsView({ initialFormats }: { initialFormats: Format[] 
     setLoading(false)
   }
 
+
+  React.useEffect(() => { if (autoOpen) openCreate() }, [autoOpen])
 
   function openCreate() {
     setForm(emptyForm())

@@ -81,6 +81,12 @@ export default async function AppLayout({ children }: Props) {
     ...(isAdmin ? [
       { href: "/admin/brands/new", label: t.nav.cmdKNewBrand, group: t.nav.cmdKGroupActions, iconKey: "admin-brands" },
       { href: "/admin/templates/new", label: t.nav.cmdKNewTemplate, group: t.nav.cmdKGroupActions, iconKey: "admin-templates" },
+      { href: "/admin/users?new=1", label: t.nav.cmdKNewUser, group: t.nav.cmdKGroupActions, iconKey: "admin-users" },
+      { href: "/admin/products?new=1", label: t.nav.cmdKNewProduct, group: t.nav.cmdKGroupActions, iconKey: "admin-products" },
+      { href: "/admin/formats?new=1", label: t.nav.cmdKNewFormat, group: t.nav.cmdKGroupActions, iconKey: "admin-formats" },
+      { href: "/admin/papers?new=1", label: t.nav.cmdKNewPaper, group: t.nav.cmdKGroupActions, iconKey: "admin-papers" },
+      { href: "/admin/finishes?new=1", label: t.nav.cmdKNewFinish, group: t.nav.cmdKGroupActions, iconKey: "admin-finishes" },
+      { href: "/admin/fonts?new=1", label: t.nav.cmdKNewFont, group: t.nav.cmdKGroupActions, iconKey: "admin-fonts" },
     ] : []),
   ];
 

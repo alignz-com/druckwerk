@@ -55,7 +55,7 @@ const emptyForm: FormState = {
   weightGsm: "",
 }
 
-export function AdminPaperStocksClient() {
+export function AdminPaperStocksClient({ autoOpen }: { autoOpen?: boolean }) {
   const t = useTranslations("admin.papers")
   const [papers, setPapers] = React.useState<PaperStock[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -93,6 +93,7 @@ export function AdminPaperStocksClient() {
   }
 
   React.useEffect(() => { load() }, [])
+  React.useEffect(() => { if (autoOpen) openCreate() }, [autoOpen])
 
   function openCreate() {
     setForm(emptyForm)

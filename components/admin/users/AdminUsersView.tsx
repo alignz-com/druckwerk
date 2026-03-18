@@ -7,7 +7,7 @@ import { getAdminBrands } from "@/lib/admin/brands-data";
 
 import AdminUsersClient from "./AdminUsersClient";
 
-export default async function AdminUsersView() {
+export default async function AdminUsersView({ autoOpen }: { autoOpen?: boolean } = {}) {
   const [users, brands] = await Promise.all([getAdminUsers(), getAdminBrands()]);
 
   const brandOptions = brands
@@ -23,6 +23,7 @@ export default async function AdminUsersView() {
       <AdminUsersClient
         users={users}
         brands={brandOptions}
+        autoOpen={autoOpen}
       />
     </Suspense>
   );

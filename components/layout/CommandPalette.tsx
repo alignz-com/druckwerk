@@ -98,7 +98,7 @@ export function CommandPalette({ items, actions, placeholder, noResultsLabel }: 
                   return (
                     <Command.Item
                       key={`action-${item.href}`}
-                      value={[item.label, ...(item.keywords ?? [])].join(" ")}
+                      value={`action:${item.href} ${[item.label, ...(item.keywords ?? [])].join(" ")}`}
                       onSelect={() => navigate(item.href)}
                       className={ITEM_CLASS}
                     >
@@ -118,7 +118,7 @@ export function CommandPalette({ items, actions, placeholder, noResultsLabel }: 
                   return (
                     <Command.Item
                       key={`nav-${item.href}`}
-                      value={[item.label, ...(item.keywords ?? [])].join(" ")}
+                      value={`nav:${item.href} ${[item.label, ...(item.keywords ?? [])].join(" ")}`}
                       onSelect={() => navigate(item.href)}
                       className={ITEM_CLASS}
                     >

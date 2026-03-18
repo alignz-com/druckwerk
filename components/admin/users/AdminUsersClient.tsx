@@ -21,16 +21,17 @@ type BrandOption = {
 type Props = {
   users: AdminUserSummary[];
   brands: BrandOption[];
+  autoOpen?: boolean;
 };
 
 type SheetState = { mode: "view"; userId: string } | { mode: "create" } | null;
 
-export default function AdminUsersClient({ users, brands }: Props) {
+export default function AdminUsersClient({ users, brands, autoOpen }: Props) {
   const t = useTranslations("admin.users");
   const roleT = useTranslations("layout.roles");
   const { locale } = useLocale();
   const [entries, setEntries] = useState(users);
-  const [sheetState, setSheetState] = useState<SheetState>(null);
+  const [sheetState, setSheetState] = useState<SheetState>(autoOpen ? { mode: "create" } : null);
 
   const activeUser = useMemo(() => {
     if (sheetState?.mode !== "view") return null;

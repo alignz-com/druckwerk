@@ -43,7 +43,7 @@ type FormState = {
 
 const emptyForm: FormState = { name: "", nameDe: "", code: "" }
 
-export function AdminFinishesClient() {
+export function AdminFinishesClient({ autoOpen }: { autoOpen?: boolean }) {
   const t = useTranslations("admin.finishes")
   const [finishes, setFinishes] = React.useState<Finish[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -71,6 +71,7 @@ export function AdminFinishesClient() {
   }
 
   React.useEffect(() => { load() }, [])
+  React.useEffect(() => { if (autoOpen) openCreate() }, [autoOpen])
 
   function openCreate() {
     setForm(emptyForm)
