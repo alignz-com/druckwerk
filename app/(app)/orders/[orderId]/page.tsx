@@ -230,7 +230,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="overflow-x-auto">
+    <div className="space-y-6 pb-24 min-w-[600px]">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-400">
         <Link href="/orders" className="hover:text-slate-600 transition-colors">
@@ -453,6 +454,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           downloadAllJdfs: t.ordersPage.detail.downloadAllJdfs,
         }}
       />
+    </div>
     </div>
   );
 }

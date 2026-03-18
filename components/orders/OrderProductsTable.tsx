@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, Maximize2 } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pantoneTable = require("pantone-table") as Record<string, string>;
 function pantoneHex(name: string): string | null {
@@ -177,7 +177,7 @@ export function OrderProductsTable(props: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: table */}
           <div className="rounded-lg border overflow-hidden">
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
@@ -288,8 +288,8 @@ export function OrderProductsTable(props: Props) {
                   )}
                   {selected.pdfUrl && (
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-slate-800 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm">
-                        {labels.open}
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-slate-800 p-1.5 rounded-full shadow-sm">
+                        <Maximize2 className="h-3.5 w-3.5" />
                       </span>
                     </div>
                   )}
