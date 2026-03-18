@@ -225,6 +225,23 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       return Array.from(map.entries()).map(([name, quantity]) => ({ name, quantity }));
     })();
 
+    // PDF: total pages + per-product page breakdown for tooltip
+    const totalPageCount = isBC ? null : order.pdfOrderItems.reduce((s, i) => s + (i.pages ?? 0), 0) || null;
+    const pageBreakdown = (() => {
+      if (isBC || order.pdfOrderItems.length <= 1) return null;
+      const map = new Map<string, number>();
+      for (const item of order.pdfOrderItems) {
+        const prod = item.productFormat?.product;
+        const name = prod
+          ? ((locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name)
+          : null;
+        if (!name) continue;
+        map.set(name, (map.get(name) ?? 0) + (item.pages ?? 0));
+      }
+      if (map.size === 0) return null;
+      return Array.from(map.entries()).map(([name, pages]) => ({ name, pages }));
+    })();
+
     return {
       id: order.id,
       referenceCode: order.referenceCode,
@@ -248,6 +265,8 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       primaryFileName: isBC ? null : (firstItem?.filename ?? null),
       primaryPageCount: isBC ? null : (firstItem?.pages ?? null),
       productBreakdown,
+      totalPageCount,
+      pageBreakdown,
       status: order.status,
       statusLabel: t.statuses[order.status] ?? order.status,
       deliveryDueAtLabel,

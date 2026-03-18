@@ -4,6 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
+import { Tooltip as TooltipPrimitive } from "radix-ui";
 
 export type OrderCardData = {
   id: string;
@@ -25,6 +26,8 @@ export type OrderCardData = {
   primaryFileName: string | null;  // PDF: first/only file name
   primaryPageCount: number | null; // PDF: first/only file page count
   productBreakdown: Array<{ name: string; quantity: number }> | null; // PDF: per-product qty
+  totalPageCount: number | null;                                       // PDF: sum of all pages
+  pageBreakdown: Array<{ name: string; pages: number }> | null;        // PDF multi: pages per product
   status: string;
   statusLabel: string;
   deliveryDueAtLabel: string | null;
@@ -99,6 +102,35 @@ function Dot() {
   return <span className="text-slate-300 text-xs shrink-0">·</span>;
 }
 
+function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ name: string; pages: number }>; children: React.ReactNode }) {
+  return (
+    <TooltipPrimitive.Provider delayDuration={200}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>
+          <span className="underline decoration-dotted underline-offset-2 cursor-default">{children}</span>
+        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            side="top"
+            sideOffset={6}
+            className="z-50 rounded-lg bg-slate-900 px-3 py-2 shadow-lg"
+          >
+            <div className="flex flex-col gap-1 min-w-[120px]">
+              {breakdown.map(({ name, pages }) => (
+                <div key={name} className="flex items-center justify-between gap-4">
+                  <span className="text-xs text-slate-300">{name}</span>
+                  <span className="text-xs text-white tabular-nums font-medium">{pages} S.</span>
+                </div>
+              ))}
+            </div>
+            <TooltipPrimitive.Arrow className="fill-slate-900" />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
+  );
+}
+
 type Line1Props = {
   order: OrderCardData;
   isBC: boolean;
@@ -158,6 +190,16 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
         </span>
       );
     });
+    if (order.totalPageCount) {
+      const label = `${order.totalPageCount} Seiten`;
+      parts.push(
+        order.pageBreakdown && order.pageBreakdown.length > 1
+          ? <PageBreakdownTooltip key="pages" breakdown={order.pageBreakdown}>
+              <span className="text-xs text-slate-400 shrink-0">{label}</span>
+            </PageBreakdownTooltip>
+          : <span key="pages" className="text-xs text-slate-400 shrink-0">{label}</span>
+      );
+    }
   } else {
     if (order.templateLabel)
       parts.push(
