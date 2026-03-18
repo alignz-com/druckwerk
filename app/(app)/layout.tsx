@@ -7,6 +7,7 @@ import type { NavGroup } from "@/components/layout/SidebarNav";
 import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { CommandPalette, NAV_ICONS } from "@/components/layout/CommandPalette";
 
 type Props = {
   children: ReactNode;
@@ -66,6 +67,15 @@ export default async function AppLayout({ children }: Props) {
   const settingsLabel = t.layout.settings.open;
   const hasPassword = Boolean(session.user.hasPassword);
 
+  const cmdItems = navGroups.flatMap((group) =>
+    group.items.map((item) => ({
+      href: item.href,
+      label: item.label,
+      group: group.title ?? t.nav.newOrder,
+      icon: NAV_ICONS[item.icon ?? ""] ?? NAV_ICONS["orders"],
+    }))
+  );
+
   return (
     <div className="min-h-screen bg-white lg:bg-slate-50">
       <div className="mx-auto flex w-full max-w-[2000px] flex-col gap-8 lg:flex-row lg:px-12 lg:py-10">
@@ -90,6 +100,12 @@ export default async function AppLayout({ children }: Props) {
           logoutLabel={t.nav.logout}
           moreLabel={t.nav.more}
           hasPassword={hasPassword}
+        />
+
+        <CommandPalette
+          items={cmdItems}
+          placeholder={t.nav.cmdKPlaceholder}
+          noResultsLabel={t.nav.cmdKNoResults}
         />
 
         <main className="flex-1 min-w-0 lg:pl-6">

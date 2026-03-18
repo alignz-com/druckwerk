@@ -11,8 +11,10 @@ import {
   MoreHorizontal,
   Package,
   PlusCircle,
+  Ruler,
   Settings2,
   ShieldCheck,
+  Sparkles,
   Type,
   Users,
   type LucideIcon,
@@ -35,6 +37,8 @@ const ICONS: Record<string, LucideIcon> = {
   "admin-templates": LayoutTemplate,
   "admin-fonts": Type,
   "admin-products": Package,
+  "admin-formats": Ruler,
+  "admin-finishes": Sparkles,
   "admin-papers": Layers,
 };
 
