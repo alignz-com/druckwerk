@@ -71,10 +71,18 @@ export default async function AppLayout({ children }: Props) {
     group.items.map((item) => ({
       href: item.href,
       label: item.label,
-      group: group.title ?? t.nav.newOrder,
+      group: group.title ?? t.nav.cmdKGroupNavigation,
       iconKey: item.icon ?? "",
     }))
   );
+
+  const cmdActions = [
+    { href: "/orders/new", label: t.nav.cmdKNewOrder, group: t.nav.cmdKGroupActions, iconKey: "new-order" },
+    ...(isAdmin ? [
+      { href: "/admin/brands/new", label: t.nav.cmdKNewBrand, group: t.nav.cmdKGroupActions, iconKey: "admin-brands" },
+      { href: "/admin/templates/new", label: t.nav.cmdKNewTemplate, group: t.nav.cmdKGroupActions, iconKey: "admin-templates" },
+    ] : []),
+  ];
 
   return (
     <div className="min-h-screen bg-white lg:bg-slate-50">
@@ -104,6 +112,7 @@ export default async function AppLayout({ children }: Props) {
 
         <CommandPalette
           items={cmdItems}
+          actions={cmdActions}
           placeholder={t.nav.cmdKPlaceholder}
           noResultsLabel={t.nav.cmdKNoResults}
         />

@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Package, PlusCircle, Ruler, ShieldCheck, Sparkles, Type, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NavItem = {
+type CmdItem = {
   href: string;
   label: string;
   group: string;
@@ -16,12 +16,26 @@ type NavItem = {
 };
 
 type Props = {
-  items: NavItem[];
+  items: CmdItem[];
+  actions: CmdItem[];
   placeholder: string;
   noResultsLabel: string;
 };
 
-export function CommandPalette({ items, placeholder, noResultsLabel }: Props) {
+const GROUP_CLASS = cn(
+  "[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5",
+  "[&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold",
+  "[&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide",
+  "[&_[cmdk-group-heading]]:text-slate-400",
+);
+
+const ITEM_CLASS = cn(
+  "flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-slate-700",
+  "data-[selected=true]:bg-slate-900 data-[selected=true]:text-white",
+  "transition-colors",
+);
+
+export function CommandPalette({ items, actions, placeholder, noResultsLabel }: Props) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -44,17 +58,16 @@ export function CommandPalette({ items, placeholder, noResultsLabel }: Props) {
 
   if (!open) return null;
 
-  const groups = Array.from(new Set(items.map((i) => i.group)));
+  const navGroups = Array.from(new Set(items.map((i) => i.group)));
+  const actionGroups = Array.from(new Set(actions.map((i) => i.group)));
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
       onClick={() => setOpen(false)}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
 
-      {/* Panel */}
       <div
         className="relative w-full max-w-md mx-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -72,34 +85,42 @@ export function CommandPalette({ items, placeholder, noResultsLabel }: Props) {
             </kbd>
           </div>
 
-          <Command.List className="max-h-72 overflow-y-auto py-2">
+          <Command.List className="max-h-80 overflow-y-auto py-2">
             <Command.Empty className="py-8 text-center text-sm text-slate-400">
               {noResultsLabel}
             </Command.Empty>
 
-            {groups.map((group) => (
-              <Command.Group
-                key={group}
-                heading={group}
-                className={cn(
-                  "[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5",
-                  "[&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold",
-                  "[&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide",
-                  "[&_[cmdk-group-heading]]:text-slate-400",
-                )}
-              >
+            {/* Actions group */}
+            {actions.length > 0 && actionGroups.map((group) => (
+              <Command.Group key={`actions-${group}`} heading={group} className={GROUP_CLASS}>
+                {actions.filter((i) => i.group === group).map((item) => {
+                  const Icon = NAV_ICONS[item.iconKey];
+                  return (
+                    <Command.Item
+                      key={`action-${item.href}`}
+                      value={[item.label, ...(item.keywords ?? [])].join(" ")}
+                      onSelect={() => navigate(item.href)}
+                      className={ITEM_CLASS}
+                    >
+                      {Icon ? <Icon className="h-4 w-4 shrink-0 opacity-60" /> : null}
+                      <span>{item.label}</span>
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+            ))}
+
+            {/* Navigation groups */}
+            {navGroups.map((group) => (
+              <Command.Group key={`nav-${group}`} heading={group} className={GROUP_CLASS}>
                 {items.filter((i) => i.group === group).map((item) => {
                   const Icon = NAV_ICONS[item.iconKey];
                   return (
                     <Command.Item
-                      key={item.href}
+                      key={`nav-${item.href}`}
                       value={[item.label, ...(item.keywords ?? [])].join(" ")}
                       onSelect={() => navigate(item.href)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-slate-700",
-                        "data-[selected=true]:bg-slate-900 data-[selected=true]:text-white",
-                        "transition-colors",
-                      )}
+                      className={ITEM_CLASS}
                     >
                       {Icon ? <Icon className="h-4 w-4 shrink-0 opacity-60" /> : null}
                       <span>{item.label}</span>
@@ -115,7 +136,6 @@ export function CommandPalette({ items, placeholder, noResultsLabel }: Props) {
   );
 }
 
-// Icon map — same as SidebarNav
 export const NAV_ICONS: Record<string, LucideIcon> = {
   orders: ClipboardList,
   "new-order": PlusCircle,
