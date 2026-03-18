@@ -109,13 +109,13 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ prod
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="cursor-help">{children}</span>
+          <span className="cursor-default">{children}</span>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             side="top"
             sideOffset={6}
-            className="z-50 rounded-lg bg-slate-900 px-3 py-2 shadow-lg"
+            className="z-50 rounded-lg bg-slate-900 px-3 py-2 drop-shadow-lg"
           >
             <div className="flex flex-col gap-1 min-w-[140px]">
               {breakdown.map(({ product, format, pages }, i) => (
