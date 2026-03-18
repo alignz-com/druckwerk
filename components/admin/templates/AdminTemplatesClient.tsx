@@ -25,8 +25,6 @@ const MANAGED_TYPES: TemplateAssetType[] = [
 
 export default function AdminTemplatesClient({ templates }: Props) {
   const [entries, setEntries] = useState<AdminTemplateSummary[]>(templates);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const router = useRouter();
   const t = useTranslations("admin.templates");
   const { locale } = useLocale();
@@ -62,32 +60,6 @@ export default function AdminTemplatesClient({ templates }: Props) {
     });
   }, [entries, t, locale]);
 
-  const deleteTemplates = async (ids: string[]) => {
-    if (ids.length === 0) return false;
-    setIsDeleting(true);
-    setFeedback(null);
-    try {
-      for (const id of ids) {
-        const response = await fetch(`/api/admin/templates/${id}`, { method: "DELETE" });
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload?.error ?? t("table.bulkDelete.error"));
-        }
-      }
-
-      setEntries((current) => current.filter((template) => !ids.includes(template.id)));
-      setFeedback({ type: "success", message: t("table.bulkDelete.success", { count: ids.length }) });
-      router.refresh();
-      return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t("table.bulkDelete.error");
-      setFeedback({ type: "error", message });
-      return false;
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -104,18 +76,6 @@ export default function AdminTemplatesClient({ templates }: Props) {
         </Button>
       </header>
 
-      {feedback ? (
-        <div
-          className={
-            feedback.type === "success"
-              ? "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-              : "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          }
-        >
-          {feedback.message}
-        </div>
-      ) : null}
-
       <TemplatesTable
         data={tableRows}
         searchPlaceholder={t("table.searchPlaceholder")}
@@ -125,8 +85,6 @@ export default function AdminTemplatesClient({ templates }: Props) {
         previousLabel={t("table.pagination.previous")}
         nextLabel={t("table.pagination.next")}
         resetLabel={t("table.pagination.reset")}
-        deleteLabel={t("table.bulkDelete.action")}
-        selectionLabel={(count) => t("table.bulkDelete.selection", { count })}
         columns={{
           template: t("table.headers.template"),
           brands: t("table.headers.brands"),
@@ -135,8 +93,6 @@ export default function AdminTemplatesClient({ templates }: Props) {
         }}
         unassignedLabel={t("table.unassigned")}
         onManage={(id) => router.push(`/admin/templates/${id}`)}
-        onDeleteSelected={deleteTemplates}
-        isDeleting={isDeleting}
       />
     </div>
   );
