@@ -11,7 +11,7 @@ const brandUpdateSchema = brandSchema.extend({
 
 type RouteParams = { brandId: string };
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+async function resolveParams(context: { params: Promise<RouteParams> }): Promise<RouteParams> {
   const params = await Promise.resolve(context.params);
   if (!params?.brandId) {
     throw new Error("Missing route parameter: brandId");
@@ -19,7 +19,7 @@ async function resolveParams(context: { params: RouteParams | Promise<RouteParam
   return params;
 }
 
-export async function GET(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function GET(_req: NextRequest, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, context: { params: RouteParams | Pr
   return NextResponse.json({ brand });
 }
 
-export async function PATCH(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -147,7 +147,7 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
   return NextResponse.json({ brand });
 }
 
-export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

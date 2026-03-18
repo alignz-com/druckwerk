@@ -33,7 +33,7 @@ function splitName(fullName: string) {
 
 type RouteParams = { contactId: string };
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+async function resolveParams(context: { params: Promise<RouteParams> }): Promise<RouteParams> {
   const params = await Promise.resolve(context.params);
   if (!params?.contactId) {
     throw new Error("Missing route parameter: contactId");
@@ -41,7 +41,7 @@ async function resolveParams(context: { params: RouteParams | Promise<RouteParam
   return params;
 }
 
-export async function PATCH(req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: Request, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

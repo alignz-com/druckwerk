@@ -17,10 +17,11 @@ import { resolveAllowedQuantities } from "@/lib/order-quantities";
 import { getUserAccessibleProductTypes } from "@/lib/user-products";
 
 type OrdersPageProps = {
-  searchParams?: Record<string, string | string[]>;
+  searchParams?: Promise<Record<string, string | string[]>>;
 };
 
-export default async function OrdersPage({ searchParams }: OrdersPageProps) {
+export default async function OrdersPage({ searchParams: searchParamsPromise }: OrdersPageProps) {
+  const searchParams = await searchParamsPromise;
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     redirect("/login");

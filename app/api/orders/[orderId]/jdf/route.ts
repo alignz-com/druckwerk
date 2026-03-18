@@ -10,7 +10,7 @@ import { S3_PUBLIC_URL, ORDERS_BUCKET } from "@/lib/s3";
 
 type RouteParams = { orderId: string };
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+async function resolveParams(context: { params: Promise<RouteParams> }): Promise<RouteParams> {
   const params = await Promise.resolve(context.params);
   if (!params?.orderId) throw new Error("Missing route parameter: orderId");
   return params;
@@ -26,7 +26,7 @@ type AddressMeta = {
   addressExtra?: string;
 };
 
-export async function POST(_req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function POST(_req: Request, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

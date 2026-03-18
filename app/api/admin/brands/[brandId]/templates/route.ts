@@ -12,7 +12,7 @@ const payloadSchema = z.object({
 
 type RouteParams = { brandId: string };
 
-export async function PATCH(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

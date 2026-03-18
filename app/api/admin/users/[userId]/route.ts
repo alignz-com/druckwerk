@@ -9,7 +9,7 @@ import { UserRole } from "@prisma/client";
 
 type RouteParams = { userId: string };
 
-export async function PATCH(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
   return NextResponse.json({ user: updated ? mapAdminUser(updated as any) : null });
 }
 
-export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {

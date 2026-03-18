@@ -7,7 +7,7 @@ import { S3_PUBLIC_URL, ORDERS_BUCKET } from "@/lib/s3";
 
 type RouteParams = { orderId: string };
 
-export async function GET(req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function GET(req: Request, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,6 +1,7 @@
 import PasswordResetConfirmForm from "@/components/auth/PasswordResetConfirmForm";
 
-export default function PasswordResetConfirmPage({ searchParams }: { searchParams: { token?: string } }) {
+export default async function PasswordResetConfirmPage({ searchParams: sp }: { searchParams: Promise<{ token?: string }> }) {
+  const searchParams = await sp;
   const token = searchParams?.token || "";
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 py-16">

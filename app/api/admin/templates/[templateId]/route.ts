@@ -19,7 +19,7 @@ function parseLocalizedPositiveFloat(input: unknown): number | null {
   return parsed;
 }
 
-export async function PATCH(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
@@ -203,7 +203,7 @@ export async function PATCH(req: NextRequest, context: { params: RouteParams | P
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {

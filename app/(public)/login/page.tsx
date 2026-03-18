@@ -6,12 +6,13 @@ import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import SignInCard from "./sign-in-card";
 
 type LoginPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     reset?: string;
-  };
+  }>;
 };
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage({ searchParams: searchParamsPromise }: LoginPageProps) {
+  const searchParams = await searchParamsPromise;
   const session = await getServerAuthSession();
   const userLocale = session?.user?.locale;
 

@@ -9,7 +9,7 @@ import { adminTemplateSummaryInclude, mapTemplateToAdminSummary } from "@/lib/ad
 
 type RouteParams = { templateId: string };
 
-export async function POST(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function POST(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest, context: { params: RouteParams | Pr
   return NextResponse.json({ template: mapTemplateToAdminSummary(updated) });
 }
 
-export async function DELETE(req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {

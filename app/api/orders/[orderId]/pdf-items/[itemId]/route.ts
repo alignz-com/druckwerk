@@ -7,11 +7,11 @@ const schema = z.object({ quantity: z.number().int().min(1) });
 
 type Params = { orderId: string; itemId: string };
 
-async function resolveParams(context: { params: Params | Promise<Params> }): Promise<Params> {
+async function resolveParams(context: { params: Promise<Params> }): Promise<Params> {
   return Promise.resolve(context.params);
 }
 
-export async function PATCH(req: Request, context: { params: Params | Promise<Params> }) {
+export async function PATCH(req: Request, context: { params: Promise<Params> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "ADMIN" && session.user.role !== "PRINTER") {

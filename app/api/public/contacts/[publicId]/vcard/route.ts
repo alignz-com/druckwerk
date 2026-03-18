@@ -8,7 +8,7 @@ type RouteParams = { publicId: string };
 
 export const runtime = "nodejs";
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+async function resolveParams(context: { params: Promise<RouteParams> }): Promise<RouteParams> {
   const params = await Promise.resolve(context.params);
   if (!params?.publicId) {
     throw new Error("Missing route parameter: publicId");
@@ -16,7 +16,7 @@ async function resolveParams(context: { params: RouteParams | Promise<RouteParam
   return params;
 }
 
-export async function GET(_req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function GET(_req: Request, context: { params: Promise<RouteParams> }) {
   const { publicId } = await resolveParams(context);
   const host = (await headers()).get("host");
   const contact = await getPublicContact(publicId, host);

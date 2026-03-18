@@ -7,7 +7,7 @@ import { getAdminFontFamily } from "@/lib/admin/templates-data";
 
 type RouteParams = { variantId: string };
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }) {
+async function resolveParams(context: { params: Promise<RouteParams> }) {
   const params = await Promise.resolve(context.params);
   if (!params?.variantId) {
     throw new Error("Missing route parameter: variantId");
@@ -15,7 +15,7 @@ async function resolveParams(context: { params: RouteParams | Promise<RouteParam
   return params;
 }
 
-export async function DELETE(_req: NextRequest, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

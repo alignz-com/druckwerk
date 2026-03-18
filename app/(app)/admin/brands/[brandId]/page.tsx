@@ -10,7 +10,7 @@ type RouteParams = {
 export default async function AdminBrandDetailPage({
   params,
 }: {
-  params: RouteParams | Promise<RouteParams>;
+  params: Promise<RouteParams>;
 }) {
   const session = await getServerAuthSession();
 

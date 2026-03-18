@@ -16,7 +16,7 @@ const updateSchema = z
 
 type RouteParams = { orderId: string };
 
-async function resolveParams(context: { params: RouteParams | Promise<RouteParams> }): Promise<RouteParams> {
+async function resolveParams(context: { params: Promise<RouteParams> }): Promise<RouteParams> {
   const params = await Promise.resolve(context.params);
   if (!params?.orderId) {
     throw new Error("Missing route parameter: orderId");
@@ -24,7 +24,7 @@ async function resolveParams(context: { params: RouteParams | Promise<RouteParam
   return params;
 }
 
-export async function PATCH(req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function PATCH(req: Request, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -84,7 +84,7 @@ export async function PATCH(req: Request, context: { params: RouteParams | Promi
   return NextResponse.json({ order: updated });
 }
 
-export async function DELETE(_req: Request, context: { params: RouteParams | Promise<RouteParams> }) {
+export async function DELETE(_req: Request, context: { params: Promise<RouteParams> }) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
