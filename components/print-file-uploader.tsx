@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon } from "lucide-react"
+import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon, Maximize2 } from "lucide-react"
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslations, useLocale } from "@/components/providers/locale-provider"
@@ -218,8 +218,8 @@ function FileDetailPanel({ file, onView }: { file: SortableFile; onView: () => v
           )}
           {canView && (
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-slate-800 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm">
-                {t("pdfOrder.dropzoneViewFile")}
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-slate-800 p-1.5 rounded-full shadow-sm">
+                <Maximize2 className="h-3.5 w-3.5" />
               </span>
             </div>
           )}
