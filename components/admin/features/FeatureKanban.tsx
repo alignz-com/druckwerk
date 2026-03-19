@@ -131,8 +131,9 @@ function KanbanColumn({
   const [showAll, setShowAll] = useState(false);
   const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
   const bodyStyle = COLUMN_BODY_STYLES[status] ?? "bg-slate-50";
-  const visible = showAll ? features : features.slice(0, 20);
-  const hidden = features.length - 20;
+  const COLUMN_LIMIT = 10;
+  const visible = showAll ? features : features.slice(0, COLUMN_LIMIT);
+  const hidden = features.length - COLUMN_LIMIT;
 
   if (collapsed) {
     return (
