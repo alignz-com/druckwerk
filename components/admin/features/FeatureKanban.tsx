@@ -150,7 +150,7 @@ function KanbanColumn({
   }
 
   return (
-    <div className="relative flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80 max-h-[calc(100vh-12rem)]">
+    <div className="relative h-full flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80">
       {isOver && (
         <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />
       )}
@@ -252,7 +252,7 @@ export function FeatureKanban({ features, onStatusChange, onSelect, onAddInStatu
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0">
+      <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0 h-[calc(100vh-12rem)]">
         {STATUS_ORDER.map((status) => (
           <DroppableColumn
             key={status}
