@@ -1848,8 +1848,8 @@ export default function OrderForm({
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
           </div>
           <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
-            {/* Desktop card header with title and front/back buttons */}
-            <CardHeader className="hidden xl:flex flex-row items-center justify-between pb-2 gap-3">
+            {/* Card header with front/back buttons */}
+            <CardHeader className="flex flex-row items-center justify-between pb-2 gap-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
               <div className="flex gap-2">
                 <Button
@@ -1870,11 +1870,11 @@ export default function OrderForm({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="px-0 pb-4 xl:px-6 xl:pb-6">
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
-                  className={`flex min-h-[35dvh] items-center justify-center mx-4 xl:mx-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 ${
+                  className={`flex min-h-[30vh] items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200 ${
                     templateError ? "text-red-600" : "text-slate-500"
                   }`}
                 >
