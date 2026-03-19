@@ -170,7 +170,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
         {/* Two-panel layout */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_320px] min-h-0">
           {/* Left panel — fields */}
-          <div className="overflow-y-auto min-h-0 space-y-5 p-6">
+          <div className="overflow-y-auto min-h-0 flex flex-col gap-5 p-6">
             {/* Title */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.title}</label>
@@ -238,14 +238,13 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
               </datalist>
             </div>
 
-            {/* Description */}
-            <div>
+            {/* Description — grows to fill available space */}
+            <div className="flex-1 flex flex-col min-h-[100px]">
               <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.description}</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                className="flex-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
                 placeholder={t.detail.descriptionEmpty}
               />
             </div>
