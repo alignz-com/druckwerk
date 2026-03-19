@@ -8,6 +8,7 @@ import {
   ClipboardList,
   LayoutTemplate,
   Layers,
+  Lightbulb,
   MoreHorizontal,
   Package,
   PlusCircle,
@@ -40,6 +41,7 @@ const ICONS: Record<string, LucideIcon> = {
   "admin-formats": Ruler,
   "admin-finishes": Sparkles,
   "admin-papers": Layers,
+  "admin-features": Lightbulb,
 };
 
 type Props = {

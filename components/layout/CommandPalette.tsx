@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { Search } from "lucide-react";
-import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Package, PlusCircle, Ruler, ShieldCheck, Sparkles, Type, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Lightbulb, Package, PlusCircle, Ruler, ShieldCheck, Sparkles, Type, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type CmdItem = {
@@ -148,4 +148,5 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   "admin-papers": Layers,
   "admin-templates": LayoutTemplate,
   "admin-fonts": Type,
+  "admin-features": Lightbulb,
 };
