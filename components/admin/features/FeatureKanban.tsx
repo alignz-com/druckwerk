@@ -243,7 +243,7 @@ export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabe
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 items-stretch min-w-0">
+      <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0">
         {STATUS_ORDER.map((status) => (
           <DroppableColumn
             key={status}

@@ -14,6 +14,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { OrderCardData } from "./OrderCardRow";
 
 const STATUS_ORDER = [
@@ -190,15 +191,11 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
     return (
       <button
         onClick={onToggle}
-        className="w-full h-full flex flex-col items-center rounded-2xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors py-4 gap-3 select-none"
+        className={`flex flex-col items-center gap-2 rounded-2xl border border-slate-200/80 px-2 py-3 min-w-10 h-full ${headerStyle}`}
       >
-        <span className="text-xs font-bold text-slate-500 tabular-nums">{orders.length}</span>
-        <span
-          className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest leading-none"
-          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-        >
-          {label}
-        </span>
+        <ChevronRight className="size-4 shrink-0" />
+        <span className="text-xs font-bold tabular-nums">{orders.length}</span>
+        <span className="text-xs font-semibold [writing-mode:vertical-lr] rotate-180">{label}</span>
       </button>
     );
   }
@@ -209,13 +206,13 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
       {isOver && <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />}
 
       {/* Header */}
-      <button
-        onClick={onToggle}
-        className={`flex items-center justify-between px-3 py-2.5 w-full select-none transition-opacity hover:opacity-90 ${headerStyle}`}
-      >
-        <span className="text-sm font-semibold">{label}</span>
+      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyle}`}>
+        <button type="button" onClick={onToggle} className="flex items-center gap-1.5 hover:opacity-70 transition-opacity">
+          <ChevronDown className="size-3.5" />
+          <span className="text-sm font-semibold">{label}</span>
+        </button>
         <span className="text-xs font-bold opacity-70 tabular-nums">{orders.length}</span>
-      </button>
+      </div>
 
       {/* Cards area with tinted body */}
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
