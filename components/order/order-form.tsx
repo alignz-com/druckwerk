@@ -1843,34 +1843,31 @@ export default function OrderForm({
         </div>
 
         <div className="order-1 xl:order-2 sticky top-0 z-10 bg-white xl:space-y-4 xl:top-10 xl:self-start">
-          {/* Mobile title — hidden on desktop */}
-          <div className="pt-3 pb-2 xl:hidden">
-            <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
+          {/* Title row — "New Order" on mobile, "Preview" + front/back buttons */}
+          <div className="flex items-center justify-between pt-3 pb-2">
+            <h1 className="text-lg font-semibold tracking-tight text-slate-900 xl:hidden">{tOrder("title")}</h1>
+            <span className="text-sm font-medium text-muted-foreground hidden xl:block">{tOrder("previewTitle")}</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={previewView === "front" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewView("front")}
+              >
+                {tOrder("confirm.front")}
+              </Button>
+              <Button
+                type="button"
+                variant={previewView === "back" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewView("back")}
+              >
+                {tOrder("confirm.back")}
+              </Button>
+            </div>
           </div>
           <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
-            {/* Card header with front/back buttons */}
-            <CardHeader className="flex flex-row items-center justify-between pb-2 gap-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={previewView === "front" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPreviewView("front")}
-                >
-                  {tOrder("confirm.front")}
-                </Button>
-                <Button
-                  type="button"
-                  variant={previewView === "back" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPreviewView("back")}
-                >
-                  {tOrder("confirm.back")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="px-0 pb-4 xl:px-6 xl:pb-6">
+            <CardContent className="p-0 xl:p-6">
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
