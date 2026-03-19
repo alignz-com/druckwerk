@@ -13,6 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 type Address = {
   id: string;
@@ -190,9 +192,9 @@ export function OrderDetailActionBar({
                   PDF
                 </a>
               )}
-              <button onClick={() => setConfOpen(false)} className="block text-sm text-slate-500 hover:text-slate-700">
+              <Button variant="ghost" size="sm" onClick={() => setConfOpen(false)}>
                 Close
-              </button>
+              </Button>
             </div>
           ) : addresses.length === 0 ? (
             <p className="text-sm text-slate-500 py-2">{labels.confirmationNoAddresses}</p>
@@ -218,14 +220,12 @@ export function OrderDetailActionBar({
               </div>
               {confError && <p className="text-xs text-red-600">{confError}</p>}
               <div className="flex justify-end gap-2">
-                <button onClick={() => setConfOpen(false)}
-                  className="h-9 rounded-lg border border-input px-3 text-sm text-slate-600 hover:bg-muted transition-colors">
+                <Button variant="outline" onClick={() => setConfOpen(false)}>
                   Cancel
-                </button>
-                <button onClick={handleCreateConf} disabled={confBusy || !addressId}
-                  className="h-9 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition-colors">
-                  {confBusy ? "…" : labels.createConfirmation}
-                </button>
+                </Button>
+                <LoadingButton onClick={handleCreateConf} disabled={!addressId} loading={confBusy} loadingText="…" minWidthClassName="min-w-[140px]">
+                  {labels.createConfirmation}
+                </LoadingButton>
               </div>
             </div>
           )}

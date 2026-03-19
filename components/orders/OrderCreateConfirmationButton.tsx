@@ -10,6 +10,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 type Address = { id: string; label: string | null; company: string | null; street: string | null; city: string | null };
 
@@ -62,13 +64,13 @@ export function OrderCreateConfirmationButton({ orderId, addresses, labels }: Pr
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        className="w-full justify-start"
         onClick={() => { setOpen(true); setResult(null); setError(null); }}
-        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left"
       >
         {labels.createConfirmation}
-      </button>
+      </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
@@ -90,13 +92,9 @@ export function OrderCreateConfirmationButton({ orderId, addresses, labels }: Pr
                   PDF
                 </a>
               )}
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="block text-sm text-slate-500 hover:text-slate-700 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
                 Close
-              </button>
+              </Button>
             </div>
           ) : addresses.length === 0 ? (
             <p className="text-sm text-slate-500 py-2">{labels.confirmationNoAddresses}</p>
@@ -134,21 +132,12 @@ export function OrderCreateConfirmationButton({ orderId, addresses, labels }: Pr
               {error && <p className="text-xs text-red-600">{error}</p>}
 
               <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="h-9 rounded-lg border border-input px-3 text-sm text-slate-600 hover:bg-muted transition-colors"
-                >
+                <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  disabled={submitting || !addressId}
-                  className="h-9 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
-                >
-                  {submitting ? "…" : labels.createConfirmation}
-                </button>
+                </Button>
+                <LoadingButton onClick={handleCreate} disabled={!addressId} loading={submitting} loadingText="…" minWidthClassName="min-w-[140px]">
+                  {labels.createConfirmation}
+                </LoadingButton>
               </div>
             </div>
           )}

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { OrderJdfRegenerateButton } from "./OrderJdfRegenerateButton";
 
 type Props = {
@@ -107,14 +109,9 @@ export function OrderDetailActions({
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={handleApplyStatus}
-              disabled={isApplying}
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-            >
+            <LoadingButton variant="outline" onClick={handleApplyStatus} loading={isApplying} loadingText="…" minWidthClassName="min-w-[80px]">
               {labels.applyStatus}
-            </button>
+            </LoadingButton>
           </div>
           {statusMessage && <p className="text-xs text-emerald-600">{statusMessage}</p>}
           {statusError && <p className="text-xs text-red-600">{statusError}</p>}
@@ -130,32 +127,37 @@ export function OrderDetailActions({
       {canDelete && (
         <div className="space-y-1 pt-1 border-t border-slate-100">
           {!deleteConfirming ? (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 px-0"
               onClick={() => setDeleteConfirming(true)}
-              className="text-sm text-red-600 hover:text-red-700 transition-colors"
             >
               {labels.deleteAction}
-            </button>
+            </Button>
           ) : (
             <div className="space-y-1">
               <p className="text-xs text-slate-600">{labels.deleteConfirm}</p>
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
+                <LoadingButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 px-0"
                   onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
+                  loading={isDeleting}
+                  loadingText={labels.deleteRunning}
+                  minWidthClassName="min-w-[40px]"
                 >
-                  {isDeleting ? labels.deleteRunning : "Yes"}
-                </button>
-                <button
-                  type="button"
+                  Yes
+                </LoadingButton>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="px-0"
                   onClick={() => setDeleteConfirming(false)}
-                  className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
                 >
                   No
-                </button>
+                </Button>
               </div>
               {deleteError && <p className="text-xs text-red-600">{deleteError}</p>}
             </div>
