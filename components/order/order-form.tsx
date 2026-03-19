@@ -1917,33 +1917,6 @@ export default function OrderForm({
                       height: `75%`,
                     }}
                   >
-                    {/* Mobile front/back overlay buttons */}
-                    <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 xl:hidden">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewView("front")}
-                        className={cn(
-                          "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
-                          previewView === "front"
-                            ? "bg-slate-900 text-white"
-                            : "bg-white/90 text-slate-600",
-                        )}
-                      >
-                        {tOrder("confirm.front")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewView("back")}
-                        className={cn(
-                          "text-xs px-3 py-1 rounded-full font-medium shadow-sm transition-colors",
-                          previewView === "back"
-                            ? "bg-slate-900 text-white"
-                            : "bg-white/90 text-slate-600",
-                        )}
-                      >
-                        {tOrder("confirm.back")}
-                      </button>
-                    </div>
                     <FlipCard
                       activeSide={previewView}
                       front={
