@@ -25,6 +25,7 @@ type Props = {
   onClose: () => void;
   onCreated: (f: FeatureWithComments) => void;
   defaultStatus?: string;
+  sections?: string[];
   t: {
     create: {
       title: string;
@@ -48,12 +49,13 @@ type Props = {
   };
 };
 
-export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Props) {
+export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, sections = [], t }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>(defaultStatus ?? "IDEA");
   const [priority, setPriority] = useState<string>("MEDIUM");
   const [category, setCategory] = useState<string>("UX");
+  const [section, setSection] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -96,6 +98,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
           title: title.trim(),
           description: description.trim() || null,
           imageUrls,
+          section: section.trim() || null,
           status,
           priority,
           category,
@@ -108,7 +111,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
       setError("Failed to create feature.");
       setSubmitting(false);
     }
-  }, [title, description, imageUrls, status, priority, category, onCreated]);
+  }, [title, description, imageUrls, section, status, priority, category, onCreated]);
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -142,6 +145,22 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
               rows={3}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
             />
+          </div>
+
+          {/* Section */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.section ?? "Section"}</label>
+            <input
+              type="text"
+              list="feature-sections"
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              placeholder={t.create.placeholders?.section ?? "e.g. Orders, Admin, Templates…"}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+            <datalist id="feature-sections">
+              {sections.map((s) => <option key={s} value={s} />)}
+            </datalist>
           </div>
 
           {/* Images */}

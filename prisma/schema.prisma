@@ -748,6 +748,7 @@ model Feature {
   title       String
   description String?
   imageUrls   String[]          @default([])
+  section     String?
   status      FeatureStatus   @default(IDEA)
   priority    FeaturePriority @default(MEDIUM)
   category    FeatureCategory @default(UX)

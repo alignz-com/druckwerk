@@ -1022,6 +1022,7 @@ export const messages = {
             status: "Status",
             priority: "Priority",
             category: "Category",
+            section: "Section",
             updated: "Updated",
           },
         },
@@ -1038,6 +1039,7 @@ export const messages = {
           placeholders: {
             title: "Feature title",
             description: "Describe the feature, bug, or idea…",
+            section: "e.g. Orders, Admin, Templates…",
           },
           submit: "Create Feature",
           submitting: "Creating…",
@@ -2522,6 +2524,7 @@ export const messages = {
             status: "Status",
             priority: "Priorität",
             category: "Kategorie",
+            section: "Bereich",
             updated: "Aktualisiert",
           },
         },
@@ -2538,6 +2541,7 @@ export const messages = {
           placeholders: {
             title: "Feature-Titel",
             description: "Beschreibe das Feature, den Bug oder die Idee…",
+            section: "z.B. Bestellungen, Admin, Vorlagen…",
           },
           submit: "Feature erstellen",
           submitting: "Erstellen…",

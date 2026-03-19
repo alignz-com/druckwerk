@@ -80,6 +80,11 @@ function FeatureCard({ feature, onSelect }: { feature: FeatureWithComments; onSe
         <span className={`inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium ${catStyle}`}>
           {feature.category}
         </span>
+        {feature.section && (
+          <span className="inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium bg-slate-100 text-slate-600">
+            {feature.section}
+          </span>
+        )}
         {commentCount > 0 && (
           <span className="text-[10px] text-slate-400">{commentCount} comment{commentCount !== 1 ? "s" : ""}</span>
         )}

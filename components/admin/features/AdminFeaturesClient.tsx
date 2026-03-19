@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,11 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
   const [view, setView] = useState<ViewMode>("kanban");
   const [selected, setSelected] = useState<FeatureWithComments | null>(null);
   const [createStatus, setCreateStatus] = useState<string | null>(null);
+
+  const sections = useMemo(() => {
+    const set = new Set(features.map((f) => f.section).filter(Boolean) as string[]);
+    return [...set].sort();
+  }, [features]);
 
   const refresh = useCallback(() => {
     fetch("/api/admin/features")
@@ -153,6 +158,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
           onClose={() => setSelected(null)}
           onUpdated={handleUpdated}
           onDeleted={handleDeleted}
+          sections={sections}
           t={ft}
         />
       )}
@@ -163,6 +169,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
           onClose={() => setCreateStatus(null)}
           onCreated={handleCreated}
           defaultStatus={createStatus}
+          sections={sections}
           t={ft}
         />
       )}

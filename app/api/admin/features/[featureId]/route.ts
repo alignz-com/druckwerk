@@ -57,6 +57,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (Array.isArray(payload.imageUrls)) {
     data.imageUrls = payload.imageUrls.filter(Boolean);
   }
+  if (payload.section !== undefined) {
+    data.section = typeof payload.section === "string" ? payload.section.trim() || null : null;
+  }
 
   const feature = await prisma.feature.update({
     where: { id: featureId },

@@ -24,6 +24,7 @@ const CATEGORIES = ["UI", "UX", "BACKEND", "INFRASTRUCTURE", "BUG"] as const;
 
 type Props = {
   feature: FeatureWithComments;
+  sections?: string[];
   onClose: () => void;
   onUpdated: (f: FeatureWithComments) => void;
   onDeleted: (id: string) => void;
@@ -34,6 +35,7 @@ type Props = {
     category: Record<string, string>;
     create: {
       fields: Record<string, string>;
+      placeholders?: Record<string, string>;
       image?: {
         label: string;
         upload: string;
@@ -52,12 +54,13 @@ type Props = {
   };
 };
 
-export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t }: Props) {
+export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated, onDeleted, t }: Props) {
   const [title, setTitle] = useState(feature.title);
   const [description, setDescription] = useState(feature.description ?? "");
   const [status, setStatus] = useState(feature.status);
   const [priority, setPriority] = useState(feature.priority);
   const [category, setCategory] = useState(feature.category);
+  const [section, setSection] = useState(feature.section ?? "");
   const [imageUrls, setImageUrls] = useState<string[]>(feature.imageUrls ?? []);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,6 +74,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
     title !== feature.title ||
     description !== (feature.description ?? "") ||
     JSON.stringify(imageUrls) !== JSON.stringify(feature.imageUrls ?? []) ||
+    section !== (feature.section ?? "") ||
     status !== feature.status ||
     priority !== feature.priority ||
     category !== feature.category;
@@ -106,7 +110,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       const res = await fetch(`/api/admin/features/${feature.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, imageUrls, status, priority, category }),
+        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, imageUrls, section: section.trim() || null, status, priority, category }),
       });
       if (!res.ok) throw new Error();
       const { feature: updated } = await res.json();
@@ -116,7 +120,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       setError("Save failed.");
       setSaving(false);
     }
-  }, [feature.id, title, description, imageUrls, status, priority, category, onUpdated]);
+  }, [feature.id, title, description, imageUrls, section, status, priority, category, onUpdated]);
 
   const handleDelete = useCallback(async () => {
     const msg = t.detail.deleteConfirm.replace("{title}", feature.title);
@@ -213,6 +217,22 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Section */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.section ?? "Section"}</label>
+            <input
+              type="text"
+              list="feature-sections-detail"
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              placeholder={t.create.placeholders?.section ?? "e.g. Orders, Admin, Templates…"}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+            <datalist id="feature-sections-detail">
+              {sections.map((s) => <option key={s} value={s} />)}
+            </datalist>
           </div>
 
           {/* Description */}

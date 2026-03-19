@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     title?: string;
     description?: string | null;
     imageUrls?: string[];
+    section?: string | null;
     status?: string;
     priority?: string;
     category?: string;
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
       title,
       description: payload.description?.trim() || null,
       imageUrls: Array.isArray(payload.imageUrls) ? payload.imageUrls.filter(Boolean) : [],
+      section: payload.section?.trim() || null,
       status,
       priority,
       category,
