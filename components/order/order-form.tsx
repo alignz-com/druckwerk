@@ -1909,13 +1909,13 @@ export default function OrderForm({
               ) : (
                 /* Card loaded — same 3:2 area, card fitted inside */
                 <>
-                <div className="relative flex aspect-[3/2] items-center justify-center rounded-xl bg-slate-50/30 overflow-visible">
+                <div className="relative flex aspect-[3/2] items-center justify-center rounded-xl bg-slate-50/30 p-6">
                   <div
-                    className="relative overflow-visible"
+                    className="relative"
                     style={{
                       aspectRatio: `${selectedTemplate.pageWidthMm ?? 85} / ${selectedTemplate.pageHeightMm ?? 55}`,
-                      width: `min(85%, calc(80% * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
-                      maxHeight: `80%`,
+                      maxWidth: `100%`,
+                      maxHeight: `100%`,
                     }}
                   >
                     {/* Mobile front/back overlay buttons */}
