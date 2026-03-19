@@ -17,6 +17,7 @@ type FeatureWithComments = Feature & { comments: FeatureComment[] };
 const STATUS_PILL: Record<string, string> = {
   IDEA:        "bg-purple-100 text-purple-700",
   PLANNED:     "bg-blue-100 text-blue-700",
+  READY:       "bg-cyan-100 text-cyan-700",
   IN_PROGRESS: "bg-amber-100 text-amber-700",
   DONE:        "bg-emerald-100 text-emerald-700",
   PARKED:      "bg-slate-200 text-slate-600",
@@ -70,7 +71,7 @@ export function FeaturesTable({ features, onSelect, t }: Props) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageFeatures = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const statuses = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "PARKED"];
+  const statuses = ["IDEA", "PLANNED", "READY", "IN_PROGRESS", "DONE", "PARKED"];
 
   return (
     <div className="space-y-4">

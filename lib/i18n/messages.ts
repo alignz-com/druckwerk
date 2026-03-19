@@ -994,6 +994,7 @@ export const messages = {
         status: {
           IDEA: "Idea",
           PLANNED: "Planned",
+          READY: "Ready",
           IN_PROGRESS: "In Progress",
           DONE: "Done",
           PARKED: "Parked",
@@ -2492,6 +2493,7 @@ export const messages = {
         status: {
           IDEA: "Idee",
           PLANNED: "Geplant",
+          READY: "Bereit",
           IN_PROGRESS: "In Arbeit",
           DONE: "Erledigt",
           PARKED: "Pausiert",

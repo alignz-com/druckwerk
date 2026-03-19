@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FeatureStatus" ADD VALUE 'READY' BEFORE 'IN_PROGRESS';

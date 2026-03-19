@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -12,15 +12,17 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Feature, FeatureComment } from "@prisma/client";
 
 type FeatureWithComments = Feature & { comments: FeatureComment[] };
 
-const STATUS_ORDER = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "PARKED"] as const;
+const STATUS_ORDER = ["IDEA", "PLANNED", "READY", "IN_PROGRESS", "DONE", "PARKED"] as const;
 
 const COLUMN_HEADER_STYLES: Record<string, string> = {
   IDEA:        "bg-purple-100 text-purple-800",
   PLANNED:     "bg-blue-100 text-blue-800",
+  READY:       "bg-cyan-100 text-cyan-800",
   IN_PROGRESS: "bg-amber-100 text-amber-800",
   DONE:        "bg-emerald-100 text-emerald-800",
   PARKED:      "bg-slate-200 text-slate-600",
@@ -29,6 +31,7 @@ const COLUMN_HEADER_STYLES: Record<string, string> = {
 const COLUMN_BODY_STYLES: Record<string, string> = {
   IDEA:        "bg-purple-50/40",
   PLANNED:     "bg-blue-50/40",
+  READY:       "bg-cyan-50/40",
   IN_PROGRESS: "bg-amber-50/40",
   DONE:        "bg-emerald-50/40",
   PARKED:      "bg-slate-50",
@@ -110,6 +113,8 @@ function KanbanColumn({
   onSelect,
   isOver,
   showMoreLabel,
+  collapsed,
+  onToggleCollapse,
 }: {
   status: string;
   label: string;
@@ -117,6 +122,8 @@ function KanbanColumn({
   onSelect: (f: FeatureWithComments) => void;
   isOver: boolean;
   showMoreLabel: string;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
@@ -124,13 +131,30 @@ function KanbanColumn({
   const visible = showAll ? features : features.slice(0, 20);
   const hidden = features.length - 20;
 
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        className={`flex flex-col items-center gap-2 rounded-2xl border border-slate-200/80 px-2 py-3 min-w-10 h-full ${headerStyle}`}
+      >
+        <ChevronRight className="size-4 shrink-0" />
+        <span className="text-xs font-bold tabular-nums">{features.length}</span>
+        <span className="text-xs font-semibold [writing-mode:vertical-lr] rotate-180">{label}</span>
+      </button>
+    );
+  }
+
   return (
     <div className="relative h-full flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80">
       {isOver && (
         <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />
       )}
       <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyle}`}>
-        <span className="text-sm font-semibold">{label}</span>
+        <button type="button" onClick={onToggleCollapse} className="flex items-center gap-1.5 hover:opacity-70 transition-opacity">
+          <ChevronDown className="size-3.5" />
+          <span className="text-sm font-semibold">{label}</span>
+        </button>
         <span className="text-xs font-bold opacity-70 tabular-nums">{features.length}</span>
       </div>
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
@@ -154,14 +178,34 @@ function KanbanColumn({
 function DroppableColumn(props: Omit<Parameters<typeof KanbanColumn>[0], "isOver">) {
   const { setNodeRef, isOver } = useDroppable({ id: props.status });
   return (
-    <div ref={setNodeRef} className="flex-shrink-0 self-stretch" style={{ width: "260px" }}>
+    <div ref={setNodeRef} className="flex-shrink-0 self-stretch" style={props.collapsed ? undefined : { width: "260px" }}>
       <KanbanColumn {...props} isOver={isOver} />
     </div>
   );
 }
 
+const COLLAPSED_KEY = "feature-kanban-collapsed";
+
+function loadCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
 export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabel, statusLabels }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  useEffect(() => { setCollapsed(loadCollapsed()); }, []);
+
+  const toggleCollapse = useCallback((status: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [status]: !prev[status] };
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -208,6 +252,8 @@ export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabe
             features={grouped[status] ?? []}
             onSelect={onSelect}
             showMoreLabel={showMoreLabel}
+            collapsed={!!collapsed[status]}
+            onToggleCollapse={() => toggleCollapse(status)}
           />
         ))}
       </div>

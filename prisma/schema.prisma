@@ -81,6 +81,7 @@ enum FontFormat {
 enum FeatureStatus {
   IDEA
   PLANNED
+  READY
   IN_PROGRESS
   DONE
   PARKED
