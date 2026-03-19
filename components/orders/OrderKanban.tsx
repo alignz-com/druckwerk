@@ -206,13 +206,13 @@ function KanbanColumnInner({ status, label, orders, showBrand, collapsed, onTogg
       {isOver && <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />}
 
       {/* Header */}
-      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyle}`}>
-        <button type="button" onClick={onToggle} className="flex items-center gap-1.5 hover:opacity-70 transition-opacity">
+      <button type="button" onClick={onToggle} className={`flex items-center justify-between w-full px-3 py-2.5 hover:opacity-80 transition-opacity ${headerStyle}`}>
+        <div className="flex items-center gap-1.5">
           <ChevronDown className="size-3.5" />
           <span className="text-sm font-semibold">{label}</span>
-        </button>
+        </div>
         <span className="text-xs font-bold opacity-70 tabular-nums">{orders.length}</span>
-      </div>
+      </button>
 
       {/* Cards area with tinted body */}
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
