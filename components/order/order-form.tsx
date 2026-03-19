@@ -1874,7 +1874,7 @@ export default function OrderForm({
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
-                  className={`flex min-h-[50dvh] items-center justify-center bg-slate-50 xl:mx-6 xl:rounded-xl xl:border xl:border-dashed xl:border-slate-200 ${
+                  className={`flex min-h-[35dvh] items-center justify-center mx-4 xl:mx-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 ${
                     templateError ? "text-red-600" : "text-slate-500"
                   }`}
                 >
@@ -1895,8 +1895,8 @@ export default function OrderForm({
                     className="relative overflow-visible"
                     style={{
                       aspectRatio: `${selectedTemplate.pageWidthMm ?? 85} / ${selectedTemplate.pageHeightMm ?? 55}`,
-                      width: `min(100%, calc(55dvh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
-                      maxHeight: `55dvh`,
+                      width: `min(100%, calc(55vh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
+                      maxHeight: `55vh`,
                     }}
                   >
                     {/* Mobile front/back overlay buttons */}
