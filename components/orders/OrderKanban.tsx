@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useId } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -263,6 +263,7 @@ function GhostCard({ order, showBrand }: { order: OrderCardData; showBrand: bool
 }
 
 export function OrderKanban({ orders, showBrand, statusOptions, selectMode, selected, onToggle, showMoreLabel }: Props) {
+  const dndId = useId();
   const router = useRouter();
 
   const [localOrders, setLocalOrders] = useState<OrderCardData[]>(orders);
@@ -354,7 +355,7 @@ export function OrderKanban({ orders, showBrand, statusOptions, selectMode, sele
   );
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext id={dndId} sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0">
         {STATUS_ORDER.map((status) => (
           <KanbanColumn

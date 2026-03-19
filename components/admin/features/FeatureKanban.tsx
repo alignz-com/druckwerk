@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useId } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -208,6 +208,7 @@ function loadCollapsed(): Record<string, boolean> {
 }
 
 export function FeatureKanban({ features, onStatusChange, onSelect, onAddInStatus, showMoreLabel, statusLabels }: Props) {
+  const dndId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -256,7 +257,7 @@ export function FeatureKanban({ features, onStatusChange, onSelect, onAddInStatu
   }, [features, onStatusChange]);
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext id={dndId} sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-3 overflow-x-auto pb-4 pr-16 items-stretch min-w-0 h-[calc(100vh-12rem)]">
         {STATUS_ORDER.map((status) => (
           <DroppableColumn
