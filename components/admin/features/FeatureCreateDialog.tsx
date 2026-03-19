@@ -58,18 +58,22 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) { setError(t.create.image?.maxSize ?? "Max 5MB"); return; }
+  const handleImageUpload = useCallback(async (files: File[]) => {
+    const valid = files.filter((f) => f.type.startsWith("image/") && f.size <= 5 * 1024 * 1024);
+    if (valid.length === 0) { setError(t.create.image?.maxSize ?? "Max 5MB per image"); return; }
     setUploading(true);
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error();
-      const { url } = await res.json();
-      setImageUrls((prev) => [...prev, url]);
+      const urls: string[] = [];
+      for (const file of valid) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
+        if (!res.ok) throw new Error();
+        const { url } = await res.json();
+        urls.push(url);
+      }
+      setImageUrls((prev) => [...prev, ...urls]);
     } catch {
       setError("Image upload failed.");
     } finally {
@@ -145,14 +149,24 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
               ref={fileRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleImageUpload(f);
+                const files = Array.from(e.target.files ?? []);
+                if (files.length) handleImageUpload(files);
                 if (fileRef.current) fileRef.current.value = "";
               }}
             />
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="flex flex-wrap gap-2"
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+                if (files.length) handleImageUpload(files);
+              }}
+            >
               {imageUrls.map((url, i) => (
                 <div key={url} className="relative inline-block">
                   <Image
