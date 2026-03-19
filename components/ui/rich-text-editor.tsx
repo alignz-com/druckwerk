@@ -102,7 +102,15 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none px-3 py-2 focus:outline-none min-h-[60px] [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1",
+        class: [
+          "px-3 py-2 text-sm focus:outline-none min-h-[60px]",
+          "[&_p]:my-1",
+          "[&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc",
+          "[&_ol]:my-1 [&_ol]:ml-4 [&_ol]:list-decimal",
+          "[&_li]:pl-1",
+          "[&_strong]:font-semibold",
+          "[&_a]:text-blue-600 [&_a]:underline",
+        ].join(" "),
       },
     },
   });
@@ -117,9 +125,9 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-lg border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-slate-400", className)}>
+    <div className={cn("rounded-lg border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-slate-400 flex flex-col", className)}>
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} className="flex-1" />
+      <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
     </div>
   );
 }
