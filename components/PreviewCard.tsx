@@ -1173,7 +1173,7 @@ export function BusinessCardFront({
         viewBox={`0 0 ${canvasW} ${canvasH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.28))" }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.12))" }}
         aria-label="Business card front"
       >
         <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
@@ -1385,7 +1385,7 @@ export function BusinessCardBack({
         viewBox={`0 0 ${canvasW} ${canvasH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.28))" }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.12))" }}
         aria-label="Business card back"
       >
         <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
