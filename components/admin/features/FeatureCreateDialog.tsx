@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from "react";
 import { ImagePlus, X } from "lucide-react";
 import Image from "next/image";
 import type { Feature, FeatureComment } from "@prisma/client";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 import {
   Dialog,
@@ -139,10 +138,12 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, section
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.description}</label>
-            <RichTextEditor
+            <textarea
               value={description}
-              onChange={setDescription}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder={t.create.placeholders.description}
+              rows={3}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
             />
           </div>
 
