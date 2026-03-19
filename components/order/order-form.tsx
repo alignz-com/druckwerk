@@ -1867,7 +1867,7 @@ export default function OrderForm({
           </div>
           <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
             {/* Desktop: title + front/back buttons inside card */}
-            <CardHeader className="hidden xl:flex flex-row items-center justify-between pt-3 pb-1 px-5 gap-3">
+            <CardHeader className="hidden xl:flex flex-row items-center justify-between pt-2 pb-0 px-4 gap-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
               <div className="flex gap-2">
                 <Button
@@ -1888,7 +1888,7 @@ export default function OrderForm({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 xl:px-5 xl:pt-1 xl:pb-5">
+            <CardContent className="p-0 xl:px-4 xl:pt-1 xl:pb-4">
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
