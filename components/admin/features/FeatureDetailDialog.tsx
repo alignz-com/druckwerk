@@ -323,7 +323,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
             {feature.comments.length === 0 ? (
               <p className="text-sm text-slate-400 mb-3">{t.detail.commentsEmpty}</p>
             ) : (
-              <div className="space-y-3 mb-3 max-h-80 overflow-y-auto">
+              <div className="space-y-3 mb-3">
                 {feature.comments.map((c) => (
                   <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2.5">
                     <div className="flex items-center gap-2 mb-1">
@@ -351,9 +351,9 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
                 }}
                 placeholder={t.detail.commentPlaceholder}
                 rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-10 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-9 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               />
-              <div className="absolute bottom-3 right-3">
+              <div className="absolute bottom-[5px] right-[5px]">
                 <LoadingButton
                   size="xs"
                   onClick={handleAddComment}
