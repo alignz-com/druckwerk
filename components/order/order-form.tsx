@@ -1843,10 +1843,9 @@ export default function OrderForm({
         </div>
 
         <div className="order-1 xl:order-2 sticky top-0 z-10 bg-white xl:space-y-4 xl:top-10 xl:self-start">
-          {/* Title row — "New Order" on mobile, "Preview" + front/back buttons */}
-          <div className="flex items-center justify-between pt-3 pb-2">
-            <h1 className="text-lg font-semibold tracking-tight text-slate-900 xl:hidden">{tOrder("title")}</h1>
-            <span className="text-sm font-medium text-muted-foreground hidden xl:block">{tOrder("previewTitle")}</span>
+          {/* Mobile: title + front/back buttons outside card */}
+          <div className="flex items-center justify-between pt-3 pb-2 xl:hidden">
+            <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -1867,6 +1866,28 @@ export default function OrderForm({
             </div>
           </div>
           <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
+            {/* Desktop: title + front/back buttons inside card */}
+            <CardHeader className="hidden xl:flex flex-row items-center justify-between pb-2 gap-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={previewView === "front" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewView("front")}
+                >
+                  {tOrder("confirm.front")}
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewView === "back" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewView("back")}
+                >
+                  {tOrder("confirm.back")}
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="p-0 xl:p-6">
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
