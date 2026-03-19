@@ -28,7 +28,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
   const [features, setFeatures] = useState(initial);
   const [view, setView] = useState<ViewMode>("kanban");
   const [selected, setSelected] = useState<FeatureWithComments | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [createStatus, setCreateStatus] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     router.refresh();
@@ -40,7 +40,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
 
   const handleCreated = useCallback((f: FeatureWithComments) => {
     setFeatures((prev) => [f, ...prev]);
-    setShowCreate(false);
+    setCreateStatus(null);
     refresh();
   }, [refresh]);
 
@@ -107,7 +107,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
             </button>
           </div>
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => setCreateStatus("IDEA")}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition"
           >
             <Plus className="size-4" />
@@ -122,6 +122,7 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
           features={features}
           onStatusChange={handleStatusChange}
           onSelect={setSelected}
+          onAddInStatus={setCreateStatus}
           showMoreLabel={ft.kanban.showMore}
           statusLabels={ft.status}
         />
@@ -145,10 +146,11 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
       )}
 
       {/* Create dialog */}
-      {showCreate && (
+      {createStatus && (
         <FeatureCreateDialog
-          onClose={() => setShowCreate(false)}
+          onClose={() => setCreateStatus(null)}
           onCreated={handleCreated}
+          defaultStatus={createStatus}
           t={ft}
         />
       )}

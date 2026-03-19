@@ -22,6 +22,7 @@ const CATEGORIES = ["UI", "BACKEND", "INFRASTRUCTURE", "BUG", "IDEA"] as const;
 type Props = {
   onClose: () => void;
   onCreated: (f: FeatureWithComments) => void;
+  defaultStatus?: string;
   t: {
     create: {
       title: string;
@@ -45,10 +46,10 @@ type Props = {
   };
 };
 
-export function FeatureCreateDialog({ onClose, onCreated, t }: Props) {
+export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<string>("IDEA");
+  const [status, setStatus] = useState<string>(defaultStatus ?? "IDEA");
   const [priority, setPriority] = useState<string>("MEDIUM");
   const [category, setCategory] = useState<string>("IDEA");
   const [imageUrl, setImageUrl] = useState<string | null>(null);

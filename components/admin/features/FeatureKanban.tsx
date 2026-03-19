@@ -12,7 +12,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { Feature, FeatureComment } from "@prisma/client";
 
 type FeatureWithComments = Feature & { comments: FeatureComment[] };
@@ -56,6 +56,7 @@ type Props = {
   features: FeatureWithComments[];
   onStatusChange: (id: string, status: string) => void;
   onSelect: (feature: FeatureWithComments) => void;
+  onAddInStatus?: (status: string) => void;
   showMoreLabel: string;
   statusLabels: Record<string, string>;
 };
@@ -115,6 +116,7 @@ function KanbanColumn({
   showMoreLabel,
   collapsed,
   onToggleCollapse,
+  onAdd,
 }: {
   status: string;
   label: string;
@@ -124,6 +126,7 @@ function KanbanColumn({
   showMoreLabel: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  onAdd?: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const headerStyle = COLUMN_HEADER_STYLES[status] ?? "bg-slate-200 text-slate-700";
@@ -155,7 +158,14 @@ function KanbanColumn({
           <ChevronDown className="size-3.5" />
           <span className="text-sm font-semibold">{label}</span>
         </button>
-        <span className="text-xs font-bold opacity-70 tabular-nums">{features.length}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold opacity-70 tabular-nums">{features.length}</span>
+          {onAdd && (
+            <button type="button" onClick={onAdd} className="rounded-md p-0.5 hover:opacity-70 transition-opacity">
+              <Plus className="size-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
         {visible.map((f) => (
@@ -193,7 +203,7 @@ function loadCollapsed(): Record<string, boolean> {
   } catch { return {}; }
 }
 
-export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabel, statusLabels }: Props) {
+export function FeatureKanban({ features, onStatusChange, onSelect, onAddInStatus, showMoreLabel, statusLabels }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -254,6 +264,7 @@ export function FeatureKanban({ features, onStatusChange, onSelect, showMoreLabe
             showMoreLabel={showMoreLabel}
             collapsed={!!collapsed[status]}
             onToggleCollapse={() => toggleCollapse(status)}
+            onAdd={onAddInStatus ? () => onAddInStatus(status) : undefined}
           />
         ))}
       </div>
