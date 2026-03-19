@@ -1907,14 +1907,15 @@ export default function OrderForm({
                   </p>
                 </div>
               ) : (
-                /* Card loaded — white background, card centered with generous padding */
-                <div className="flex w-full flex-col items-center py-6 px-6">
+                /* Card loaded — same 3:2 area, card fitted inside */
+                <>
+                <div className="relative flex aspect-[3/2] items-center justify-center rounded-xl bg-slate-50/30 overflow-visible">
                   <div
                     className="relative overflow-visible"
                     style={{
                       aspectRatio: `${selectedTemplate.pageWidthMm ?? 85} / ${selectedTemplate.pageHeightMm ?? 55}`,
-                      width: `min(100%, calc(40vh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
-                      maxHeight: `40vh`,
+                      width: `min(85%, calc(80% * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
+                      maxHeight: `80%`,
                     }}
                   >
                     {/* Mobile front/back overlay buttons */}
@@ -1991,16 +1992,11 @@ export default function OrderForm({
                       className="h-full w-full"
                     />
                   </div>
-                  {templateError && (
-                    <p className="mt-2 text-center text-xs text-red-600">{templateError}</p>
-                  )}
-                  {showPublicQrNote && (
-                    <p className="mt-2 text-center text-xs text-slate-500">{tOrder("preview.publicQrNote")}</p>
-                  )}
-                  {draftError && (
-                    <p className="mt-2 text-center text-xs text-red-600">{draftError}</p>
-                  )}
                 </div>
+                {templateError && <p className="mt-2 text-center text-xs text-red-600">{templateError}</p>}
+                {showPublicQrNote && <p className="mt-2 text-center text-xs text-slate-500">{tOrder("preview.publicQrNote")}</p>}
+                {draftError && <p className="mt-2 text-center text-xs text-red-600">{draftError}</p>}
+                </>
               )}
             </div>
           </Card>
