@@ -39,7 +39,11 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
     return (
       <Button
         ref={ref}
-        className={cn(minWidthClassName, className)}
+        className={cn(
+          minWidthClassName,
+          loading && "pointer-events-none opacity-100 disabled:opacity-100",
+          className,
+        )}
         disabled={disabled || loading}
         aria-busy={loading}
         data-loading={loading ? "true" : undefined}

@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { FileTextIcon, UploadCloudIcon, XIcon, ArchiveIcon, GripVerticalIcon, Maximize2 } from "lucide-react"
 import type { PdfFileInfo } from "@/app/api/pdf-process/route"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations, useLocale } from "@/components/providers/locale-provider"
 import { matchProductFormat, getProductFormatsForSize, getProductFormatLabel, getFormatLabel, type ProductFormatForMatching } from "@/lib/product-matching"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -454,14 +455,17 @@ export function PrintFileUploader({
           <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b shrink-0">
             <DialogTitle className="text-sm font-medium truncate flex-1">{viewingFile?.filename}</DialogTitle>
             {viewObjectUrl && (
-              <button
-                type="button"
+              <LoadingButton
+                variant="ghost"
+                size="sm"
                 onClick={() => handleDownload(viewObjectUrl!, viewingFile?.filename ?? "file.pdf")}
-                disabled={downloading}
-                className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                loading={downloading}
+                loadingText="…"
+                minWidthClassName="min-w-[60px]"
+                className="shrink-0 h-auto px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
               >
-                {downloading ? "…" : t("pdfOrder.dropzoneDownload")}
-              </button>
+                {t("pdfOrder.dropzoneDownload")}
+              </LoadingButton>
             )}
             <DialogClose className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0">
               <XIcon className="h-4 w-4" />

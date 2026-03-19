@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -641,20 +642,23 @@ export function OrdersTable({
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatusValue || isBulkUpdating}>
-                    {isBulkUpdating ? "…" : bulkStatus.labels.apply}
-                  </Button>
+                  <LoadingButton type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatusValue} loading={isBulkUpdating} loadingText="…" minWidthClassName="min-w-[120px]">
+                    {bulkStatus.labels.apply}
+                  </LoadingButton>
                 </>
               ) : null}
               {bulkDelivery ? (
-                <Button
+                <LoadingButton
                   type="button"
                   variant="outline"
                   onClick={() => setIsCreateDeliveryOpen(true)}
-                  disabled={isCreatingDelivery || !selectedBrandId}
+                  disabled={!selectedBrandId}
+                  loading={isCreatingDelivery}
+                  loadingText={bulkDelivery.creating}
+                  minWidthClassName="min-w-[140px]"
                 >
-                  {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
-                </Button>
+                  {bulkDelivery.apply}
+                </LoadingButton>
               ) : null}
             </div>
           ) : null}
@@ -817,18 +821,20 @@ export function OrdersTable({
               <Button type="button" variant="outline" onClick={() => setIsCreateDeliveryOpen(false)}>
                 Cancel
               </Button>
-              <Button
+              <LoadingButton
                 type="button"
                 onClick={handleCreateDelivery}
                 disabled={
-                  isCreatingDelivery ||
                   !deliveryAddressId ||
                   deliveryAddresses.length === 0 ||
                   deliveryAddressesLoading
                 }
+                loading={isCreatingDelivery}
+                loadingText={bulkDelivery.creating}
+                minWidthClassName="min-w-[140px]"
               >
-                {isCreatingDelivery ? bulkDelivery.creating : bulkDelivery.apply}
-              </Button>
+                {bulkDelivery.apply}
+              </LoadingButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>

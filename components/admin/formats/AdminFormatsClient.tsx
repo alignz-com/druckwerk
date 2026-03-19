@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Plus, Ruler, Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -336,9 +337,9 @@ export function AdminFormatsView({ initialFormats, autoOpen }: { initialFormats:
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>{t("cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "…" : dialog === "edit" ? t("save") : t("create")}
-            </Button>
+            <LoadingButton onClick={handleSave} loading={saving} loadingText="…" minWidthClassName="min-w-[120px]">
+              {dialog === "edit" ? t("save") : t("create")}
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

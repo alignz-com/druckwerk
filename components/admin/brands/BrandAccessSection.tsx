@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { useTranslations } from "@/components/providers/locale-provider"
 
 type Props = {
@@ -82,14 +83,17 @@ export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdf
         >
           {t("reset")}
         </Button>
-        <Button
+        <LoadingButton
           type="button"
           size="sm"
-          disabled={!hasChanges || saving}
+          disabled={!hasChanges}
+          loading={saving}
+          loadingText="…"
+          minWidthClassName="min-w-[60px]"
           onClick={handleSave}
         >
-          {saving ? "…" : t("save")}
-        </Button>
+          {t("save")}
+        </LoadingButton>
       </div>
     </section>
   )

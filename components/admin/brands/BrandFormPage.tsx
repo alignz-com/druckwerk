@@ -20,6 +20,7 @@ import {
 import type { AdminBrandAddress, AdminBrandSummary } from "@/lib/admin/brands-data";
 import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -499,13 +500,16 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                 {feedback.text}
               </span>
             )}
-            <Button
+            <LoadingButton
               type="button"
               onClick={handleSave}
-              disabled={saving || !form.name.trim()}
+              disabled={!form.name.trim()}
+              loading={saving}
+              loadingText="…"
+              minWidthClassName="min-w-[120px]"
             >
-              {saving ? "…" : mode === "create" ? t("actions.create") : t("actions.save")}
-            </Button>
+              {mode === "create" ? t("actions.create") : t("actions.save")}
+            </LoadingButton>
           </div>
         </div>
 

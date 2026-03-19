@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { CalendarIcon } from "lucide-react";
 
 type Props = {
@@ -89,14 +90,17 @@ export function OrderDeliveryDateEditor({ orderId, deliveryDueAt, canEdit, label
                   Clear
                 </Button>
               )}
-              <Button
+              <LoadingButton
                 size="sm"
                 className="h-7 text-xs"
-                disabled={!dirty || saving}
+                disabled={!dirty}
+                loading={saving}
+                loadingText="…"
+                minWidthClassName="min-w-[60px]"
                 onClick={handleSave}
               >
-                {saving ? "…" : "Save"}
-              </Button>
+                Save
+              </LoadingButton>
             </div>
           </div>
         </PopoverContent>

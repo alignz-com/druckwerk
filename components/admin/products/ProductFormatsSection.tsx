@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -426,9 +427,9 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>{t("cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !variantForm.formatId}>
-              {saving ? "…" : t("save")}
-            </Button>
+            <LoadingButton onClick={handleSave} disabled={!variantForm.formatId} loading={saving} loadingText="…" minWidthClassName="min-w-[60px]">
+              {t("save")}
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

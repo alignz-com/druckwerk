@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -199,10 +200,10 @@ export function DeliveriesClient({ deliveries, labels }: Props) {
                       </a>
                     </Button>
                   ) : null}
-                  <Button size="sm" variant="outline" onClick={handleRegenerate} disabled={isRegenerating}>
+                  <LoadingButton size="sm" variant="outline" onClick={handleRegenerate} loading={isRegenerating} loadingText="…" minWidthClassName="min-w-[120px]">
                     <RefreshCcw className="mr-2 h-4 w-4" />
-                    {isRegenerating ? "…" : labels.detail.regenerate}
-                  </Button>
+                    {labels.detail.regenerate}
+                  </LoadingButton>
                 </div>
 
                 <div className="space-y-1">

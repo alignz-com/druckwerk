@@ -5,6 +5,7 @@ import type { AdminTemplateSummary } from "@/lib/admin/templates-data";
 
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -140,9 +141,9 @@ export default function TemplateCreateForm({ onCreated, onCancel, brandOptions, 
         <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           {t("create.actions.cancel")}
         </Button>
-        <Button type="submit" disabled={isPending || !form.key.trim() || !form.label.trim()}>
-          {isPending ? t("create.actions.submitting") : t("create.actions.submit")}
-        </Button>
+        <LoadingButton type="submit" disabled={!form.key.trim() || !form.label.trim()} loading={isPending} loadingText={t("create.actions.submitting")} minWidthClassName="min-w-[120px]">
+          {t("create.actions.submit")}
+        </LoadingButton>
       </div>
     </form>
   );

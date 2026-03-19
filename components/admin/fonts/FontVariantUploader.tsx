@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import type { AdminFontFamily } from "@/lib/admin/templates-data";
 
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -235,9 +236,9 @@ export default function FontVariantUploader({ families = [], family, onUploaded,
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
 
-      <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-        {isPending ? t("buttons.submitting") : t("buttons.submit")}
-      </Button>
+      <LoadingButton type="submit" className="w-full sm:w-auto" loading={isPending} loadingText={t("buttons.submitting")} minWidthClassName="min-w-[120px]">
+        {t("buttons.submit")}
+      </LoadingButton>
     </form>
   );
 }

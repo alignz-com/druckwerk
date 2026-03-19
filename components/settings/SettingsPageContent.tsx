@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -101,9 +102,9 @@ export default function SettingsPageContent({ hasPassword }: Props) {
                   <Input id="pw-confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />
                 </div>
                 {pwError ? <p className="text-xs text-red-600">{pwError}</p> : null}
-                <Button type="submit" className="w-full" disabled={pwSaving || !current || !next || !confirm}>
-                  {pwSaving ? t("layout.settings.changePassword.submitting") : t("layout.settings.changePassword.submit")}
-                </Button>
+                <LoadingButton type="submit" className="w-full" disabled={!current || !next || !confirm} loading={pwSaving} loadingText={t("layout.settings.changePassword.submitting")} minWidthClassName="min-w-[140px]">
+                  {t("layout.settings.changePassword.submit")}
+                </LoadingButton>
               </form>
             )}
           </div>
