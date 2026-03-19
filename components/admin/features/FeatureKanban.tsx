@@ -150,7 +150,7 @@ function KanbanColumn({
   }
 
   return (
-    <div className="relative h-full flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80">
+    <div className="relative flex flex-col gap-0 rounded-2xl overflow-hidden border border-slate-200/80 max-h-[calc(100vh-12rem)]">
       {isOver && (
         <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />
       )}
@@ -166,7 +166,7 @@ function KanbanColumn({
           </button>
         )}
       </div>
-      <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
+      <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 overflow-y-auto transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
         {visible.map((f) => (
           <DraggableCard key={f.id} feature={f} onSelect={onSelect} />
         ))}
