@@ -317,7 +317,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
           </div>
 
           {/* Right panel — comments */}
-          <div className="flex flex-col min-h-0 border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
+          <div className="flex flex-col min-h-0 overflow-hidden border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
             {/* Comments header */}
             <div className="shrink-0 px-5 pt-5 pb-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
