@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Inbox, SearchX } from "lucide-react";
+import { Search, Inbox, SearchX, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Feature, FeatureComment } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 import {
   dataTableContainerClass,
@@ -39,6 +40,11 @@ type Props = {
       empty: string;
       noResults: string;
       headers: Record<string, string>;
+      pagination: {
+        label: string;
+        previous: string;
+        next: string;
+      };
     };
     status: Record<string, string>;
     priority: Record<string, string>;
@@ -70,6 +76,8 @@ export function FeaturesTable({ features, onSelect, t }: Props) {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageFeatures = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const from = filtered.length === 0 ? 0 : page * PAGE_SIZE + 1;
+  const to = filtered.length === 0 ? 0 : Math.min(filtered.length, (page + 1) * PAGE_SIZE);
 
   const statuses = ["IDEA", "PLANNED", "READY", "IN_PROGRESS", "DONE", "PARKED"];
 
@@ -164,29 +172,31 @@ export function FeaturesTable({ features, onSelect, t }: Props) {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className={dataTableFooterClass}>
-              <span className="text-xs text-slate-400">
-                {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="rounded px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="rounded px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
+          <div className={dataTableFooterClass}>
+            <div>{t.table.pagination.label.replace("{from}", String(from)).replace("{to}", String(to)).replace("{total}", String(filtered.length))}</div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="h-9"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                {t.table.pagination.previous}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1 || filtered.length === 0}
+                className="h-9"
+              >
+                {t.table.pagination.next}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

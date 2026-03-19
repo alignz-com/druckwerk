@@ -1016,6 +1016,7 @@ export const messages = {
           searchPlaceholder: "Search features…",
           empty: "No features yet. Create your first feature to get started.",
           noResults: "No features match your filters.",
+          pagination: { label: "Showing {from}–{to} of {total}", previous: "Previous", next: "Next" },
           headers: {
             title: "Title",
             status: "Status",
@@ -2515,6 +2516,7 @@ export const messages = {
           searchPlaceholder: "Features durchsuchen…",
           empty: "Noch keine Features. Erstelle dein erstes Feature.",
           noResults: "Keine Features gefunden.",
+          pagination: { label: "{from}–{to} von {total}", previous: "Zurück", next: "Weiter" },
           headers: {
             title: "Titel",
             status: "Status",
