@@ -1865,9 +1865,9 @@ export default function OrderForm({
               </Button>
             </div>
           </div>
-          <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
+          <Card className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:py-4 xl:gap-2">
             {/* Desktop: title + front/back buttons inside card */}
-            <div className="hidden xl:flex items-center justify-between px-4 pt-3 pb-1">
+            <div className="hidden xl:flex items-center justify-between px-4">
               <span className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</span>
               <div className="flex gap-2">
                 <Button
