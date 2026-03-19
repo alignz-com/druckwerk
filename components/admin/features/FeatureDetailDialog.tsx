@@ -170,7 +170,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
         {/* Two-panel layout */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_320px] min-h-0">
           {/* Left panel — fields */}
-          <div className="overflow-y-auto space-y-5 p-6">
+          <div className="overflow-y-auto min-h-0 space-y-5 p-6">
             {/* Title */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.title}</label>
@@ -317,7 +317,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
           </div>
 
           {/* Right panel — comments */}
-          <div className="flex flex-col border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
+          <div className="flex flex-col min-h-0 border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
             {/* Comments header */}
             <div className="shrink-0 px-5 pt-5 pb-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
