@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, LayoutGrid, List } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Feature, FeatureComment } from "@prisma/client";
 
 import { useLocale } from "@/components/providers/locale-provider";
@@ -99,33 +100,28 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* View toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 p-0.5">
-            <button
+          <div className="flex items-center rounded-md border border-slate-200 p-0.5">
+            <Button
+              variant={view === "kanban" ? "default" : "ghost"}
+              size="sm"
               onClick={() => setView("kanban")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                view === "kanban" ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
             >
               <LayoutGrid className="size-3.5" />
               {ft.views.kanban}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={view === "list" ? "default" : "ghost"}
+              size="sm"
               onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                view === "list" ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
             >
               <List className="size-3.5" />
               {ft.views.list}
-            </button>
+            </Button>
           </div>
-          <button
-            onClick={() => setCreateStatus("IDEA")}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition"
-          >
+          <Button onClick={() => setCreateStatus("IDEA")}>
             <Plus className="size-4" />
             {ft.actions.new}
-          </button>
+          </Button>
         </div>
       </div>
 

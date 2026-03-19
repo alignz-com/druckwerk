@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 type FeatureWithComments = Feature & { comments: FeatureComment[] };
 
@@ -242,20 +244,18 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
 
           {/* Footer */}
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
-            >
+            <Button type="button" variant="outline" onClick={onClose}>
               {t.actions.cancel}
-            </button>
-            <button
+            </Button>
+            <LoadingButton
               type="submit"
-              disabled={!title.trim() || submitting}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              disabled={!title.trim()}
+              loading={submitting}
+              loadingText={t.create.submitting}
+              minWidthClassName="min-w-[140px]"
             >
-              {submitting ? t.create.submitting : t.create.submit}
-            </button>
+              {t.create.submit}
+            </LoadingButton>
           </div>
         </form>
       </DialogContent>

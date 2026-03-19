@@ -13,6 +13,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 type FeatureWithComments = Feature & { comments: FeatureComment[] };
 
@@ -332,13 +334,16 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               />
               <div className="flex justify-end">
-                <button
+                <LoadingButton
+                  size="sm"
                   onClick={handleAddComment}
-                  disabled={!commentText.trim() || posting}
-                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  disabled={!commentText.trim()}
+                  loading={posting}
+                  loadingText={t.actions.posting}
+                  minWidthClassName="min-w-[120px]"
                 >
-                  {posting ? t.actions.posting : t.actions.addComment}
-                </button>
+                  {t.actions.addComment}
+                </LoadingButton>
               </div>
             </div>
           </div>
@@ -346,29 +351,32 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-200 pt-4 shrink-0">
-          <button
+          <LoadingButton
+            variant="ghost"
+            size="sm"
             onClick={handleDelete}
-            disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition disabled:opacity-40"
+            loading={deleting}
+            loadingText={t.actions.deleting}
+            minWidthClassName="min-w-[100px]"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="size-3.5" />
-            {deleting ? t.actions.deleting : t.actions.delete}
-          </button>
+            {t.actions.delete}
+          </LoadingButton>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
-            >
+            <Button variant="outline" onClick={onClose}>
               {t.actions.close}
-            </button>
+            </Button>
             {dirty && (
-              <button
+              <LoadingButton
                 onClick={handleSave}
-                disabled={saving || !title.trim()}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 transition"
+                disabled={!title.trim()}
+                loading={saving}
+                loadingText={t.actions.saving}
+                minWidthClassName="min-w-[120px]"
               >
-                {saving ? t.actions.saving : t.actions.save}
-              </button>
+                {t.actions.save}
+              </LoadingButton>
             )}
           </div>
         </div>
