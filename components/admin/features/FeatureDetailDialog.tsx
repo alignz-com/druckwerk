@@ -312,7 +312,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
           {/* Error */}
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {/* Comments */}
+          {/* Comments list */}
           <div className="border-t border-slate-200 pt-4">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
               <MessageSquare className="size-4" />
@@ -321,9 +321,9 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
             </h3>
 
             {feature.comments.length === 0 ? (
-              <p className="text-sm text-slate-400 mb-3">{t.detail.commentsEmpty}</p>
+              <p className="text-sm text-slate-400">{t.detail.commentsEmpty}</p>
             ) : (
-              <div className="space-y-3 mb-3">
+              <div className="space-y-3 max-h-48 overflow-y-auto">
                 {feature.comments.map((c) => (
                   <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2.5">
                     <div className="flex items-center gap-2 mb-1">
@@ -337,35 +337,35 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
                 ))}
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Add comment */}
-            <div className="relative">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && commentText.trim()) {
-                    e.preventDefault();
-                    handleAddComment();
-                  }
-                }}
-                placeholder={t.detail.commentPlaceholder}
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-12 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
-              />
-              <div className="absolute bottom-4 right-3">
-                <LoadingButton
-                  size="xs"
-                  onClick={handleAddComment}
-                  disabled={!commentText.trim()}
-                  loading={posting}
-                  loadingText={t.actions.posting}
-                  minWidthClassName="min-w-[100px]"
-                >
-                  {t.actions.addComment}
-                </LoadingButton>
-              </div>
-            </div>
+        {/* Add comment — always visible at bottom */}
+        <div className="relative shrink-0 border-t border-slate-200 pt-4">
+          <textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && commentText.trim()) {
+                e.preventDefault();
+                handleAddComment();
+              }
+            }}
+            placeholder={t.detail.commentPlaceholder}
+            rows={2}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-12 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+          />
+          <div className="absolute bottom-4 right-3">
+            <LoadingButton
+              size="xs"
+              onClick={handleAddComment}
+              disabled={!commentText.trim()}
+              loading={posting}
+              loadingText={t.actions.posting}
+              minWidthClassName="min-w-[100px]"
+            >
+              {t.actions.addComment}
+            </LoadingButton>
           </div>
         </div>
 
