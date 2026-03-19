@@ -1867,8 +1867,8 @@ export default function OrderForm({
           </div>
           <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
             {/* Desktop: title + front/back buttons inside card */}
-            <CardHeader className="hidden xl:flex flex-row items-center justify-between pt-2 pb-0 px-4 gap-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
+            <div className="hidden xl:flex items-center justify-between px-4 pt-3 pb-1">
+              <span className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</span>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -1887,8 +1887,8 @@ export default function OrderForm({
                   {tOrder("confirm.back")}
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="p-0 xl:px-4 xl:pt-1 xl:pb-4">
+            </div>
+            <div className="xl:px-4 xl:pb-4">
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
@@ -2002,7 +2002,7 @@ export default function OrderForm({
                   )}
                 </div>
               )}
-            </CardContent>
+            </div>
           </Card>
           <div className="hidden xl:flex xl:justify-end">
             <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
