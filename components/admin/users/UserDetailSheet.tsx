@@ -124,9 +124,9 @@ function UserAccessSection({ userId, initialValues }: { userId: string; initialV
         >
           {t("reset")}
         </Button>
-        <Button type="button" size="sm" disabled={!hasChanges || saving} onClick={save}>
-          {saving ? "…" : t("save")}
-        </Button>
+        <LoadingButton size="sm" disabled={!hasChanges} loading={saving} loadingText="…" minWidthClassName="min-w-[60px]" onClick={save}>
+          {t("save")}
+        </LoadingButton>
       </div>
     </section>
   )
@@ -205,9 +205,9 @@ function DemoSection({ userId, initialIsDemo }: { userId: string; initialIsDemo:
         >
           Reset
         </Button>
-        <Button type="button" size="sm" disabled={!hasChanges || saving} onClick={save}>
-          {saving ? "…" : "Save"}
-        </Button>
+        <LoadingButton size="sm" disabled={!hasChanges} loading={saving} loadingText="…" minWidthClassName="min-w-[60px]" onClick={save}>
+          Save
+        </LoadingButton>
       </div>
     </section>
   );

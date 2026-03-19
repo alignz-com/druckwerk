@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -180,9 +181,9 @@ export function UserCreateSheet({ open, onOpenChange, brandOptions, onCreated }:
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("detail.close")}
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t("create.submitting") : t("create.submit")}
-            </Button>
+            <LoadingButton type="submit" loading={isSubmitting} loadingText={t("create.submitting")} minWidthClassName="min-w-[140px]">
+              {t("create.submit")}
+            </LoadingButton>
           </div>
         </form>
       </SheetContent>
