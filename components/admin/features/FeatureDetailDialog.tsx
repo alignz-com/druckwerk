@@ -287,7 +287,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
             {feature.comments.length === 0 ? (
               <p className="text-sm text-slate-400 mb-3">{t.detail.commentsEmpty}</p>
             ) : (
-              <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
+              <div className="space-y-3 mb-3 max-h-80 overflow-y-auto">
                 {feature.comments.map((c) => (
                   <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2.5">
                     <div className="flex items-center gap-2 mb-1">
@@ -303,9 +303,8 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
             )}
 
             {/* Add comment */}
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <div className="space-y-2">
+              <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 onKeyDown={(e) => {
@@ -315,15 +314,18 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
                   }
                 }}
                 placeholder={t.detail.commentPlaceholder}
-                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                rows={2}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               />
-              <button
-                onClick={handleAddComment}
-                disabled={!commentText.trim() || posting}
-                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                {posting ? t.actions.posting : t.actions.addComment}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddComment}
+                  disabled={!commentText.trim() || posting}
+                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  {posting ? t.actions.posting : t.actions.addComment}
+                </button>
+              </div>
             </div>
           </div>
         </div>
