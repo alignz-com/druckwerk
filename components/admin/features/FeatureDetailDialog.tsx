@@ -351,9 +351,9 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
                 }}
                 placeholder={t.detail.commentPlaceholder}
                 rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-11 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-12 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               />
-              <div className="absolute bottom-3 right-3">
+              <div className="absolute bottom-4 right-4">
                 <LoadingButton
                   size="xs"
                   onClick={handleAddComment}
