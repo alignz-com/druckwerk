@@ -1295,20 +1295,20 @@ export default function OrderForm({
           {tOrder("demoBanner")}
         </div>
       ) : null}
-      <header className="hidden lg:block">
+      <header className="hidden xl:block">
         <h1 className="text-2xl font-semibold tracking-tight">{tOrder("title")}</h1>
         {tOrder("subtitle") ? (
           <p className="mt-1 text-sm text-slate-500">{tOrder("subtitle")}</p>
         ) : null}
       </header>
 
-      <div className="grid gap-0 items-start lg:mt-10 lg:gap-10 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] 2xl:gap-12">
-        <div className="space-y-8 order-2 lg:order-1 pt-6 lg:pt-0">
-          <Card className="h-fit border-0 shadow-none rounded-none lg:rounded-xl lg:border lg:shadow-sm">
-            <CardHeader className="pb-2 px-0 lg:px-6">
+      <div className="grid gap-0 items-start xl:mt-10 xl:gap-10 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] 2xl:gap-12">
+        <div className="space-y-8 order-2 xl:order-1 pt-6 xl:pt-0">
+          <Card className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
+            <CardHeader className="pb-2 px-0 xl:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("infoTitle")}</CardTitle>
             </CardHeader>
-            <CardContent className="px-0 lg:px-6">
+            <CardContent className="px-0 xl:px-6">
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="qty">{tOrder("quantity")}</Label>
@@ -1442,11 +1442,11 @@ export default function OrderForm({
             </CardContent>
           </Card>
 
-          <Card className="h-fit border-0 shadow-none rounded-none lg:rounded-xl lg:border lg:shadow-sm">
-            <CardHeader className="px-0 lg:px-6">
+          <Card className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
+            <CardHeader className="px-0 xl:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("sections.personal")}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 px-0 lg:px-6">
+            <CardContent className="space-y-6 px-0 xl:px-6">
               <div className="grid gap-4">
                 {canUploadPhoto ? (
                   <div className="grid gap-2">
@@ -1831,7 +1831,7 @@ export default function OrderForm({
               </div>
             </CardContent>
           </Card>
-          <div className="pt-4 lg:hidden">
+          <div className="pt-4 xl:hidden">
             <Button
               onClick={openConfirm}
               className="w-full"
@@ -1842,14 +1842,14 @@ export default function OrderForm({
           </div>
         </div>
 
-        <div className="order-1 lg:order-2 sticky top-0 z-10 bg-white border-b border-slate-200 lg:border-b-0 lg:space-y-4 lg:top-10 lg:self-start">
+        <div className="order-1 xl:order-2 sticky top-0 z-10 bg-white border-b border-slate-200 xl:border-b-0 xl:space-y-4 xl:top-10 xl:self-start">
           {/* Mobile title — hidden on desktop */}
-          <div className="pt-3 pb-2 lg:hidden">
+          <div className="pt-3 pb-2 xl:hidden">
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
           </div>
-          <Card className="rounded-none border-0 shadow-none lg:rounded-xl lg:border lg:shadow-sm">
+          <Card className="rounded-none border-0 shadow-none xl:rounded-xl xl:border xl:shadow-sm">
             {/* Desktop card header with title and front/back buttons */}
-            <CardHeader className="hidden lg:flex flex-row items-center justify-between pb-2 gap-3">
+            <CardHeader className="hidden xl:flex flex-row items-center justify-between pb-2 gap-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</CardTitle>
               <div className="flex gap-2">
                 <Button
@@ -1900,7 +1900,7 @@ export default function OrderForm({
                     }}
                   >
                     {/* Mobile front/back overlay buttons */}
-                    <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 lg:hidden">
+                    <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-20 xl:hidden">
                       <button
                         type="button"
                         onClick={() => setPreviewView("front")}
@@ -1986,7 +1986,7 @@ export default function OrderForm({
               )}
             </CardContent>
           </Card>
-          <div className="hidden lg:flex lg:justify-end">
+          <div className="hidden xl:flex xl:justify-end">
             <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
               {tOrder("buttons.order")}
             </Button>
