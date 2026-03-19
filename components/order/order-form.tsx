@@ -1865,7 +1865,7 @@ export default function OrderForm({
               </Button>
             </div>
           </div>
-          <Card className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:py-4 xl:gap-2">
+          <Card className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:p-4 xl:gap-4">
             {/* Desktop: title + front/back buttons inside card */}
             <div className="hidden xl:flex items-center justify-between px-4">
               <span className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</span>
@@ -1888,7 +1888,7 @@ export default function OrderForm({
                 </Button>
               </div>
             </div>
-            <div className="xl:px-4 xl:pb-4">
+            <div>
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
