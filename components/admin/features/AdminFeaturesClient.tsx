@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import type { Feature, FeatureComment } from "@prisma/client";
@@ -31,12 +31,25 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
   const [createStatus, setCreateStatus] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    router.refresh();
     fetch("/api/admin/features")
       .then((r) => r.json())
       .then((d) => { if (d.features) setFeatures(d.features); })
       .catch(() => {});
-  }, [router]);
+  }, []);
+
+  // Poll for updates every 5 seconds (pause when a dialog is open)
+  const dialogOpen = !!selected || !!createStatus;
+  const dialogOpenRef = useRef(dialogOpen);
+  dialogOpenRef.current = dialogOpen;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!dialogOpenRef.current && document.visibilityState === "visible") {
+        refresh();
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [refresh]);
 
   const handleCreated = useCallback((f: FeatureWithComments) => {
     setFeatures((prev) => [f, ...prev]);
