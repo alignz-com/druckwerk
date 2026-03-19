@@ -161,216 +161,226 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="sr-only">{feature.title}</DialogTitle>
-          <DialogDescription className="sr-only">Feature details</DialogDescription>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{feature.title}</DialogTitle>
+          <DialogDescription>Feature details</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-5 px-1">
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.title}</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-slate-400"
-            />
-          </div>
-
-          {/* Status / Priority / Category row */}
-          <div className="grid grid-cols-3 gap-3">
+        {/* Two-panel layout */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_320px] min-h-0">
+          {/* Left panel — fields */}
+          <div className="overflow-y-auto space-y-5 p-6">
+            {/* Title */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.status}</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Feature["status"])}
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{t.status[s] ?? s}</option>
-                ))}
-              </select>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.title}</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-slate-400"
+              />
             </div>
+
+            {/* Status / Priority / Category row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.status}</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as Feature["status"])}
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{t.status[s] ?? s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.priority}</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Feature["priority"])}
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>{t.priority[p] ?? p}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.category}</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as Feature["category"])}
+                  className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{t.category[c] ?? c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Section */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.priority}</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Feature["priority"])}
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{t.priority[p] ?? p}</option>
-                ))}
-              </select>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.section ?? "Section"}</label>
+              <input
+                type="text"
+                list="feature-sections-detail"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                placeholder={t.create.placeholders?.section ?? "e.g. Orders, Admin, Templates…"}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+              />
+              <datalist id="feature-sections-detail">
+                {sections.map((s) => <option key={s} value={s} />)}
+              </datalist>
             </div>
+
+            {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.category}</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Feature["category"])}
-                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{t.category[c] ?? c}</option>
-                ))}
-              </select>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.description}</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                placeholder={t.detail.descriptionEmpty}
+              />
             </div>
-          </div>
 
-          {/* Section */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.section ?? "Section"}</label>
-            <input
-              type="text"
-              list="feature-sections-detail"
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-              placeholder={t.create.placeholders?.section ?? "e.g. Orders, Admin, Templates…"}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-            />
-            <datalist id="feature-sections-detail">
-              {sections.map((s) => <option key={s} value={s} />)}
-            </datalist>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.fields.description}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
-              placeholder={t.detail.descriptionEmpty}
-            />
-          </div>
-
-          {/* Images */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Images"}</label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length) handleImageUpload(files);
-                if (fileRef.current) fileRef.current.value = "";
-              }}
-            />
-            <div
-              className="flex flex-wrap gap-2"
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
-                if (files.length) handleImageUpload(files);
-              }}
-            >
-              {imageUrls.map((url, i) => (
-                <div key={url} className="relative inline-block">
-                  <Image
-                    src={url}
-                    alt=""
-                    width={160}
-                    height={100}
-                    className="rounded-lg border border-slate-200 object-cover h-24 w-auto"
-                    unoptimized
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageUrls((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-600 transition disabled:opacity-50"
+            {/* Images */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Images"}</label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length) handleImageUpload(files);
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+              />
+              <div
+                className="flex flex-wrap gap-2"
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+                  if (files.length) handleImageUpload(files);
+                }}
               >
-                <ImagePlus className="size-4" />
-                {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
-              </button>
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Created {formatDistanceToNow(new Date(feature.createdAt), { addSuffix: true })}</span>
-            <span>Updated {formatDistanceToNow(new Date(feature.updatedAt), { addSuffix: true })}</span>
-          </div>
-
-          {/* Error */}
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          {/* Comments list */}
-          <div className="border-t border-slate-200 pt-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-              <MessageSquare className="size-4" />
-              {t.detail.comments}
-              <span className="text-xs font-normal text-slate-400">({feature.comments.length})</span>
-            </h3>
-
-            {feature.comments.length === 0 ? (
-              <p className="text-sm text-slate-400">{t.detail.commentsEmpty}</p>
-            ) : (
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                {feature.comments.map((c) => (
-                  <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2.5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-slate-700">{c.author}</span>
-                      <span className="text-[10px] text-slate-400">
-                        {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 whitespace-pre-wrap">{c.content}</p>
+                {imageUrls.map((url, i) => (
+                  <div key={url} className="relative inline-block">
+                    <Image
+                      src={url}
+                      alt=""
+                      width={160}
+                      height={100}
+                      className="rounded-lg border border-slate-200 object-cover h-24 w-auto"
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
+                    >
+                      <X className="size-3.5" />
+                    </button>
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-600 transition disabled:opacity-50"
+                >
+                  <ImagePlus className="size-4" />
+                  {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
+                </button>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Add comment — always visible at bottom */}
-        <div className="relative shrink-0 border-t border-slate-200 pt-4">
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && commentText.trim()) {
-                e.preventDefault();
-                handleAddComment();
-              }
-            }}
-            placeholder={t.detail.commentPlaceholder}
-            rows={2}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-12 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
-          />
-          <div className="absolute bottom-4 right-3">
-            <LoadingButton
-              size="xs"
-              onClick={handleAddComment}
-              disabled={!commentText.trim()}
-              loading={posting}
-              loadingText={t.actions.posting}
-              minWidthClassName="min-w-[100px]"
-            >
-              {t.actions.addComment}
-            </LoadingButton>
+            {/* Metadata */}
+            <div className="flex items-center gap-4 text-[11px] text-slate-400">
+              <span>Created {formatDistanceToNow(new Date(feature.createdAt), { addSuffix: true })}</span>
+              <span>Updated {formatDistanceToNow(new Date(feature.updatedAt), { addSuffix: true })}</span>
+            </div>
+
+            {/* Error */}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+          </div>
+
+          {/* Right panel — comments */}
+          <div className="flex flex-col border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
+            {/* Comments header */}
+            <div className="shrink-0 px-5 pt-5 pb-3">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <MessageSquare className="size-4" />
+                {t.detail.comments}
+                <span className="text-xs font-normal text-slate-400">({feature.comments.length})</span>
+              </h3>
+            </div>
+
+            {/* Comments list — scrollable */}
+            <div className="flex-1 overflow-y-auto px-5 min-h-0">
+              {feature.comments.length === 0 ? (
+                <p className="text-sm text-slate-400">{t.detail.commentsEmpty}</p>
+              ) : (
+                <div className="space-y-3">
+                  {feature.comments.map((c) => (
+                    <div key={c.id} className="rounded-lg bg-white px-3 py-2.5 border border-slate-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-slate-700">{c.author}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{c.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add comment — pinned at bottom */}
+            <div className="relative shrink-0 p-5 pt-3">
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && commentText.trim()) {
+                    e.preventDefault();
+                    handleAddComment();
+                  }
+                }}
+                placeholder={t.detail.commentPlaceholder}
+                rows={2}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pb-12 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+              />
+              <div className="absolute bottom-9 right-8">
+                <LoadingButton
+                  size="xs"
+                  onClick={handleAddComment}
+                  disabled={!commentText.trim()}
+                  loading={posting}
+                  loadingText={t.actions.posting}
+                  minWidthClassName="min-w-[100px]"
+                >
+                  {t.actions.addComment}
+                </LoadingButton>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4 shrink-0">
+        <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 shrink-0">
           <LoadingButton
             variant="ghost"
             size="sm"
