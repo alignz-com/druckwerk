@@ -88,7 +88,7 @@ export default async function AppLayout({ children }: Props) {
       { href: "/admin/papers?new=1", label: t.nav.cmdKNewPaper, group: t.nav.cmdKGroupActions, iconKey: "admin-papers" },
       { href: "/admin/finishes?new=1", label: t.nav.cmdKNewFinish, group: t.nav.cmdKGroupActions, iconKey: "admin-finishes" },
       { href: "/admin/fonts?new=1", label: t.nav.cmdKNewFont, group: t.nav.cmdKGroupActions, iconKey: "admin-fonts" },
-      { href: "/admin/features", label: t.nav.adminFeatures, group: t.nav.cmdKGroupActions, iconKey: "admin-features" },
+      { href: "/admin/features?new=1", label: t.nav.cmdKNewFeature, group: t.nav.cmdKGroupActions, iconKey: "admin-features", keywords: ["feature", "bug", "idea"] },
     ] : []),
   ];
 

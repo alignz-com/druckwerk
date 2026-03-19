@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Feature, FeatureComment } from "@prisma/client";
@@ -30,6 +30,15 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
   const [view, setView] = useState<ViewMode>("kanban");
   const [selected, setSelected] = useState<FeatureWithComments | null>(null);
   const [createStatus, setCreateStatus] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Auto-open create dialog when ?new=1 is in the URL (e.g. from CMD+K)
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setCreateStatus("IDEA");
+      router.replace("/admin/features", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const sections = useMemo(() => {
     const set = new Set(features.map((f) => f.section).filter(Boolean) as string[]);
