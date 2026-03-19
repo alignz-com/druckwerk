@@ -339,7 +339,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
             )}
 
             {/* Add comment */}
-            <div className="space-y-2">
+            <div className="relative">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
@@ -350,17 +350,17 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
                   }
                 }}
                 placeholder={t.detail.commentPlaceholder}
-                rows={2}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                rows={3}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 pb-10 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
               />
-              <div className="flex justify-end">
+              <div className="absolute bottom-2 right-2">
                 <LoadingButton
-                  size="sm"
+                  size="xs"
                   onClick={handleAddComment}
                   disabled={!commentText.trim()}
                   loading={posting}
                   loadingText={t.actions.posting}
-                  minWidthClassName="min-w-[120px]"
+                  minWidthClassName="min-w-[100px]"
                 >
                   {t.actions.addComment}
                 </LoadingButton>
