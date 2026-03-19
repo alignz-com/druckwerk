@@ -72,7 +72,7 @@ export default function AdminUsersClient({ users, brands, autoOpen }: Props) {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
