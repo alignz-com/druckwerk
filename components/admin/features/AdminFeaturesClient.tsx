@@ -118,14 +118,17 @@ export default function AdminFeaturesClient({ features: initial }: Props) {
 
       {/* Content */}
       {view === "kanban" ? (
-        <FeatureKanban
-          features={features}
-          onStatusChange={handleStatusChange}
-          onSelect={setSelected}
-          onAddInStatus={setCreateStatus}
-          showMoreLabel={ft.kanban.showMore}
-          statusLabels={ft.status}
-        />
+        <div className="relative -mr-4 sm:-mr-6 lg:-mr-12">
+          <FeatureKanban
+            features={features}
+            onStatusChange={handleStatusChange}
+            onSelect={setSelected}
+            onAddInStatus={setCreateStatus}
+            showMoreLabel={ft.kanban.showMore}
+            statusLabels={ft.status}
+          />
+          <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+        </div>
       ) : (
         <FeaturesTable
           features={features}

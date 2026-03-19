@@ -154,18 +154,16 @@ function KanbanColumn({
         <div className="absolute inset-0 rounded-2xl pointer-events-none z-10" style={{ boxShadow: "inset 0 0 0 2px rgba(59,130,246,0.4)" }} />
       )}
       <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyle}`}>
-        <button type="button" onClick={onToggleCollapse} className="flex items-center gap-1.5 hover:opacity-70 transition-opacity">
+        <button type="button" onClick={onToggleCollapse} className="flex-1 flex items-center gap-1.5 hover:opacity-70 transition-opacity">
           <ChevronDown className="size-3.5" />
           <span className="text-sm font-semibold">{label}</span>
+          <span className="text-xs font-bold opacity-70 tabular-nums ml-auto">{features.length}</span>
         </button>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold opacity-70 tabular-nums">{features.length}</span>
-          {onAdd && (
-            <button type="button" onClick={onAdd} className="rounded-md p-0.5 hover:opacity-70 transition-opacity">
-              <Plus className="size-3.5" />
-            </button>
-          )}
-        </div>
+        {onAdd && (
+          <button type="button" onClick={onAdd} className="rounded-md p-0.5 hover:opacity-70 transition-opacity ml-1.5">
+            <Plus className="size-3.5" />
+          </button>
+        )}
       </div>
       <div className={`flex-1 flex flex-col gap-2 min-h-20 p-2 transition-colors ${isOver ? "bg-blue-50/40" : bodyStyle}`}>
         {visible.map((f) => (
