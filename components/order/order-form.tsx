@@ -1908,13 +1908,13 @@ export default function OrderForm({
                 </div>
               ) : (
                 /* Card loaded — white background, card centered with generous padding */
-                <div className="flex w-full flex-col items-center py-10 px-8 pb-6">
+                <div className="flex w-full flex-col items-center py-6 px-6">
                   <div
                     className="relative overflow-visible"
                     style={{
                       aspectRatio: `${selectedTemplate.pageWidthMm ?? 85} / ${selectedTemplate.pageHeightMm ?? 55}`,
-                      width: `min(100%, calc(55vh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
-                      maxHeight: `55vh`,
+                      width: `min(100%, calc(40vh * ${((selectedTemplate.pageWidthMm ?? 85) / (selectedTemplate.pageHeightMm ?? 55)).toFixed(4)}))`,
+                      maxHeight: `40vh`,
                     }}
                   >
                     {/* Mobile front/back overlay buttons */}
