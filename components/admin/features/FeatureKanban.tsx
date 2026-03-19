@@ -46,10 +46,10 @@ const PRIORITY_DOT: Record<string, string> = {
 
 const CATEGORY_COLORS: Record<string, string> = {
   UI:             "bg-indigo-100 text-indigo-700",
+  UX:             "bg-purple-100 text-purple-700",
   BACKEND:        "bg-emerald-100 text-emerald-700",
   INFRASTRUCTURE: "bg-orange-100 text-orange-700",
   BUG:            "bg-red-100 text-red-700",
-  IDEA:           "bg-purple-100 text-purple-700",
 };
 
 type Props = {

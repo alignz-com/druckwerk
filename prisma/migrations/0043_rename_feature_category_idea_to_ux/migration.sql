@@ -1,0 +1,2 @@
+-- AlterEnum: add UX
+ALTER TYPE "FeatureCategory" ADD VALUE IF NOT EXISTS 'UX' BEFORE 'BACKEND';

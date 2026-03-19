@@ -96,10 +96,10 @@ enum FeaturePriority {
 
 enum FeatureCategory {
   UI
+  UX
   BACKEND
   INFRASTRUCTURE
   BUG
-  IDEA
 }
 
 model User {
@@ -750,7 +750,7 @@ model Feature {
   imageUrl    String?
   status      FeatureStatus   @default(IDEA)
   priority    FeaturePriority @default(MEDIUM)
-  category    FeatureCategory @default(IDEA)
+  category    FeatureCategory @default(UX)
   sortOrder   Int             @default(0)
   completedAt DateTime?
   createdAt   DateTime        @default(now())

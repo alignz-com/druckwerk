@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     : "MEDIUM";
   const category = payload.category && CATEGORY_VALUES.includes(payload.category as FeatureCategory)
     ? (payload.category as FeatureCategory)
-    : "IDEA";
+    : "UX";
 
   const feature = await prisma.feature.create({
     data: {

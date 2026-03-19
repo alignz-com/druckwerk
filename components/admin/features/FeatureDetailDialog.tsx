@@ -18,7 +18,7 @@ type FeatureWithComments = Feature & { comments: FeatureComment[] };
 
 const STATUSES = ["IDEA", "PLANNED", "READY", "IN_PROGRESS", "DONE", "PARKED"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
-const CATEGORIES = ["UI", "BACKEND", "INFRASTRUCTURE", "BUG", "IDEA"] as const;
+const CATEGORIES = ["UI", "UX", "BACKEND", "INFRASTRUCTURE", "BUG"] as const;
 
 type Props = {
   feature: FeatureWithComments;

@@ -17,7 +17,7 @@ type FeatureWithComments = Feature & { comments: FeatureComment[] };
 
 const STATUSES = ["IDEA", "PLANNED", "READY", "IN_PROGRESS", "DONE", "PARKED"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
-const CATEGORIES = ["UI", "BACKEND", "INFRASTRUCTURE", "BUG", "IDEA"] as const;
+const CATEGORIES = ["UI", "UX", "BACKEND", "INFRASTRUCTURE", "BUG"] as const;
 
 type Props = {
   onClose: () => void;
@@ -51,7 +51,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>(defaultStatus ?? "IDEA");
   const [priority, setPriority] = useState<string>("MEDIUM");
-  const [category, setCategory] = useState<string>("IDEA");
+  const [category, setCategory] = useState<string>("UX");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);

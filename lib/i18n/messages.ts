@@ -1010,7 +1010,7 @@ export const messages = {
           BACKEND: "Backend",
           INFRASTRUCTURE: "Infra",
           BUG: "Bug",
-          IDEA: "Idea",
+          UX: "UX",
         },
         table: {
           searchPlaceholder: "Search features…",
@@ -2509,7 +2509,7 @@ export const messages = {
           BACKEND: "Backend",
           INFRASTRUCTURE: "Infra",
           BUG: "Bug",
-          IDEA: "Idee",
+          UX: "UX",
         },
         table: {
           searchPlaceholder: "Features durchsuchen…",
