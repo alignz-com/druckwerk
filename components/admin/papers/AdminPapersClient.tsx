@@ -265,19 +265,20 @@ export function AdminPaperStocksClient({ autoOpen }: { autoOpen?: boolean }) {
             </TableBody>
           </Table>
           </div>
-          <div className={dataTableFooterClass}>
-            <div>{t("pagination.label", { from, to, total: filtered.length })}</div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="h-9">
-                <ChevronLeft className="mr-1 h-4 w-4" />{t("pagination.previous")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1 || filtered.length === 0} className="h-9">
-                {t("pagination.next")}<ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </div>
       )}
+
+      <div className={dataTableFooterClass}>
+        <div>{t("pagination.label", { from, to, total: filtered.length })}</div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="h-9">
+            <ChevronLeft className="mr-1 h-4 w-4" />{t("pagination.previous")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1 || filtered.length === 0} className="h-9">
+            {t("pagination.next")}<ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       <Dialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent className="max-w-sm">
