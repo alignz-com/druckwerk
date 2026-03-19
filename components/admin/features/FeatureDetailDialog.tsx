@@ -56,7 +56,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
   const [status, setStatus] = useState(feature.status);
   const [priority, setPriority] = useState(feature.priority);
   const [category, setCategory] = useState(feature.category);
-  const [imageUrl, setImageUrl] = useState<string | null>(feature.imageUrl);
+  const [imageUrls, setImageUrls] = useState<string[]>(feature.imageUrls ?? []);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -68,7 +68,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
   const dirty =
     title !== feature.title ||
     description !== (feature.description ?? "") ||
-    imageUrl !== feature.imageUrl ||
+    JSON.stringify(imageUrls) !== JSON.stringify(feature.imageUrls ?? []) ||
     status !== feature.status ||
     priority !== feature.priority ||
     category !== feature.category;
@@ -84,7 +84,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
-      setImageUrl(url);
+      setImageUrls((prev) => [...prev, url]);
     } catch {
       setError("Image upload failed.");
     } finally {
@@ -100,7 +100,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       const res = await fetch(`/api/admin/features/${feature.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, imageUrl, status, priority, category }),
+        body: JSON.stringify({ title: title.trim(), description: description.trim() || null, imageUrls, status, priority, category }),
       });
       if (!res.ok) throw new Error();
       const { feature: updated } = await res.json();
@@ -110,7 +110,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
       setError("Save failed.");
       setSaving(false);
     }
-  }, [feature.id, title, description, imageUrl, status, priority, category, onUpdated]);
+  }, [feature.id, title, description, imageUrls, status, priority, category, onUpdated]);
 
   const handleDelete = useCallback(async () => {
     const msg = t.detail.deleteConfirm.replace("{title}", feature.title);
@@ -221,9 +221,9 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
             />
           </div>
 
-          {/* Image */}
+          {/* Images */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Image"}</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Images"}</label>
             <input
               ref={fileRef}
               type="file"
@@ -232,27 +232,29 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) handleImageUpload(f);
+                if (fileRef.current) fileRef.current.value = "";
               }}
             />
-            {imageUrl ? (
-              <div className="relative inline-block">
-                <Image
-                  src={imageUrl}
-                  alt=""
-                  width={400}
-                  height={240}
-                  className="rounded-lg border border-slate-200 object-cover max-h-48 w-auto"
-                  unoptimized
-                />
-                <button
-                  type="button"
-                  onClick={() => { setImageUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
-                  className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
+            <div className="flex flex-wrap gap-2">
+              {imageUrls.map((url, i) => (
+                <div key={url} className="relative inline-block">
+                  <Image
+                    src={url}
+                    alt=""
+                    width={160}
+                    height={100}
+                    className="rounded-lg border border-slate-200 object-cover h-24 w-auto"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
@@ -262,7 +264,7 @@ export function FeatureDetailDialog({ feature, onClose, onUpdated, onDeleted, t 
                 <ImagePlus className="size-4" />
                 {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
               </button>
-            )}
+            </div>
           </div>
 
           {/* Metadata */}

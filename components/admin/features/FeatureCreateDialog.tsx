@@ -52,7 +52,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
   const [status, setStatus] = useState<string>(defaultStatus ?? "IDEA");
   const [priority, setPriority] = useState<string>("MEDIUM");
   const [category, setCategory] = useState<string>("UX");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +69,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
       const res = await fetch("/api/admin/features/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
-      setImageUrl(url);
+      setImageUrls((prev) => [...prev, url]);
     } catch {
       setError("Image upload failed.");
     } finally {
@@ -89,7 +89,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || null,
-          imageUrl,
+          imageUrls,
           status,
           priority,
           category,
@@ -102,7 +102,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
       setError("Failed to create feature.");
       setSubmitting(false);
     }
-  }, [title, description, imageUrl, status, priority, category, onCreated]);
+  }, [title, description, imageUrls, status, priority, category, onCreated]);
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -138,9 +138,9 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
             />
           </div>
 
-          {/* Image */}
+          {/* Images */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Image"}</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t.create.image?.label ?? "Images"}</label>
             <input
               ref={fileRef}
               type="file"
@@ -149,27 +149,29 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) handleImageUpload(f);
+                if (fileRef.current) fileRef.current.value = "";
               }}
             />
-            {imageUrl ? (
-              <div className="relative inline-block">
-                <Image
-                  src={imageUrl}
-                  alt=""
-                  width={200}
-                  height={120}
-                  className="rounded-lg border border-slate-200 object-cover max-h-32"
-                  unoptimized
-                />
-                <button
-                  type="button"
-                  onClick={() => { setImageUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
-                  className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
+            <div className="flex flex-wrap gap-2">
+              {imageUrls.map((url, i) => (
+                <div key={url} className="relative inline-block">
+                  <Image
+                    src={url}
+                    alt=""
+                    width={120}
+                    height={80}
+                    className="rounded-lg border border-slate-200 object-cover h-20 w-auto"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute -top-2 -right-2 rounded-full bg-slate-900 p-0.5 text-white hover:bg-slate-700 transition"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
@@ -179,7 +181,7 @@ export function FeatureCreateDialog({ onClose, onCreated, defaultStatus, t }: Pr
                 <ImagePlus className="size-4" />
                 {uploading ? (t.create.image?.uploading ?? "Uploading…") : (t.create.image?.upload ?? "Add image")}
               </button>
-            )}
+            </div>
           </div>
 
           {/* Status / Priority / Category */}
