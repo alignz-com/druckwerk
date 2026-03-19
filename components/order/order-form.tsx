@@ -1842,7 +1842,7 @@ export default function OrderForm({
           </div>
         </div>
 
-        <div className="order-1 xl:order-2 sticky top-0 z-10 bg-white border-b border-slate-200 xl:border-b-0 xl:space-y-4 xl:top-10 xl:self-start">
+        <div className="order-1 xl:order-2 sticky top-0 z-10 bg-white xl:space-y-4 xl:top-10 xl:self-start">
           {/* Mobile title — hidden on desktop */}
           <div className="pt-3 pb-2 xl:hidden">
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
@@ -1874,7 +1874,7 @@ export default function OrderForm({
               {!selectedTemplate ? (
                 /* Placeholder — grey panel fills the full preview area */
                 <div
-                  className={`flex min-h-[50dvh] items-center justify-center mx-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 ${
+                  className={`flex min-h-[50dvh] items-center justify-center bg-slate-50 xl:mx-6 xl:rounded-xl xl:border xl:border-dashed xl:border-slate-200 ${
                     templateError ? "text-red-600" : "text-slate-500"
                   }`}
                 >
