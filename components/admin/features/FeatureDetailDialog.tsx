@@ -161,7 +161,7 @@ export function FeatureDetailDialog({ feature, sections = [], onClose, onUpdated
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{feature.title}</DialogTitle>
           <DialogDescription>Feature details</DialogDescription>
