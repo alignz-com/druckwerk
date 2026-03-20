@@ -32,7 +32,7 @@ const WEIGHT_MAP: Record<string, number> = {
   heavy: 900,
 };
 
-function detectFromFilename(filename: string): { weight: number; style: string; format: string } {
+function detectFromFilename(filename: string): { weight: number | null; style: string; format: string } {
   const lower = filename.toLowerCase();
   const ext = lower.slice(lower.lastIndexOf("."));
 
@@ -45,13 +45,19 @@ function detectFromFilename(filename: string): { weight: number; style: string; 
 
   // Weight: find longest matching keyword in filename
   const nameWithoutExt = lower.replace(ext, "").replace(/[-_.]/g, "");
-  let weight = 400;
+  let weight: number | null = null;
   let longestMatch = 0;
   for (const [keyword, w] of Object.entries(WEIGHT_MAP)) {
     if (nameWithoutExt.includes(keyword) && keyword.length > longestMatch) {
       weight = w;
       longestMatch = keyword.length;
     }
+  }
+
+  // Also check for numeric weight in filename (e.g. "MyFont-400.woff2")
+  if (weight === null) {
+    const numMatch = nameWithoutExt.match(/(100|200|300|400|500|600|700|800|900)/);
+    if (numMatch) weight = Number(numMatch[1]);
   }
 
   return { weight, style, format };
@@ -70,10 +76,26 @@ export function FontDropZone({ familyId, onUploaded, className }: Props) {
       return;
     }
 
-    setUploading(true);
     setError(null);
 
-    const { weight, style, format } = detectFromFilename(file.name);
+    let { weight, style, format } = detectFromFilename(file.name);
+
+    // If weight couldn't be auto-detected, ask the user
+    if (weight === null) {
+      const input = window.prompt(
+        `Could not detect font weight from "${file.name}".\n\nEnter weight (100–900):`,
+        "400",
+      );
+      if (input === null) return; // cancelled
+      const parsed = Number(input);
+      if (isNaN(parsed) || parsed < 100 || parsed > 900) {
+        setError(`Invalid weight: ${input}`);
+        return;
+      }
+      weight = parsed;
+    }
+
+    setUploading(true);
 
     const formData = new FormData();
     formData.append("familyId", familyId);
