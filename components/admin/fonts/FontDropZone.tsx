@@ -40,8 +40,8 @@ function detectFromFilename(filename: string): { weight: number | null; style: s
   const formatMap: Record<string, string> = { ".woff2": "woff2", ".woff": "woff", ".ttf": "ttf", ".otf": "otf" };
   const format = formatMap[ext] ?? "ttf";
 
-  // Style: check for "italic" in filename
-  const style = lower.includes("italic") ? "italic" : "normal";
+  // Style: check for "italic" or trailing "i" suffix (e.g. 400i, 700i)
+  const style = lower.includes("italic") || /\d+i\./.test(lower) ? "italic" : "normal";
 
   // Weight: find longest matching keyword in filename
   const nameWithoutExt = lower.replace(ext, "").replace(/[-_.]/g, "");
@@ -54,10 +54,13 @@ function detectFromFilename(filename: string): { weight: number | null; style: s
     }
   }
 
-  // Also check for numeric weight in filename (e.g. "MyFont-400.woff2")
+  // Also check for numeric weight in filename (e.g. "MyFont-400.woff2" or "400i.ttf")
   if (weight === null) {
-    const numMatch = nameWithoutExt.match(/(100|200|300|400|500|600|700|800|900)/);
-    if (numMatch) weight = Number(numMatch[1]);
+    const numMatch = lower.match(/(\d{3})i?\./);
+    if (numMatch) {
+      const parsed = Number(numMatch[1]);
+      if (parsed >= 100 && parsed <= 900) weight = parsed;
+    }
   }
 
   return { weight, style, format };
