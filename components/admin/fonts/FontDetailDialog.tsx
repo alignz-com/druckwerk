@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -184,6 +184,23 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
     }
   };
 
+  const handleVariantUpdate = useCallback(async (variantId: string, data: { weight?: number; style?: string }) => {
+    setVariantError(null);
+    setVariantMessage(null);
+    try {
+      const response = await fetch(`/api/admin/fonts/variants/${variantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error ?? "Update failed");
+      if (payload?.family) onFamilyUpdated(payload.family as AdminFontFamily);
+    } catch (err) {
+      setVariantError(err instanceof Error ? err.message : "Update failed");
+    }
+  }, [onFamilyUpdated]);
+
   const handleVariantUploaded = (updatedFamily: AdminFontFamily) => {
     onFamilyUpdated(updatedFamily);
     setVariantError(null);
@@ -324,24 +341,46 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
                   ) : (
                     <div className="space-y-2">
                       {variantRows.map((variant) => (
-                        <div key={variant.id} className="flex items-center justify-between rounded-lg bg-white border border-slate-200 px-3 py-2.5">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-900">
-                              {variant.weight} / {styleLabels[variant.style]}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {variant.format} · {variant.fileName ?? "—"} · {formatBytes(variant.sizeBytes)}
-                            </p>
+                        <div key={variant.id} className="rounded-lg bg-white border border-slate-200 px-3 py-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <input
+                                type="number"
+                                min={100}
+                                max={900}
+                                step={100}
+                                defaultValue={variant.weight}
+                                onBlur={(e) => {
+                                  const v = Number(e.target.value);
+                                  if (v !== variant.weight && v >= 100 && v <= 900) {
+                                    handleVariantUpdate(variant.id, { weight: v });
+                                  }
+                                }}
+                                className="w-16 rounded border border-slate-200 px-2 py-0.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                              />
+                              <span className="text-sm text-slate-400">/</span>
+                              <select
+                                defaultValue={variant.style}
+                                onChange={(e) => handleVariantUpdate(variant.id, { style: e.target.value })}
+                                className="rounded border border-slate-200 px-2 py-0.5 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                              >
+                                <option value="NORMAL">{styleLabels.NORMAL}</option>
+                                <option value="ITALIC">{styleLabels.ITALIC}</option>
+                              </select>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              onClick={() => handleVariantDeleted(variant)}
+                              disabled={variantDeletingId === variant.id}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                            onClick={() => handleVariantDeleted(variant)}
-                            disabled={variantDeletingId === variant.id}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {variant.format} · {variant.fileName ?? "—"} · {formatBytes(variant.sizeBytes)}
+                          </p>
                         </div>
                       ))}
                     </div>
