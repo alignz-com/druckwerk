@@ -88,17 +88,17 @@ export function FontDropZone({ familyId, onUploaded, className }: Props) {
         body: formData,
       });
 
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.error ?? `Upload failed (${response.status})`);
       }
 
-      const payload = await response.json();
       if (payload?.family) {
         onUploaded(payload.family as AdminFontFamily);
       }
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(`${file.name}: ${err instanceof Error ? err.message : "Upload failed"}`);
     } finally {
       setUploading(false);
     }
