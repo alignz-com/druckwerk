@@ -9,19 +9,9 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminFontFamily, AdminFontVariant } from "@/lib/admin/templates-data";
-import { formatDateTime } from "@/lib/formatDateTime";
 import FontVariantUploader from "./FontVariantUploader";
 import { FontPreview } from "./FontPreview";
 
@@ -95,7 +85,6 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
 
   const variantRows = useMemo(() => family?.variants ?? [], [family?.variants]);
 
-  // Pick best variant for preview: match default weight/style, or first available
   const previewVariant = useMemo(() => {
     if (!family || family.variants.length === 0) return null;
     const defaultW = family.defaultWeight ?? 400;
@@ -180,10 +169,7 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
     setVariantMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/fonts/variants/${variant.id}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/admin/fonts/variants/${variant.id}`, { method: "DELETE" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.family) {
         throw new Error(data?.error ?? t("detail.variants.errors.deleteFailed"));
@@ -206,65 +192,70 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         {family ? (
           <>
-            <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
+            <DialogHeader className="sr-only">
               <DialogTitle>{family.name}</DialogTitle>
               <DialogDescription>{t("detail.description")}</DialogDescription>
             </DialogHeader>
 
-            {/* Font preview */}
-            {previewVariant && (
-              <div className="shrink-0 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <FontPreview
-                  storageKey={previewVariant.storageKey}
-                  format={previewVariant.format}
-                  familyName={family.name}
-                  weight={previewVariant.weight}
-                  style={previewVariant.style}
-                  className="text-2xl text-slate-900 text-center"
-                />
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto px-6 space-y-6 min-h-0">
-              {saveError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {saveError}
-                </div>
-              )}
-              {saveSuccess && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  {saveSuccess}
-                </div>
-              )}
-
-              {/* General */}
-              <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <header className="space-y-1">
-                  <h2 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h2>
-                  <p className="text-xs text-slate-500">{t("detail.sections.general.description")}</p>
-                </header>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="font-detail-name">{t("detail.fields.name")}</Label>
-                    <Input
-                      id="font-detail-name"
-                      value={form.name}
-                      onChange={(event) => handleFieldChange("name", event.target.value)}
-                      required
+            {/* Two-panel layout */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_360px] min-h-0">
+              {/* Left panel — preview + form */}
+              <div className="overflow-y-auto min-h-0 flex flex-col gap-5 p-6">
+                {/* Font preview */}
+                {previewVariant && (
+                  <div className="py-6 bg-slate-50/50 rounded-lg">
+                    <FontPreview
+                      storageKey={previewVariant.storageKey}
+                      format={previewVariant.format}
+                      familyName={family.name}
+                      weight={previewVariant.weight}
+                      style={previewVariant.style}
+                      sampleText="The quick brown fox jumps over the lazy dog"
+                      className="text-2xl text-slate-900 text-center"
+                    />
+                    <FontPreview
+                      storageKey={previewVariant.storageKey}
+                      format={previewVariant.format}
+                      familyName={family.name}
+                      weight={previewVariant.weight}
+                      style={previewVariant.style}
+                      sampleText="ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
+                      className="text-sm text-slate-500 text-center mt-2"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="font-detail-slug">{t("detail.fields.slug")}</Label>
-                    <Input
-                      id="font-detail-slug"
-                      value={form.slug}
-                      onChange={(event) => handleFieldChange("slug", event.target.value)}
-                    />
-                    <p className="text-xs text-slate-500">{t("detail.slugHint")}</p>
-                  </div>
+                )}
+
+                {/* Feedback */}
+                {saveError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{saveError}</div>
+                )}
+                {saveSuccess && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{saveSuccess}</div>
+                )}
+
+                {/* Form fields — flat, no cards */}
+                <div className="space-y-2">
+                  <Label htmlFor="font-detail-name">{t("detail.fields.name")}</Label>
+                  <Input
+                    id="font-detail-name"
+                    value={form.name}
+                    onChange={(event) => handleFieldChange("name", event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="font-detail-slug">{t("detail.fields.slug")}</Label>
+                  <Input
+                    id="font-detail-slug"
+                    value={form.slug}
+                    onChange={(event) => handleFieldChange("slug", event.target.value)}
+                  />
+                  <p className="text-xs text-slate-500">{t("detail.slugHint")}</p>
+                </div>
+                <div className="grid gap-4 grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="font-detail-weight">{t("detail.fields.defaultWeight")}</Label>
                     <Input
@@ -298,116 +289,100 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="font-detail-notes">{t("detail.fields.notes")}</Label>
-                    <Textarea
-                      id="font-detail-notes"
-                      value={form.notes}
-                      onChange={(event) => handleFieldChange("notes", event.target.value)}
-                      rows={3}
-                      placeholder={t("detail.placeholders.notes")}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="font-detail-notes">{t("detail.fields.notes")}</Label>
+                  <Textarea
+                    id="font-detail-notes"
+                    value={form.notes}
+                    onChange={(event) => handleFieldChange("notes", event.target.value)}
+                    rows={3}
+                    placeholder={t("detail.placeholders.notes")}
+                  />
+                </div>
+              </div>
+
+              {/* Right panel — variants + uploader */}
+              <div className="flex flex-col min-h-0 overflow-hidden border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
+                {/* Variants header */}
+                <div className="shrink-0 px-5 pt-5 pb-3">
+                  <h3 className="text-sm font-semibold text-slate-700">{t("detail.variants.title")}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("detail.variants.description")}</p>
+                </div>
+
+                {/* Variant list — scrollable */}
+                <div className="flex-1 overflow-y-auto px-5 min-h-0">
+                  {variantMessage && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 mb-3">{variantMessage}</div>
+                  )}
+                  {variantError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 mb-3">{variantError}</div>
+                  )}
+
+                  {variantRows.length === 0 ? (
+                    <p className="text-sm text-slate-400">{t("detail.variants.empty")}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {variantRows.map((variant) => (
+                        <div key={variant.id} className="flex items-center justify-between rounded-lg bg-white border border-slate-200 px-3 py-2.5">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900">
+                              {variant.weight} / {styleLabels[variant.style]}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {variant.format} · {variant.fileName ?? "—"} · {formatBytes(variant.sizeBytes)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                            onClick={() => handleVariantDeleted(variant)}
+                            disabled={variantDeletingId === variant.id}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload — pinned at bottom */}
+                <div className="shrink-0 p-5 pt-3">
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
+                    <FontVariantUploader
+                      family={{ id: family.id, name: family.name, slug: family.slug }}
+                      onUploaded={handleVariantUploaded}
+                      className="space-y-3"
                     />
                   </div>
                 </div>
-              </section>
-
-              {/* Variants */}
-              <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <header className="space-y-1">
-                  <h2 className="text-sm font-semibold text-slate-900">{t("detail.variants.title")}</h2>
-                  <p className="text-xs text-slate-500">{t("detail.variants.description")}</p>
-                </header>
-
-                {variantMessage && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {variantMessage}
-                  </div>
-                )}
-                {variantError && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {variantError}
-                  </div>
-                )}
-
-                {variantRows.length === 0 ? (
-                  <p className="text-sm text-slate-500">{t("detail.variants.empty")}</p>
-                ) : (
-                  <div className="overflow-hidden rounded-lg border border-slate-200">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("detail.variants.columns.variant")}</TableHead>
-                          <TableHead>{t("detail.variants.columns.format")}</TableHead>
-                          <TableHead>{t("detail.variants.columns.file")}</TableHead>
-                          <TableHead className="text-right">{t("detail.variants.columns.size")}</TableHead>
-                          <TableHead className="text-right">{t("detail.variants.columns.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {variantRows.map((variant) => (
-                          <TableRow key={variant.id}>
-                            <TableCell className="font-medium text-slate-900">
-                              {variant.weight} / {styleLabels[variant.style]}
-                            </TableCell>
-                            <TableCell className="text-sm text-slate-600">{variant.format}</TableCell>
-                            <TableCell className="text-sm text-slate-600">{variant.fileName ?? "—"}</TableCell>
-                            <TableCell className="text-right text-sm text-slate-600">
-                              {formatBytes(variant.sizeBytes)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleVariantDeleted(variant)}
-                                disabled={variantDeletingId === variant.id}
-                              >
-                                <Trash2 className="size-4" aria-hidden="true" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-
-                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4">
-                  <FontVariantUploader
-                    family={{ id: family.id, name: family.name, slug: family.slug }}
-                    onUploaded={handleVariantUploaded}
-                    className="space-y-4"
-                  />
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* Danger zone */}
-              <section className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
-                <h2 className="text-sm font-semibold text-red-700">{t("detail.danger.title")}</h2>
-                <p className="text-xs text-red-600">{t("detail.danger.description")}</p>
-                <LoadingButton
-                  variant="destructive"
-                  onClick={handleDeleteFamily}
-                  loading={isDeletingFamily}
-                  loadingText={t("detail.danger.deleting")}
-                  minWidthClassName="min-w-[140px]"
-                  className="mt-2"
-                >
-                  {t("detail.danger.deleteButton")}
-                </LoadingButton>
-              </section>
+              </div>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-between border-t border-slate-200 px-6 py-4 shrink-0">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                {t("actions.cancel")}
-              </Button>
-              <LoadingButton onClick={handleSave} loading={isSaving} loadingText={t("detail.saving")} minWidthClassName="min-w-[140px]">
-                {t("detail.saveButton")}
+            <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 shrink-0">
+              <LoadingButton
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteFamily}
+                loading={isDeletingFamily}
+                loadingText={t("detail.danger.deleting")}
+                minWidthClassName="min-w-[100px]"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="size-3.5" />
+                {t("detail.danger.deleteButton")}
               </LoadingButton>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  {t("actions.cancel")}
+                </Button>
+                <LoadingButton onClick={handleSave} loading={isSaving} loadingText={t("detail.saving")} minWidthClassName="min-w-[140px]">
+                  {t("detail.saveButton")}
+                </LoadingButton>
+              </div>
             </div>
           </>
         ) : null}
