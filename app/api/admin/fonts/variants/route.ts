@@ -104,8 +104,22 @@ export async function POST(req: NextRequest) {
     { upsert: true },
   );
 
-  const variant = await prisma.fontVariant.create({
-    data: {
+  const variant = await prisma.fontVariant.upsert({
+    where: {
+      fontFamilyId_weight_style_format: {
+        fontFamilyId: family.id,
+        weight,
+        style,
+        format,
+      },
+    },
+    update: {
+      storageKey: upload.storageKey,
+      fileName,
+      checksum,
+      sizeBytes: upload.sizeBytes ?? data.byteLength,
+    },
+    create: {
       fontFamilyId: family.id,
       weight,
       style,
