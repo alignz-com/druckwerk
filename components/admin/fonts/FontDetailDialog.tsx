@@ -23,6 +23,7 @@ import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminFontFamily, AdminFontVariant } from "@/lib/admin/templates-data";
 import { formatDateTime } from "@/lib/formatDateTime";
 import FontVariantUploader from "./FontVariantUploader";
+import { FontPreview } from "./FontPreview";
 
 type Props = {
   family: AdminFontFamily | null;
@@ -93,6 +94,18 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
   );
 
   const variantRows = useMemo(() => family?.variants ?? [], [family?.variants]);
+
+  // Pick best variant for preview: match default weight/style, or first available
+  const previewVariant = useMemo(() => {
+    if (!family || family.variants.length === 0) return null;
+    const defaultW = family.defaultWeight ?? 400;
+    const defaultS = family.defaultStyle ?? "NORMAL";
+    return (
+      family.variants.find((v) => v.weight === defaultW && v.style === defaultS) ??
+      family.variants.find((v) => v.weight === defaultW) ??
+      family.variants[0]
+    );
+  }, [family]);
 
   const handleFieldChange = <Key extends keyof FormState>(field: Key, value: FormState[Key]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -200,6 +213,20 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
               <DialogTitle>{family.name}</DialogTitle>
               <DialogDescription>{t("detail.description")}</DialogDescription>
             </DialogHeader>
+
+            {/* Font preview */}
+            {previewVariant && (
+              <div className="shrink-0 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <FontPreview
+                  storageKey={previewVariant.storageKey}
+                  format={previewVariant.format}
+                  familyName={family.name}
+                  weight={previewVariant.weight}
+                  style={previewVariant.style}
+                  className="text-2xl text-slate-900 text-center"
+                />
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto px-6 space-y-6 min-h-0">
               {saveError && (
