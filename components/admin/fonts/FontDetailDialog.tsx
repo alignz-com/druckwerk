@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminFontFamily, AdminFontVariant } from "@/lib/admin/templates-data";
-import FontVariantUploader from "./FontVariantUploader";
+import { FontDropZone } from "./FontDropZone";
 import { FontPreview } from "./FontPreview";
 
 type Props = {
@@ -350,13 +350,10 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
 
                 {/* Upload — pinned at bottom */}
                 <div className="shrink-0 p-5 pt-3">
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
-                    <FontVariantUploader
-                      family={{ id: family.id, name: family.name, slug: family.slug }}
-                      onUploaded={handleVariantUploaded}
-                      className="space-y-3"
-                    />
-                  </div>
+                  <FontDropZone
+                    familyId={family.id}
+                    onUploaded={handleVariantUploaded}
+                  />
                 </div>
               </div>
             </div>
