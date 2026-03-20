@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +25,7 @@ const STYLE_OPTIONS = [
 
 const UNSET_STYLE_VALUE = "__unset_style__";
 
-export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
+export function FontCreateDialog({ open, onOpenChange, onCreated }: Props) {
   const t = useTranslations("admin.fonts");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -85,21 +85,19 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
   };
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          reset();
-        }
+        if (!next) reset();
         onOpenChange(next);
       }}
     >
-      <SheetContent className="flex h-full max-w-lg flex-col p-0">
-        <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-          <SheetTitle>{t("create.title")}</SheetTitle>
-          <SheetDescription>{t("create.description")}</SheetDescription>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-5 px-6 py-6">
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("create.title")}</DialogTitle>
+          <DialogDescription>{t("create.description")}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-4">
             <div className="space-y-2">
               <Label htmlFor="font-create-name">{t("create.fields.name")}</Label>
@@ -160,7 +158,7 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
                 id="font-create-notes"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                rows={4}
+                rows={3}
                 placeholder={t("create.placeholders.notes")}
               />
             </div>
@@ -168,23 +166,16 @@ export function FontCreateSheet({ open, onOpenChange, onCreated }: Props) {
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("actions.cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="min-w-[150px]">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                  {t("create.submitting")}
-                </>
-              ) : (
-                t("create.submit")
-              )}
-            </Button>
-          </div>
+            <LoadingButton type="submit" loading={isSubmitting} loadingText={t("create.submitting")} minWidthClassName="min-w-[140px]">
+              {t("create.submit")}
+            </LoadingButton>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

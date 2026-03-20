@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,7 +55,7 @@ const emptyForm: FormState = {
   notes: "",
 };
 
-export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, onFamilyDeleted }: Props) {
+export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, onFamilyDeleted }: Props) {
   const t = useTranslations("admin.fonts");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
@@ -191,26 +192,28 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex h-full max-w-4xl flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
         {family ? (
           <>
-            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-              <SheetTitle>{family.name}</SheetTitle>
-              <SheetDescription>{t("detail.description")}</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-              {saveError ? (
+            <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
+              <DialogTitle>{family.name}</DialogTitle>
+              <DialogDescription>{t("detail.description")}</DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto px-6 space-y-6 min-h-0">
+              {saveError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {saveError}
                 </div>
-              ) : null}
-              {saveSuccess ? (
+              )}
+              {saveSuccess && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                   {saveSuccess}
                 </div>
-              ) : null}
+              )}
 
+              {/* General */}
               <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <header className="space-y-1">
                   <h2 className="text-sm font-semibold text-slate-900">{t("detail.sections.general.title")}</h2>
@@ -249,19 +252,19 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="font-detail-style">{t("detail.fields.defaultStyle")}</Label>
-                  <Select
-                    value={form.defaultStyle ?? UNSET_STYLE_VALUE}
-                    onValueChange={(value) =>
-                      handleFieldChange("defaultStyle", value === UNSET_STYLE_VALUE ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="font-detail-style">
-                      <SelectValue placeholder={t("detail.placeholders.defaultStyle")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={UNSET_STYLE_VALUE}>{t("create.unset")}</SelectItem>
-                      {STYLE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                    <Select
+                      value={form.defaultStyle ?? UNSET_STYLE_VALUE}
+                      onValueChange={(value) =>
+                        handleFieldChange("defaultStyle", value === UNSET_STYLE_VALUE ? null : value)
+                      }
+                    >
+                      <SelectTrigger id="font-detail-style">
+                        <SelectValue placeholder={t("detail.placeholders.defaultStyle")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNSET_STYLE_VALUE}>{t("create.unset")}</SelectItem>
+                        {STYLE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
                             {t(option.key as any)}
                           </SelectItem>
                         ))}
@@ -274,29 +277,30 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                       id="font-detail-notes"
                       value={form.notes}
                       onChange={(event) => handleFieldChange("notes", event.target.value)}
-                      rows={4}
+                      rows={3}
                       placeholder={t("detail.placeholders.notes")}
                     />
                   </div>
                 </div>
               </section>
 
+              {/* Variants */}
               <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <header className="space-y-1">
                   <h2 className="text-sm font-semibold text-slate-900">{t("detail.variants.title")}</h2>
                   <p className="text-xs text-slate-500">{t("detail.variants.description")}</p>
                 </header>
 
-                {variantMessage ? (
+                {variantMessage && (
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                     {variantMessage}
                   </div>
-                ) : null}
-                {variantError ? (
+                )}
+                {variantError && (
                   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {variantError}
                   </div>
-                ) : null}
+                )}
 
                 {variantRows.length === 0 ? (
                   <p className="text-sm text-slate-500">{t("detail.variants.empty")}</p>
@@ -309,7 +313,6 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                           <TableHead>{t("detail.variants.columns.format")}</TableHead>
                           <TableHead>{t("detail.variants.columns.file")}</TableHead>
                           <TableHead className="text-right">{t("detail.variants.columns.size")}</TableHead>
-                          <TableHead className="text-right">{t("detail.variants.columns.updated")}</TableHead>
                           <TableHead className="text-right">{t("detail.variants.columns.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -324,9 +327,6 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                             <TableCell className="text-right text-sm text-slate-600">
                               {formatBytes(variant.sizeBytes)}
                             </TableCell>
-                            <TableCell className="text-right text-sm text-slate-600">
-                              {formatDateTime(variant.updatedAt)}
-                            </TableCell>
                             <TableCell className="text-right">
                               <Button
                                 variant="ghost"
@@ -335,12 +335,7 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
                                 onClick={() => handleVariantDeleted(variant)}
                                 disabled={variantDeletingId === variant.id}
                               >
-                                {variantDeletingId === variant.id ? (
-                                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                ) : (
-                                  <Trash2 className="size-4" aria-hidden="true" />
-                                )}
-                                <span className="sr-only">{t("detail.variants.columns.actions")}</span>
+                                <Trash2 className="size-4" aria-hidden="true" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -361,55 +356,42 @@ export function FontDetailSheet({ family, open, onOpenChange, onFamilyUpdated, o
 
               <Separator />
 
-              <section className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-4">
+              {/* Danger zone */}
+              <section className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
                 <h2 className="text-sm font-semibold text-red-700">{t("detail.danger.title")}</h2>
                 <p className="text-xs text-red-600">{t("detail.danger.description")}</p>
-                <Button
+                <LoadingButton
                   variant="destructive"
                   onClick={handleDeleteFamily}
-                  disabled={isDeletingFamily}
-                  className="mt-2 w-fit"
+                  loading={isDeletingFamily}
+                  loadingText={t("detail.danger.deleting")}
+                  minWidthClassName="min-w-[140px]"
+                  className="mt-2"
                 >
-                  {isDeletingFamily ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                      {t("detail.danger.deleting")}
-                    </>
-                  ) : (
-                    t("detail.danger.deleteButton")
-                  )}
-                </Button>
+                  {t("detail.danger.deleteButton")}
+                </LoadingButton>
               </section>
             </div>
-            <div className="flex justify-between border-t border-slate-200 px-6 py-4">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSaving}>
+
+            {/* Footer */}
+            <div className="flex justify-between border-t border-slate-200 px-6 py-4 shrink-0">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {t("actions.cancel")}
               </Button>
-              <Button onClick={handleSave} disabled={isSaving} className="min-w-[180px]">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    {t("detail.saving")}
-                  </>
-                ) : (
-                  t("detail.saveButton")
-                )}
-              </Button>
+              <LoadingButton onClick={handleSave} loading={isSaving} loadingText={t("detail.saving")} minWidthClassName="min-w-[140px]">
+                {t("detail.saveButton")}
+              </LoadingButton>
             </div>
           </>
         ) : null}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function formatBytes(bytes: number | null) {
-  if (!bytes || Number.isNaN(bytes)) {
-    return "—";
-  }
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
+  if (!bytes || Number.isNaN(bytes)) return "—";
+  if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];
   let value = bytes / 1024;
   let unitIndex = 0;

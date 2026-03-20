@@ -7,8 +7,8 @@ import type { AdminFontFamily } from "@/lib/admin/templates-data";
 import { useLocale, useTranslations } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { FontsTable } from "./FontsTable";
-import { FontCreateSheet } from "./FontCreateSheet";
-import { FontDetailSheet } from "./FontDetailSheet";
+import { FontCreateDialog } from "./FontCreateDialog";
+import { FontDetailDialog } from "./FontDetailDialog";
 import { formatDateTime } from "@/lib/formatDateTime";
 
 type Props = {
@@ -16,13 +16,13 @@ type Props = {
   autoOpen?: boolean;
 };
 
-type SheetState = { mode: "create" } | { mode: "view"; familyId: string } | null;
+type DialogState = { mode: "create" } | { mode: "view"; familyId: string } | null;
 
 export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
   const t = useTranslations("admin.fonts");
   const { locale } = useLocale();
   const [families, setFamilies] = useState<AdminFontFamily[]>(fontFamilies);
-  const [sheetState, setSheetState] = useState<SheetState>(null);
+  const [dialogState, setDialogState] = useState<DialogState>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
@@ -30,13 +30,13 @@ export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
   }, [fontFamilies]);
 
   useEffect(() => {
-    if (autoOpen) setSheetState({ mode: "create" });
+    if (autoOpen) setDialogState({ mode: "create" });
   }, [autoOpen]);
 
   const activeFamily = useMemo(() => {
-    if (sheetState?.mode !== "view") return null;
-    return families.find((family) => family.id === sheetState.familyId) ?? null;
-  }, [sheetState, families]);
+    if (dialogState?.mode !== "view") return null;
+    return families.find((family) => family.id === dialogState.familyId) ?? null;
+  }, [dialogState, families]);
 
   const tableRows = useMemo(() => {
     return families.map((family) => {
@@ -66,19 +66,19 @@ export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
       return next.sort((a, b) => a.name.localeCompare(b.name));
     });
     setFeedback({ type: "success", message: t("toast.created", { name: family.name }) });
-    setSheetState({ mode: "view", familyId: family.id });
+    setDialogState({ mode: "view", familyId: family.id });
   };
 
   const handleFamilyUpdated = (family: AdminFontFamily) => {
     setFamilies((current) => current.map((item) => (item.id === family.id ? family : item)));
     setFeedback({ type: "success", message: t("toast.updated", { name: family.name }) });
-    setSheetState({ mode: "view", familyId: family.id });
+    setDialogState({ mode: "view", familyId: family.id });
   };
 
   const handleFamilyDeleted = (familyId: string) => {
     setFamilies((current) => current.filter((family) => family.id !== familyId));
     setFeedback({ type: "success", message: t("toast.deleted") });
-    setSheetState(null);
+    setDialogState(null);
   };
 
   return (
@@ -89,7 +89,7 @@ export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
           <p className="mt-1 text-sm text-slate-500">{t("description")}</p>
         </div>
         <Button
-          onClick={() => setSheetState({ mode: "create" })}
+          onClick={() => setDialogState({ mode: "create" })}
           className="inline-flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="size-4" aria-hidden="true" />
@@ -124,20 +124,20 @@ export default function AdminFontsClient({ fontFamilies, autoOpen }: Props) {
           variants: t("table.headers.variants"),
           updated: t("table.headers.updated"),
         }}
-        onManage={(id) => setSheetState({ mode: "view", familyId: id })}
+        onManage={(id) => setDialogState({ mode: "view", familyId: id })}
       />
 
-      <FontDetailSheet
+      <FontDetailDialog
         family={activeFamily}
-        open={sheetState?.mode === "view" && Boolean(activeFamily)}
-        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
+        open={dialogState?.mode === "view" && Boolean(activeFamily)}
+        onOpenChange={(open) => (!open ? setDialogState(null) : null)}
         onFamilyUpdated={handleFamilyUpdated}
         onFamilyDeleted={handleFamilyDeleted}
       />
 
-      <FontCreateSheet
-        open={sheetState?.mode === "create"}
-        onOpenChange={(open) => (!open ? setSheetState(null) : null)}
+      <FontCreateDialog
+        open={dialogState?.mode === "create"}
+        onOpenChange={(open) => (!open ? setDialogState(null) : null)}
         onCreated={handleFamilyCreated}
       />
     </div>
