@@ -5,7 +5,7 @@ const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "";
 const vercelUrl = process.env.VERCEL_URL || "";
 
 const allowedHosts = new Set<string>(
-  [fallbackDomain]
+  [fallbackDomain, "localhost"]
     .concat([appUrl, vercelUrl].filter(Boolean))
     .map((value) => value.trim())
     .filter(Boolean)
