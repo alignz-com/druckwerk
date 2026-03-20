@@ -218,7 +218,7 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
             </DialogHeader>
 
             {/* Two-panel layout */}
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_360px] min-h-0">
+            <div className="flex-1 grid grid-cols-[1fr_360px] min-h-0">
               {/* Left panel — preview + form */}
               <div className="overflow-y-auto min-h-0 flex flex-col gap-5 p-6">
                 {/* Font preview */}
@@ -320,7 +320,7 @@ export function FontDetailDialog({ family, open, onOpenChange, onFamilyUpdated, 
               </div>
 
               {/* Right panel — variants + uploader */}
-              <div className="flex flex-col min-h-0 overflow-hidden border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/50">
+              <div className="flex flex-col min-h-0 overflow-hidden border-l border-slate-200 bg-slate-50/50">
                 {/* Variants header */}
                 <div className="shrink-0 px-5 pt-5 pb-3">
                   <h3 className="text-sm font-semibold text-slate-700">{t("detail.variants.title")}</h3>
