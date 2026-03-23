@@ -24,12 +24,12 @@ export default function FlipCard({ front, back, activeSide, className }: FlipCar
         style={{ transform: show === "back" ? "rotateY(180deg)" : "rotateY(0deg)" }}
       >
         <div className="absolute inset-0 overflow-visible [backface-visibility:hidden]">
-          <div className="h-full w-full rounded-sm overflow-hidden" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>{front}</div>
+          <div className="h-full w-full overflow-hidden" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>{front}</div>
         </div>
         <div className="absolute inset-0 overflow-visible [backface-visibility:hidden]"
           style={{ transform: "rotateY(180deg)" }}
         >
-          <div className="h-full w-full rounded-sm overflow-hidden" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>{back}</div>
+          <div className="h-full w-full overflow-hidden" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>{back}</div>
         </div>
       </div>
     </div>
