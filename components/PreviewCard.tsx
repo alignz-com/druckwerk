@@ -1183,13 +1183,13 @@ export function BusinessCardFront({
   const trimW = template.pageWidthMm ?? LEGACY_CARD_W;
   const trimH = template.pageHeightMm ?? LEGACY_CARD_H;
   return (
-    <figure className="select-none h-full w-full flex items-center justify-center">
+    <figure className={`select-none h-full w-full flex items-center justify-center transition-opacity duration-300 ${fontsReady ? "opacity-100" : "opacity-0"}`} style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
       <svg
-        className="block transition-opacity duration-300"
+        className="block"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined, opacity: fontsReady ? 1 : 0 }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
         aria-label="Business card front"
       >
         <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
@@ -1393,13 +1393,13 @@ export function BusinessCardBack({
   const trimW = template.pageWidthMm ?? LEGACY_CARD_W;
   const trimH = template.pageHeightMm ?? LEGACY_CARD_H;
   return (
-    <figure className="select-none h-full w-full flex items-center justify-center">
+    <figure className={`select-none h-full w-full flex items-center justify-center transition-opacity duration-300 ${fontsReady ? "opacity-100" : "opacity-0"}`} style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
       <svg
-        className="block transition-opacity duration-300"
+        className="block"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined, opacity: fontsReady ? 1 : 0 }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
         aria-label="Business card back"
       >
         <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
