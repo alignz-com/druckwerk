@@ -6,9 +6,13 @@ const fontLoadCache = new Map<string, Promise<void>>();
 
 export function useFontFaceLoader(fonts: ResolvedTemplate["fonts"] | undefined) {
   const [revision, setRevision] = useState(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!fonts?.length) return;
+    if (!fonts?.length) {
+      setReady(true);
+      return;
+    }
 
     const pending: Promise<void>[] = [];
     fonts.forEach((font) => {
@@ -43,11 +47,15 @@ export function useFontFaceLoader(fonts: ResolvedTemplate["fonts"] | undefined) 
       pending.push(loader);
     });
 
-    if (pending.length === 0) return;
+    if (pending.length === 0) {
+      setReady(true);
+      return;
+    }
     void Promise.allSettled(pending).then(() => {
+      setReady(true);
       setRevision((current) => current + 1);
     });
   }, [fonts]);
 
-  return revision;
+  return { revision, ready };
 }

@@ -2086,13 +2086,12 @@ export default function OrderForm({
               </button>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-12">
-              <div className="mx-auto w-full flex justify-center">
+              <div className="flex items-center justify-center aspect-[3/2]">
                 <div
-                  className="relative"
+                  className="relative overflow-visible"
                   style={{
                     aspectRatio: `${selectedTemplate?.pageWidthMm ?? 85} / ${selectedTemplate?.pageHeightMm ?? 55}`,
-                    width: `min(100%, calc(38dvh * ${((selectedTemplate?.pageWidthMm ?? 85) / (selectedTemplate?.pageHeightMm ?? 55)).toFixed(4)}))`,
-                    maxHeight: `38dvh`,
+                    height: "75%",
                   }}
                 >
                   {selectedTemplate ? (

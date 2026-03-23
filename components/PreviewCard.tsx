@@ -988,7 +988,7 @@ export function BusinessCardFront({
   qrPayload,
 }: Props) {
   const { preview: previewCfg } = getFrontConfig(template);
-  const fontRevision = useFontFaceLoader(template.fonts);
+  const { revision: fontRevision, ready: fontsReady } = useFontFaceLoader(template.fonts);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
   const { url: frontBackground, onError: handleFrontAssetError } = useTemplateAssetSource(
     template,
@@ -1185,11 +1185,11 @@ export function BusinessCardFront({
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
-        className="block"
+        className="block transition-opacity duration-300"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined, opacity: fontsReady ? 1 : 0 }}
         aria-label="Business card front"
       >
         <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
@@ -1236,7 +1236,7 @@ export function BusinessCardBack({
   qrPreviewMode = "vcard",
   qrPayload,
 }: Props) {
-  const fontRevision = useFontFaceLoader(template.fonts);
+  const { revision: fontRevision, ready: fontsReady } = useFontFaceLoader(template.fonts);
   const normalized = useMemo(() => normalizeAddress(company), [company]);
   const { org: parsedOrg, label, street: parsedStreet, postalCode: parsedPostal, city: parsedCity, country: parsedCountry } = normalized;
   const addrLabel = (label && label.trim()) ? label : (company || undefined);
@@ -1395,11 +1395,11 @@ export function BusinessCardBack({
   return (
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
-        className="block"
+        className="block transition-opacity duration-300"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined, opacity: fontsReady ? 1 : 0 }}
         aria-label="Business card back"
       >
         <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
