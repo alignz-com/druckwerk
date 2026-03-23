@@ -12,6 +12,7 @@ import { useTranslations } from "@/components/providers/locale-provider";
 import type { AdminUserSummary } from "@/lib/admin/users-data";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { formatDateTime } from "@/lib/formatDateTime";
+import { AdminPasswordReset } from "./AdminPasswordReset";
 
 const ROLE_OPTIONS = ["USER", "ADMIN", "BRAND_ADMIN", "PRINTER"] as const;
 type RoleOption = typeof ROLE_OPTIONS[number];
@@ -392,6 +393,10 @@ export function UserDetailSheet({
               <Separator />
 
               <DemoSection userId={user.id} initialIsDemo={user.isDemo} />
+
+              <Separator />
+
+              <AdminPasswordReset userId={user.id} />
 
               {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
