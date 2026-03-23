@@ -62,14 +62,22 @@ export default async function NewOrderPage() {
       : Promise.resolve(0),
   ]);
 
+  // Admins and printers always see the selector — they pick a brand afterwards
+  const role = session.user.role;
+  const isAdminOrPrinter = role === "ADMIN" || role === "PRINTER";
+
   // If the brand has no templates, treat template access as unavailable
-  const hasTemplate = access.hasTemplate && brandTemplateCount > 0;
+  const hasTemplate = access.hasTemplate && (brandTemplateCount > 0 || isAdminOrPrinter);
 
   if (access.hasUpload && !hasTemplate) {
     redirect("/orders/new/pdf");
   }
 
   if (hasTemplate && access.hasUpload) {
+    return <OrderTypeSelector />;
+  }
+
+  if (isAdminOrPrinter) {
     return <OrderTypeSelector />;
   }
 
