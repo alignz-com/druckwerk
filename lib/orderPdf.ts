@@ -773,13 +773,7 @@ async function renderDesignElementsToPdf(opts: {
             useRawColor: !!spotRes,
           });
         } else {
-          if (element.segmentStyles?.length) {
-            console.log(`[spotColor] applySegmentStyles: text="${text}", rules=${JSON.stringify(element.segmentStyles)}`);
-          }
           const segments = applySegmentStylesToText(text, element.segmentStyles).filter((segment) => segment.text.length > 0);
-          if (element.segmentStyles?.length) {
-            console.log(`[spotColor] segments result: ${JSON.stringify(segments)}`);
-          }
           if (segments.length <= 1) {
             drawTextWithTracking(page, text, {
               x,
@@ -792,19 +786,14 @@ async function renderDesignElementsToPdf(opts: {
             });
           } else {
             let cursorX = x;
-            console.log(`[spotColor] Rendering ${segments.length} segments, spotColors available: ${!!spotColors}, count: ${spotColors?.length ?? 0}`);
             for (let index = 0; index < segments.length; index += 1) {
               const segment = segments[index];
-              console.log(`[spotColor] Segment ${index}: text="${segment.text}", spotColor="${segment.spotColor}", color="${segment.color}"`);
               const segSpotRes = segment.spotColor ? findSpotColorResource(doc, page, segment.spotColor) : null;
-              console.log(`[spotColor] segSpotRes: ${segSpotRes}`);
               // Fallback: if spot color not found in PDF, use rgbFallback from template
               const spotFallbackColor = !segSpotRes && segment.spotColor && spotColors
                 ? parseColor(spotColors.find((sc) => sc.name === segment.spotColor)?.rgbFallback)
                 : null;
-              console.log(`[spotColor] spotFallbackColor: ${JSON.stringify(spotFallbackColor)}`);
               const segmentColor = spotFallbackColor ?? parseColor(segment.color) ?? fillColor;
-              console.log(`[spotColor] Final segmentColor: ${JSON.stringify(segmentColor)}`);
               if (segSpotRes) setSpotColorFill(page, segSpotRes);
               drawTextWithTracking(page, segment.text, {
                 x: cursorX,
