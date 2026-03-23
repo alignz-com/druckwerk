@@ -43,6 +43,8 @@ export type PdfMetadata = {
   widthMm: number;
   heightMm: number;
   pageCount: number;
+  trimWidthMm: number | null;
+  trimHeightMm: number | null;
 };
 
 export type PngMetadata = {
@@ -101,12 +103,27 @@ export async function extractPdfMetadata(buffer: Uint8Array): Promise<PdfMetadat
   const widthMm = ptToMm(widthPt);
   const heightMm = ptToMm(heightPt);
 
+  // Extract TrimBox if present
+  let trimWidthMm: number | null = null;
+  let trimHeightMm: number | null = null;
+  try {
+    const trimBox = firstPage.getTrimBox();
+    if (trimBox && trimBox.width > 0 && trimBox.height > 0) {
+      trimWidthMm = Math.round(ptToMm(trimBox.width) * 100) / 100;
+      trimHeightMm = Math.round(ptToMm(trimBox.height) * 100) / 100;
+    }
+  } catch {
+    // TrimBox not present — that's fine
+  }
+
   return {
     widthPt,
     heightPt,
     widthMm,
     heightMm,
     pageCount: pages.length,
+    trimWidthMm,
+    trimHeightMm,
   };
 }
 

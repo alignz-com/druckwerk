@@ -95,9 +95,19 @@ export async function POST(req: NextRequest) {
 
   let templateUpdate: Prisma.TemplateUpdateInput | null = null;
   const publicUrl = getTemplateAssetPublicUrl(upload.storageKey);
+  let pdfMeta: Awaited<ReturnType<typeof extractPdfMetadata>> | null = null;
 
   if (type === TemplateAssetType.PDF) {
-    templateUpdate = { pdfPath: publicUrl };
+    pdfMeta = await extractPdfMetadata(data);
+    templateUpdate = {
+      pdfPath: publicUrl,
+      // Canvas = full page (MediaBox)
+      canvasWidthMm: Math.round(pdfMeta.widthMm * 100) / 100,
+      canvasHeightMm: Math.round(pdfMeta.heightMm * 100) / 100,
+      // Trim = TrimBox if present, otherwise same as canvas
+      pageWidthMm: pdfMeta.trimWidthMm ?? Math.round(pdfMeta.widthMm * 100) / 100,
+      pageHeightMm: pdfMeta.trimHeightMm ?? Math.round(pdfMeta.heightMm * 100) / 100,
+    };
   } else if (type === TemplateAssetType.PREVIEW_FRONT) {
     templateUpdate = { previewFrontPath: publicUrl };
   } else if (type === TemplateAssetType.PREVIEW_BACK) {
@@ -114,14 +124,15 @@ export async function POST(req: NextRequest) {
   }
 
   let metadata: Record<string, unknown> | null = null;
-  if (type === TemplateAssetType.PDF) {
-    const pdfMeta = await extractPdfMetadata(data);
+  if (type === TemplateAssetType.PDF && pdfMeta) {
     metadata = {
       pageCount: pdfMeta.pageCount,
       widthMm: pdfMeta.widthMm,
       heightMm: pdfMeta.heightMm,
       widthPt: pdfMeta.widthPt,
       heightPt: pdfMeta.heightPt,
+      trimWidthMm: pdfMeta.trimWidthMm,
+      trimHeightMm: pdfMeta.trimHeightMm,
     };
   } else if (
     type === TemplateAssetType.PREVIEW_FRONT ||
