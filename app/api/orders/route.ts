@@ -29,14 +29,40 @@ import { resolveAllowedQuantities } from "@/lib/order-quantities";
 export const runtime = "nodejs";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
-async function generateOrderThumbnail(pdfBytes: Uint8Array): Promise<Buffer | null> {
+async function generateOrderThumbnail(
+  pdfBytes: Uint8Array,
+  trimWidthMm?: number,
+  trimHeightMm?: number,
+): Promise<Buffer | null> {
   const id = randomUUID();
   const pdfPath = join(tmpdir(), `${id}.pdf`);
   const thumbBase = join(tmpdir(), `${id}-thumb`);
   const thumbPath = `${thumbBase}.png`;
   try {
     await writeFile(pdfPath, pdfBytes);
-    await execFileAsync("pdftocairo", ["-png", "-r", "150", "-singlefile", pdfPath, thumbBase]);
+    const DPI = 150;
+    const scale = DPI / 72;
+    const args = ["-png", "-r", String(DPI), "-singlefile"];
+
+    // Crop to trim box if dimensions are known
+    if (trimWidthMm && trimHeightMm) {
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.load(pdfBytes);
+      const page = doc.getPage(0);
+      const { width: pageWidthPt, height: pageHeightPt } = page.getSize();
+      const trimWidthPt = trimWidthMm * 72 / 25.4;
+      const trimHeightPt = trimHeightMm * 72 / 25.4;
+      const bleedXPt = (pageWidthPt - trimWidthPt) / 2;
+      const bleedYPt = (pageHeightPt - trimHeightPt) / 2;
+      const px = Math.round(bleedXPt * scale);
+      const py = Math.round(bleedYPt * scale);
+      const pw = Math.round(trimWidthPt * scale);
+      const ph = Math.round(trimHeightPt * scale);
+      args.push("-x", String(px), "-y", String(py), "-W", String(pw), "-H", String(ph));
+    }
+
+    args.push(pdfPath, thumbBase);
+    await execFileAsync("pdftocairo", args);
     return await readFile(thumbPath);
   } catch {
     return null;
@@ -467,7 +493,11 @@ export async function POST(req: Request) {
     });
 
     // Generate and store thumbnail (non-blocking)
-    generateOrderThumbnail(pdfBytes).then(async (thumbBuffer) => {
+    generateOrderThumbnail(
+      pdfBytes,
+      templateDefinition.pageWidthMm ?? undefined,
+      templateDefinition.pageHeightMm ?? undefined,
+    ).then(async (thumbBuffer) => {
       if (!thumbBuffer) return;
       try {
         const thumbKey = toStorageKey(referenceCode, fileBaseName, "thumb.png");
