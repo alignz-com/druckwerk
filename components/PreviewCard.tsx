@@ -471,6 +471,7 @@ type PreparedText = {
 function applySegmentStyles(
   text: string,
   rules: TextElement["segmentStyles"] | undefined,
+  spotColors?: Array<{ name: string; rgbFallback: string }> | null,
 ): Array<{ text: string; color?: string }> {
   if (!text) return [];
   if (!rules || rules.length === 0) return [{ text }];
@@ -483,6 +484,11 @@ function applySegmentStyles(
     } catch {
       continue;
     }
+
+    // Resolve spot color to RGB for preview
+    const resolvedColor = rule.spotColor
+      ? resolveSpotColorRgb(rule.spotColor, spotColors) ?? rule.color
+      : rule.color;
 
     const next: Array<{ text: string; color?: string }> = [];
     for (const segment of segments) {
@@ -504,7 +510,7 @@ function applySegmentStyles(
       if (start > 0) {
         next.push({ text: segment.text.slice(0, start) });
       }
-      next.push({ text: segment.text.slice(start, end), color: rule.color });
+      next.push({ text: segment.text.slice(start, end), color: resolvedColor });
       if (end < segment.text.length) {
         next.push({ text: segment.text.slice(end) });
       }
@@ -514,7 +520,7 @@ function applySegmentStyles(
   return segments;
 }
 
-function prepareTextElement(element: TextElement, context: RenderContext): PreparedText | null {
+function prepareTextElement(element: TextElement, context: RenderContext, spotColors?: Array<{ name: string; rgbFallback: string }> | null): PreparedText | null {
   if (element.visibility && !evaluateVisibility(element.visibility, context)) {
     return null;
   }
@@ -538,7 +544,7 @@ function prepareTextElement(element: TextElement, context: RenderContext): Prepa
     if (!finalContent) return null;
   }
   const lineHeightMm = getLineHeightMm(element.font);
-  const segments = applySegmentStyles(finalContent, element.segmentStyles);
+  const segments = applySegmentStyles(finalContent, element.segmentStyles, spotColors);
   return {
     element,
     content: finalContent,
@@ -667,13 +673,14 @@ function renderQrElement(element: QrElement, context: RenderContext, key: string
 
 function findQrStyle(
   elements: DesignElement[] | undefined,
-): { dark?: string; light?: string } | null {
+): { dark?: string; light?: string; spotColor?: string } | null {
   if (!elements) return null;
   for (const element of elements) {
     if (element.type === "qr") {
       return {
         dark: element.color,
         light: element.background,
+        spotColor: element.spotColor,
       };
     }
     if (element.type === "stack") {
@@ -682,6 +689,15 @@ function findQrStyle(
     }
   }
   return null;
+}
+
+function resolveSpotColorRgb(
+  spotColorName: string | undefined,
+  spotColors: Array<{ name: string; rgbFallback: string }> | null | undefined,
+): string | null {
+  if (!spotColorName || !spotColors) return null;
+  const match = spotColors.find((sc) => sc.name === spotColorName);
+  return match?.rgbFallback ?? null;
 }
 
 function normalizeQrColor(value?: string | null, fallback?: string) {
@@ -716,6 +732,7 @@ function renderStackElement(
   key: string,
   reportOverflow?: (fields?: string[]) => void,
   shouldForceBinding?: (binding: string) => boolean,
+  spotColors?: Array<{ name: string; rgbFallback: string }> | null,
 ): ReactNode | null {
   if (element.visibility && element.visibility.binding) {
     if (!evaluateVisibility(element.visibility, context)) return null;
@@ -725,7 +742,7 @@ function renderStackElement(
   for (let index = 0; index < element.items.length; index += 1) {
     const child = element.items[index];
     if (child.type === "text") {
-      const prepared = prepareTextElement(child, context);
+      const prepared = prepareTextElement(child, context, spotColors);
       if (prepared) {
         preparedItems.push({ kind: "text", prepared });
       }
@@ -792,7 +809,7 @@ function renderDesignElements(
   elements: DesignElement[] | undefined,
   context: RenderContext,
   keyPrefix = "el",
-  options?: { forceBindingPrefixes?: string[] },
+  options?: { forceBindingPrefixes?: string[]; spotColors?: Array<{ name: string; rgbFallback: string }> | null },
 ): { nodes: ReactNode[]; overflowFields: string[] } {
   const forceBindingPrefixes = options?.forceBindingPrefixes ?? [];
   const nodes: ReactNode[] = [];
@@ -820,7 +837,7 @@ function renderDesignElements(
         break;
       }
       case "text": {
-        const prepared = prepareTextElement(element, context);
+        const prepared = prepareTextElement(element, context, options?.spotColors);
         if (prepared) {
           const shouldForce = prepared.bindings.some((binding) =>
             forceBindingPrefixes.some((prefix) => binding === prefix || binding.startsWith(`${prefix}.`)),
@@ -836,6 +853,7 @@ function renderDesignElements(
           key,
           markOverflow,
           (binding) => forceBindingPrefixes.some((prefix) => binding === prefix || binding.startsWith(`${prefix}.`)),
+          options?.spotColors,
         );
         if (stackNode) nodes.push(stackNode);
         break;
@@ -1078,6 +1096,9 @@ export function BusinessCardFront({
     }
     (async () => {
       try {
+        const frontSpotRgb = resolveSpotColorRgb(frontQrStyle?.spotColor, template.spotColors);
+        const frontQrDark = normalizeQrColor(frontSpotRgb ?? frontQrStyle?.dark, "#000000");
+        const frontQrLight = normalizeQrColor(frontQrStyle?.light, "#00000000");
         if (qrPreviewMode === "public") {
           if (!qrPayload) {
             setQrData(QR_PLACEHOLDER_DATA);
@@ -1087,10 +1108,7 @@ export function BusinessCardFront({
             margin: 0,
             errorCorrectionLevel: "M",
             scale: 8,
-            color: {
-              dark: normalizeQrColor(frontQrStyle?.dark, "#000000"),
-              light: normalizeQrColor(frontQrStyle?.light, "#00000000"),
-            },
+            color: { dark: frontQrDark, light: frontQrLight },
           });
           if (!stop) setQrData(data);
           return;
@@ -1117,10 +1135,7 @@ export function BusinessCardFront({
           margin: 0,
           errorCorrectionLevel: "M",
           scale: 8,
-          color: {
-            dark: normalizeQrColor(frontQrStyle?.dark, "#000000"),
-            light: normalizeQrColor(frontQrStyle?.light, "#00000000"),
-          },
+          color: { dark: frontQrDark, light: frontQrLight },
         });
         if (!stop) setQrData(data);
       } catch {
@@ -1153,6 +1168,7 @@ export function BusinessCardFront({
   const { nodes: frontNodes, overflowFields: frontOverflowFields } = useMemo(() => {
     const result = renderDesignElements(design.front, frontContext, "front", {
       forceBindingPrefixes: forcedBindingPrefixes,
+      spotColors: template.spotColors,
     });
     return result;
   }, [design.front, frontContext, forcedBindingPrefixes, fontRevision]);
@@ -1170,31 +1186,31 @@ export function BusinessCardFront({
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
         className="block"
-        viewBox={`0 0 ${canvasW} ${canvasH}`}
+        viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: undefined }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
         aria-label="Business card front"
       >
-        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
+        <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
         {frontBackground ? (
           <SmoothSvgImage
             src={frontBackground}
             x={0}
             y={0}
-            width={canvasW}
-            height={canvasH}
-            preserveAspectRatio="xMidYMid meet"
+            width={trimW}
+            height={trimH}
+            preserveAspectRatio="none"
             onError={handleFrontBackgroundError}
             onLoad={() => setBackgroundReady(true)}
           />
         ) : null}
 
-        <g transform={`translate(${offsetX}, ${offsetY})`} className="[&>g]:opacity-100">
+        <g className="[&>g]:opacity-100">
           {frontNodes}
         </g>
 
-        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0} y={0} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
@@ -1301,6 +1317,9 @@ export function BusinessCardBack({
     (async () => {
       try {
         const backQrStyle = findQrStyle(design.back);
+        const spotRgb = resolveSpotColorRgb(backQrStyle?.spotColor, template.spotColors);
+        const qrDark = normalizeQrColor(spotRgb ?? backQrStyle?.dark, "#000000");
+        const qrLight = normalizeQrColor(backQrStyle?.light, "#00000000");
         if (qrPreviewMode === "public") {
           if (!qrPayload) {
             setQrData(QR_PLACEHOLDER_DATA);
@@ -1310,10 +1329,7 @@ export function BusinessCardBack({
             margin: 0,
             errorCorrectionLevel: "M",
             scale: 8,
-            color: {
-              dark: normalizeQrColor(backQrStyle?.dark, "#000000"),
-              light: normalizeQrColor(backQrStyle?.light, "#00000000"),
-            },
+            color: { dark: qrDark, light: qrLight },
           });
           if (!stop) setQrData(data);
           return;
@@ -1322,10 +1338,7 @@ export function BusinessCardBack({
           margin: 0,
           errorCorrectionLevel: "M",
           scale: 8,
-          color: {
-            dark: normalizeQrColor(backQrStyle?.dark, "#000000"),
-            light: normalizeQrColor(backQrStyle?.light, "#00000000"),
-          },
+          color: { dark: qrDark, light: qrLight },
         });
         if (!stop) setQrData(data);
       } catch {
@@ -1365,6 +1378,7 @@ export function BusinessCardBack({
   const { nodes: backNodes, overflowFields: backOverflowFields } = useMemo(() => {
     const result = renderDesignElements(design.back, backContext, "back", {
       forceBindingPrefixes: forcedBindingPrefixes,
+      spotColors: template.spotColors,
     });
     return result;
   }, [design.back, backContext, forcedBindingPrefixes, fontRevision]);
@@ -1382,29 +1396,29 @@ export function BusinessCardBack({
     <figure className="select-none h-full w-full flex items-center justify-center">
       <svg
         className="block"
-        viewBox={`0 0 ${canvasW} ${canvasH}`}
+        viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
         height="100%"
-        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${canvasW} / ${canvasH}`, filter: undefined }}
+        style={{ maxWidth, height: "100%", width: "100%", display: "block", overflow: "visible", aspectRatio: `${trimW} / ${trimH}`, filter: undefined }}
         aria-label="Business card back"
       >
-        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="white" />
+        <rect x={0} y={0} width={trimW} height={trimH} fill="white" />
         {backBackground ? (
           <SmoothSvgImage
             src={backBackground}
             x={0}
             y={0}
-            width={canvasW}
-            height={canvasH}
-            preserveAspectRatio="xMidYMid meet"
+            width={trimW}
+            height={trimH}
+            preserveAspectRatio="none"
             onError={handleBackBackgroundError}
             onLoad={() => setBackgroundReady(true)}
           />
         ) : null}
 
-        <g transform={`translate(${offsetX}, ${offsetY})`}>{backNodes}</g>
+        <g>{backNodes}</g>
 
-        <rect x={offsetX} y={offsetY} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0} y={0} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>

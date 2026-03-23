@@ -82,6 +82,7 @@ export type TemplateDefinition = {
   assets?: TemplateAssetSummary[];
   design?: TemplateDesign;
   paperStock?: TemplatePaperStockDefinition | null;
+  spotColors?: Array<{ name: string; resourceName: string; page: number; alternateSpace: string; rgbFallback: string }>;
   hasQrCode?: boolean;
   hasPhotoSlot?: boolean;
 };

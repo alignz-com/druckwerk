@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFName, PDFArray, PDFDict, PDFRef, PDFNumber } from "pdf-lib";
 import { PNG } from "pngjs";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl as s3GetSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -37,6 +37,14 @@ export type FontUpload = {
   contentType: string;
 };
 
+export type SpotColor = {
+  name: string;
+  resourceName: string;
+  page: number;
+  alternateSpace: string;
+  rgbFallback: string;
+};
+
 export type PdfMetadata = {
   widthPt: number;
   heightPt: number;
@@ -45,6 +53,7 @@ export type PdfMetadata = {
   pageCount: number;
   trimWidthMm: number | null;
   trimHeightMm: number | null;
+  spotColors: SpotColor[];
 };
 
 export type PngMetadata = {
@@ -109,11 +118,99 @@ export async function extractPdfMetadata(buffer: Uint8Array): Promise<PdfMetadat
   try {
     const trimBox = firstPage.getTrimBox();
     if (trimBox && trimBox.width > 0 && trimBox.height > 0) {
-      trimWidthMm = Math.round(ptToMm(trimBox.width) * 100) / 100;
-      trimHeightMm = Math.round(ptToMm(trimBox.height) * 100) / 100;
+      trimWidthMm = ptToMm(trimBox.width);
+      trimHeightMm = ptToMm(trimBox.height);
     }
   } catch {
     // TrimBox not present — that's fine
+  }
+
+  // Extract spot colors from all pages
+  const spotColors: SpotColor[] = [];
+  const seenNames = new Set<string>();
+  for (let pageIdx = 0; pageIdx < pages.length; pageIdx++) {
+    try {
+      const pg = pages[pageIdx];
+      const resources = pg.node.get(PDFName.of("Resources"));
+      if (!resources) continue;
+      const resDict = (resources instanceof PDFRef ? pdf.context.lookup(resources) : resources) as PDFDict;
+      const colorSpacesRaw = resDict.get(PDFName.of("ColorSpace"));
+      if (!colorSpacesRaw) continue;
+      const csDict = (colorSpacesRaw instanceof PDFRef ? pdf.context.lookup(colorSpacesRaw) : colorSpacesRaw) as PDFDict;
+
+      for (const [key, value] of csDict.entries()) {
+        const resolved = (value instanceof PDFRef ? pdf.context.lookup(value) : value) as PDFArray;
+        if (!(resolved instanceof PDFArray) || resolved.size() < 4) continue;
+        const csType = resolved.get(0);
+        const typeName = (csType instanceof PDFRef ? pdf.context.lookup(csType) : csType) as PDFName;
+        if (typeName?.toString() !== "/Separation") continue;
+
+        const rawName = resolved.get(1) as PDFName;
+        const spotName = rawName.decodeText().replace(/^\//, "");
+        if (spotName === "All" || spotName === "None" || seenNames.has(spotName)) continue;
+
+        const altCS = resolved.get(2);
+        const altCSResolved = (altCS instanceof PDFRef ? pdf.context.lookup(altCS) : altCS);
+        let altSpaceName = "DeviceCMYK";
+        if (altCSResolved instanceof PDFName) {
+          altSpaceName = altCSResolved.toString().replace(/^\//, "");
+        } else if (altCSResolved instanceof PDFArray && altCSResolved.size() > 0) {
+          const first = altCSResolved.get(0);
+          const firstName = (first instanceof PDFRef ? pdf.context.lookup(first) : first) as PDFName;
+          altSpaceName = firstName?.toString()?.replace(/^\//, "") ?? "DeviceCMYK";
+        }
+
+        // Extract tint transform to compute RGB fallback at tint=1.0
+        const tintFn = resolved.get(3);
+        const tintDict = (tintFn instanceof PDFRef ? pdf.context.lookup(tintFn) : tintFn) as PDFDict;
+        let rgbFallback = "#888888";
+        try {
+          if (tintDict instanceof PDFDict) {
+            const c1Raw = tintDict.get(PDFName.of("C1"));
+            if (c1Raw instanceof PDFArray) {
+              const c1 = Array.from({ length: c1Raw.size() }, (_, i) => {
+                const v = c1Raw.get(i);
+                return parseFloat(v?.toString() ?? "0");
+              });
+              if (altSpaceName === "DeviceCMYK" && c1.length >= 4) {
+                const [c, m, y, k] = c1;
+                const r = Math.round(255 * (1 - c) * (1 - k));
+                const g = Math.round(255 * (1 - m) * (1 - k));
+                const b = Math.round(255 * (1 - y) * (1 - k));
+                rgbFallback = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+              } else if (altSpaceName === "Lab" && c1.length >= 3) {
+                // Lab to XYZ to sRGB (D65 illuminant)
+                const [L, a, b] = c1;
+                const fy = (L + 16) / 116;
+                const fx = a / 500 + fy;
+                const fz = fy - b / 200;
+                const xr = fx > 6 / 29 ? fx ** 3 : (fx - 16 / 116) * 3 * (6 / 29) ** 2;
+                const yr = fy > 6 / 29 ? fy ** 3 : (fy - 16 / 116) * 3 * (6 / 29) ** 2;
+                const zr = fz > 6 / 29 ? fz ** 3 : (fz - 16 / 116) * 3 * (6 / 29) ** 2;
+                const X = xr * 0.9505; const Y = yr * 1.0; const Z = zr * 1.089;
+                const toSrgb = (v: number) => Math.round(255 * Math.max(0, Math.min(1, v > 0.0031308 ? 1.055 * v ** (1 / 2.4) - 0.055 : 12.92 * v)));
+                const rr = toSrgb(3.2406 * X - 1.5372 * Y - 0.4986 * Z);
+                const gg = toSrgb(-0.9689 * X + 1.8758 * Y + 0.0415 * Z);
+                const bb = toSrgb(0.0557 * X - 0.204 * Y + 1.057 * Z);
+                rgbFallback = `#${rr.toString(16).padStart(2, "0")}${gg.toString(16).padStart(2, "0")}${bb.toString(16).padStart(2, "0")}`;
+              } else if (altSpaceName === "DeviceRGB" && c1.length >= 3) {
+                const [r, g, b] = c1;
+                rgbFallback = `#${Math.round(r * 255).toString(16).padStart(2, "0")}${Math.round(g * 255).toString(16).padStart(2, "0")}${Math.round(b * 255).toString(16).padStart(2, "0")}`;
+              }
+            }
+          }
+        } catch { /* fallback stays grey */ }
+
+        seenNames.add(spotName);
+        spotColors.push({
+          name: spotName,
+          resourceName: key.toString().replace(/^\//, ""),
+          page: pageIdx,
+          alternateSpace: altSpaceName,
+          rgbFallback,
+        });
+      }
+    } catch { /* skip page */ }
   }
 
   return {
@@ -124,6 +221,7 @@ export async function extractPdfMetadata(buffer: Uint8Array): Promise<PdfMetadat
     pageCount: pages.length,
     trimWidthMm,
     trimHeightMm,
+    spotColors,
   };
 }
 

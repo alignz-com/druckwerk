@@ -46,6 +46,7 @@ const textSegmentStyleSchema = z.object({
   pattern: z.string().min(1),
   flags: z.string().optional(),
   color: z.string().optional(),
+  spotColor: z.string().optional(),
 });
 
 const visibilitySchema = z
@@ -66,6 +67,7 @@ const textElementSchema = z.object({
   font: textFontSchema,
   segmentStyles: z.array(textSegmentStyleSchema).optional(),
   textAnchor: z.enum(["start", "middle", "end"]).optional(),
+  spotColor: z.string().optional(),
   visibility: visibilitySchema,
 });
 
@@ -80,6 +82,7 @@ const rectElementSchema = z.object({
   stroke: z.string().optional(),
   strokeWidthMm: z.number().optional(),
   radiusMm: z.number().optional(),
+  spotColor: z.string().optional(),
   visibility: visibilitySchema,
 });
 
@@ -91,6 +94,7 @@ const qrElementSchema = z.object({
   dataBinding: z.string(), // expected base64 or url string field
   color: z.string().optional(),
   background: z.string().optional(),
+  spotColor: z.string().optional(),
   visibility: visibilitySchema,
 });
 

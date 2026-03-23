@@ -101,6 +101,11 @@ export async function POST(req: NextRequest) {
     pdfMeta = await extractPdfMetadata(data);
     templateUpdate = {
       pdfPath: publicUrl,
+      canvasWidthMm: pdfMeta.widthMm,
+      canvasHeightMm: pdfMeta.heightMm,
+      pageWidthMm: pdfMeta.trimWidthMm ?? pdfMeta.widthMm,
+      pageHeightMm: pdfMeta.trimHeightMm ?? pdfMeta.heightMm,
+      spotColors: pdfMeta.spotColors.length > 0 ? pdfMeta.spotColors : undefined,
     };
   } else if (type === TemplateAssetType.PREVIEW_FRONT) {
     templateUpdate = { previewFrontPath: publicUrl };
@@ -127,6 +132,7 @@ export async function POST(req: NextRequest) {
       heightPt: pdfMeta.heightPt,
       trimWidthMm: pdfMeta.trimWidthMm,
       trimHeightMm: pdfMeta.trimHeightMm,
+      spotColors: pdfMeta.spotColors,
     };
   } else if (
     type === TemplateAssetType.PREVIEW_FRONT ||

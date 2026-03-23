@@ -1,4 +1,4 @@
-import { PDFDocument, grayscale, rgb, PDFOperator, PDFOperatorNames, asPDFNumber, type PDFFont, type Color, type PDFPage } from "pdf-lib";
+import { PDFDocument, grayscale, rgb, PDFOperator, PDFOperatorNames, asPDFNumber, PDFName, PDFArray, PDFDict, PDFRef, type PDFFont, type Color, type PDFPage } from "pdf-lib";
 import * as QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
@@ -25,24 +25,139 @@ const mm2pt = (mm: number) => (mm * 72) / 25.4;
 const pt2mm = (pt: number) => (pt * 25.4) / 72;
 
 /**
- * Draw text with character spacing (tracking).
- * pdf-lib's drawText doesn't support characterSpacing, so we set the Tc
- * operator directly before drawing and reset it after.
+ * Draw text with character spacing (tracking) and optional spot color support.
+ * pdf-lib's drawText doesn't support characterSpacing or spot colors,
+ * so we use raw PDF operators when either is needed.
  */
 function drawTextWithTracking(
   page: PDFPage,
   text: string,
-  opts: { x: number; y: number; size: number; font: PDFFont; color?: Color; characterSpacing?: number },
+  opts: { x: number; y: number; size: number; font: PDFFont; color?: Color; characterSpacing?: number; useRawColor?: boolean },
 ) {
   const cs = opts.characterSpacing ?? 0;
-  if (cs === 0) {
+  if (cs === 0 && !opts.useRawColor) {
     page.drawText(text, opts);
     return;
   }
-  // Set Tc (character spacing), draw text, reset Tc to 0
-  page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(cs)]));
-  page.drawText(text, { x: opts.x, y: opts.y, size: opts.size, font: opts.font, color: opts.color });
-  page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(0)]));
+  if (cs !== 0) {
+    page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(cs)]));
+  }
+  if (opts.useRawColor) {
+    // Draw text without setting color — uses whatever fill color is currently active (e.g. spot color)
+    const fontKey = page.node.newFontDictionary(opts.font.name, opts.font.ref);
+    page.pushOperators(
+      PDFOperator.of(PDFOperatorNames.BeginText, []),
+      PDFOperator.of(PDFOperatorNames.SetFontAndSize, [fontKey, asPDFNumber(opts.size)]),
+      PDFOperator.of(PDFOperatorNames.MoveText, [asPDFNumber(opts.x), asPDFNumber(opts.y)]),
+      PDFOperator.of(PDFOperatorNames.ShowText, [opts.font.encodeText(text)]),
+      PDFOperator.of(PDFOperatorNames.EndText, []),
+    );
+  } else {
+    page.drawText(text, { x: opts.x, y: opts.y, size: opts.size, font: opts.font, color: opts.color });
+  }
+  if (cs !== 0) {
+    page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(0)]));
+  }
+}
+
+/**
+ * Find a Separation (spot) color space on a PDF page by its Pantone name.
+ * If not found on the target page, searches all pages and copies the definition.
+ * Returns the resource key (e.g. "CS1") or null if not found.
+ */
+function findSpotColorResource(
+  doc: PDFDocument,
+  page: PDFPage,
+  spotName: string,
+): string | null {
+  // First try the target page
+  const found = findSpotColorOnPage(doc, page, spotName);
+  if (found) return found;
+
+  // Search all pages for the color space and copy it to the target page
+  for (const pg of doc.getPages()) {
+    if (pg === page) continue;
+    const sourceKey = findSpotColorOnPage(doc, pg, spotName);
+    if (!sourceKey) continue;
+
+    // Copy the color space definition to the target page
+    try {
+      const srcRes = (pg.node.get(PDFName.of("Resources")) instanceof PDFRef
+        ? doc.context.lookup(pg.node.get(PDFName.of("Resources"))!)
+        : pg.node.get(PDFName.of("Resources"))) as PDFDict;
+      const srcCS = (srcRes.get(PDFName.of("ColorSpace")) instanceof PDFRef
+        ? doc.context.lookup(srcRes.get(PDFName.of("ColorSpace"))!)
+        : srcRes.get(PDFName.of("ColorSpace"))) as PDFDict;
+      const csValue = srcCS.get(PDFName.of(sourceKey));
+      if (!csValue) continue;
+
+      // Get or create target page ColorSpace dict
+      let tgtRes = page.node.get(PDFName.of("Resources"));
+      if (tgtRes instanceof PDFRef) tgtRes = doc.context.lookup(tgtRes) as PDFDict;
+      const tgtResDict = tgtRes as PDFDict;
+      let tgtCS = tgtResDict.get(PDFName.of("ColorSpace"));
+      if (tgtCS instanceof PDFRef) tgtCS = doc.context.lookup(tgtCS);
+      if (!(tgtCS instanceof PDFDict)) {
+        tgtCS = doc.context.obj({});
+        tgtResDict.set(PDFName.of("ColorSpace"), tgtCS as PDFDict);
+      }
+      // Use a unique key to avoid conflicts
+      const newKey = `Spot_${sourceKey}`;
+      (tgtCS as PDFDict).set(PDFName.of(newKey), csValue);
+      return newKey;
+    } catch { /* copy failed */ }
+  }
+
+  return null;
+}
+
+function findSpotColorOnPage(
+  doc: PDFDocument,
+  page: PDFPage,
+  spotName: string,
+): string | null {
+  try {
+    const resources = page.node.get(PDFName.of("Resources"));
+    if (!resources) return null;
+    const resDict = (resources instanceof PDFRef ? doc.context.lookup(resources) : resources) as PDFDict;
+    const csRaw = resDict.get(PDFName.of("ColorSpace"));
+    if (!csRaw) return null;
+    const csDict = (csRaw instanceof PDFRef ? doc.context.lookup(csRaw) : csRaw) as PDFDict;
+
+    for (const [key, value] of csDict.entries()) {
+      const resolved = (value instanceof PDFRef ? doc.context.lookup(value) : value) as PDFArray;
+      if (!(resolved instanceof PDFArray) || resolved.size() < 2) continue;
+      const csType = resolved.get(0);
+      const typeName = (csType instanceof PDFRef ? doc.context.lookup(csType) : csType) as PDFName;
+      if (typeName?.toString() !== "/Separation") continue;
+      const rawName = (resolved.get(1) as PDFName).decodeText().replace(/^\//, "");
+      if (rawName === spotName) {
+        return key.toString().replace(/^\//, "");
+      }
+    }
+  } catch { /* not found */ }
+  return null;
+}
+
+/**
+ * Set a spot color as the current fill color on a page.
+ * Uses PDF cs/scn operators to reference the Separation color space.
+ */
+function setSpotColorFill(page: PDFPage, resourceName: string, tint = 1.0) {
+  page.pushOperators(
+    PDFOperator.of("cs" as any, [PDFName.of(resourceName)]),
+    PDFOperator.of("scn" as any, [asPDFNumber(tint)]),
+  );
+}
+
+/**
+ * Reset fill color back to a standard RGB color after using a spot color.
+ */
+function resetToRgbFill(page: PDFPage, color: Color) {
+  page.pushOperators(
+    PDFOperator.of("cs" as any, [PDFName.of("DeviceRGB")]),
+  );
+  // drawText/drawRectangle will set the color normally after this
 }
 
 type PdfFontPack = {
@@ -155,11 +270,11 @@ function evaluateTextParts(element: TextElement, context: Record<string, unknown
 function applySegmentStylesToText(
   text: string,
   rules: TextElement["segmentStyles"] | undefined,
-): Array<{ text: string; color?: string }> {
+): Array<{ text: string; color?: string; spotColor?: string }> {
   if (!text) return [];
   if (!rules || rules.length === 0) return [{ text }];
 
-  let segments: Array<{ text: string; color?: string }> = [{ text }];
+  let segments: Array<{ text: string; color?: string; spotColor?: string }> = [{ text }];
   for (const rule of rules) {
     let matcher: RegExp;
     try {
@@ -168,10 +283,10 @@ function applySegmentStylesToText(
       continue;
     }
 
-    const next: Array<{ text: string; color?: string }> = [];
+    const next: Array<{ text: string; color?: string; spotColor?: string }> = [];
     for (const segment of segments) {
       if (!segment.text) continue;
-      if (segment.color) {
+      if (segment.color || segment.spotColor) {
         next.push(segment);
         continue;
       }
@@ -188,7 +303,7 @@ function applySegmentStylesToText(
       if (start > 0) {
         next.push({ text: segment.text.slice(0, start) });
       }
-      next.push({ text: segment.text.slice(start, end), color: rule.color });
+      next.push({ text: segment.text.slice(start, end), color: rule.color, spotColor: rule.spotColor });
       if (end < segment.text.length) {
         next.push({ text: segment.text.slice(end) });
       }
@@ -575,16 +690,26 @@ async function renderDesignElementsToPdf(opts: {
         const heightMm = element.heightMm;
         const x = mmToPt(xMm);
         const y = mmToPt(pageHeightMm - yMm - heightMm);
-        page.drawRectangle({
-          x,
-          y,
-          width: mmToPt(widthMm),
-          height: mmToPt(heightMm),
-          color: element.fill ? parseColor(element.fill) : undefined,
-          opacity: element.opacity,
-          borderColor: element.stroke ? parseColor(element.stroke) : undefined,
-          borderWidth: element.strokeWidthMm ? mmToPt(element.strokeWidthMm) : undefined,
-        });
+        const rectSpotRes = element.spotColor ? findSpotColorResource(doc, page, element.spotColor) : null;
+        if (rectSpotRes) {
+          setSpotColorFill(page, rectSpotRes);
+          page.pushOperators(
+            PDFOperator.of("re" as any, [asPDFNumber(x), asPDFNumber(y), asPDFNumber(mmToPt(widthMm)), asPDFNumber(mmToPt(heightMm))]),
+            PDFOperator.of("f" as any, []),
+          );
+          resetToRgbFill(page, rgb(0, 0, 0));
+        } else {
+          page.drawRectangle({
+            x,
+            y,
+            width: mmToPt(widthMm),
+            height: mmToPt(heightMm),
+            color: element.fill ? parseColor(element.fill) : undefined,
+            opacity: element.opacity,
+            borderColor: element.stroke ? parseColor(element.stroke) : undefined,
+            borderWidth: element.strokeWidthMm ? mmToPt(element.strokeWidthMm) : undefined,
+          });
+        }
         return heightMm;
       }
       case "text": {
@@ -630,6 +755,11 @@ async function renderDesignElementsToPdf(opts: {
         const y = pageHeightPt - baselinePt;
 
         const fillColor = truncated ? rgb(1, 0, 0) : parseColor(element.font.color);
+
+        // Activate spot color if specified
+        const spotRes = element.spotColor ? findSpotColorResource(doc, page, element.spotColor) : null;
+        if (spotRes) setSpotColorFill(page, spotRes);
+
         if (truncated) {
           drawTextWithTracking(page, text, {
             x,
@@ -638,6 +768,7 @@ async function renderDesignElementsToPdf(opts: {
             font,
             color: fillColor,
             characterSpacing: letterSpacingPt,
+            useRawColor: !!spotRes,
           });
         } else {
           const segments = applySegmentStylesToText(text, element.segmentStyles).filter((segment) => segment.text.length > 0);
@@ -649,12 +780,15 @@ async function renderDesignElementsToPdf(opts: {
               font,
               color: fillColor,
               characterSpacing: letterSpacingPt,
+              useRawColor: !!spotRes,
             });
           } else {
             let cursorX = x;
             for (let index = 0; index < segments.length; index += 1) {
               const segment = segments[index];
+              const segSpotRes = segment.spotColor ? findSpotColorResource(doc, page, segment.spotColor) : null;
               const segmentColor = parseColor(segment.color) ?? fillColor;
+              if (segSpotRes) setSpotColorFill(page, segSpotRes);
               drawTextWithTracking(page, segment.text, {
                 x: cursorX,
                 y,
@@ -662,7 +796,9 @@ async function renderDesignElementsToPdf(opts: {
                 font,
                 color: segmentColor,
                 characterSpacing: letterSpacingPt,
+                useRawColor: !!segSpotRes,
               });
+              if (segSpotRes) resetToRgbFill(page, fillColor ?? rgb(0, 0, 0));
               cursorX +=
                 font.widthOfTextAtSize(segment.text, sizePt) +
                 Math.max(0, segment.text.length - 1) * letterSpacingPt;
@@ -673,6 +809,9 @@ async function renderDesignElementsToPdf(opts: {
             }
           }
         }
+        // Reset to RGB if spot color was used
+        if (spotRes) resetToRgbFill(page, fillColor ?? rgb(0, 0, 0));
+
         const lineHeightMm =
           element.font.lineHeightMm ??
           (element.font.lineHeight ?? 1.2) * pt2mm(sizePt);
@@ -692,6 +831,8 @@ async function renderDesignElementsToPdf(opts: {
       }
       case "qr": {
         if (element.visibility && !evaluateVisibility(element.visibility, context)) return 0;
+        // Activate spot color for QR if specified
+        const qrSpotRes = element.spotColor ? findSpotColorResource(doc, page, element.spotColor) : null;
         const data = resolveField(context, element.dataBinding);
         if (typeof data === "string") {
           if (data.length === 0) return 0;
@@ -737,23 +878,41 @@ async function renderDesignElementsToPdf(opts: {
             });
           }
 
+          // Set spot color for QR modules if specified
+          if (qrSpotRes) setSpotColorFill(page, qrSpotRes);
+
           const useGet = typeof modules.get === "function";
           const dataArray = modules.data;
+          const modWidthPt = mmToPt(moduleMm);
           for (let row = 0; row < moduleCount; row += 1) {
             for (let col = 0; col < moduleCount; col += 1) {
               const isDark = useGet
                 ? Boolean(modules.get?.(row, col))
                 : Boolean(dataArray && dataArray[row * moduleCount + col]);
               if (!isDark) continue;
-              page.drawRectangle({
-                x: baseX + mmToPt(col * moduleMm),
-                y: baseY + mmToPt((moduleCount - 1 - row) * moduleMm),
-                width: mmToPt(moduleMm),
-                height: mmToPt(moduleMm),
-                color: darkColor ?? rgb(0, 0, 0),
-              });
+              if (qrSpotRes) {
+                // Use raw rectangle operator — spot color already set via cs/scn
+                const rx = baseX + mmToPt(col * moduleMm);
+                const ry = baseY + mmToPt((moduleCount - 1 - row) * moduleMm);
+                page.pushOperators(
+                  PDFOperator.of("re" as any, [asPDFNumber(rx), asPDFNumber(ry), asPDFNumber(modWidthPt), asPDFNumber(modWidthPt)]),
+                  PDFOperator.of("f" as any, []),
+                );
+              } else {
+                page.drawRectangle({
+                  x: baseX + mmToPt(col * moduleMm),
+                  y: baseY + mmToPt((moduleCount - 1 - row) * moduleMm),
+                  width: modWidthPt,
+                  height: modWidthPt,
+                  color: darkColor ?? rgb(0, 0, 0),
+                });
+              }
             }
           }
+
+          // Reset after spot color
+          if (qrSpotRes) resetToRgbFill(page, rgb(0, 0, 0));
+
           return sizeMm;
         }
 
@@ -839,10 +998,25 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   const { width: pageWidth, height: pageHeight } = front.getSize();
   const pageWidthMm = pt2mm(pageWidth);
   const pageHeightMm = pt2mm(pageHeight);
-  const cardWidthMm = template.pageWidthMm ?? 85;
-  const cardHeightMm = template.pageHeightMm ?? 55;
-  const offsetXMm = Math.max(0, (pageWidthMm - cardWidthMm) / 2);
-  const offsetYMm = Math.max(0, (pageHeightMm - cardHeightMm) / 2);
+
+  // Offset calculation: use TrimBox from the PDF if available.
+  // TrimBox origin gives us the exact bleed offset without any fallback guessing.
+  let offsetXMm = 0;
+  let offsetYMm = 0;
+  try {
+    const trimBox = front.getTrimBox();
+    if (trimBox && trimBox.x > 0) offsetXMm = pt2mm(trimBox.x);
+    if (trimBox && trimBox.y > 0) offsetYMm = pt2mm(trimBox.y);
+  } catch { /* no TrimBox — zero offset */ }
+  // Template-level overrides take precedence
+  if (template.pageWidthMm && template.canvasWidthMm) {
+    offsetXMm = Math.max(0, (template.canvasWidthMm - template.pageWidthMm) / 2);
+  }
+  if (template.pageHeightMm && template.canvasHeightMm) {
+    offsetYMm = Math.max(0, (template.canvasHeightMm - template.pageHeightMm) / 2);
+  }
+  const cardWidthMm = template.pageWidthMm ?? (pageWidthMm - offsetXMm * 2);
+  const cardHeightMm = template.pageHeightMm ?? (pageHeightMm - offsetYMm * 2);
 
   const pdfFonts: PdfFontPack = {
     regular: Frutiger.Light,

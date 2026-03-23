@@ -54,7 +54,7 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
       <img
         src={order.thumbnailUrl}
         alt=""
-        className="rounded-md shadow-sm max-w-[48px] max-h-[68px] w-auto h-auto"
+        className="shadow-sm max-w-[48px] max-h-full w-auto h-auto"
       />
     );
   }
@@ -236,8 +236,10 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
 
   // Line 2: template orders show requester + role; upload orders show company · ordered by
   const line2 = isBC
-    ? [order.requesterName, [order.requesterRole, order.requesterSeniority].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || null
+    ? null // handled inline below for styling
     : [order.company ?? (showBrand ? order.brandName : null), order.orderedByName].filter(Boolean).join(" · ") || null;
+  const bcLine2Name = isBC ? order.requesterName : null;
+  const bcLine2Role = isBC ? [order.requesterRole, order.requesterSeniority].filter(Boolean).join(", ") || null : null;
 
   // Qty shown inline with product on line 1
   const qtyText = order.quantity ? `${order.quantity.toLocaleString()} Stk` : null;
@@ -248,7 +250,7 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
     <>
       {/* Thumbnail panel */}
       <div className="relative w-[88px] shrink-0 self-stretch bg-slate-100">
-        <div className="absolute inset-3 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-3 flex items-center justify-center">
           <ThumbnailContent order={order} />
         </div>
       </div>
@@ -262,9 +264,13 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
           {/* Line 1: product · qty · file/page info · person (BC) */}
           <Line1 order={order} isBC={isBC} isMultiFile={isMultiFile} qtyText={qtyText} />
 
-          {/* Line 2: company · ordered by */}
-          {line2 && (
-            <p className="text-xs text-slate-500 truncate">{line2}</p>
+          {/* Line 2: requester (BC) or company · ordered by (upload) */}
+          {(bcLine2Name || line2) && (
+            <p className="text-xs text-slate-500 truncate">
+              {bcLine2Name && <span className="font-medium text-slate-600">{bcLine2Name}</span>}
+              {bcLine2Name && bcLine2Role && <span className="text-slate-400"> · {bcLine2Role}</span>}
+              {line2}
+            </p>
           )}
 
           {/* Line 3: reference code */}

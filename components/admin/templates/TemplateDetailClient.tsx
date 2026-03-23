@@ -75,6 +75,79 @@ type FormatOption = {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+type SpotColorEntry = AdminTemplateSummary["spotColors"] extends (infer T)[] | null ? T : never;
+
+function SpotColorsSection({ templateId, spotColors }: { templateId: string; spotColors: SpotColorEntry[] }) {
+  const [colors, setColors] = useState(spotColors.map((sc) => ({ ...sc })));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await fetch(`/api/admin/templates/${templateId}/spot-colors`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spotColors: colors }),
+      });
+      setSaved(true);
+    } catch { /* ignore */ } finally {
+      setSaving(false);
+    }
+  }
+
+  const hasChanges = JSON.stringify(colors) !== JSON.stringify(spotColors);
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-sm font-semibold text-slate-900">Spot Colors</h2>
+        <p className="text-xs text-slate-500">Pantone colors extracted from the template PDF. Adjust the preview hex to match your brand.</p>
+      </div>
+      <div className="space-y-3">
+        {colors.map((sc, i) => (
+          <div key={sc.name} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
+            <input
+              type="color"
+              value={sc.rgbFallback}
+              onChange={(e) => {
+                const next = [...colors];
+                next[i] = { ...next[i], rgbFallback: e.target.value };
+                setColors(next);
+                setSaved(false);
+              }}
+              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-700">{sc.name}</p>
+              <p className="text-[10px] text-slate-400">{sc.alternateSpace} · Page {sc.page + 1}</p>
+            </div>
+            <Input
+              value={sc.rgbFallback}
+              onChange={(e) => {
+                const next = [...colors];
+                next[i] = { ...next[i], rgbFallback: e.target.value };
+                setColors(next);
+                setSaved(false);
+              }}
+              className="w-24 text-xs font-mono h-7"
+            />
+          </div>
+        ))}
+      </div>
+      {hasChanges && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "…" : saved ? "Saved" : "Save"}
+          </Button>
+        </div>
+      )}
+      {saved && !hasChanges && <p className="text-xs text-emerald-600">Saved.</p>}
+    </section>
+  );
+}
+
 type Props = {
   template: AdminTemplateSummary;
 };
@@ -861,6 +934,11 @@ export default function TemplateDetailPage({ template }: Props) {
                     </div>
                   </div>
                 </section>
+
+                {/* Spot Colors */}
+                {template.spotColors && template.spotColors.length > 0 && (
+                  <SpotColorsSection templateId={template.id} spotColors={template.spotColors} />
+                )}
 
                 {/* Danger zone */}
                 <section>

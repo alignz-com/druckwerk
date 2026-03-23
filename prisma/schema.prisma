@@ -326,6 +326,7 @@ model Template {
   pageHeightMm     Float?
   canvasWidthMm    Float?
   canvasHeightMm   Float?
+  spotColors       Json?
   pcmCode          String?
   hasQrCode        Boolean         @default(false)
   hasPhotoSlot     Boolean         @default(false)

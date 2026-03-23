@@ -342,6 +342,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     design,
     fonts,
     paperStock: paperStockFromDb ?? (fallback?.paperStock ? { ...fallback.paperStock } : null),
+    spotColors: (tpl.spotColors as TemplateDefinition["spotColors"]) ?? fallback?.spotColors,
     hasQrCode: detectHasQrCode(tpl.hasQrCode, mergedConfig),
     hasPhotoSlot,
     photoSlot,
