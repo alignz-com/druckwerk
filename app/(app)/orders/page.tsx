@@ -177,7 +177,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
     const firstThumbPath = order.pdfOrderItems.find(i => i.thumbnailStoragePath)?.thumbnailStoragePath ?? null;
     const thumbnailUrl =
       order.type === "TEMPLATE"
-        ? (order.template?.previewFrontPath ?? null)
+        ? (order.thumbnailUrl ?? order.template?.previewFrontPath ?? null)
         : firstThumbPath
           ? `${process.env.S3_PUBLIC_URL ?? ""}/${process.env.S3_ORDERS_BUCKET ?? "orders"}/${firstThumbPath}`
           : null;

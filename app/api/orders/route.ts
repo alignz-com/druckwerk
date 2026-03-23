@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { put } from "@/lib/blob";
 import { z } from "zod";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
+import { writeFile, readFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 import { getServerSession } from "next-auth";
 
@@ -21,6 +28,23 @@ import { resolveAllowedQuantities } from "@/lib/order-quantities";
 
 export const runtime = "nodejs";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+
+async function generateOrderThumbnail(pdfBytes: Uint8Array): Promise<Buffer | null> {
+  const id = randomUUID();
+  const pdfPath = join(tmpdir(), `${id}.pdf`);
+  const thumbBase = join(tmpdir(), `${id}-thumb`);
+  const thumbPath = `${thumbBase}.png`;
+  try {
+    await writeFile(pdfPath, pdfBytes);
+    await execFileAsync("pdftocairo", ["-png", "-r", "150", "-singlefile", pdfPath, thumbBase]);
+    return await readFile(thumbPath);
+  } catch {
+    return null;
+  } finally {
+    await unlink(pdfPath).catch(() => {});
+    await unlink(thumbPath).catch(() => {});
+  }
+}
 
 const requestSchema = z.object({
   name: z.string().min(3),
@@ -440,6 +464,25 @@ export async function POST(req: Request) {
         pdfUrl: upload.url,
         jdfXml,
       },
+    });
+
+    // Generate and store thumbnail (non-blocking)
+    generateOrderThumbnail(pdfBytes).then(async (thumbBuffer) => {
+      if (!thumbBuffer) return;
+      try {
+        const thumbKey = toStorageKey(referenceCode, fileBaseName, "thumb.png");
+        const thumbBlob = new Blob([new Uint8Array(thumbBuffer)], { type: "image/png" });
+        const thumbUpload = await put(thumbKey, thumbBlob, {
+          access: "public",
+          contentType: "image/png",
+        });
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { thumbnailUrl: thumbUpload.url },
+        });
+      } catch (err) {
+        console.error("[orders] thumbnail generation failed:", err);
+      }
     });
 
     if (effectiveBrandId) {

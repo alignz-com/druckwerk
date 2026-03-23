@@ -416,6 +416,7 @@ model Order {
   photoOriginalUrl String?
   photoCroppedUrl String?
   photoMeta      Json?
+  thumbnailUrl   String?
   pdfUrl         String?
   blobId         String?
   pdfFileName    String?
