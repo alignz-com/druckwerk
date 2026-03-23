@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { FileTextIcon, Maximize2 } from "lucide-react";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pantoneTable = require("pantone-table") as Record<string, string>;
+// @ts-expect-error — no type declarations for pantone-table JSON
+import pantoneTable from "pantone-table/dist/pantone-table.json";
 function pantoneHex(name: string): string | null {
   const key = name.trim().toLowerCase().replace(/^pantone\s+/, "pantone_").replace(/\s+/g, "_");
   return pantoneTable[key] ?? pantoneTable[`${key}_c`] ?? null;
@@ -355,29 +355,6 @@ export function OrderProductsTable(props: Props) {
                 </SpecRow>
               </div>
 
-              {/* Download links */}
-              {canDownloadFiles && (selected.pdfUrl || selected.jdfUrl) && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {selected.pdfUrl && (
-                    <a
-                      href={selected.pdfUrl}
-                      download={selected.filename}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      PDF
-                    </a>
-                  )}
-                  {selected.jdfUrl && (
-                    <a
-                      href={selected.jdfUrl}
-                      download={selected.jdfFileName ?? undefined}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      JDF
-                    </a>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
