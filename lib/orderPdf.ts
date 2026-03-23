@@ -773,7 +773,13 @@ async function renderDesignElementsToPdf(opts: {
             useRawColor: !!spotRes,
           });
         } else {
+          if (element.segmentStyles?.length) {
+            console.log(`[spotColor] applySegmentStyles: text="${text}", rules=${JSON.stringify(element.segmentStyles)}`);
+          }
           const segments = applySegmentStylesToText(text, element.segmentStyles).filter((segment) => segment.text.length > 0);
+          if (element.segmentStyles?.length) {
+            console.log(`[spotColor] segments result: ${JSON.stringify(segments)}`);
+          }
           if (segments.length <= 1) {
             drawTextWithTracking(page, text, {
               x,
