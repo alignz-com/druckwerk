@@ -85,7 +85,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       },
     }),
   ]);
-  const useCardView = isAdmin || isPrinter || (access.hasTemplate && access.hasUpload);
+  const useCardView = true;
 
   const wasCreated = searchParams?.created === "1";
 
