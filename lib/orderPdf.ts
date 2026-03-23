@@ -662,6 +662,7 @@ async function renderDesignElementsToPdf(opts: {
   pageHeightMm: number;
   offsetXMm: number;
   offsetYMm: number;
+  spotColors?: Array<{ name: string; rgbFallback: string }> | null;
 }) {
   const {
     doc,
@@ -676,6 +677,7 @@ async function renderDesignElementsToPdf(opts: {
     pageHeightMm,
     offsetXMm,
     offsetYMm,
+    spotColors,
   } = opts;
   const mmToPt = mm2pt;
   const imageCache = new Map<string, any>();
@@ -787,7 +789,11 @@ async function renderDesignElementsToPdf(opts: {
             for (let index = 0; index < segments.length; index += 1) {
               const segment = segments[index];
               const segSpotRes = segment.spotColor ? findSpotColorResource(doc, page, segment.spotColor) : null;
-              const segmentColor = parseColor(segment.color) ?? fillColor;
+              // Fallback: if spot color not found in PDF, use rgbFallback from template
+              const spotFallbackColor = !segSpotRes && segment.spotColor && spotColors
+                ? parseColor(spotColors.find((sc) => sc.name === segment.spotColor)?.rgbFallback)
+                : null;
+              const segmentColor = spotFallbackColor ?? parseColor(segment.color) ?? fillColor;
               if (segSpotRes) setSpotColorFill(page, segSpotRes);
               drawTextWithTracking(page, segment.text, {
                 x: cursorX,
@@ -1124,6 +1130,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       pageHeightMm,
       offsetXMm,
       offsetYMm,
+      spotColors: template.spotColors,
     });
   } else {
     const frame = template.config.front.textFrame;
@@ -1189,6 +1196,7 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
       pageHeightMm,
       offsetXMm,
       offsetYMm,
+      spotColors: template.spotColors,
     });
   }
 
