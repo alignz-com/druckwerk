@@ -1316,10 +1316,10 @@ export const messages = {
           addresses: "Addresses",
         },
         access: {
-          businessCards: "Business cards",
-          businessCardsHint: "Users can order business cards.",
-          pdfPrint: "PDF print",
-          pdfPrintHint: "Users can place PDF print orders.",
+          businessCards: "Templates",
+          businessCardsHint: "Users can order template-based products.",
+          pdfPrint: "Upload",
+          pdfPrintHint: "Users can place upload-based orders.",
         },
       },
       products: {
@@ -1371,8 +1371,8 @@ export const messages = {
         access: {
           title: "Order Access",
           description: "Which order types this brand can place.",
-          businessCards: "Business Cards",
-          pdfPrint: "PDF Print",
+          businessCards: "Templates",
+          pdfPrint: "Upload",
           save: "Save access",
           reset: "Reset",
           saved: "Saved.",
@@ -2830,10 +2830,10 @@ export const messages = {
           addresses: "Adressen",
         },
         access: {
-          businessCards: "Visitenkarten",
-          businessCardsHint: "Benutzer können Visitenkarten bestellen.",
-          pdfPrint: "PDF-Druck",
-          pdfPrintHint: "Benutzer können PDF-Druckaufträge aufgeben.",
+          businessCards: "Vorlagen",
+          businessCardsHint: "Benutzer können vorlagenbasierte Produkte bestellen.",
+          pdfPrint: "Upload",
+          pdfPrintHint: "Benutzer können Upload-Bestellungen aufgeben.",
         },
       },
       products: {
@@ -2885,8 +2885,8 @@ export const messages = {
         access: {
           title: "Bestellzugang",
           description: "Welche Bestelltypen diese Marke aufgeben kann.",
-          businessCards: "Visitenkarten",
-          pdfPrint: "PDF-Druck",
+          businessCards: "Vorlagen",
+          pdfPrint: "Upload",
           save: "Zugang speichern",
           reset: "Zurücksetzen",
           saved: "Gespeichert.",

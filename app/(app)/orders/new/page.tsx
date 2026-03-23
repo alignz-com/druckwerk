@@ -54,13 +54,22 @@ export default async function NewOrderPage() {
     initialBrandId = brandOptions[0]!.id;
   }
 
-  const access = await getUserAccessibleWorkflows(userId, initialBrandId ?? preferredBrandId);
+  const resolvedBrandId = initialBrandId ?? preferredBrandId;
+  const [access, brandTemplateCount] = await Promise.all([
+    getUserAccessibleWorkflows(userId, resolvedBrandId),
+    resolvedBrandId
+      ? prisma.brandTemplate.count({ where: { brandId: resolvedBrandId } })
+      : Promise.resolve(0),
+  ]);
 
-  if (access.hasUpload && !access.hasTemplate) {
+  // If the brand has no templates, treat template access as unavailable
+  const hasTemplate = access.hasTemplate && brandTemplateCount > 0;
+
+  if (access.hasUpload && !hasTemplate) {
     redirect("/orders/new/pdf");
   }
 
-  if (access.hasTemplate && access.hasUpload) {
+  if (hasTemplate && access.hasUpload) {
     return <OrderTypeSelector />;
   }
 
