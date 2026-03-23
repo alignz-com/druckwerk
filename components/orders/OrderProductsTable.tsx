@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { FileTextIcon, Maximize2 } from "lucide-react";
-// @ts-expect-error — no type declarations for pantone-table JSON
-import pantoneTable from "pantone-table/dist/pantone-table.json";
+import _pantoneTable from "@/lib/pantone-table.json";
+const pantoneTable = _pantoneTable as Record<string, string>;
 function pantoneHex(name: string): string | null {
   const key = name.trim().toLowerCase().replace(/^pantone\s+/, "pantone_").replace(/\s+/g, "_");
   return pantoneTable[key] ?? pantoneTable[`${key}_c`] ?? null;
