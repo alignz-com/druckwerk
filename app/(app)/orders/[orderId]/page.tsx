@@ -353,7 +353,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   <div className="flex items-start gap-4 py-2.5">
                     <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.url}</dt>
                     <dd className="text-sm text-slate-900">
-                      <a href={order.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{order.url}</a>
+                      <a href={order.url} target="_blank" rel="noopener noreferrer" className="text-slate-900 underline decoration-slate-300 hover:decoration-slate-500">{order.url}</a>
                     </dd>
                   </div>
                 )}
@@ -361,7 +361,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   <div className="flex items-start gap-4 py-2.5">
                     <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.linkedin}</dt>
                     <dd className="text-sm text-slate-900">
-                      <a href={order.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">{order.linkedin}</a>
+                      <a href={order.linkedin} target="_blank" rel="noopener noreferrer" className="text-slate-900 underline decoration-slate-300 hover:decoration-slate-500 truncate block">{order.linkedin}</a>
                     </dd>
                   </div>
                 )}
@@ -375,7 +375,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   <div className="flex items-start gap-4 py-2.5">
                     <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">QR Link</dt>
                     <dd className="text-sm text-slate-900">
-                      <a href={publicProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">{publicProfileUrl}</a>
+                      <a href={publicProfileUrl} target="_blank" rel="noopener noreferrer" className="text-slate-900 underline decoration-slate-300 hover:decoration-slate-500 truncate block">{publicProfileUrl}</a>
                     </dd>
                   </div>
                 )}
@@ -529,7 +529,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                         href={delivery.deliveryNoteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-slate-900 underline decoration-slate-300 hover:decoration-slate-500"
                       >
                         {delivery.number}
                       </a>
