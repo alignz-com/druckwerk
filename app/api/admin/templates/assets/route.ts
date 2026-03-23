@@ -101,12 +101,6 @@ export async function POST(req: NextRequest) {
     pdfMeta = await extractPdfMetadata(data);
     templateUpdate = {
       pdfPath: publicUrl,
-      // Canvas = full page (MediaBox)
-      canvasWidthMm: Math.round(pdfMeta.widthMm * 100) / 100,
-      canvasHeightMm: Math.round(pdfMeta.heightMm * 100) / 100,
-      // Trim = TrimBox if present, otherwise same as canvas
-      pageWidthMm: pdfMeta.trimWidthMm ?? Math.round(pdfMeta.widthMm * 100) / 100,
-      pageHeightMm: pdfMeta.trimHeightMm ?? Math.round(pdfMeta.heightMm * 100) / 100,
     };
   } else if (type === TemplateAssetType.PREVIEW_FRONT) {
     templateUpdate = { previewFrontPath: publicUrl };
