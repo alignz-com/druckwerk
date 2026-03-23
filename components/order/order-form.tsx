@@ -1846,46 +1846,58 @@ export default function OrderForm({
           {/* Mobile: title + front/back buttons outside card */}
           <div className="flex items-center justify-between pt-3 pb-2 xl:hidden">
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">{tOrder("title")}</h1>
-            <div className="flex gap-2">
-              <Button
+            <div className="flex gap-1">
+              <button
                 type="button"
-                variant={previewView === "front" ? "default" : "outline"}
-                size="sm"
                 onClick={() => setPreviewView("front")}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  previewView === "front"
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 {tOrder("confirm.front")}
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                variant={previewView === "back" ? "default" : "outline"}
-                size="sm"
                 onClick={() => setPreviewView("back")}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  previewView === "back"
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 {tOrder("confirm.back")}
-              </Button>
+              </button>
             </div>
           </div>
           <Card className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:p-4 xl:gap-3">
             {/* Desktop: title + front/back buttons inside card */}
             <div className="hidden xl:flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</span>
-              <div className="flex gap-2">
-                <Button
+              <div className="flex gap-1">
+                <button
                   type="button"
-                  variant={previewView === "front" ? "default" : "outline"}
-                  size="sm"
                   onClick={() => setPreviewView("front")}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    previewView === "front"
+                      ? "bg-slate-900 text-white"
+                      : "bg-white text-slate-500 hover:bg-slate-200"
+                  }`}
                 >
                   {tOrder("confirm.front")}
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  variant={previewView === "back" ? "default" : "outline"}
-                  size="sm"
                   onClick={() => setPreviewView("back")}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    previewView === "back"
+                      ? "bg-slate-900 text-white"
+                      : "bg-white text-slate-500 hover:bg-slate-200"
+                  }`}
                 >
                   {tOrder("confirm.back")}
-                </Button>
+                </button>
               </div>
             </div>
             <div>
@@ -1909,7 +1921,7 @@ export default function OrderForm({
               ) : (
                 /* Card loaded — same 3:2 area, card fitted inside */
                 <>
-                <div className="relative flex aspect-[3/2] items-center justify-center rounded-xl bg-slate-50/30">
+                <div className="relative flex aspect-[3/2] items-center justify-center rounded-2xl border bg-slate-100">
                   <div
                     className="relative overflow-visible"
                     style={{

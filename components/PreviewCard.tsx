@@ -1210,7 +1210,7 @@ export function BusinessCardFront({
           {frontNodes}
         </g>
 
-        <rect x={0} y={0} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
@@ -1418,7 +1418,7 @@ export function BusinessCardBack({
 
         <g>{backNodes}</g>
 
-        <rect x={0} y={0} width={trimW} height={trimH} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>

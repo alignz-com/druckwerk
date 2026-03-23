@@ -3,11 +3,13 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import { getServerAuthSession } from "@/lib/auth";
+import { getTemplateForBrandOrGlobal } from "@/lib/templates";
 import { prisma } from "@/lib/prisma";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
 import { OrderQuantityEditor } from "@/components/orders/OrderQuantityEditor";
 import { OrderDeliveryDateEditor } from "@/components/orders/OrderDeliveryDateEditor";
 import { OrderDetailActionBar } from "@/components/orders/OrderDetailActionBar";
+import { OrderCardPreview } from "@/components/orders/OrderCardPreview";
 import {
   OrderProductsTable,
   type BcProductItem,
@@ -123,8 +125,16 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     (isAdmin || isPrinter) && !order.deliveryItems?.length;
 
   const hasPdfItems = order.type === "UPLOAD" && order.pdfOrderItems.length > 1;
-  const downloadPdfUrl = hasPdfItems ? `/api/orders/${orderId}/download-all?type=pdf` : undefined;
-  const downloadJdfUrl = hasPdfItems && (isAdmin || isPrinter) ? `/api/orders/${orderId}/download-all?type=jdf` : undefined;
+  const downloadPdfUrl = hasPdfItems
+    ? `/api/orders/${orderId}/download-all?type=pdf`
+    : order.type === "TEMPLATE" && order.pdfUrl
+      ? order.pdfUrl
+      : undefined;
+  const downloadJdfUrl = hasPdfItems && (isAdmin || isPrinter)
+    ? `/api/orders/${orderId}/download-all?type=jdf`
+    : order.type === "TEMPLATE" && order.jdfUrl && (isAdmin || isPrinter)
+      ? order.jdfUrl
+      : undefined;
 
   const delivery = order.deliveryItems?.[0]?.delivery ?? null;
   const brandAddresses = order.brand?.addresses ?? [];
@@ -132,10 +142,19 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const meta =
     typeof order.meta === "object" && order.meta ? (order.meta as Record<string, unknown>) : {};
   const templateKey = typeof meta.templateKey === "string" ? meta.templateKey : null;
+
+  // Load resolved template for SVG preview (template orders only)
+  const resolvedTemplate = order.type === "TEMPLATE" && templateKey
+    ? await getTemplateForBrandOrGlobal(templateKey, order.brandId)
+    : null;
   const customerReference =
     typeof meta.customerReference === "string" || typeof meta.customerReference === "number"
       ? String(meta.customerReference)
       : "";
+  const publicProfileUrl =
+    typeof meta.publicProfileUrl === "string" ? meta.publicProfileUrl : null;
+  const qrMode = typeof meta.qrMode === "string" ? meta.qrMode : null;
+  const addressMeta = meta.address && typeof meta.address === "object" ? meta.address as Record<string, string> : null;
   const isExpress = order.deliveryTime === "express";
 
   const statusLabel = t.statuses[order.status] ?? order.status;
@@ -230,8 +249,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   };
 
   return (
-    <div className="overflow-x-auto">
-    <div className="space-y-6 pb-24 min-w-[600px]">
+    <div className="space-y-6 pb-24">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-400">
         <Link href="/orders" className="hover:text-slate-600 transition-colors">
@@ -262,12 +280,121 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         </div>
       </div>
 
-      {/* Two-column grid */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* LEFT COLUMN */}
+      {/* Main grid — 3 columns for template, 2 for upload */}
+      <div className={`grid gap-6 ${order.type === "TEMPLATE" ? "lg:grid-cols-[3fr_1fr]" : "lg:grid-cols-[1fr_360px]"}`}>
+
+        {/* TEMPLATE: Column 1 — Preview + Details / UPLOAD: Column 1 — Products */}
         <div className="space-y-6">
-          {/* Products */}
-          {order.type === "UPLOAD" ? (
+          {order.type === "TEMPLATE" ? (<>
+            {/* Card SVG preview */}
+            {resolvedTemplate ? (
+              <OrderCardPreview
+                template={resolvedTemplate}
+                name={order.requesterName ?? ""}
+                role={order.requesterRole ?? ""}
+                seniority={order.requesterSeniority ?? ""}
+                email={order.requesterEmail ?? ""}
+                phone={order.phone ?? ""}
+                mobile={order.mobile ?? ""}
+                company={order.company ?? ""}
+                url={order.url ?? ""}
+                linkedin={order.linkedin ?? undefined}
+                qrPreviewMode={qrMode === "public" ? "public" : "vcard"}
+                qrPayload={publicProfileUrl}
+                addressFields={addressMeta ? {
+                  companyName: addressMeta.companyName,
+                  street: addressMeta.street,
+                  postalCode: addressMeta.postalCode,
+                  city: addressMeta.city,
+                  country: addressMeta.country,
+                } : undefined}
+                frontLabel={locale === "de" ? "Vorderseite" : "Front"}
+                backLabel={locale === "de" ? "Rückseite" : "Back"}
+              />
+            ) : null}
+
+            {/* Requester details */}
+            <section className="rounded-lg border p-4">
+              <h2 className="text-sm font-semibold text-slate-900 mb-1">Details</h2>
+              <dl className="divide-y divide-slate-100">
+                {order.requesterName && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.name}</dt>
+                    <dd className="text-sm text-slate-900 font-medium">{order.requesterName}</dd>
+                  </div>
+                )}
+                {order.requesterRole && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.role}</dt>
+                    <dd className="text-sm text-slate-900">{order.requesterRole}</dd>
+                  </div>
+                )}
+                {order.requesterSeniority && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.seniority}</dt>
+                    <dd className="text-sm text-slate-900">{order.requesterSeniority}</dd>
+                  </div>
+                )}
+                {order.requesterEmail && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.email}</dt>
+                    <dd className="text-sm text-slate-900">{order.requesterEmail}</dd>
+                  </div>
+                )}
+                {order.phone && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.phone}</dt>
+                    <dd className="text-sm text-slate-900">{order.phone}</dd>
+                  </div>
+                )}
+                {order.mobile && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.mobile}</dt>
+                    <dd className="text-sm text-slate-900">{order.mobile}</dd>
+                  </div>
+                )}
+                {order.url && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.url}</dt>
+                    <dd className="text-sm text-slate-900">
+                      <a href={order.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{order.url}</a>
+                    </dd>
+                  </div>
+                )}
+                {order.linkedin && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{t.ordersPage.detail.linkedin}</dt>
+                    <dd className="text-sm text-slate-900">
+                      <a href={order.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">{order.linkedin}</a>
+                    </dd>
+                  </div>
+                )}
+                {order.company && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{locale === "de" ? "Adresse" : "Address"}</dt>
+                    <dd className="text-sm text-slate-900 whitespace-pre-line">{order.company}</dd>
+                  </div>
+                )}
+                {publicProfileUrl && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">QR Link</dt>
+                    <dd className="text-sm text-slate-900">
+                      <a href={publicProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">{publicProfileUrl}</a>
+                    </dd>
+                  </div>
+                )}
+                {order.photoOriginalUrl && (
+                  <div className="flex items-start gap-4 py-2.5">
+                    <dt className="w-16 shrink-0 text-xs text-slate-400 pt-0.5">{locale === "de" ? "Foto" : "Photo"}</dt>
+                    <dd>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={order.photoOriginalUrl} alt="" className="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          </>) : (
             <OrderProductsTable
               type="UPLOAD"
               items={pdfItems}
@@ -276,34 +403,21 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               canEditQty={canEditQuantity}
               canDownloadFiles={isAdmin || isPrinter}
             />
-          ) : (
-            <OrderProductsTable
-              type="TEMPLATE"
-              item={bcItem}
-              labels={tableLabels}
-            />
           )}
 
-          {/* BC: notes + customer reference (if present) */}
           {(customerReference || order.notes) && (
             <section className="rounded-lg border p-5">
               <dl className="space-y-3 text-sm">
                 {customerReference && (
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">
-                      {t.ordersPage.detail.customerReference}
-                    </dt>
-                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
-                      {customerReference}
-                    </dd>
+                    <dt className="text-xs uppercase tracking-wide text-slate-400">{t.ordersPage.detail.customerReference}</dt>
+                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">{customerReference}</dd>
                   </div>
                 )}
                 {order.notes && (
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-slate-400">Notes</dt>
-                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">
-                      {order.notes}
-                    </dd>
+                    <dd className="mt-1 whitespace-pre-wrap text-base text-slate-900">{order.notes}</dd>
                   </div>
                 )}
               </dl>
@@ -312,7 +426,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           {/* Order metadata */}
           <section className="rounded-lg border p-4">
             <h2 className="text-sm font-semibold text-slate-900 mb-1">
@@ -337,6 +451,22 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                     {locale === "de" ? "Firma" : "Company"}
                   </dt>
                   <dd className="text-sm text-slate-900">{order.brand.name}</dd>
+                </div>
+              )}
+              {order.type === "TEMPLATE" && bcProductName && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {locale === "de" ? "Produkt" : "Product"}
+                  </dt>
+                  <dd className="text-sm text-slate-900">{bcProductName}</dd>
+                </div>
+              )}
+              {order.type === "TEMPLATE" && order.template && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {locale === "de" ? "Vorlage" : "Template"}
+                  </dt>
+                  <dd className="text-sm text-slate-900">{order.template.label}</dd>
                 </div>
               )}
               {order.user && (
@@ -450,11 +580,10 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           confirmationNoAddresses: t.ordersPage.detail.confirmationNoAddresses,
           confirmationNote: t.ordersPage.detail.confirmationNote,
           confirmationSelectAddress: t.ordersPage.detail.confirmationSelectAddress,
-          downloadAllPdfs: t.ordersPage.detail.downloadAllPdfs,
-          downloadAllJdfs: t.ordersPage.detail.downloadAllJdfs,
+          downloadAllPdfs: hasPdfItems ? t.ordersPage.detail.downloadAllPdfs : t.ordersPage.detail.downloadPdf,
+          downloadAllJdfs: hasPdfItems ? t.ordersPage.detail.downloadAllJdfs : t.ordersPage.detail.downloadJdf,
         }}
       />
-    </div>
     </div>
   );
 }
