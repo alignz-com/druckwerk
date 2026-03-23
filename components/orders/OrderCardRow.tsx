@@ -152,6 +152,12 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
           {order.productName}
         </span>
       );
+    if (order.brandName)
+      parts.push(
+        <span key="brand" className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          {order.brandName}
+        </span>
+      );
     if (order.templateLabel)
       parts.push(
         <span key="tpl" className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
@@ -161,18 +167,6 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
     if (qtyText)
       parts.push(
         <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
-      );
-    if (order.requesterName)
-      parts.push(
-        <span key="name" className="text-sm font-semibold text-slate-900 truncate">
-          {order.requesterName}
-        </span>
-      );
-    if (order.requesterRole)
-      parts.push(
-        <span key="role" className="text-xs text-slate-400 shrink-0 truncate">
-          {[order.requesterRole, order.requesterSeniority].filter(Boolean).join(", ")}
-        </span>
       );
     return (
       <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
@@ -244,10 +238,10 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
   const badgeClass = STATUS_STYLES[order.status] ?? STATUS_STYLES.DRAFT;
   const isMultiFile = (order.fileCount ?? 0) > 1;
 
-  // Line 2: company · who placed the order
-  const displayCompany = order.company ?? (showBrand ? order.brandName : null);
-  const line2Parts = [displayCompany, order.orderedByName].filter(Boolean);
-  const line2 = line2Parts.join(" · ") || null;
+  // Line 2: template orders show requester + role; upload orders show company · ordered by
+  const line2 = isBC
+    ? [order.requesterName, [order.requesterRole, order.requesterSeniority].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || null
+    : [order.company ?? (showBrand ? order.brandName : null), order.orderedByName].filter(Boolean).join(" · ") || null;
 
   // Qty shown inline with product on line 1
   const qtyText = order.quantity ? `${order.quantity.toLocaleString()} Stk` : null;
