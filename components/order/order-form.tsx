@@ -1911,6 +1911,8 @@ export default function OrderForm({
                   <p className="text-sm font-medium text-center px-6">
                     {!currentBrandId
                       ? tOrder("selectBrandPrompt")
+                      : templateIsLoading || isBrandLoading
+                      ? tOrder("preview.loading")
                       : templates.length === 0
                       ? tOrder("preview.noTemplates")
                       : !selectedSummary
