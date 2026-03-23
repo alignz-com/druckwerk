@@ -11,13 +11,14 @@ function parseRemoteHostname(url: string): string | null {
 }
 
 const s3Hostname = parseRemoteHostname(s3PublicUrl);
+const s3Port = (() => { try { const p = new URL(s3PublicUrl).port; return p || undefined; } catch { return undefined; } })();
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       // MinIO / self-hosted S3
       ...(s3Hostname
-        ? [{ protocol: "http" as const, hostname: s3Hostname }, { protocol: "https" as const, hostname: s3Hostname }]
+        ? [{ protocol: "http" as const, hostname: s3Hostname, ...(s3Port ? { port: s3Port } : {}) }, { protocol: "https" as const, hostname: s3Hostname, ...(s3Port ? { port: s3Port } : {}) }]
         : []),
       // Vercel Blob (legacy, can be removed once fully migrated)
       { protocol: "https" as const, hostname: "*.public.blob.vercel-storage.com" },

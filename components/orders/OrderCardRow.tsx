@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
@@ -51,14 +50,11 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
 
   if (order.thumbnailUrl && !isMultiFile) {
     return (
-      <Image
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
         src={order.thumbnailUrl}
         alt=""
-        width={40}
-        height={56}
-        className="rounded-md shadow-sm"
-        style={{ width: "auto", height: "auto", maxWidth: "48px", maxHeight: "68px" }}
-        sizes="40px"
+        className="rounded-md shadow-sm max-w-[48px] max-h-[68px] w-auto h-auto"
       />
     );
   }
