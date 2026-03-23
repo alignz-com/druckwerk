@@ -7,7 +7,7 @@ import { getBrandsForUser } from "@/lib/brand-access";
 import { getBrandResources } from "@/lib/brand-resources";
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 import { getUserOrderProfile } from "@/lib/user-order-profile";
-import { getUserAccessibleProductTypes } from "@/lib/user-products";
+import { getUserAccessibleWorkflows } from "@/lib/user-products";
 import { OrderTypeSelector } from "@/components/order/OrderTypeSelector";
 
 export default async function NewOrderPage() {
@@ -54,13 +54,13 @@ export default async function NewOrderPage() {
     initialBrandId = brandOptions[0]!.id;
   }
 
-  const access = await getUserAccessibleProductTypes(userId, initialBrandId ?? preferredBrandId);
+  const access = await getUserAccessibleWorkflows(userId, initialBrandId ?? preferredBrandId);
 
-  if (access.hasPdfPrint && !access.hasBusinessCard) {
+  if (access.hasUpload && !access.hasTemplate) {
     redirect("/orders/new/pdf");
   }
 
-  if (access.hasBusinessCard && access.hasPdfPrint) {
+  if (access.hasTemplate && access.hasUpload) {
     return <OrderTypeSelector />;
   }
 

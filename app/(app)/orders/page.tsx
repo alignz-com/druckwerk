@@ -14,7 +14,7 @@ import { formatDateTime } from "@/lib/formatDateTime";
 import { Plus } from "lucide-react";
 import { ensureBrandAssignmentForUser } from "@/lib/brand-auto-assign";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
-import { getUserAccessibleProductTypes } from "@/lib/user-products";
+import { getUserAccessibleWorkflows } from "@/lib/user-products";
 
 type OrdersPageProps = {
   searchParams?: Promise<Record<string, string | string[]>>;
@@ -59,7 +59,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
   }));
   // Determine which view to show — run both in parallel
   const [access, orders] = await Promise.all([
-    getUserAccessibleProductTypes(session.user.id, brandId),
+    getUserAccessibleWorkflows(session.user.id, brandId),
     prisma.order.findMany({
       where: isAdmin || isPrinter ? {} : isBrandAdmin && brandId ? { brandId } : { userId: session.user.id },
       orderBy: { createdAt: "desc" },
@@ -85,7 +85,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       },
     }),
   ]);
-  const useCardView = isAdmin || isPrinter || (access.hasBusinessCard && access.hasPdfPrint);
+  const useCardView = isAdmin || isPrinter || (access.hasTemplate && access.hasUpload);
 
   const wasCreated = searchParams?.created === "1";
 
@@ -121,7 +121,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
     return {
       id: order.id,
       referenceCode: order.referenceCode,
-      orderType: order.type as "BUSINESS_CARD" | "PDF_PRINT",
+      orderType: order.type as "TEMPLATE" | "UPLOAD",
       createdAtLabel,
       createdAtValue: order.createdAt.getTime(),
       userName: order.user?.name ?? null,
@@ -176,13 +176,13 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
       : null;
     const firstThumbPath = order.pdfOrderItems.find(i => i.thumbnailStoragePath)?.thumbnailStoragePath ?? null;
     const thumbnailUrl =
-      order.type === "BUSINESS_CARD"
+      order.type === "TEMPLATE"
         ? (order.template?.previewFrontPath ?? null)
         : firstThumbPath
           ? `${process.env.S3_PUBLIC_URL ?? ""}/${process.env.S3_ORDERS_BUCKET ?? "orders"}/${firstThumbPath}`
           : null;
     const firstItem = order.pdfOrderItems[0] ?? null;
-    const isBC = order.type === "BUSINESS_CARD";
+    const isBC = order.type === "TEMPLATE";
 
     // For BC: product name from template.product (localized)
     const bcProductName = (() => {
@@ -241,7 +241,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
     return {
       id: order.id,
       referenceCode: order.referenceCode,
-      orderType: order.type as "BUSINESS_CARD" | "PDF_PRINT",
+      orderType: order.type as "TEMPLATE" | "UPLOAD",
       deliveryTime: order.deliveryTime,
       brandId: order.brandId ?? null,
       brandName: order.brand?.name ?? null,

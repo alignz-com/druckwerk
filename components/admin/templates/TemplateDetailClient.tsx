@@ -794,7 +794,7 @@ export default function TemplateDetailPage({ template }: Props) {
                           <SelectItem value="none">No product linked</SelectItem>
                           {productOptions.map((p) => (
                             <SelectItem key={p.id} value={p.id}>
-                              {p.name} ({p.type === "BUSINESS_CARD" ? "BC" : "PDF"})
+                              {p.name} ({p.type === "TEMPLATE" ? "TPL" : "UPL"})
                             </SelectItem>
                           ))}
                         </SelectContent>

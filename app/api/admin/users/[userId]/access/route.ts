@@ -12,8 +12,8 @@ async function requireAdmin() {
 
 // null means "inherit from brand"
 const bodySchema = z.object({
-  canOrderBusinessCards: z.boolean().nullable(),
-  canOrderPdfPrint: z.boolean().nullable(),
+  canUseTemplates: z.boolean().nullable(),
+  canUploadFiles: z.boolean().nullable(),
 })
 
 export async function PATCH(
@@ -26,10 +26,10 @@ export async function PATCH(
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
-      canOrderBusinessCards: body.canOrderBusinessCards,
-      canOrderPdfPrint: body.canOrderPdfPrint,
+      canUseTemplates: body.canUseTemplates,
+      canUploadFiles: body.canUploadFiles,
     },
-    select: { id: true, canOrderBusinessCards: true, canOrderPdfPrint: true },
+    select: { id: true, canUseTemplates: true, canUploadFiles: true },
   })
   return NextResponse.json(user)
 }

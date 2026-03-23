@@ -15,7 +15,7 @@ const bodySchema = z.object({
   nameEn: z.string().nullable().optional(),
   nameDe: z.string().nullable().optional(),
   description: z.string().nullable().optional().default(""),
-  type: z.enum(["BUSINESS_CARD", "PDF_PRINT"]).optional().default("PDF_PRINT"),
+  type: z.enum(["TEMPLATE", "UPLOAD"]).optional().default("UPLOAD"),
 })
 
 export async function GET() {

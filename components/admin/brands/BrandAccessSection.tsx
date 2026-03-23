@@ -7,19 +7,19 @@ import { useTranslations } from "@/components/providers/locale-provider"
 
 type Props = {
   brandId: string
-  canOrderBusinessCards: boolean
-  canOrderPdfPrint: boolean
+  canUseTemplates: boolean
+  canUploadFiles: boolean
 }
 
-export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdfPrint }: Props) {
+export function BrandAccessSection({ brandId, canUseTemplates, canUploadFiles }: Props) {
   const t = useTranslations("admin.products.access")
-  const [bc, setBc] = useState(canOrderBusinessCards)
-  const [pdf, setPdf] = useState(canOrderPdfPrint)
+  const [tpl, setTpl] = useState(canUseTemplates)
+  const [upl, setUpl] = useState(canUploadFiles)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const hasChanges = bc !== canOrderBusinessCards || pdf !== canOrderPdfPrint
+  const hasChanges = tpl !== canUseTemplates || upl !== canUploadFiles
 
   async function handleSave() {
     setSaving(true)
@@ -29,7 +29,7 @@ export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdf
       const res = await fetch(`/api/admin/brands/${brandId}/access`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ canOrderBusinessCards: bc, canOrderPdfPrint: pdf }),
+        body: JSON.stringify({ canUseTemplates: tpl, canUploadFiles: upl }),
       })
       if (!res.ok) throw new Error()
       setSaved(true)
@@ -55,8 +55,8 @@ export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdf
           <input
             type="checkbox"
             className="rounded border-slate-300"
-            checked={bc}
-            onChange={(e) => { setBc(e.target.checked); setSaved(false) }}
+            checked={tpl}
+            onChange={(e) => { setTpl(e.target.checked); setSaved(false) }}
             disabled={saving}
           />
           <span className="text-sm text-slate-700">{t("businessCards")}</span>
@@ -65,8 +65,8 @@ export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdf
           <input
             type="checkbox"
             className="rounded border-slate-300"
-            checked={pdf}
-            onChange={(e) => { setPdf(e.target.checked); setSaved(false) }}
+            checked={upl}
+            onChange={(e) => { setUpl(e.target.checked); setSaved(false) }}
             disabled={saving}
           />
           <span className="text-sm text-slate-700">{t("pdfPrint")}</span>
@@ -79,7 +79,7 @@ export function BrandAccessSection({ brandId, canOrderBusinessCards, canOrderPdf
           variant="ghost"
           size="sm"
           disabled={!hasChanges || saving}
-          onClick={() => { setBc(canOrderBusinessCards); setPdf(canOrderPdfPrint); setSaved(false) }}
+          onClick={() => { setTpl(canUseTemplates); setUpl(canUploadFiles); setSaved(false) }}
         >
           {t("reset")}
         </Button>

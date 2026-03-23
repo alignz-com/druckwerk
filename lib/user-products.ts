@@ -1,53 +1,53 @@
 import { prisma } from "@/lib/prisma"
 
-export type AccessibleProductTypes = {
-  hasBusinessCard: boolean
-  hasPdfPrint: boolean
+export type AccessibleWorkflows = {
+  hasTemplate: boolean
+  hasUpload: boolean
 }
 
 /**
- * Returns which order types a user can access.
+ * Returns which order workflows a user can access.
  * Logic:
  * 1. If the user has explicit overrides (non-null), use those.
  * 2. Else use the brand's settings.
- * 3. Else default to business card only (backwards compatibility).
+ * 3. Else default to template only (backwards compatibility).
  */
-export async function getUserAccessibleProductTypes(
+export async function getUserAccessibleWorkflows(
   userId: string,
   brandId: string | null | undefined,
-): Promise<AccessibleProductTypes> {
+): Promise<AccessibleWorkflows> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      canOrderBusinessCards: true,
-      canOrderPdfPrint: true,
+      canUseTemplates: true,
+      canUploadFiles: true,
       brand: brandId
-        ? { select: { canOrderBusinessCards: true, canOrderPdfPrint: true } }
+        ? { select: { canUseTemplates: true, canUploadFiles: true } }
         : undefined,
     },
   })
 
-  if (!user) return { hasBusinessCard: true, hasPdfPrint: false }
+  if (!user) return { hasTemplate: true, hasUpload: false }
 
   // User-level overrides take precedence if set
   const hasUserOverride =
-    user.canOrderBusinessCards !== null || user.canOrderPdfPrint !== null
+    user.canUseTemplates !== null || user.canUploadFiles !== null
 
   if (hasUserOverride) {
     return {
-      hasBusinessCard: user.canOrderBusinessCards ?? true,
-      hasPdfPrint: user.canOrderPdfPrint ?? false,
+      hasTemplate: user.canUseTemplates ?? true,
+      hasUpload: user.canUploadFiles ?? false,
     }
   }
 
   // Fall back to brand settings
   if (user.brand) {
     return {
-      hasBusinessCard: user.brand.canOrderBusinessCards,
-      hasPdfPrint: user.brand.canOrderPdfPrint,
+      hasTemplate: user.brand.canUseTemplates,
+      hasUpload: user.brand.canUploadFiles,
     }
   }
 
   // Default
-  return { hasBusinessCard: true, hasPdfPrint: false }
+  return { hasTemplate: true, hasUpload: false }
 }

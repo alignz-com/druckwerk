@@ -11,8 +11,8 @@ async function requireAdmin() {
 }
 
 const bodySchema = z.object({
-  canOrderBusinessCards: z.boolean(),
-  canOrderPdfPrint: z.boolean(),
+  canUseTemplates: z.boolean(),
+  canUploadFiles: z.boolean(),
 })
 
 export async function PATCH(
@@ -25,10 +25,10 @@ export async function PATCH(
   const brand = await prisma.brand.update({
     where: { id: brandId },
     data: {
-      canOrderBusinessCards: body.canOrderBusinessCards,
-      canOrderPdfPrint: body.canOrderPdfPrint,
+      canUseTemplates: body.canUseTemplates,
+      canUploadFiles: body.canUploadFiles,
     },
-    select: { id: true, canOrderBusinessCards: true, canOrderPdfPrint: true },
+    select: { id: true, canUseTemplates: true, canUploadFiles: true },
   })
   return NextResponse.json(brand)
 }

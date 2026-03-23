@@ -1335,8 +1335,8 @@ export const messages = {
           brands: "Brands",
         },
         types: {
-          PDF_PRINT: "PDF Print",
-          BUSINESS_CARD: "Business Card",
+          UPLOAD: "PDF Print",
+          TEMPLATE: "Business Card",
         },
         fields: {
           name: "Name",
@@ -2838,8 +2838,8 @@ export const messages = {
           brands: "Marken",
         },
         types: {
-          PDF_PRINT: "PDF-Druck",
-          BUSINESS_CARD: "Visitenkarte",
+          UPLOAD: "PDF-Druck",
+          TEMPLATE: "Visitenkarte",
         },
         fields: {
           name: "Name",

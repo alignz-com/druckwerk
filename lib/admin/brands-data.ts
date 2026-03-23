@@ -44,8 +44,8 @@ export type AdminBrandSummary = {
   addresses: AdminBrandAddress[];
   domains: { id: string; domain: string }[];
   publicDomains: { id: string; domain: string; isPrimary: boolean }[];
-  canOrderBusinessCards: boolean;
-  canOrderPdfPrint: boolean;
+  canUseTemplates: boolean;
+  canUploadFiles: boolean;
   azureTenantId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -160,8 +160,8 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
     publicDomains: brand.publicDomains
       .map((domain) => ({ id: domain.id, domain: domain.domain, isPrimary: domain.isPrimary }))
       .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.domain.localeCompare(b.domain)),
-    canOrderBusinessCards: brand.canOrderBusinessCards,
-    canOrderPdfPrint: brand.canOrderPdfPrint,
+    canUseTemplates: brand.canUseTemplates,
+    canUploadFiles: brand.canUploadFiles,
     azureTenantId: brand.azureTenantId ?? null,
     createdAt: brand.createdAt.toISOString(),
     updatedAt: brand.updatedAt.toISOString(),

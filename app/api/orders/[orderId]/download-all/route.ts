@@ -56,7 +56,7 @@ export async function GET(req: Request, context: { params: Promise<RouteParams> 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (order.type !== "PDF_PRINT" || order.pdfOrderItems.length === 0) {
+  if (order.type !== "UPLOAD" || order.pdfOrderItems.length === 0) {
     return NextResponse.json({ error: "No PDF items on this order" }, { status: 400 });
   }
 

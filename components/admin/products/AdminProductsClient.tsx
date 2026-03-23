@@ -43,7 +43,7 @@ type Product = {
   nameEn: string | null
   nameDe: string | null
   description: string | null
-  type: "BUSINESS_CARD" | "PDF_PRINT"
+  type: "TEMPLATE" | "UPLOAD"
   trimWidthMm: number | null
   trimHeightMm: number | null
   canvasWidthMm: number | null
@@ -59,7 +59,7 @@ type FormState = {
   nameEn: string
   nameDe: string
   description: string
-  type: "BUSINESS_CARD" | "PDF_PRINT"
+  type: "TEMPLATE" | "UPLOAD"
   trimWidthMm: string
   trimHeightMm: string
   canvasWidthMm: string
@@ -69,7 +69,7 @@ type FormState = {
 }
 
 const emptyForm: FormState = {
-  name: "", nameEn: "", nameDe: "", description: "", type: "PDF_PRINT",
+  name: "", nameEn: "", nameDe: "", description: "", type: "UPLOAD",
   trimWidthMm: "", trimHeightMm: "", canvasWidthMm: "", canvasHeightMm: "", printDpi: "", pcmCode: "",
 }
 
@@ -298,8 +298,8 @@ export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PDF_PRINT">{t("types.PDF_PRINT")}</SelectItem>
-                    <SelectItem value="BUSINESS_CARD">{t("types.BUSINESS_CARD")}</SelectItem>
+                    <SelectItem value="UPLOAD">{t("types.UPLOAD")}</SelectItem>
+                    <SelectItem value="TEMPLATE">{t("types.TEMPLATE")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -325,7 +325,7 @@ export function AdminProductsView({ autoOpen }: { autoOpen?: boolean }) {
               </div>
             </div>
 
-            {dialog !== null && dialog !== "create" && form.type === "BUSINESS_CARD" && (
+            {dialog !== null && dialog !== "create" && form.type === "TEMPLATE" && (
               <div className="space-y-3 border-t pt-4">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Print Specifications</p>
                 <div className="grid grid-cols-2 gap-3">

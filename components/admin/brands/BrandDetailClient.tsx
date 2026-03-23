@@ -372,8 +372,8 @@ export default function BrandDetailClient({ brand }: BrandDetailClientProps) {
               <Separator />
               <BrandAccessSection
                 brandId={brandSnapshot.id}
-                canOrderBusinessCards={brandSnapshot.canOrderBusinessCards ?? true}
-                canOrderPdfPrint={brandSnapshot.canOrderPdfPrint ?? false}
+                canUseTemplates={brandSnapshot.canUseTemplates ?? true}
+                canUploadFiles={brandSnapshot.canUploadFiles ?? false}
               />
               <Separator />
             </>

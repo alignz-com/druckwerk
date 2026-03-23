@@ -7,8 +7,8 @@ export type AdminUserSummary = {
   role: string;
   brandId: string | null;
   brandName: string | null;
-  canOrderBusinessCards: boolean | null;
-  canOrderPdfPrint: boolean | null;
+  canUseTemplates: boolean | null;
+  canUploadFiles: boolean | null;
   isDemo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -26,8 +26,8 @@ export function mapAdminUser(user: RawUser): AdminUserSummary {
     role: user.role,
     brandId: user.brandId ?? null,
     brandName: user.brand?.name ?? null,
-    canOrderBusinessCards: user.canOrderBusinessCards ?? null,
-    canOrderPdfPrint: user.canOrderPdfPrint ?? null,
+    canUseTemplates: user.canUseTemplates ?? null,
+    canUploadFiles: user.canUploadFiles ?? null,
     isDemo: user.isDemo ?? false,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),

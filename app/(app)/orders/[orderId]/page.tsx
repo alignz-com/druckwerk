@@ -122,7 +122,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const canCreateConfirmation =
     (isAdmin || isPrinter) && !order.deliveryItems?.length;
 
-  const hasPdfItems = order.type === "PDF_PRINT" && order.pdfOrderItems.length > 1;
+  const hasPdfItems = order.type === "UPLOAD" && order.pdfOrderItems.length > 1;
   const downloadPdfUrl = hasPdfItems ? `/api/orders/${orderId}/download-all?type=pdf` : undefined;
   const downloadJdfUrl = hasPdfItems && (isAdmin || isPrinter) ? `/api/orders/${orderId}/download-all?type=jdf` : undefined;
 
@@ -205,7 +205,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
 
   const tableLabels: OrderProductsTableLabels = {
     product:
-      order.type === "PDF_PRINT"
+      order.type === "UPLOAD"
         ? locale === "de" ? "Produkt" : "Product"
         : t.ordersPage.detail.template,
     qty: t.ordersPage.detail.quantity,
@@ -267,9 +267,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         {/* LEFT COLUMN */}
         <div className="space-y-6">
           {/* Products */}
-          {order.type === "PDF_PRINT" ? (
+          {order.type === "UPLOAD" ? (
             <OrderProductsTable
-              type="PDF_PRINT"
+              type="UPLOAD"
               items={pdfItems}
               labels={tableLabels}
               orderId={order.id}
@@ -278,7 +278,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             />
           ) : (
             <OrderProductsTable
-              type="BUSINESS_CARD"
+              type="TEMPLATE"
               item={bcItem}
               labels={tableLabels}
             />
@@ -375,7 +375,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 </dd>
               </div>
               {/* BC: quantity editor */}
-              {order.type === "BUSINESS_CARD" && (
+              {order.type === "TEMPLATE" && (
                 <div className="flex items-start gap-4 py-2.5">
                   <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
                     {t.ordersPage.detail.quantity}

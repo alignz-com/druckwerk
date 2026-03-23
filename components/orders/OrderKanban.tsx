@@ -63,7 +63,7 @@ type Props = {
 // Compact kanban card — no thumbnail, no status badge
 function KanbanCardContent({ order, showBrand, isSelected }: { order: OrderCardData; showBrand: boolean; isSelected?: boolean }) {
   const isExpress = order.deliveryTime === "express";
-  const isBC = order.orderType === "BUSINESS_CARD";
+  const isBC = order.orderType === "TEMPLATE";
 
   // Line 1: product · qty · pages/files
   const headlineParts = [

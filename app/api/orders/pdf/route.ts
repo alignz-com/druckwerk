@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
           referenceSequence,
           userId,
           brandId: resolvedBrandId,
-          type: "PDF_PRINT",
+          type: "UPLOAD",
           status: "SUBMITTED",
           deliveryTime,
           deliveryDueAt,

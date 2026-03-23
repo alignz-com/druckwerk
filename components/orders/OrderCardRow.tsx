@@ -10,7 +10,7 @@ import { useTranslations } from "@/components/providers/locale-provider";
 export type OrderCardData = {
   id: string;
   referenceCode: string;
-  orderType: "BUSINESS_CARD" | "PDF_PRINT";
+  orderType: "TEMPLATE" | "UPLOAD";
   deliveryTime: string;
   brandName: string | null;
   brandId: string | null;
@@ -45,7 +45,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 function ThumbnailContent({ order }: { order: OrderCardData }) {
-  const isBC = order.orderType === "BUSINESS_CARD";
+  const isBC = order.orderType === "TEMPLATE";
 
   const isMultiFile = (order.fileCount ?? 0) > 1;
 
@@ -239,7 +239,7 @@ type Props = {
 };
 
 export function OrderCardRow({ order, showBrand, selectMode = false, selected = false, onToggle }: Props) {
-  const isBC = order.orderType === "BUSINESS_CARD";
+  const isBC = order.orderType === "TEMPLATE";
   const isExpress = order.deliveryTime === "express";
   const badgeClass = STATUS_STYLES[order.status] ?? STATUS_STYLES.DRAFT;
   const isMultiFile = (order.fileCount ?? 0) > 1;

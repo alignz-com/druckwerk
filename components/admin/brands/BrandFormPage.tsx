@@ -58,8 +58,8 @@ type FormState = {
   quantityMax: string;
   quantityStep: string;
   quantityOptions: string;
-  canOrderBusinessCards: boolean;
-  canOrderPdfPrint: boolean;
+  canUseTemplates: boolean;
+  canUploadFiles: boolean;
 };
 
 type AddressForm = BrandAddressDraft;
@@ -104,8 +104,8 @@ function mapBrandToForm(brand: AdminBrandSummary): FormState {
     quantityMax: brand.quantityMax != null ? String(brand.quantityMax) : "",
     quantityStep: brand.quantityStep != null ? String(brand.quantityStep) : "",
     quantityOptions: brand.quantityOptions?.join(", ") ?? "",
-    canOrderBusinessCards: brand.canOrderBusinessCards ?? true,
-    canOrderPdfPrint: brand.canOrderPdfPrint ?? false,
+    canUseTemplates: brand.canUseTemplates ?? true,
+    canUploadFiles: brand.canUploadFiles ?? false,
   };
 }
 
@@ -123,8 +123,8 @@ function emptyForm(): FormState {
     quantityMax: "",
     quantityStep: "",
     quantityOptions: "",
-    canOrderBusinessCards: true,
-    canOrderPdfPrint: false,
+    canUseTemplates: true,
+    canUploadFiles: false,
   };
 }
 
@@ -371,13 +371,13 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
         const brandId: string = data.brandId;
 
         // Access flags (only if non-default)
-        if (!form.canOrderBusinessCards || form.canOrderPdfPrint) {
+        if (!form.canUseTemplates || form.canUploadFiles) {
           await fetch(`/api/admin/brands/${brandId}/access`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              canOrderBusinessCards: form.canOrderBusinessCards,
-              canOrderPdfPrint: form.canOrderPdfPrint,
+              canUseTemplates: form.canUseTemplates,
+              canUploadFiles: form.canUploadFiles,
             }),
           });
         }
@@ -407,8 +407,8 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            canOrderBusinessCards: form.canOrderBusinessCards,
-            canOrderPdfPrint: form.canOrderPdfPrint,
+            canUseTemplates: form.canUseTemplates,
+            canUploadFiles: form.canUploadFiles,
           }),
         }),
       ]);
@@ -790,8 +790,8 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                     <input
                       type="checkbox"
                       className="mt-0.5 rounded border-slate-300"
-                      checked={form.canOrderBusinessCards}
-                      onChange={(e) => setField("canOrderBusinessCards", e.target.checked)}
+                      checked={form.canUseTemplates}
+                      onChange={(e) => setField("canUseTemplates", e.target.checked)}
                     />
                     <div>
                       <div className="text-sm font-medium text-slate-900">{t("access.businessCards")}</div>
@@ -802,8 +802,8 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                     <input
                       type="checkbox"
                       className="mt-0.5 rounded border-slate-300"
-                      checked={form.canOrderPdfPrint}
-                      onChange={(e) => setField("canOrderPdfPrint", e.target.checked)}
+                      checked={form.canUploadFiles}
+                      onChange={(e) => setField("canUploadFiles", e.target.checked)}
                     />
                     <div>
                       <div className="text-sm font-medium text-slate-900">{t("access.pdfPrint")}</div>

@@ -34,26 +34,26 @@ type Props = {
 const UNASSIGNED_BRAND_VALUE = "__unassigned_brand__";
 
 type UserAccessValues = {
-  canOrderBusinessCards: boolean | null
-  canOrderPdfPrint: boolean | null
+  canUseTemplates: boolean | null
+  canUploadFiles: boolean | null
 }
 
 function UserAccessSection({ userId, initialValues }: { userId: string; initialValues: UserAccessValues }) {
   const t = useTranslations("admin.products.userAccess")
-  const [bc, setBc] = useState<boolean | null>(initialValues.canOrderBusinessCards)
-  const [pdf, setPdf] = useState<boolean | null>(initialValues.canOrderPdfPrint)
+  const [bc, setBc] = useState<boolean | null>(initialValues.canUseTemplates)
+  const [pdf, setPdf] = useState<boolean | null>(initialValues.canUploadFiles)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    setBc(initialValues.canOrderBusinessCards)
-    setPdf(initialValues.canOrderPdfPrint)
+    setBc(initialValues.canUseTemplates)
+    setPdf(initialValues.canUploadFiles)
     setSaved(false)
-  }, [userId, initialValues.canOrderBusinessCards, initialValues.canOrderPdfPrint])
+  }, [userId, initialValues.canUseTemplates, initialValues.canUploadFiles])
 
   const hasChanges =
-    bc !== initialValues.canOrderBusinessCards || pdf !== initialValues.canOrderPdfPrint
+    bc !== initialValues.canUseTemplates || pdf !== initialValues.canUploadFiles
 
   async function save() {
     setSaving(true)
@@ -62,7 +62,7 @@ function UserAccessSection({ userId, initialValues }: { userId: string; initialV
       const res = await fetch(`/api/admin/users/${userId}/access`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ canOrderBusinessCards: bc, canOrderPdfPrint: pdf }),
+        body: JSON.stringify({ canUseTemplates: bc, canUploadFiles: pdf }),
       })
       if (!res.ok) throw new Error()
       setSaved(true)
@@ -117,8 +117,8 @@ function UserAccessSection({ userId, initialValues }: { userId: string; initialV
           size="sm"
           disabled={!hasChanges || saving}
           onClick={() => {
-            setBc(initialValues.canOrderBusinessCards)
-            setPdf(initialValues.canOrderPdfPrint)
+            setBc(initialValues.canUseTemplates)
+            setPdf(initialValues.canUploadFiles)
             setSaved(false)
           }}
         >
@@ -384,8 +384,8 @@ export function UserDetailSheet({
               <UserAccessSection
                 userId={user.id}
                 initialValues={{
-                  canOrderBusinessCards: user.canOrderBusinessCards,
-                  canOrderPdfPrint: user.canOrderPdfPrint,
+                  canUseTemplates: user.canUseTemplates,
+                  canUploadFiles: user.canUploadFiles,
                 }}
               />
 

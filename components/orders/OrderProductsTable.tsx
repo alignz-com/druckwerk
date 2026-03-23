@@ -71,7 +71,7 @@ export type OrderProductsTableLabels = {
 };
 
 type PdfProps = {
-  type: "PDF_PRINT";
+  type: "UPLOAD";
   items: PdfProductItem[];
   labels: OrderProductsTableLabels;
   orderId?: string;
@@ -80,7 +80,7 @@ type PdfProps = {
 };
 
 type BcProps = {
-  type: "BUSINESS_CARD";
+  type: "TEMPLATE";
   item: BcProductItem;
   labels: OrderProductsTableLabels;
 };
@@ -112,7 +112,7 @@ export function OrderProductsTable(props: Props) {
   const [qtyOverrides, setQtyOverrides] = useState<Record<string, number>>({});
   const { labels } = props;
 
-  if (props.type === "PDF_PRINT") {
+  if (props.type === "UPLOAD") {
     const selected = props.items[selectedIndex] ?? props.items[0];
     const { canEditQty, orderId, canDownloadFiles } = props;
 
@@ -385,7 +385,7 @@ export function OrderProductsTable(props: Props) {
     );
   }
 
-  // BUSINESS_CARD
+  // TEMPLATE
   const { item } = props;
   const bcLabel = item.productName
     ? `${item.productName}${item.templateLabel ? ` — ${item.templateLabel}` : ""}`

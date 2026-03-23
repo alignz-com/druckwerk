@@ -57,13 +57,13 @@ enum JdfExportStatus {
 }
 
 enum OrderType {
-  BUSINESS_CARD
-  PDF_PRINT
+  TEMPLATE
+  UPLOAD
 }
 
 enum ProductType {
-  BUSINESS_CARD
-  PDF_PRINT
+  TEMPLATE
+  UPLOAD
 }
 
 enum FontStyle {
@@ -121,8 +121,8 @@ model User {
   accounts       Account[]
   sessions       Session[]
   passwordResetTokens PasswordResetToken[]
-  canOrderBusinessCards Boolean?
-  canOrderPdfPrint      Boolean?
+  canUseTemplates       Boolean?
+  canUploadFiles        Boolean?
   isDemo                Boolean   @default(false)
   orders         Order[]
   orderProfiles  UserOrderProfile[]
@@ -188,8 +188,8 @@ model Brand {
   quantityMax Int?
   quantityStep Int?
   quantityOptions         Int[]       @default([])
-  canOrderBusinessCards   Boolean     @default(true)
-  canOrderPdfPrint        Boolean     @default(false)
+  canUseTemplates         Boolean     @default(true)
+  canUploadFiles          Boolean     @default(false)
   azureTenantId           String?     @unique
   users              User[]
   orders             Order[]
@@ -398,7 +398,7 @@ model Order {
   userId         String
   brandId        String?
   templateId     String?
-  type           OrderType   @default(BUSINESS_CARD)
+  type           OrderType   @default(TEMPLATE)
   status         OrderStatus @default(SUBMITTED)
   quantity       Int?
   notes          String?
