@@ -1,4 +1,4 @@
-import { PDFDocument, grayscale, rgb, type PDFFont, type Color } from "pdf-lib";
+import { PDFDocument, grayscale, rgb, PDFOperator, PDFOperatorNames, asPDFNumber, type PDFFont, type Color, type PDFPage } from "pdf-lib";
 import * as QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
@@ -23,6 +23,27 @@ import type {
 
 const mm2pt = (mm: number) => (mm * 72) / 25.4;
 const pt2mm = (pt: number) => (pt * 25.4) / 72;
+
+/**
+ * Draw text with character spacing (tracking).
+ * pdf-lib's drawText doesn't support characterSpacing, so we set the Tc
+ * operator directly before drawing and reset it after.
+ */
+function drawTextWithTracking(
+  page: PDFPage,
+  text: string,
+  opts: { x: number; y: number; size: number; font: PDFFont; color?: Color; characterSpacing?: number },
+) {
+  const cs = opts.characterSpacing ?? 0;
+  if (cs === 0) {
+    page.drawText(text, opts);
+    return;
+  }
+  // Set Tc (character spacing), draw text, reset Tc to 0
+  page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(cs)]));
+  page.drawText(text, { x: opts.x, y: opts.y, size: opts.size, font: opts.font, color: opts.color });
+  page.pushOperators(PDFOperator.of(PDFOperatorNames.SetCharacterSpacing, [asPDFNumber(0)]));
+}
 
 type PdfFontPack = {
   regular?: PDFFont;
@@ -610,7 +631,7 @@ async function renderDesignElementsToPdf(opts: {
 
         const fillColor = truncated ? rgb(1, 0, 0) : parseColor(element.font.color);
         if (truncated) {
-          page.drawText(text, {
+          drawTextWithTracking(page, text, {
             x,
             y,
             size: sizePt,
@@ -621,7 +642,7 @@ async function renderDesignElementsToPdf(opts: {
         } else {
           const segments = applySegmentStylesToText(text, element.segmentStyles).filter((segment) => segment.text.length > 0);
           if (segments.length <= 1) {
-            page.drawText(text, {
+            drawTextWithTracking(page, text, {
               x,
               y,
               size: sizePt,
@@ -634,7 +655,7 @@ async function renderDesignElementsToPdf(opts: {
             for (let index = 0; index < segments.length; index += 1) {
               const segment = segments[index];
               const segmentColor = parseColor(segment.color) ?? fillColor;
-              page.drawText(segment.text, {
+              drawTextWithTracking(page, segment.text, {
                 x: cursorX,
                 y,
                 size: sizePt,
