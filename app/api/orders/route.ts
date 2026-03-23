@@ -490,10 +490,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate and store thumbnail (non-blocking)
-    generateOrderThumbnail(pdfBytes).then(async (thumbBuffer) => {
-      if (!thumbBuffer) return;
-      try {
+    // Generate and store thumbnail
+    try {
+      const thumbBuffer = await generateOrderThumbnail(pdfBytes);
+      if (thumbBuffer) {
         const thumbKey = toStorageKey(referenceCode, fileBaseName, "thumb.png");
         const thumbBlob = new Blob([new Uint8Array(thumbBuffer)], { type: "image/png" });
         const thumbUpload = await put(thumbKey, thumbBlob, {
@@ -504,10 +504,10 @@ export async function POST(req: Request) {
           where: { id: order.id },
           data: { thumbnailUrl: thumbUpload.url },
         });
-      } catch (err) {
-        console.error("[orders] thumbnail generation failed:", err);
       }
-    });
+    } catch (err) {
+      console.error("[orders] thumbnail generation failed:", err);
+    }
 
     if (effectiveBrandId) {
       await saveUserOrderProfile({

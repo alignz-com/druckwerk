@@ -273,10 +273,6 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               <span className="text-sm font-semibold text-red-500">Express</span>
             )}
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            {createdAtLabel}
-            {order.brand?.name ? ` · ${order.brand.name}` : ""}
-          </p>
         </div>
       </div>
 
