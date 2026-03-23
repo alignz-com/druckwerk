@@ -2059,25 +2059,33 @@ export default function OrderForm({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex w-full justify-end gap-2">
-              <Button
-                variant={confirmView === "front" ? "default" : "ghost"}
-                size="sm"
+            <div className="flex w-full justify-end gap-1">
+              <button
+                type="button"
                 onClick={() => setConfirmView("front")}
                 disabled={isSubmitting}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  confirmView === "front"
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 {tOrder("confirm.front")}
-              </Button>
-              <Button
-                variant={confirmView === "back" ? "default" : "ghost"}
-                size="sm"
+              </button>
+              <button
+                type="button"
                 onClick={() => setConfirmView("back")}
                 disabled={isSubmitting}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  confirmView === "back"
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-200"
+                }`}
               >
                 {tOrder("confirm.back")}
-              </Button>
+              </button>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-12 overflow-hidden">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-12">
               <div className="mx-auto w-full flex justify-center">
                 <div
                   className="relative"
