@@ -746,14 +746,7 @@ async function renderDesignElementsToPdf(opts: {
           x -= textWidthPt;
         }
 
-        const topPt = mmToPt(yMm);
-        let baselinePt: number;
-        if (baselineMode === "hanging") {
-          const ascentPt = font.heightAtSize(sizePt, { descender: false });
-          baselinePt = topPt + ascentPt;
-        } else {
-          baselinePt = topPt;
-        }
+        const baselinePt = mmToPt(yMm);
         const y = pageHeightPt - baselinePt;
 
         const fillColor = truncated ? rgb(1, 0, 0) : parseColor(element.font.color);
