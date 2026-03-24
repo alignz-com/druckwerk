@@ -137,17 +137,11 @@ export default function ApiDocsPage() {
                     Content-Type: <code className="rounded bg-slate-100 px-1 py-0.5">multipart/form-data</code>
                   </p>
 
-                  <ParamRow name="file_0" type="file" required>
-                    First file to include in the order. Accepted formats: <code>.pdf</code>, <code>.zip</code>, <code>.7z</code>
+                  <ParamRow name="files" type="file[]" required>
+                    One or more files. Repeat the field for multiple files. Accepted formats: <code>.pdf</code>, <code>.zip</code>, <code>.7z</code>
                   </ParamRow>
-                  <ParamRow name="file_1, file_2, ..." type="file">
-                    Additional files. Number sequentially starting from 0.
-                  </ParamRow>
-                  <ParamRow name="qty_0" type="integer" required>
-                    Number of copies for <code>file_0</code>. Must be a positive integer.
-                  </ParamRow>
-                  <ParamRow name="qty_1, qty_2, ..." type="integer">
-                    Quantity for each corresponding file.
+                  <ParamRow name="quantities" type="integer[]" required>
+                    Number of copies for each file, in the same order. Repeat the field once per file.
                   </ParamRow>
                   <ParamRow name="customerReference" type="string">
                     Your internal reference (e.g. sales order number). Stored with the order and visible in the dashboard.
@@ -197,25 +191,25 @@ export default function ApiDocsPage() {
               <div className="px-6 py-5 space-y-4 bg-slate-50/50">
                 <CodeBlock title="Request (single PDF)">{`$ curl -X POST "${BASE_URL}/v1/orders" \\
     -H "Authorization: Bearer YOUR_API_KEY" \\
-    -F "file_0=@manual.pdf" \\
-    -F "qty_0=100" \\
+    -F "files=@manual.pdf" \\
+    -F "quantities=100" \\
     -F "customerReference=SO-2026-12345"`}</CodeBlock>
 
                 <CodeBlock title="Request (multiple files)">{`$ curl -X POST "${BASE_URL}/v1/orders" \\
     -H "Authorization: Bearer YOUR_API_KEY" \\
-    -F "file_0=@manual-EN.pdf" \\
-    -F "qty_0=100" \\
-    -F "file_1=@manual-DE.pdf" \\
-    -F "qty_1=50" \\
-    -F "file_2=@appendix.pdf" \\
-    -F "qty_2=200" \\
+    -F "files=@manual-EN.pdf" \\
+    -F "quantities=100" \\
+    -F "files=@manual-DE.pdf" \\
+    -F "quantities=50" \\
+    -F "files=@appendix.pdf" \\
+    -F "quantities=200" \\
     -F "customerReference=SO-2026-12345" \\
     -F "notes=Urgent delivery"`}</CodeBlock>
 
                 <CodeBlock title="Request (archive)">{`$ curl -X POST "${BASE_URL}/v1/orders" \\
     -H "Authorization: Bearer YOUR_API_KEY" \\
-    -F "file_0=@all-manuals.7z" \\
-    -F "qty_0=150"`}</CodeBlock>
+    -F "files=@all-manuals.7z" \\
+    -F "quantities=150"`}</CodeBlock>
 
                 <CodeBlock title="200 — Response">{`{
   "orderId": "cm5x9k2a30001abcd",

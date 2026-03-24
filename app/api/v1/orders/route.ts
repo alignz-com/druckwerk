@@ -6,10 +6,16 @@
  * Authenticated via Bearer API key (ApiKey model).
  *
  * Form fields:
- *   file_0, file_1, ...   — PDF, ZIP, or 7Z files
- *   qty_0, qty_1, ...     — quantity (copies) for each file
- *   notes                 — optional order notes
- *   customerReference     — optional external reference (e.g. sales order number)
+ *   files        — one or more PDF, ZIP, or 7Z files (repeated field name)
+ *   quantities   — quantity for each file, in the same order (repeated field name)
+ *   notes        — optional order notes
+ *   customerReference — optional external reference (e.g. sales order number)
+ *
+ * Example curl:
+ *   curl -X POST https://api.dth.at/v1/orders \
+ *     -H "Authorization: Bearer TOKEN" \
+ *     -F "files=@manual1.pdf" -F "quantities=100" \
+ *     -F "files=@manual2.pdf" -F "quantities=50"
  */
 import { NextRequest, NextResponse } from "next/server"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
@@ -59,17 +65,36 @@ export async function POST(req: NextRequest) {
         role: "API",
       },
     })
+
     const formData = await req.formData()
 
     const notes = (formData.get("notes") as string) ?? ""
     const customerReference = (formData.get("customerReference") as string) ?? ""
 
-    // 2. Parse files + quantities
+    // 2. Parse files + quantities (repeated field names)
+    const rawFiles = formData.getAll("files") as File[]
+    const rawQuantities = formData.getAll("quantities").map((v) => parseInt(String(v), 10))
+
+    if (rawFiles.length === 0) {
+      return NextResponse.json(
+        { error: 'No files provided. Use the "files" field.' },
+        { status: 400 }
+      )
+    }
+
+    if (rawQuantities.length !== rawFiles.length) {
+      return NextResponse.json(
+        {
+          error: `Mismatch: ${rawFiles.length} file(s) but ${rawQuantities.length} quantity value(s). Provide one "quantities" per "files".`,
+        },
+        { status: 400 }
+      )
+    }
+
     const files: Array<{ buffer: Buffer; name: string; quantity: number }> = []
-    let slot = 0
-    while (true) {
-      const f = formData.get(`file_${slot}`) as File | null
-      if (!f) break
+    for (let i = 0; i < rawFiles.length; i++) {
+      const f = rawFiles[i]
+      const quantity = rawQuantities[i]
 
       const ext = f.name.substring(f.name.lastIndexOf(".")).toLowerCase()
       if (!ALLOWED_EXTENSIONS.includes(ext)) {
@@ -79,25 +104,15 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      const qtyRaw = formData.get(`qty_${slot}`)
-      const quantity = qtyRaw ? parseInt(String(qtyRaw), 10) : NaN
       if (!quantity || quantity < 1) {
         return NextResponse.json(
-          { error: `Missing or invalid qty_${slot} for file ${f.name}` },
+          { error: `Invalid quantity for file ${f.name}: ${rawQuantities[i]}` },
           { status: 400 }
         )
       }
 
       const buffer = Buffer.from(await f.arrayBuffer())
       files.push({ buffer, name: f.name, quantity })
-      slot++
-    }
-
-    if (files.length === 0) {
-      return NextResponse.json(
-        { error: "No files provided. Use file_0, file_1, etc." },
-        { status: 400 }
-      )
     }
 
     // 3. Reserve reference code
