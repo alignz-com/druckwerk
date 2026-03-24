@@ -466,6 +466,7 @@ type PreparedText = {
   lineHeightMm: number;
   isTruncated: boolean;
   bindings: string[];
+  resolvedFontSpotColor?: string | null;
 };
 
 function applySegmentStyles(
@@ -545,6 +546,9 @@ function prepareTextElement(element: TextElement, context: RenderContext, spotCo
   }
   const lineHeightMm = getLineHeightMm(element.font);
   const segments = applySegmentStyles(finalContent, element.segmentStyles, spotColors);
+  const resolvedFontSpotColor = element.font.spotColor
+    ? resolveSpotColorRgb(element.font.spotColor, spotColors)
+    : null;
   return {
     element,
     content: finalContent,
@@ -553,6 +557,7 @@ function prepareTextElement(element: TextElement, context: RenderContext, spotCo
     lineHeightMm,
     isTruncated,
     bindings,
+    resolvedFontSpotColor,
   };
 }
 
@@ -587,7 +592,7 @@ function renderTextElement(
   forceErrorColor = false,
 ) {
   const { element, fontSizeMm, content, segments, isTruncated, bindings } = prepared;
-  const baseColor = element.font.cmyk ? cmykToHex(element.font.cmyk) : (element.font.color ?? "#1f2937");
+  const baseColor = prepared.resolvedFontSpotColor ?? (element.font.cmyk ? cmykToHex(element.font.cmyk) : (element.font.color ?? "#1f2937"));
   const fillColor = forceErrorColor || isTruncated ? "#ef4444" : baseColor;
   if (isTruncated) reportOverflow?.(bindings);
 

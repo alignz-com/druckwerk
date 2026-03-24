@@ -758,10 +758,14 @@ async function renderDesignElementsToPdf(opts: {
         const baselinePt = mmToPt(yMm);
         const y = pageHeightPt - baselinePt;
 
-        const fillColor = truncated ? rgb(1, 0, 0) : parseCmykColor(element.font.cmyk) ?? parseColor(element.font.color);
-
-        // Activate spot color if specified
-        const spotRes = element.spotColor ? findSpotColorResource(doc, page, element.spotColor) : null;
+        // Activate spot color if specified (element-level or font-level)
+        const spotColorName = element.spotColor ?? element.font.spotColor;
+        const spotRes = spotColorName ? findSpotColorResource(doc, page, spotColorName) : null;
+        // Fallback: if spot color not found in PDF, use rgbFallback from template
+        const spotFallbackHex = !spotRes && spotColorName && spotColors
+          ? spotColors.find((sc) => sc.name === spotColorName)?.rgbFallback
+          : undefined;
+        const fillColor = truncated ? rgb(1, 0, 0) : parseColor(spotFallbackHex) ?? parseCmykColor(element.font.cmyk) ?? parseColor(element.font.color);
         if (spotRes) setSpotColorFill(page, spotRes);
 
         if (truncated) {
