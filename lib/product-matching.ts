@@ -45,9 +45,18 @@ export function matchProductFormat(
     return true
   })
 
-  // Prefer most specific match (most page constraints set)
+  // Prefer: 1) exact orientation match over rotated, 2) most page constraints
   return (
     matches.sort((a, b) => {
+      const tol = a.toleranceMm
+      const aExact =
+        Math.abs(trimWidthMm - a.trimWidthMm) <= tol &&
+        Math.abs(trimHeightMm - a.trimHeightMm) <= tol
+      const tolB = b.toleranceMm
+      const bExact =
+        Math.abs(trimWidthMm - b.trimWidthMm) <= tolB &&
+        Math.abs(trimHeightMm - b.trimHeightMm) <= tolB
+      if (aExact !== bExact) return aExact ? -1 : 1
       const aSpec = (a.minPages != null ? 1 : 0) + (a.maxPages != null ? 1 : 0)
       const bSpec = (b.minPages != null ? 1 : 0) + (b.maxPages != null ? 1 : 0)
       return bSpec - aSpec
