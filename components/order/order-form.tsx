@@ -782,12 +782,12 @@ export default function OrderForm({
   useEffect(() => {
     if (!selectedSummary) return;
     const isRestricted = templateAddressIds.length > 0;
-    if (!isRestricted) return;
-    if (selectedAddressEntry && !addressOptions.some((entry) => entry.id === selectedAddressEntry.id)) {
+    if (isRestricted && selectedAddressEntry && !addressOptions.some((entry) => entry.id === selectedAddressEntry.id)) {
       setSelectedAddressEntry(null);
       setAddressInputValue("");
       setAddressSearch("");
     }
+    // Auto-select when only one address is available (restricted or not)
     if (addressOptions.length === 1) {
       const only = addressOptions[0];
       if (!selectedAddressEntry || selectedAddressEntry.id !== only.id) {
