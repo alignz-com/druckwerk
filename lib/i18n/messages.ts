@@ -120,6 +120,7 @@ export const messages = {
         ADMIN: "Admin",
         BRAND_ADMIN: "Brand admin",
         PRINTER: "Printer",
+        API: "API",
       } as Record<string, string>,
       sidebar: {
         collapse: "Collapse sidebar",
@@ -1599,6 +1600,7 @@ export const messages = {
         ADMIN: "Admin",
         BRAND_ADMIN: "Marken-Admin",
         PRINTER: "Druckerei",
+        API: "API",
       },
       sidebar: {
         collapse: "Seitenleiste einklappen",

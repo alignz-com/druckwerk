@@ -32,6 +32,11 @@ import {
   extractZipBuffer,
   buildPdfFileName,
 } from "@/lib/pdf-item-extract"
+import { analyzePdf } from "@/lib/pdf-analyze"
+import {
+  matchProductFormat,
+  type ProductFormatForMatching,
+} from "@/lib/product-matching"
 
 export const runtime = "nodejs"
 export const maxDuration = 120
@@ -41,6 +46,31 @@ const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".7z"]
 function isArchive(name: string) {
   const lower = name.toLowerCase()
   return lower.endsWith(".zip") || lower.endsWith(".7z")
+}
+
+/** Load all ProductFormats for dimension-based matching. */
+async function loadProductFormats(): Promise<ProductFormatForMatching[]> {
+  const pfs = await prisma.productFormat.findMany({
+    include: {
+      product: true,
+      format: true,
+    },
+  })
+  return pfs.map((pf) => ({
+    id: pf.id,
+    productId: pf.productId,
+    productName: pf.product.name,
+    productNameEn: pf.product.nameEn,
+    productNameDe: pf.product.nameDe,
+    formatName: pf.format.name,
+    formatNameDe: pf.format.nameDe,
+    trimWidthMm: pf.format.trimWidthMm,
+    trimHeightMm: pf.format.trimHeightMm,
+    toleranceMm: pf.format.toleranceMm ?? 2,
+    defaultBleedMm: pf.format.defaultBleedMm ?? 3,
+    minPages: pf.minPages,
+    maxPages: pf.maxPages,
+  }))
 }
 
 export async function POST(req: NextRequest) {
@@ -122,7 +152,10 @@ export async function POST(req: NextRequest) {
     const cfg = DELIVERY_OPTIONS.standard
     const deliveryDueAt = addBusinessDays(new Date(), cfg.businessDays)
 
-    // 4. Extract archives to discover individual PDFs; plain PDFs pass through
+    // Load product formats for auto-matching
+    const productFormats = await loadProductFormats()
+
+    // 4. Extract archives, analyze PDFs, match products
     const S3_ORDERS_BASE = `${S3_PUBLIC_URL}/${ORDERS_BUCKET}`
 
     type PreparedItem = {
@@ -131,13 +164,20 @@ export async function POST(req: NextRequest) {
       quantity: number
       buffer: Buffer
       storageKey: string
+      trimWidthMm: number | null
+      trimHeightMm: number | null
+      bleedMm: number | null
+      pages: number | null
+      colorSpaces: string[]
+      pantoneColors: string[]
+      thumbnailDataUrl: string | undefined
+      productFormatId: string | null
     }
 
     const items: PreparedItem[] = []
 
     for (const file of files) {
       if (isArchive(file.name)) {
-        // Extract archive to discover PDFs
         const is7z = file.name.toLowerCase().endsWith(".7z")
         const pdfs = is7z
           ? await extract7zBuffer(file.buffer)
@@ -150,7 +190,7 @@ export async function POST(req: NextRequest) {
           )
         }
 
-        // Also upload the source archive
+        // Upload the source archive
         const safeArchiveName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
         const archiveKey = `${referenceCode}/src/${safeArchiveName}`
         await s3.send(
@@ -165,6 +205,11 @@ export async function POST(req: NextRequest) {
         )
 
         for (const pdf of pdfs) {
+          const analysis = await analyzePdf(pdf.buffer)
+          const match = analysis.trimWidthMm > 0
+            ? matchProductFormat(analysis.trimWidthMm, analysis.trimHeightMm, analysis.pages, productFormats)
+            : null
+
           const pdfFileName = buildPdfFileName(
             referenceCode,
             file.name,
@@ -176,10 +221,23 @@ export async function POST(req: NextRequest) {
             quantity: file.quantity,
             buffer: pdf.buffer,
             storageKey: `${referenceCode}/pdfs/${pdfFileName}`,
+            trimWidthMm: analysis.trimWidthMm || null,
+            trimHeightMm: analysis.trimHeightMm || null,
+            bleedMm: analysis.bleedMm,
+            pages: analysis.pages || null,
+            colorSpaces: analysis.colorSpaces,
+            pantoneColors: analysis.pantoneColors,
+            thumbnailDataUrl: analysis.thumbnailDataUrl,
+            productFormatId: match?.id ?? null,
           })
         }
       } else {
-        // Plain PDF
+        // Plain PDF — analyze
+        const analysis = await analyzePdf(file.buffer)
+        const match = analysis.trimWidthMm > 0
+          ? matchProductFormat(analysis.trimWidthMm, analysis.trimHeightMm, analysis.pages, productFormats)
+          : null
+
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
         items.push({
           filename: file.name,
@@ -187,6 +245,14 @@ export async function POST(req: NextRequest) {
           quantity: file.quantity,
           buffer: file.buffer,
           storageKey: `${referenceCode}/pdf/${items.length + 1}-${safeName}`,
+          trimWidthMm: analysis.trimWidthMm || null,
+          trimHeightMm: analysis.trimHeightMm || null,
+          bleedMm: analysis.bleedMm,
+          pages: analysis.pages || null,
+          colorSpaces: analysis.colorSpaces,
+          pantoneColors: analysis.pantoneColors,
+          thumbnailDataUrl: analysis.thumbnailDataUrl,
+          productFormatId: match?.id ?? null,
         })
       }
     }
@@ -219,8 +285,18 @@ export async function POST(req: NextRequest) {
               sourceZipFilename: item.sourceZipFilename,
               storagePath: item.storageKey,
               quantity: item.quantity,
+              trimWidthMm: item.trimWidthMm,
+              trimHeightMm: item.trimHeightMm,
+              bleedMm: item.bleedMm,
+              pages: item.pages,
+              colorSpaces: item.colorSpaces,
+              pantoneColors: item.pantoneColors,
               pdfUrl: `${S3_ORDERS_BASE}/${item.storageKey}`,
               pdfFileName: item.filename,
+              productFormatId: item.productFormatId,
+              thumbnailStoragePath: item.thumbnailDataUrl
+                ? `${referenceCode}/thumbs/${created.length + 1}.jpg`
+                : null,
             },
           })
         )
@@ -229,9 +305,10 @@ export async function POST(req: NextRequest) {
       return { order: o, createdItems: created }
     })
 
-    // 6. Upload all PDFs to MinIO
-    await Promise.all(
-      items.map((item) =>
+    // 6. Upload PDFs + thumbnails to MinIO
+    await Promise.all([
+      // Upload PDFs
+      ...items.map((item) =>
         s3.send(
           new PutObjectCommand({
             Bucket: ORDERS_BUCKET,
@@ -244,8 +321,23 @@ export async function POST(req: NextRequest) {
             },
           })
         )
-      )
-    )
+      ),
+      // Upload thumbnails
+      ...items.map(async (item, i) => {
+        if (!item.thumbnailDataUrl) return
+        const base64 = item.thumbnailDataUrl.replace(/^data:image\/\w+;base64,/, "")
+        const thumbBuffer = Buffer.from(base64, "base64")
+        const thumbKey = `${referenceCode}/thumbs/${i + 1}.jpg`
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: ORDERS_BUCKET,
+            Key: thumbKey,
+            Body: thumbBuffer,
+            ContentType: "image/jpeg",
+          })
+        )
+      }),
+    ])
 
     // 7. Generate JDFs (fire-and-forget)
     generatePdfOrderJdfs(order.id, {
@@ -262,6 +354,13 @@ export async function POST(req: NextRequest) {
         id: i.id,
         filename: i.filename,
         quantity: i.quantity,
+        trimWidthMm: i.trimWidthMm,
+        trimHeightMm: i.trimHeightMm,
+        bleedMm: i.bleedMm,
+        pages: i.pages,
+        colorSpaces: i.colorSpaces,
+        pantoneColors: i.pantoneColors,
+        productFormatId: i.productFormatId,
       })),
     })
   } catch (err) {
