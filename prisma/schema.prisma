@@ -18,6 +18,7 @@ enum UserRole {
   ADMIN
   BRAND_ADMIN
   PRINTER
+  API
 }
 
 enum OrderStatus {
@@ -203,6 +204,7 @@ model Brand {
   contacts  Contact[]
   orderProfiles UserOrderProfile[]
   deliveries Delivery[] @relation("BrandDeliveries")
+  apiKeys    ApiKey[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
@@ -740,6 +742,22 @@ model BrandProductFormatPreference {
   updatedAt           DateTime      @updatedAt
 
   @@unique([brandId, productFormatId])
+  @@index([brandId])
+}
+
+// ─── API Keys ────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  key        String    @unique          // SHA-256 hash of bearer token
+  label      String?                    // e.g. "Omicron OL Connect"
+  brandId    String
+  isActive   Boolean   @default(true)
+  brand      Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   @@index([brandId])
 }
 

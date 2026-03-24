@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
+  Key,
   LayoutTemplate,
   MapPin,
   Pencil,
@@ -41,6 +42,7 @@ import {
 } from "@/components/admin/shared/data-table-styles";
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./AddressSheet";
 import BrandTemplateSection from "./BrandTemplateSection";
+import BrandApiKeysSection from "./BrandApiKeysSection";
 import LogoUpload from "./LogoUpload";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -543,6 +545,10 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                       <MapPin className="h-4 w-4" />
                       {t("tabs.addresses")}
                     </TabsTrigger>
+                    <TabsTrigger value="api" className="flex items-center gap-2 data-[state=active]:bg-white">
+                      <Key className="h-4 w-4" />
+                      {t("tabs.api")}
+                    </TabsTrigger>
                   </>
                 )}
               </TabsList>
@@ -825,8 +831,9 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                 </TabsContent>
               )}
 
-              {/* ── Addresses tab (edit only) ── */}
+              {/* ── Addresses + API tabs (edit only) ── */}
               {mode === "edit" && (
+                <>
                 <TabsContent value="addresses" className="space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -923,6 +930,11 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                     </Table>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="api">
+                  <BrandApiKeysSection brandId={snapshot!.id} />
+                </TabsContent>
+                </>
               )}
         </Tabs>
       </div>

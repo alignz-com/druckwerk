@@ -11,30 +11,7 @@ import { DELIVERY_OPTIONS } from "@/lib/delivery-options"
 import { addBusinessDays } from "@/lib/date-utils"
 import { extractAndUploadPdfItem } from "@/lib/pdf-item-extract"
 import { generatePdfOrderJdfs } from "@/lib/generate-pdf-order-jdfs"
-
-export const runtime = "nodejs"
-export const maxDuration = 120
-
-function formatReferenceCode(year: number, sequence: number) {
-  return `${year}-${sequence.toString().padStart(5, "0")}`
-}
-
-async function reserveReferenceCode() {
-  const now = new Date()
-  const year = now.getUTCFullYear()
-  const counter = await prisma.$transaction((tx) =>
-    tx.orderReferenceCounter.upsert({
-      where: { year },
-      update: { lastValue: { increment: 1 } },
-      create: { year, lastValue: 1 },
-    })
-  )
-  return {
-    referenceCode: formatReferenceCode(year, counter.lastValue),
-    referenceYear: year,
-    referenceSequence: counter.lastValue,
-  }
-}
+import { reserveReferenceCode } from "@/lib/order-reference"
 
 const itemMetaSchema = z.object({
   filename: z.string(),

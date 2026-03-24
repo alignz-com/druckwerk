@@ -65,7 +65,7 @@ async function downloadFromOrders(storageKey: string): Promise<Buffer> {
 }
 
 /** Extract PDFs from a .7z buffer, returning {filename, buffer} pairs. */
-async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
+export async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
   const id = randomUUID()
   const archivePath = join(tmpdir(), `${id}.7z`)
   const extractDir = join(tmpdir(), `${id}-ex`)
@@ -89,7 +89,7 @@ async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename: string
 }
 
 /** Extract PDFs from a .zip buffer, returning {filename, buffer} pairs. */
-async function extractZipBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
+export async function extractZipBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
   const dir = await unzipper.Open.buffer(buffer)
   const results: Array<{ filename: string; buffer: Buffer }> = []
   for (const entry of dir.files) {
