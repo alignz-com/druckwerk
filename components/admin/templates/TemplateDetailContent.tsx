@@ -281,6 +281,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
+      pcmCode: (template as any).pcmCode ?? "",
     });
     setMetadataError(null);
     setMetadataSuccess(null);

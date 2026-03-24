@@ -30,7 +30,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         const email = credentials?.email?.toLowerCase();
         const password = credentials?.password;
 
@@ -51,7 +51,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        return user;
+        return user as any;
       },
     }),
   ],
