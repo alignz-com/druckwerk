@@ -587,7 +587,7 @@ function renderTextElement(
   forceErrorColor = false,
 ) {
   const { element, fontSizeMm, content, segments, isTruncated, bindings } = prepared;
-  const baseColor = element.font.color ?? "#1f2937";
+  const baseColor = element.font.cmyk ? cmykToHex(element.font.cmyk) : (element.font.color ?? "#1f2937");
   const fillColor = forceErrorColor || isTruncated ? "#ef4444" : baseColor;
   if (isTruncated) reportOverflow?.(bindings);
 
@@ -876,6 +876,15 @@ function renderDesignElements(
 /* PDF-Fontgrößen in Punkt -> wir benutzen *die mm-Äquivalente als User-Units*.
    1pt = 1/72 inch; 1 inch = 25.4 mm -> pt to mm = 25.4/72 */
 const ptToMm = (pt: number) => (pt * 25.4) / 72;
+
+/** Convert CMYK [0-1, 0-1, 0-1, 0-1] to hex for SVG preview */
+function cmykToHex(cmyk: [number, number, number, number]): string {
+  const [c, m, y, k] = cmyk;
+  const r = Math.round(255 * (1 - c) * (1 - k));
+  const g = Math.round(255 * (1 - m) * (1 - k));
+  const b = Math.round(255 * (1 - y) * (1 - k));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
 
 /* ---------- kleine Helfer ---------- */

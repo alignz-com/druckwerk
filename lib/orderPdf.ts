@@ -1,4 +1,4 @@
-import { PDFDocument, grayscale, rgb, PDFOperator, PDFOperatorNames, asPDFNumber, PDFName, PDFArray, PDFDict, PDFRef, type PDFFont, type Color, type PDFPage } from "pdf-lib";
+import { PDFDocument, grayscale, rgb, cmyk, PDFOperator, PDFOperatorNames, asPDFNumber, PDFName, PDFArray, PDFDict, PDFRef, type PDFFont, type Color, type PDFPage } from "pdf-lib";
 import * as QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
@@ -151,11 +151,12 @@ function setSpotColorFill(page: PDFPage, resourceName: string, tint = 1.0) {
 }
 
 /**
- * Reset fill color back to a standard RGB color after using a spot color.
+ * Reset fill color back to a standard color space after using a spot color.
  */
-function resetToRgbFill(page: PDFPage, color: Color) {
+function resetFill(page: PDFPage, color: Color) {
+  const isCmyk = "cyan" in color;
   page.pushOperators(
-    PDFOperator.of("cs" as any, [PDFName.of("DeviceRGB")]),
+    PDFOperator.of("cs" as any, [PDFName.of(isCmyk ? "DeviceCMYK" : "DeviceRGB")]),
   );
   // drawText/drawRectangle will set the color normally after this
 }
@@ -176,6 +177,12 @@ function designContainsQr(elements: DesignElement[] | undefined): boolean {
   return false;
 }
 
+function parseCmykColor(value: [number, number, number, number] | undefined): Color | undefined {
+  if (!value) return undefined;
+  const [c, m, y, k] = value;
+  return cmyk(c, m, y, k);
+}
+
 function parseColor(value: string | undefined) {
   if (!value) return undefined;
   let hex = value.trim();
@@ -189,6 +196,8 @@ function parseColor(value: string | undefined) {
       .join("");
   }
   if (hex.length !== 6) return undefined;
+  // Pure black → 100% K in CMYK (avoids rich black / registration issues in print)
+  if (hex === "000000") return cmyk(0, 0, 0, 1);
   const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
   const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
   const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
@@ -699,7 +708,7 @@ async function renderDesignElementsToPdf(opts: {
             PDFOperator.of("re" as any, [asPDFNumber(x), asPDFNumber(y), asPDFNumber(mmToPt(widthMm)), asPDFNumber(mmToPt(heightMm))]),
             PDFOperator.of("f" as any, []),
           );
-          resetToRgbFill(page, rgb(0, 0, 0));
+          resetFill(page, cmyk(0, 0, 0, 1));
         } else {
           page.drawRectangle({
             x,
@@ -749,7 +758,7 @@ async function renderDesignElementsToPdf(opts: {
         const baselinePt = mmToPt(yMm);
         const y = pageHeightPt - baselinePt;
 
-        const fillColor = truncated ? rgb(1, 0, 0) : parseColor(element.font.color);
+        const fillColor = truncated ? rgb(1, 0, 0) : parseCmykColor(element.font.cmyk) ?? parseColor(element.font.color);
 
         // Activate spot color if specified
         const spotRes = element.spotColor ? findSpotColorResource(doc, page, element.spotColor) : null;
@@ -797,7 +806,7 @@ async function renderDesignElementsToPdf(opts: {
                 characterSpacing: letterSpacingPt,
                 useRawColor: !!segSpotRes,
               });
-              if (segSpotRes) resetToRgbFill(page, fillColor ?? rgb(0, 0, 0));
+              if (segSpotRes) resetFill(page, fillColor ?? cmyk(0, 0, 0, 1));
               cursorX +=
                 font.widthOfTextAtSize(segment.text, sizePt) +
                 Math.max(0, segment.text.length - 1) * letterSpacingPt;
@@ -809,7 +818,7 @@ async function renderDesignElementsToPdf(opts: {
           }
         }
         // Reset to RGB if spot color was used
-        if (spotRes) resetToRgbFill(page, fillColor ?? rgb(0, 0, 0));
+        if (spotRes) resetFill(page, fillColor ?? cmyk(0, 0, 0, 1));
 
         const lineHeightMm =
           element.font.lineHeightMm ??
@@ -903,14 +912,14 @@ async function renderDesignElementsToPdf(opts: {
                   y: baseY + mmToPt((moduleCount - 1 - row) * moduleMm),
                   width: modWidthPt,
                   height: modWidthPt,
-                  color: darkColor ?? rgb(0, 0, 0),
+                  color: darkColor ?? cmyk(0, 0, 0, 1),
                 });
               }
             }
           }
 
           // Reset after spot color
-          if (qrSpotRes) resetToRgbFill(page, rgb(0, 0, 0));
+          if (qrSpotRes) resetFill(page, cmyk(0, 0, 0, 1));
 
           return sizeMm;
         }

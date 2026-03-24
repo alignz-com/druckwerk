@@ -29,6 +29,7 @@ const textFontSchema = z.object({
   family: z.string().optional(),
   weight: z.number().optional(),
   color: z.string().optional(),
+  cmyk: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(), // [C, M, Y, K] 0-1
   style: z
     .string()
     .optional()
