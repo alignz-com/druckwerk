@@ -898,22 +898,25 @@ export default function OrderForm({
           ? addresses.find((entry) => entry.id === profile.addressId)
           : null;
 
+      // Auto-select if only one address available and no saved address in profile
+      const effectiveAddress = matchedAddress ?? (addresses.length === 1 ? addresses[0] : null);
+
       // Only show a saved address label if it still exists for this brand; otherwise start empty.
-      const displayLabel = matchedAddress ? matchedAddress.label ?? matchedAddress.company ?? "" : "";
-      setSelectedAddressEntry(matchedAddress ?? null);
+      const displayLabel = effectiveAddress ? effectiveAddress.label ?? effectiveAddress.company ?? "" : "";
+      setSelectedAddressEntry(effectiveAddress ?? null);
       setAddressInputValue(displayLabel);
       setAddressSearch("");
       setAddressDropdownOpen(false);
-      setCompanyName(profile.companyName ?? matchedAddress?.company ?? "");
-      setStreet(profile.street ?? matchedAddress?.street ?? "");
-      setPostalCode(profile.postalCode ?? matchedAddress?.postalCode ?? "");
-      setCity(profile.city ?? matchedAddress?.city ?? "");
-      setCountryCode(profile.countryCode ?? matchedAddress?.countryCode ?? "");
+      setCompanyName(profile.companyName ?? effectiveAddress?.company ?? "");
+      setStreet(profile.street ?? effectiveAddress?.street ?? "");
+      setPostalCode(profile.postalCode ?? effectiveAddress?.postalCode ?? "");
+      setCity(profile.city ?? effectiveAddress?.city ?? "");
+      setCountryCode(profile.countryCode ?? effectiveAddress?.countryCode ?? "");
 
       if (profile.addressBlock) {
         setAddressBlock(profile.addressBlock);
-      } else if (matchedAddress) {
-        setAddressBlock(getAddressBlockFromEntry(matchedAddress));
+      } else if (effectiveAddress) {
+        setAddressBlock(getAddressBlockFromEntry(effectiveAddress));
       } else {
         setAddressBlock("");
       }
@@ -1868,7 +1871,7 @@ export default function OrderForm({
               <button
                 type="button"
                 onClick={() => setPreviewView("front")}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                   previewView === "front"
                     ? "bg-slate-900 text-white"
                     : "bg-white text-slate-500 hover:bg-slate-200"
@@ -1879,7 +1882,7 @@ export default function OrderForm({
               <button
                 type="button"
                 onClick={() => setPreviewView("back")}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                   previewView === "back"
                     ? "bg-slate-900 text-white"
                     : "bg-white text-slate-500 hover:bg-slate-200"
@@ -1897,7 +1900,7 @@ export default function OrderForm({
                 <button
                   type="button"
                   onClick={() => setPreviewView("front")}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                     previewView === "front"
                       ? "bg-slate-900 text-white"
                       : "bg-white text-slate-500 hover:bg-slate-200"
@@ -1908,7 +1911,7 @@ export default function OrderForm({
                 <button
                   type="button"
                   onClick={() => setPreviewView("back")}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                     previewView === "back"
                       ? "bg-slate-900 text-white"
                       : "bg-white text-slate-500 hover:bg-slate-200"
@@ -2085,7 +2088,7 @@ export default function OrderForm({
                 type="button"
                 onClick={() => setConfirmView("front")}
                 disabled={isSubmitting}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                   confirmView === "front"
                     ? "bg-slate-900 text-white"
                     : "bg-white text-slate-500 hover:bg-slate-200"
@@ -2097,7 +2100,7 @@ export default function OrderForm({
                 type="button"
                 onClick={() => setConfirmView("back")}
                 disabled={isSubmitting}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                   confirmView === "back"
                     ? "bg-slate-900 text-white"
                     : "bg-white text-slate-500 hover:bg-slate-200"

@@ -74,7 +74,7 @@ export function OrderCardPreview({
         <button
           type="button"
           onClick={() => setSide("front")}
-          className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+          className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
             side === "front"
               ? "bg-slate-900 text-white"
               : "bg-white text-slate-500 hover:bg-slate-200"
@@ -85,7 +85,7 @@ export function OrderCardPreview({
         <button
           type="button"
           onClick={() => setSide("back")}
-          className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+          className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
             side === "back"
               ? "bg-slate-900 text-white"
               : "bg-white text-slate-500 hover:bg-slate-200"
