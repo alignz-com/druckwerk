@@ -14,6 +14,13 @@ const s3Hostname = parseRemoteHostname(s3PublicUrl);
 const s3Port = (() => { try { const p = new URL(s3PublicUrl).port; return p || undefined; } catch { return undefined; } })();
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      // api.dth.at/v1/* → /api/v1/*
+      { source: "/v1/:path*", destination: "/api/v1/:path*" },
+      // api.dth.at/docs/api → /docs/api
+    ];
+  },
   images: {
     remotePatterns: [
       // MinIO / self-hosted S3
