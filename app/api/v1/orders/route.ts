@@ -172,6 +172,8 @@ export async function POST(req: NextRequest) {
       pantoneColors: string[]
       thumbnailDataUrl: string | undefined
       productFormatId: string | null
+      productName: string | null
+      formatName: string | null
     }
 
     const items: PreparedItem[] = []
@@ -229,6 +231,8 @@ export async function POST(req: NextRequest) {
             pantoneColors: analysis.pantoneColors,
             thumbnailDataUrl: analysis.thumbnailDataUrl,
             productFormatId: match?.id ?? null,
+            productName: match?.productName ?? null,
+            formatName: match?.formatName ?? null,
           })
         }
       } else {
@@ -253,6 +257,8 @@ export async function POST(req: NextRequest) {
           pantoneColors: analysis.pantoneColors,
           thumbnailDataUrl: analysis.thumbnailDataUrl,
           productFormatId: match?.id ?? null,
+          productName: match?.productName ?? null,
+          formatName: match?.formatName ?? null,
         })
       }
     }
@@ -350,9 +356,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       orderId: order.id,
       referenceCode,
-      items: createdItems.map((i) => ({
+      items: createdItems.map((i, idx) => ({
         id: i.id,
         filename: i.filename,
+        archive: i.sourceZipFilename,
         quantity: i.quantity,
         trimWidthMm: i.trimWidthMm,
         trimHeightMm: i.trimHeightMm,
@@ -360,7 +367,8 @@ export async function POST(req: NextRequest) {
         pages: i.pages,
         colorSpaces: i.colorSpaces,
         pantoneColors: i.pantoneColors,
-        productFormatId: i.productFormatId,
+        product: items[idx].productName,
+        format: items[idx].formatName,
       })),
     })
   } catch (err) {
