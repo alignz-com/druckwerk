@@ -2087,7 +2087,7 @@ export default function OrderForm({
                 {tOrder("confirm.back")}
               </button>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/60 p-12">
+            <div className="rounded-2xl border bg-slate-100 p-12">
               <div className="flex items-center justify-center aspect-[3/2]">
                 <div
                   className="relative overflow-visible"
