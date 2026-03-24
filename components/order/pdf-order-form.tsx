@@ -113,12 +113,8 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
         throw new Error(body.error ?? `Server error ${res.status}`)
       }
 
-      const { orderId } = await res.json()
-      if (orderId === "demo") {
-        router.push("/orders?created=1")
-      } else {
-        router.push(`/orders/${orderId}`)
-      }
+      await res.json()
+      router.push("/orders?created=1")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setSubmitting(false)
