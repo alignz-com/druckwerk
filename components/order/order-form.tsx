@@ -14,6 +14,7 @@ import { DELIVERY_OPTIONS, type DeliveryOption } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { useTranslations } from "@/components/providers/locale-provider";
 import { BusinessCardFront, BusinessCardBack } from "@/components/PreviewCard";
+import { captureSvgAsPng } from "@/lib/capture-svg";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -956,6 +957,7 @@ export default function OrderForm({
   const [isDraftCreating, setIsDraftCreating] = useState(false);
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDraftPayloadRef = useRef<string>("");
+  const svgFrontRef = useRef<SVGSVGElement>(null);
   const draftBrandIdRef = useRef<string | null>(null);
 
   const mustSelectBrand = availableBrands.length > 1 && !currentBrandId;
@@ -1247,6 +1249,20 @@ export default function OrderForm({
 
       const resolvedPhotoUrl = canUploadPhoto && !photoUrl && photoFile ? await uploadPhoto() : photoUrl;
 
+      // Capture SVG preview as PNG thumbnail
+      let thumbnailBase64: string | undefined;
+      if (svgFrontRef.current) {
+        try {
+          const blob = await captureSvgAsPng(svgFrontRef.current);
+          if (blob) {
+            const buf = await blob.arrayBuffer();
+            thumbnailBase64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          }
+        } catch {
+          // Non-fatal — server will fall back to PDF-based thumbnail
+        }
+      }
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1271,6 +1287,7 @@ export default function OrderForm({
           addressLabel: qrAddressLabel,
           address: qrAddressPayload,
           photoUrl: resolvedPhotoUrl || undefined,
+          thumbnailBase64,
         }),
       });
 
@@ -1936,6 +1953,7 @@ export default function OrderForm({
                       activeSide={previewView}
                       front={
                         <BusinessCardFront
+                          ref={svgFrontRef}
                           template={selectedTemplate}
                           name={name}
                           role={role}

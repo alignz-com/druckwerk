@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { formatPhones } from "@/lib/formatPhones";
@@ -982,7 +982,7 @@ function buildVCard3(o: {
   return lines.join("\r\n");
 }
 /* ============================== FRONT ============================== */
-export function BusinessCardFront({
+export const BusinessCardFront = forwardRef<SVGSVGElement, Props>(function BusinessCardFront({
   template,
   name,
   role = "",
@@ -1000,7 +1000,7 @@ export function BusinessCardFront({
   forcedBindingPrefixes = [],
   qrPreviewMode = "vcard",
   qrPayload,
-}: Props) {
+}, ref) {
   const { preview: previewCfg } = getFrontConfig(template);
   const { revision: fontRevision, ready: fontsReady } = useFontFaceLoader(template.fonts);
   const maxWidth = previewCfg.maxWidthPx ?? DEFAULT_PREVIEW_MAX_WIDTH;
@@ -1199,6 +1199,7 @@ export function BusinessCardFront({
   return (
     <figure className={`select-none h-full w-full flex items-center justify-center transition-opacity duration-300 ${fontsReady ? "opacity-100" : "opacity-0"}`} style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
       <svg
+        ref={ref}
         className="block"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
@@ -1229,7 +1230,7 @@ export function BusinessCardFront({
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
   );
-}
+});
 
 export function BusinessCardBack({
   template,

@@ -100,6 +100,7 @@ const requestSchema = z.object({
       addressExtra: z.string().optional().default(""),
     })
     .optional(),
+  thumbnailBase64: z.string().optional(),
 });
 
 function formatReferenceCode(year: number, sequence: number) {
@@ -490,9 +491,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate and store thumbnail
+    // Store thumbnail — prefer client-provided SVG capture, fall back to PDF rendering
     try {
-      const thumbBuffer = await generateOrderThumbnail(pdfBytes);
+      let thumbBuffer: Buffer | null = null;
+      if (data.thumbnailBase64) {
+        thumbBuffer = Buffer.from(data.thumbnailBase64, "base64");
+      } else {
+        thumbBuffer = await generateOrderThumbnail(pdfBytes);
+      }
       if (thumbBuffer) {
         const thumbKey = toStorageKey(referenceCode, fileBaseName, "thumb.png");
         const thumbBlob = new Blob([new Uint8Array(thumbBuffer)], { type: "image/png" });
