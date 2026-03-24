@@ -115,6 +115,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
 
       await res.json()
       router.push("/orders?created=1")
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setSubmitting(false)

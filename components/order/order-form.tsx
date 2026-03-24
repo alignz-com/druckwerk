@@ -1281,6 +1281,7 @@ export default function OrderForm({
 
       setIsConfirmOpen(false);
       router.push("/orders?created=1");
+      router.refresh();
     } catch (err: any) {
       setSubmitError(err?.message ?? tOrder("errors.generic"));
     } finally {
