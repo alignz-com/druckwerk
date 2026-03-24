@@ -226,7 +226,7 @@ export default function ApiDocsPage() {
     -H "Authorization: Bearer YOUR_API_KEY" \\
     -F "files=@manual.pdf" \\
     -F "quantities=100" \\
-    -F "customerReference=SO-2026-12345"`}</CodeBlock>
+    -F "customerReference=PO-2026-001"`}</CodeBlock>
 
                 <CodeBlock title="Request (multiple files)">{`$ curl -X POST "${BASE_URL}/v1/orders" \\
     -H "Authorization: Bearer YOUR_API_KEY" \\
@@ -236,7 +236,7 @@ export default function ApiDocsPage() {
     -F "quantities=50" \\
     -F "files=@appendix.pdf" \\
     -F "quantities=200" \\
-    -F "customerReference=SO-2026-12345" \\
+    -F "customerReference=PO-2026-001" \\
     -F "notes=Urgent delivery"`}</CodeBlock>
 
                 <CodeBlock title="Request (archive)">{`$ curl -X POST "${BASE_URL}/v1/orders" \\
@@ -250,31 +250,31 @@ export default function ApiDocsPage() {
   "items": [
     {
       "id": "cm5x9k2a30002efgh",
-      "filename": "CMC-500-Safe-Use-ENU.pdf",
-      "archive": "SO-2026-12345.7z",
+      "filename": "product-brochure.pdf",
+      "archive": null,
       "quantity": 100,
       "trimWidthMm": 210,
       "trimHeightMm": 297,
       "bleedMm": 3,
-      "pages": 48,
+      "pages": 12,
       "colorSpaces": ["CMYK"],
       "pantoneColors": [],
-      "product": "Handbuch",
+      "product": "Broschüre",
       "format": "A4"
     },
     {
       "id": "cm5x9k2a30003ijkl",
-      "filename": "Welcome-Letter.pdf",
-      "archive": "SO-2026-12345.7z",
-      "quantity": 100,
-      "trimWidthMm": 215,
-      "trimHeightMm": 280,
-      "bleedMm": null,
+      "filename": "info-flyer.pdf",
+      "archive": "print-bundle.7z",
+      "quantity": 500,
+      "trimWidthMm": 148,
+      "trimHeightMm": 210,
+      "bleedMm": 3,
       "pages": 2,
       "colorSpaces": ["CMYK", "Spot"],
-      "pantoneColors": ["PANTONE 286 C"],
+      "pantoneColors": ["PANTONE 300 C"],
       "product": "Flyer",
-      "format": "Letter"
+      "format": "A5"
     }
   ]
 }`}</CodeBlock>

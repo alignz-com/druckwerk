@@ -39,7 +39,7 @@ import {
 } from "@/lib/product-matching"
 
 export const runtime = "nodejs"
-export const maxDuration = 120
+export const maxDuration = 300
 
 const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".7z"]
 
