@@ -162,7 +162,40 @@ export default function ApiDocsPage() {
                     Human-readable order reference (e.g. <code>2026-00042</code>).
                   </ParamRow>
                   <ParamRow name="items" type="array">
-                    List of created order items with <code>id</code>, <code>filename</code>, and <code>quantity</code>.
+                    List of created order items. Each item includes:
+                  </ParamRow>
+                  <ParamRow name="items[].filename" type="string">
+                    Original filename of the PDF.
+                  </ParamRow>
+                  <ParamRow name="items[].archive" type="string | null">
+                    Source archive name if the file was extracted from a ZIP/7Z. <code>null</code> for direct uploads.
+                  </ParamRow>
+                  <ParamRow name="items[].quantity" type="integer">
+                    Number of copies.
+                  </ParamRow>
+                  <ParamRow name="items[].trimWidthMm" type="number | null">
+                    Detected trim width in millimeters.
+                  </ParamRow>
+                  <ParamRow name="items[].trimHeightMm" type="number | null">
+                    Detected trim height in millimeters.
+                  </ParamRow>
+                  <ParamRow name="items[].bleedMm" type="number | null">
+                    Detected bleed in millimeters.
+                  </ParamRow>
+                  <ParamRow name="items[].pages" type="integer | null">
+                    Page count.
+                  </ParamRow>
+                  <ParamRow name="items[].colorSpaces" type="string[]">
+                    Detected color spaces (e.g. <code>CMYK</code>, <code>RGB</code>, <code>Spot</code>).
+                  </ParamRow>
+                  <ParamRow name="items[].pantoneColors" type="string[]">
+                    Detected Pantone spot color names.
+                  </ParamRow>
+                  <ParamRow name="items[].product" type="string | null">
+                    Auto-matched product name based on dimensions, or <code>null</code> if no match.
+                  </ParamRow>
+                  <ParamRow name="items[].format" type="string | null">
+                    Auto-matched format name (e.g. <code>A4</code>, <code>Letter</code>).
                   </ParamRow>
                 </div>
 
@@ -217,13 +250,31 @@ export default function ApiDocsPage() {
   "items": [
     {
       "id": "cm5x9k2a30002efgh",
-      "filename": "manual-EN.pdf",
-      "quantity": 100
+      "filename": "CMC-500-Safe-Use-ENU.pdf",
+      "archive": "SO-2026-12345.7z",
+      "quantity": 100,
+      "trimWidthMm": 210,
+      "trimHeightMm": 297,
+      "bleedMm": 3,
+      "pages": 48,
+      "colorSpaces": ["CMYK"],
+      "pantoneColors": [],
+      "product": "Handbuch",
+      "format": "A4"
     },
     {
       "id": "cm5x9k2a30003ijkl",
-      "filename": "manual-DE.pdf",
-      "quantity": 50
+      "filename": "Welcome-Letter.pdf",
+      "archive": "SO-2026-12345.7z",
+      "quantity": 100,
+      "trimWidthMm": 215,
+      "trimHeightMm": 280,
+      "bleedMm": null,
+      "pages": 2,
+      "colorSpaces": ["CMYK", "Spot"],
+      "pantoneColors": ["PANTONE 286 C"],
+      "product": "Flyer",
+      "format": "Letter"
     }
   ]
 }`}</CodeBlock>
@@ -246,7 +297,8 @@ export default function ApiDocsPage() {
           <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-2xl">
             When you upload a <code>.zip</code> or <code>.7z</code> archive, Druckwerk automatically extracts
             all PDF files inside and creates a separate order item for each. All extracted files inherit
-            the quantity specified for that archive.
+            the quantity specified for that archive. The <code>archive</code> field in the response identifies
+            which source archive each file came from.
           </p>
           <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
             <p className="text-sm text-amber-800">
