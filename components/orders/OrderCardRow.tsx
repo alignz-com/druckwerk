@@ -51,11 +51,13 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
   if (order.thumbnailUrl && !isMultiFile) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={order.thumbnailUrl}
-        alt=""
-        className="shadow-sm max-w-[56px] max-h-[40px] w-auto h-auto object-contain"
-      />
+      <div className="w-[60px] h-[60px] flex items-center justify-center">
+        <img
+          src={order.thumbnailUrl}
+          alt=""
+          className="shadow-sm max-w-full max-h-full w-auto h-auto object-contain"
+        />
+      </div>
     );
   }
 
