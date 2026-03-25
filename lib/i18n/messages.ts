@@ -778,6 +778,7 @@ export const messages = {
           addresses: {
             heading: "Template addresses",
             description: "Restrict which brand addresses are available when ordering with this template.",
+            hint: "If none are selected, all brand addresses will be available.",
             none: "Assign a brand before selecting addresses.",
             empty: "No addresses for this brand.",
             loading: "Loading addresses…",
@@ -2325,6 +2326,7 @@ export const messages = {
           addresses: {
             heading: "Template-Adressen",
             description: "Lege fest, welche Markenadressen bei Bestellungen auswählbar sind.",
+            hint: "Wenn keine ausgewählt ist, stehen alle Marken-Adressen zur Verfügung.",
             none: "Bitte zuerst eine Brand zuweisen.",
             empty: "Keine Adressen für diese Brand vorhanden.",
             loading: "Adressen werden geladen…",

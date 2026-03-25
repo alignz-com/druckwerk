@@ -984,6 +984,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
                           </label>
                         );
                       })}
+                      <p className="text-xs text-slate-400 mt-1">{t("detail.addresses.hint")}</p>
                     </div>
                   )}
                 </div>
