@@ -15,7 +15,7 @@ interface MockupOptions {
 }
 
 const DEFAULTS: Required<MockupOptions> = {
-  width: 600,
+  width: 1200,
   bgColor: "transparent",
   backRotation: 5,
 };
