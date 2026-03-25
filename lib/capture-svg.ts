@@ -2,6 +2,8 @@
  * Capture an SVG element as a PNG blob using the browser Canvas API.
  * Inlines external images and fonts as data URIs to avoid canvas tainting.
  */
+import { loadedFontUrls } from "./useFontFaceLoader";
+
 export async function captureSvgAsPng(
   svgElement: SVGSVGElement,
   targetWidth = 600,
@@ -101,88 +103,44 @@ export async function captureSvgAsPng(
 }
 
 /**
- * Build @font-face CSS with inlined base64 font data from all loaded FontFace entries.
- *
- * Fonts are loaded via `new FontFace(name, "url(...)") + document.fonts.add(face)`
- * in useFontFaceLoader.ts. The `face.src` property contains the CSS src value.
- *
- * We re-fetch the font URL and inline the binary as a data URI so the serialized
- * SVG can render text correctly in the sandboxed <img> context.
+ * Build @font-face CSS from the font URL registry populated by useFontFaceLoader.
+ * Fetches each font and inlines as base64 data URI so the serialized SVG
+ * renders correctly in the sandboxed <img> context.
  */
 async function buildFontFaceCss(): Promise<string> {
+  const entries = Array.from(loadedFontUrls.values());
+  if (entries.length === 0) {
+    console.warn("[capture] no fonts in registry");
+    return "";
+  }
+
   const rules: string[] = [];
-  const seen = new Set<string>();
 
-  // Collect all font faces to process
-  const faces: FontFace[] = [];
-  document.fonts.forEach((face) => {
-    if (face.status === "loaded") faces.push(face);
-  });
-
-  // Process all fonts in parallel for speed
   await Promise.all(
-    faces.map(async (face) => {
-      const family = face.family.replace(/['"]/g, "");
-      const weight = face.weight || "400";
-      const style = face.style || "normal";
-      const key = `${family}-${weight}-${style}`;
-
-      if (seen.has(key)) return;
-      seen.add(key);
-
+    entries.map(async ({ family, weight, style, url, format }) => {
       try {
-        // The FontFace.src property is a CSSOMString like: url("https://files.dth.at/fonts/...")
-        const srcValue = (face as any).src;
-        if (!srcValue || typeof srcValue !== "string") {
-          console.warn(`[capture] no src for font ${key}`);
-          return;
-        }
-
-        // Extract the URL from the CSS url() value
-        const urlMatch = srcValue.match(/url\(["']?([^"')]+)["']?\)/);
-        if (!urlMatch) {
-          console.warn(`[capture] cannot parse src for font ${key}:`, srcValue.substring(0, 100));
-          return;
-        }
-
-        const fontUrl = urlMatch[1];
-        if (!fontUrl || fontUrl.startsWith("data:")) return;
-
-        const format = fontUrl.includes(".woff2") ? "woff2"
-          : fontUrl.includes(".woff") ? "woff"
-          : fontUrl.includes(".otf") ? "opentype"
-          : "truetype";
-
-        const res = await fetch(fontUrl);
+        const res = await fetch(url);
         if (!res.ok) {
-          console.warn(`[capture] font fetch failed for ${key}: ${res.status}`);
+          console.warn(`[capture] font fetch failed for ${family}-${weight}: ${res.status}`);
           return;
         }
-
         const buf = await res.arrayBuffer();
         const base64 = arrayBufferToBase64(buf);
-
         rules.push(
           `@font-face { font-family: '${family}'; font-weight: ${weight}; font-style: ${style}; src: url(data:font/${format};base64,${base64}) format('${format}'); }`,
         );
       } catch (err) {
-        console.warn(`[capture] font inline failed for ${key}:`, err);
+        console.warn(`[capture] font inline failed for ${family}-${weight}:`, err);
       }
     }),
   );
 
-  if (rules.length > 0) {
-    console.log(`[capture] inlined ${rules.length} fonts`);
-  } else if (faces.length > 0) {
-    console.warn(`[capture] ${faces.length} fonts loaded but none could be inlined`);
-  }
-
+  console.log(`[capture] inlined ${rules.length}/${entries.length} fonts`);
   return rules.join("\n");
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  // Use chunks to avoid call stack overflow on large buffers
   const chunks: string[] = [];
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {

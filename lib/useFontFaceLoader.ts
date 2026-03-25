@@ -4,6 +4,15 @@ import type { ResolvedTemplate } from "./templates";
 
 const fontLoadCache = new Map<string, Promise<void>>();
 
+/**
+ * Global registry of loaded font URLs, keyed by "family-weight-style".
+ * Used by capture-svg.ts to inline fonts into SVG for thumbnail generation.
+ */
+export const loadedFontUrls = new Map<
+  string,
+  { family: string; weight: string; style: string; url: string; format: string }
+>();
+
 export function useFontFaceLoader(fonts: ResolvedTemplate["fonts"] | undefined) {
   const [revision, setRevision] = useState(0);
   const [ready, setReady] = useState(false);
@@ -38,6 +47,19 @@ export function useFontFaceLoader(fonts: ResolvedTemplate["fonts"] | undefined) 
           );
           await face.load();
           document.fonts.add(face);
+
+          // Register URL for SVG capture
+          const weight = font.weight ? String(font.weight) : "400";
+          const style = font.style.toLowerCase() === "italic" ? "italic" : "normal";
+          const format = font.format?.toLowerCase() ?? "truetype";
+          const registryKey = `${font.fontFamilyName}-${weight}-${style}`;
+          loadedFontUrls.set(registryKey, {
+            family: font.fontFamilyName,
+            weight,
+            style,
+            url,
+            format: format === "woff2" ? "woff2" : format === "woff" ? "woff" : format === "otf" ? "opentype" : "truetype",
+          });
         } catch (error) {
           console.warn("[preview] failed to load font face", error);
         }
