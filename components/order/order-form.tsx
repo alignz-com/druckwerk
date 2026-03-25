@@ -894,12 +894,12 @@ export default function OrderForm({
       if (profile.linkedin) setLinkedin(profile.linkedin);
 
       const matchedAddress =
-        profile.addressId && addresses.length > 0
-          ? addresses.find((entry) => entry.id === profile.addressId)
+        profile.addressId && addressOptions.length > 0
+          ? addressOptions.find((entry) => entry.id === profile.addressId)
           : null;
 
-      // Auto-select if only one address available and no saved address in profile
-      const effectiveAddress = matchedAddress ?? (addresses.length === 1 ? addresses[0] : null);
+      // Auto-select if only one address available (respects template restriction)
+      const effectiveAddress = matchedAddress ?? (addressOptions.length === 1 ? addressOptions[0] : null);
 
       // Only show a saved address label if it still exists for this brand; otherwise start empty.
       const displayLabel = effectiveAddress ? effectiveAddress.label ?? effectiveAddress.company ?? "" : "";
@@ -921,7 +921,7 @@ export default function OrderForm({
         setAddressBlock("");
       }
     },
-    [addresses, getAddressBlockFromEntry],
+    [addressOptions, getAddressBlockFromEntry],
   );
 
   useEffect(() => {
