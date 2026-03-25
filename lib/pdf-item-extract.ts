@@ -10,7 +10,7 @@ import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
 import unzipper from "unzipper"
 import { writeFile, readFile, readdir, rm, unlink } from "fs/promises"
 import { tmpdir } from "os"
-import { join } from "path"
+import { join, resolve as resolvePath } from "path"
 import { randomUUID } from "crypto"
 
 import { s3, ORDERS_BUCKET, S3_PUBLIC_URL } from "./s3"
@@ -65,7 +65,12 @@ async function downloadFromOrders(storageKey: string): Promise<Buffer> {
 }
 
 /** Extract PDFs from a .7z buffer, returning {filename, buffer} pairs. */
-export async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
+export async function extract7zBuffer(
+  buffer: Buffer,
+  opts?: { maxFiles?: number; maxBytes?: number }
+): Promise<Array<{ filename: string; buffer: Buffer }>> {
+  const maxFiles = opts?.maxFiles ?? 500
+  const maxBytes = opts?.maxBytes ?? 2 * 1024 * 1024 * 1024
   const id = randomUUID()
   const archivePath = join(tmpdir(), `${id}.7z`)
   const extractDir = join(tmpdir(), `${id}-ex`)
@@ -76,9 +81,15 @@ export async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename:
     )
     const allFiles = await readdir(extractDir, { recursive: true })
     const results: Array<{ filename: string; buffer: Buffer }> = []
+    let totalBytes = 0
     for (const rel of allFiles as string[]) {
       if (!rel.toLowerCase().endsWith(".pdf") || rel.includes("__MACOSX")) continue
-      const buf = await readFile(join(extractDir, rel))
+      const fullPath = resolvePath(extractDir, rel)
+      if (!fullPath.startsWith(extractDir)) continue // path traversal protection
+      const buf = await readFile(fullPath)
+      totalBytes += buf.length
+      if (results.length >= maxFiles) throw new Error(`Archive exceeds ${maxFiles} file limit`)
+      if (totalBytes > maxBytes) throw new Error(`Archive exceeds ${Math.round(maxBytes / 1024 / 1024)} MB decompressed size limit`)
       results.push({ filename: rel.split(/[\\/]/).pop() ?? rel, buffer: buf })
     }
     return results
@@ -89,12 +100,21 @@ export async function extract7zBuffer(buffer: Buffer): Promise<Array<{ filename:
 }
 
 /** Extract PDFs from a .zip buffer, returning {filename, buffer} pairs. */
-export async function extractZipBuffer(buffer: Buffer): Promise<Array<{ filename: string; buffer: Buffer }>> {
+export async function extractZipBuffer(
+  buffer: Buffer,
+  opts?: { maxFiles?: number; maxBytes?: number }
+): Promise<Array<{ filename: string; buffer: Buffer }>> {
+  const maxFiles = opts?.maxFiles ?? 500
+  const maxBytes = opts?.maxBytes ?? 2 * 1024 * 1024 * 1024
   const dir = await unzipper.Open.buffer(buffer)
   const results: Array<{ filename: string; buffer: Buffer }> = []
+  let totalBytes = 0
   for (const entry of dir.files) {
     if (!entry.path.toLowerCase().endsWith(".pdf") || entry.path.startsWith("__MACOSX") || entry.type !== "File") continue
     const buf = await entry.buffer()
+    totalBytes += buf.length
+    if (results.length >= maxFiles) throw new Error(`Archive exceeds ${maxFiles} file limit`)
+    if (totalBytes > maxBytes) throw new Error(`Archive exceeds ${Math.round(maxBytes / 1024 / 1024)} MB decompressed size limit`)
     results.push({ filename: entry.path.split("/").pop() ?? entry.path, buffer: buf })
   }
   return results

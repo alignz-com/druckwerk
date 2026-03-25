@@ -42,6 +42,25 @@ export const runtime = "nodejs"
 export const maxDuration = 300
 
 const ALLOWED_EXTENSIONS = [".pdf", ".zip", ".7z"]
+const MAX_ARCHIVE_FILES = 100
+const MAX_ARCHIVE_BYTES = 500 * 1024 * 1024 // 500 MB
+
+// ─── Rate limiter (10 req/min per API key) ───────────────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 10
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(keyId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(keyId)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(keyId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false
+  entry.count++
+  return true
+}
 
 function isArchive(name: string) {
   const lower = name.toLowerCase()
@@ -78,6 +97,13 @@ export async function POST(req: NextRequest) {
   const apiKey = await authenticateApiKey(req)
   if (!apiKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!checkRateLimit(apiKey.id)) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Max 10 requests per minute." },
+      { status: 429 }
+    )
   }
 
   const { brandId } = apiKey
@@ -182,8 +208,8 @@ export async function POST(req: NextRequest) {
       if (isArchive(file.name)) {
         const is7z = file.name.toLowerCase().endsWith(".7z")
         const pdfs = is7z
-          ? await extract7zBuffer(file.buffer)
-          : await extractZipBuffer(file.buffer)
+          ? await extract7zBuffer(file.buffer, { maxFiles: MAX_ARCHIVE_FILES, maxBytes: MAX_ARCHIVE_BYTES })
+          : await extractZipBuffer(file.buffer, { maxFiles: MAX_ARCHIVE_FILES, maxBytes: MAX_ARCHIVE_BYTES })
 
         if (pdfs.length === 0) {
           return NextResponse.json(
@@ -374,7 +400,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[v1/orders] error:", err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     )
   }

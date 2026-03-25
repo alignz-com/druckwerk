@@ -232,7 +232,7 @@ async function generateThumbnail(
     }
 
     args.push(pdfPath, thumbBase)
-    await execFileAsync("pdftocairo", args)
+    await execFileAsync("pdftocairo", args, { timeout: 15_000 })
     const jpgBuffer = await readFile(thumbPath)
     return `data:image/jpeg;base64,${jpgBuffer.toString("base64")}`
   } catch {
