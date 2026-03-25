@@ -6,7 +6,7 @@ import { loadedFontUrls } from "./useFontFaceLoader";
 
 export async function captureSvgAsPng(
   svgElement: SVGSVGElement,
-  targetWidth = 600,
+  targetWidth = 1200,
 ): Promise<Blob | null> {
   try {
     const clone = svgElement.cloneNode(true) as SVGSVGElement;

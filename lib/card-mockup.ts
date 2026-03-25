@@ -16,7 +16,7 @@ interface MockupOptions {
 
 const DEFAULTS: Required<MockupOptions> = {
   width: 600,
-  bgColor: "#f1f5f9", // slate-100
+  bgColor: "transparent",
   backRotation: 5,
 };
 
@@ -157,7 +157,9 @@ export async function generateCardMockup(
 
   composites.push({ input: frontWithShadow.buffer, left: Math.max(0, frontX), top: Math.max(0, frontY) });
 
-  const bg = parseBgColor(bgColor);
+  const bg = bgColor === "transparent"
+    ? { r: 0, g: 0, b: 0, alpha: 0 }
+    : parseBgColor(bgColor);
 
   return sharp({
     create: {
