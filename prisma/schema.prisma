@@ -421,6 +421,7 @@ model Order {
   photoMeta      Json?
   thumbnailUrl     String?
   thumbnailBackUrl String?
+  mockupUrl        String?
   pdfUrl           String?
   blobId         String?
   pdfFileName    String?

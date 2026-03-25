@@ -525,6 +525,24 @@ export async function POST(req: Request) {
         updateData.thumbnailBackUrl = backUpload.url;
       }
 
+      // Generate mockup composite from front + back
+      if (thumbBuffer && data.thumbnailBackBase64) {
+        try {
+          const { generateCardMockup } = await import("@/lib/card-mockup");
+          const backBuffer = Buffer.from(data.thumbnailBackBase64, "base64");
+          const mockupBuffer = await generateCardMockup(thumbBuffer, backBuffer);
+          const mockupKey = toStorageKey(referenceCode, fileBaseName, "mockup.png");
+          const mockupBlob = new Blob([new Uint8Array(mockupBuffer)], { type: "image/png" });
+          const mockupUpload = await put(mockupKey, mockupBlob, {
+            access: "public",
+            contentType: "image/png",
+          });
+          updateData.mockupUrl = mockupUpload.url;
+        } catch (mockupErr) {
+          console.error("[orders] mockup generation failed:", mockupErr);
+        }
+      }
+
       if (Object.keys(updateData).length > 0) {
         await prisma.order.update({
           where: { id: order.id },
