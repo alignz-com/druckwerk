@@ -989,11 +989,12 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
     };
   })();
 
-  const companyPrimary = resolvedAddress.companyName ?? companyFirstLine;
   const companyLines = (company || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+  // Use the same source as the preview: first line of the card address block
+  const companyPrimary = companyLines[0] || resolvedAddress.companyName || companyFirstLine;
 
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
