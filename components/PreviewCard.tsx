@@ -1232,7 +1232,7 @@ export const BusinessCardFront = forwardRef<SVGSVGElement, Props>(function Busin
   );
 });
 
-export function BusinessCardBack({
+export const BusinessCardBack = forwardRef<SVGSVGElement, Props>(function BusinessCardBack({
   template,
   name,
   role = "",
@@ -1250,7 +1250,7 @@ export function BusinessCardBack({
   forcedBindingPrefixes = [],
   qrPreviewMode = "vcard",
   qrPayload,
-}: Props) {
+}, ref) {
   const { revision: fontRevision, ready: fontsReady } = useFontFaceLoader(template.fonts);
   const normalized = useMemo(() => normalizeAddress(company), [company]);
   const { org: parsedOrg, label, street: parsedStreet, postalCode: parsedPostal, city: parsedCity, country: parsedCountry } = normalized;
@@ -1410,6 +1410,7 @@ export function BusinessCardBack({
   return (
     <figure className={`select-none h-full w-full flex items-center justify-center transition-opacity duration-300 ${fontsReady ? "opacity-100" : "opacity-0"}`} style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
       <svg
+        ref={ref}
         className="block"
         viewBox={`0 0 ${trimW} ${trimH}`}
         width="100%"
@@ -1438,4 +1439,4 @@ export function BusinessCardBack({
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>
   );
-}
+});

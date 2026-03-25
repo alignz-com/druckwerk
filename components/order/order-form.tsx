@@ -961,6 +961,7 @@ export default function OrderForm({
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDraftPayloadRef = useRef<string>("");
   const svgFrontRef = useRef<SVGSVGElement>(null);
+  const svgBackRef = useRef<SVGSVGElement>(null);
   const draftBrandIdRef = useRef<string | null>(null);
 
   const mustSelectBrand = availableBrands.length > 1 && !currentBrandId;
@@ -1252,19 +1253,29 @@ export default function OrderForm({
 
       const resolvedPhotoUrl = canUploadPhoto && !photoUrl && photoFile ? await uploadPhoto() : photoUrl;
 
-      // Capture SVG preview as PNG thumbnail
+      // Capture SVG previews as PNG thumbnails (front + back)
       let thumbnailBase64: string | undefined;
-      if (svgFrontRef.current) {
+      let thumbnailBackBase64: string | undefined;
+      const captureRef = async (ref: React.RefObject<SVGSVGElement | null>) => {
+        if (!ref.current) return undefined;
         try {
-          const blob = await captureSvgAsPng(svgFrontRef.current);
-          if (blob) {
-            const buf = await blob.arrayBuffer();
-            thumbnailBase64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          const blob = await captureSvgAsPng(ref.current);
+          if (!blob) return undefined;
+          const buf = await blob.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          const chunks: string[] = [];
+          for (let i = 0; i < bytes.length; i += 8192) {
+            chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)));
           }
+          return btoa(chunks.join(""));
         } catch {
-          // Non-fatal — server will fall back to PDF-based thumbnail
+          return undefined;
         }
-      }
+      };
+      [thumbnailBase64, thumbnailBackBase64] = await Promise.all([
+        captureRef(svgFrontRef),
+        captureRef(svgBackRef),
+      ]);
 
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -1291,6 +1302,7 @@ export default function OrderForm({
           address: qrAddressPayload,
           photoUrl: resolvedPhotoUrl || undefined,
           thumbnailBase64,
+          thumbnailBackBase64,
         }),
       });
 
@@ -1978,6 +1990,7 @@ export default function OrderForm({
                       }
                       back={
                         <BusinessCardBack
+                          ref={svgBackRef}
                           template={selectedTemplate}
                           name={name}
                           role={role}
@@ -2144,6 +2157,7 @@ export default function OrderForm({
                       }
                       back={
                         <BusinessCardBack
+                          ref={svgBackRef}
                           template={selectedTemplate}
                           name={name}
                           role={role}

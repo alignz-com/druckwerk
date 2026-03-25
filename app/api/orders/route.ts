@@ -101,6 +101,7 @@ const requestSchema = z.object({
     })
     .optional(),
   thumbnailBase64: z.string().optional(),
+  thumbnailBackBase64: z.string().optional(),
 });
 
 function formatReferenceCode(year: number, sequence: number) {
@@ -491,7 +492,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // Store thumbnail — prefer client-provided SVG capture, fall back to PDF rendering
+    // Store thumbnails — prefer client-provided SVG capture, fall back to PDF rendering
     try {
       let thumbBuffer: Buffer | null = null;
       if (data.thumbnailBase64) {
@@ -499,6 +500,9 @@ export async function POST(req: Request) {
       } else {
         thumbBuffer = await generateOrderThumbnail(pdfBytes);
       }
+
+      const updateData: Record<string, string> = {};
+
       if (thumbBuffer) {
         const thumbKey = toStorageKey(referenceCode, fileBaseName, "thumb.png");
         const thumbBlob = new Blob([new Uint8Array(thumbBuffer)], { type: "image/png" });
@@ -506,9 +510,25 @@ export async function POST(req: Request) {
           access: "public",
           contentType: "image/png",
         });
+        updateData.thumbnailUrl = thumbUpload.url;
+      }
+
+      // Store back thumbnail if provided
+      if (data.thumbnailBackBase64) {
+        const backBuffer = Buffer.from(data.thumbnailBackBase64, "base64");
+        const backKey = toStorageKey(referenceCode, fileBaseName, "thumb-back.png");
+        const backBlob = new Blob([new Uint8Array(backBuffer)], { type: "image/png" });
+        const backUpload = await put(backKey, backBlob, {
+          access: "public",
+          contentType: "image/png",
+        });
+        updateData.thumbnailBackUrl = backUpload.url;
+      }
+
+      if (Object.keys(updateData).length > 0) {
         await prisma.order.update({
           where: { id: order.id },
-          data: { thumbnailUrl: thumbUpload.url },
+          data: updateData,
         });
       }
     } catch (err) {
