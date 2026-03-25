@@ -1225,7 +1225,7 @@ export const BusinessCardFront = forwardRef<SVGSVGElement, Props>(function Busin
           {frontNodes}
         </g>
 
-        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" data-trim-border="true" />
       </svg>
       <figcaption className="sr-only">Card Front</figcaption>
     </figure>
@@ -1434,7 +1434,7 @@ export const BusinessCardBack = forwardRef<SVGSVGElement, Props>(function Busine
 
         <g>{backNodes}</g>
 
-        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" />
+        <rect x={0.075} y={0.075} width={trimW - 0.15} height={trimH - 0.15} fill="none" stroke="#d1d5db" strokeWidth="0.15" data-trim-border="true" />
       </svg>
       <figcaption className="sr-only">Card Back</figcaption>
     </figure>

@@ -11,6 +11,9 @@ export async function captureSvgAsPng(
   try {
     const clone = svgElement.cloneNode(true) as SVGSVGElement;
 
+    // Remove trim border rects (preview-only, not for capture)
+    clone.querySelectorAll("[data-trim-border]").forEach((el) => el.remove());
+
     // Remove opacity/transition styles that might hide the SVG
     clone.style.opacity = "1";
     clone.style.transition = "none";
