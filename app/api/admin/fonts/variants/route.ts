@@ -104,11 +104,6 @@ export async function POST(req: NextRequest) {
     { upsert: true },
   );
 
-  // Install font locally for pdftocairo thumbnail rendering
-  const { installFont } = await import("@/lib/font-sync");
-  await installFont(upload.storageKey, data).catch((err) =>
-    console.warn("[admin/fonts] local font install failed:", err)
-  );
 
   const variant = await prisma.fontVariant.upsert({
     where: {

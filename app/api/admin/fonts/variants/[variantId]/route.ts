@@ -80,11 +80,6 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<Route
     } catch (error) {
       console.error("[admin] delete font variant storage failed", error);
     }
-    // Remove font locally for pdftocairo
-    const { removeFont } = await import("@/lib/font-sync");
-    await removeFont(variant.storageKey).catch((err) =>
-      console.warn("[admin/fonts] local font removal failed:", err)
-    );
   }
 
   const family = await getAdminFontFamily(variant.fontFamilyId);
