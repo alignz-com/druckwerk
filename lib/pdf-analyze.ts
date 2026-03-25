@@ -209,6 +209,10 @@ async function generateThumbnail(
   trimBox?: BoxRect,
   mediaBox?: BoxRect
 ): Promise<string | undefined> {
+  // Ensure custom fonts are available for pdftocairo
+  const { ensureFontsSynced } = await import("@/lib/font-sync")
+  await ensureFontsSynced()
+
   const id = randomUUID()
   const pdfPath = join(tmpdir(), `${id}.pdf`)
   const thumbBase = join(tmpdir(), `${id}-thumb`)
