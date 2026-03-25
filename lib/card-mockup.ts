@@ -17,8 +17,78 @@ interface MockupOptions {
 const DEFAULTS: Required<MockupOptions> = {
   width: 600,
   bgColor: "#f1f5f9", // slate-100
-  backRotation: 6,
+  backRotation: 5,
 };
+
+/**
+ * Create a card image with a natural drop shadow by:
+ * 1. Adding transparent padding around the card
+ * 2. Creating a shadow layer from the card silhouette
+ * 3. Compositing card on top of shadow
+ */
+async function cardWithShadow(
+  cardPng: Buffer,
+  cardW: number,
+  cardH: number,
+  shadowBlur: number,
+  shadowAlpha: number,
+  offsetX: number,
+  offsetY: number,
+): Promise<{ buffer: Buffer; width: number; height: number }> {
+  const pad = shadowBlur + Math.max(Math.abs(offsetX), Math.abs(offsetY));
+  const totalW = cardW + pad * 2;
+  const totalH = cardH + pad * 2;
+
+  // Create shadow: take the card, tint it black, make semi-transparent, blur
+  const shadowLayer = await sharp(cardPng)
+    .resize(cardW, cardH, { fit: "fill" })
+    .ensureAlpha()
+    .tint({ r: 0, g: 0, b: 0 })
+    .modulate({ brightness: 0 })
+    .extend({
+      top: pad,
+      bottom: pad,
+      left: pad,
+      right: pad,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .blur(shadowBlur)
+    .png()
+    .toBuffer();
+
+  // Reduce shadow opacity
+  const shadow = await sharp(shadowLayer)
+    .composite([{
+      input: Buffer.from(
+        `<svg width="${totalW}" height="${totalH}"><rect width="${totalW}" height="${totalH}" fill="rgba(0,0,0,${shadowAlpha})"/></svg>`
+      ),
+      blend: "dest-in",
+    }])
+    .png()
+    .toBuffer();
+
+  // Composite: shadow (offset) + card (centered)
+  const canvas = await sharp({
+    create: {
+      width: totalW,
+      height: totalH,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([
+      { input: shadow, left: offsetX, top: offsetY },
+      {
+        input: await sharp(cardPng).resize(cardW, cardH, { fit: "fill" }).png().toBuffer(),
+        left: pad,
+        top: pad,
+      },
+    ])
+    .png()
+    .toBuffer();
+
+  return { buffer: canvas, width: totalW, height: totalH };
+}
 
 export async function generateCardMockup(
   frontPng: Buffer,
@@ -33,86 +103,63 @@ export async function generateCardMockup(
   const frontH = frontMeta.height ?? 388;
   const cardAspect = frontW / frontH;
 
-  // Card size within the mockup (70% of output width)
-  const cardW = Math.round(outputWidth * 0.7);
+  // Card size within the mockup (65% of output width)
+  const cardW = Math.round(outputWidth * 0.65);
   const cardH = Math.round(cardW / cardAspect);
 
-  // Output canvas height with padding
-  const padding = Math.round(outputWidth * 0.12);
-  const outputHeight = cardH + padding * 2 + (backPng ? Math.round(cardH * 0.15) : 0);
+  const shadowBlur = 8;
+  const shadowOffsetX = 2;
+  const shadowOffsetY = 3;
 
-  // Resize front card with rounded corners and shadow
-  const frontResized = await sharp(frontPng)
-    .resize(cardW, cardH, { fit: "fill" })
-    .png()
-    .toBuffer();
+  // Output canvas with padding
+  const paddingX = Math.round(outputWidth * 0.1);
+  const paddingY = Math.round(cardH * 0.2);
+  const outputHeight = cardH + paddingY * 2 + (backPng ? Math.round(cardH * 0.1) : 0);
 
-  // Create shadow (slightly larger, blurred, offset)
-  const shadowOffset = 4;
-  const shadowBlur = 12;
-  const shadowCard = await sharp({
-    create: {
-      width: cardW + shadowBlur * 2,
-      height: cardH + shadowBlur * 2,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0.15 },
-    },
-  })
-    .blur(shadowBlur)
-    .png()
-    .toBuffer();
-
-  // Compose the mockup
   const composites: sharp.OverlayOptions[] = [];
 
   if (backPng) {
-    // Resize back card
+    // Back card: rotated, offset to the right
     const backResized = await sharp(backPng)
       .resize(cardW, cardH, { fit: "fill" })
+      .png()
+      .toBuffer();
+
+    const backWithShadow = await cardWithShadow(
+      backResized, cardW, cardH,
+      shadowBlur, 0.3, shadowOffsetX, shadowOffsetY,
+    );
+
+    // Rotate the entire back card + shadow
+    const backRotated = await sharp(backWithShadow.buffer)
       .rotate(backRotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png()
       .toBuffer();
 
-    const backMeta = await sharp(backResized).metadata();
-    const backW = backMeta.width ?? cardW;
-    const backH = backMeta.height ?? cardH;
+    const backRotMeta = await sharp(backRotated).metadata();
+    const backRotW = backRotMeta.width ?? backWithShadow.width;
+    const backRotH = backRotMeta.height ?? backWithShadow.height;
 
-    // Back card shadow
-    const backShadow = await sharp({
-      create: {
-        width: backW + shadowBlur * 2,
-        height: backH + shadowBlur * 2,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0.1 },
-      },
-    })
-      .blur(shadowBlur)
-      .png()
-      .toBuffer();
+    const backX = Math.round((outputWidth - backRotW) / 2 + cardW * 0.1);
+    const backY = Math.round((outputHeight - backRotH) / 2 - cardH * 0.03);
 
-    // Position back card offset to the right and slightly down
-    const backX = Math.round((outputWidth - backW) / 2 + cardW * 0.08);
-    const backY = Math.round(padding - cardH * 0.02);
-
-    composites.push(
-      { input: backShadow, left: backX - shadowBlur + shadowOffset, top: backY - shadowBlur + shadowOffset },
-      { input: backResized, left: backX, top: backY },
-    );
+    composites.push({ input: backRotated, left: Math.max(0, backX), top: Math.max(0, backY) });
   }
 
-  // Front card centered, slightly below
-  const frontX = Math.round((outputWidth - cardW) / 2 - (backPng ? cardW * 0.08 : 0));
-  const frontY = Math.round(padding + (backPng ? cardH * 0.15 : 0));
-
-  composites.push(
-    { input: shadowCard, left: frontX - shadowBlur + shadowOffset, top: frontY - shadowBlur + shadowOffset },
-    { input: frontResized, left: frontX, top: frontY },
+  // Front card with shadow, positioned left of center
+  const frontWithShadow = await cardWithShadow(
+    frontPng, cardW, cardH,
+    shadowBlur, 0.35, shadowOffsetX, shadowOffsetY,
   );
 
-  // Parse background color
+  const frontX = Math.round((outputWidth - frontWithShadow.width) / 2 - (backPng ? cardW * 0.1 : 0));
+  const frontY = Math.round((outputHeight - frontWithShadow.height) / 2 + (backPng ? cardH * 0.05 : 0));
+
+  composites.push({ input: frontWithShadow.buffer, left: Math.max(0, frontX), top: Math.max(0, frontY) });
+
   const bg = parseBgColor(bgColor);
 
-  const mockup = await sharp({
+  return sharp({
     create: {
       width: outputWidth,
       height: outputHeight,
@@ -123,8 +170,6 @@ export async function generateCardMockup(
     .composite(composites)
     .png()
     .toBuffer();
-
-  return mockup;
 }
 
 function parseBgColor(hex: string): { r: number; g: number; b: number; alpha: number } {
