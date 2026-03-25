@@ -35,6 +35,9 @@ export async function captureSvgAsPng(
       }),
     );
 
+    // Wait for all fonts to finish loading before capturing
+    await document.fonts.ready;
+
     // Embed @font-face rules from loaded document fonts
     const fontCss = await buildFontFaceCss();
     if (fontCss) {
