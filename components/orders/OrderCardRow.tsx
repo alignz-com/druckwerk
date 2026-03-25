@@ -54,7 +54,7 @@ function ThumbnailContent({ order }: { order: OrderCardData }) {
       <img
         src={order.thumbnailUrl}
         alt=""
-        className="shadow-sm max-w-[48px] max-h-full w-auto h-auto"
+        className="shadow-sm max-w-[56px] max-h-[40px] w-auto h-auto object-contain"
       />
     );
   }
@@ -249,7 +249,7 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
   const cardContent = (
     <>
       {/* Thumbnail panel */}
-      <div className="relative w-[88px] h-[88px] shrink-0 self-center bg-slate-100 rounded-l-[inherit]">
+      <div className="relative w-[88px] shrink-0 self-stretch bg-slate-100">
         <div className="absolute inset-3 flex items-center justify-center">
           <ThumbnailContent order={order} />
         </div>
