@@ -7,7 +7,22 @@ export const runtime = "nodejs";
 
 const DAYS_TO_EXPIRE = 7;
 
-export async function GET() {
+function authorize(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error("[api/cleanup-drafts] missing CRON_SECRET env");
+    return new Response("Server misconfigured", { status: 500 });
+  }
+  const header = request.headers.get("authorization");
+  if (header !== `Bearer ${secret}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  return null;
+}
+
+export async function GET(request: Request) {
+  const unauthorized = authorize(request);
+  if (unauthorized) return unauthorized;
   const cutoff = new Date(Date.now() - DAYS_TO_EXPIRE * 24 * 60 * 60 * 1000);
 
   const drafts = await prisma.contact.findMany({

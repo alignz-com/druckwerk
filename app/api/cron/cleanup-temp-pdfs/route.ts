@@ -6,7 +6,22 @@ export const runtime = "nodejs"
 
 const MAX_AGE_MS = 2 * 60 * 60 * 1000 // 2 hours
 
-export async function GET() {
+function authorize(request: Request) {
+  const secret = process.env.CRON_SECRET
+  if (!secret) {
+    console.error("[api/cleanup-temp-pdfs] missing CRON_SECRET env")
+    return new Response("Server misconfigured", { status: 500 })
+  }
+  const header = request.headers.get("authorization")
+  if (header !== `Bearer ${secret}`) {
+    return new Response("Unauthorized", { status: 401 })
+  }
+  return null
+}
+
+export async function GET(request: Request) {
+  const unauthorized = authorize(request)
+  if (unauthorized) return unauthorized
   const cutoff = new Date(Date.now() - MAX_AGE_MS)
   const toDelete: { Key: string }[] = []
 

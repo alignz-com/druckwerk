@@ -27,6 +27,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "file must be an image" }, { status: 400 });
   }
 
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json({ error: "File too large. Max 10 MB." }, { status: 413 });
+  }
+
   const sanitizedName = file.name.replace(/[^\w.-]+/g, "_") || "photo";
   const path = `photos/${Date.now()}-${sanitizedName}`;
 

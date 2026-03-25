@@ -371,6 +371,13 @@ async function extract7z(buffer: Buffer, archiveName: string, sessionId: string)
 export const maxDuration = 120
 
 export async function POST(req: NextRequest) {
+  // Auth check — require a valid user session
+  const { getServerAuthSession } = await import("@/lib/auth")
+  const session = await getServerAuthSession()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const sessionId = randomUUID()
   try {
     const formData = await req.formData()
@@ -417,6 +424,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ files: results })
   } catch (err) {
     console.error("[pdf-process] unhandled error:", err)
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

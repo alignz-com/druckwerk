@@ -61,9 +61,8 @@ export async function POST(_req: Request, context: { params: Promise<RouteParams
     // ─── Single-product business card order ───────────────────────────────────
     return await handleBusinessCardOrder(order, orderId);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
     console.error("[jdf] error for order", orderId, err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
