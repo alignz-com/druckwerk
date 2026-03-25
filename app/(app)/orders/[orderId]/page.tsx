@@ -44,12 +44,14 @@ const formatDate = (date: Date, locale: Locale) =>
   new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Europe/Vienna",
   }).format(date);
 
 const formatDeliveryDate = (date: Date | null, locale: Locale) => {
   if (!date) return null;
   return new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-GB", {
     dateStyle: "medium",
+    timeZone: "Europe/Vienna",
   }).format(date);
 };
 
