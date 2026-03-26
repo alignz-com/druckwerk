@@ -999,6 +999,8 @@ export async function generateOrderPdf(fields: OrderPdfFields, template: Resolve
   const tplBytes = await loadTemplatePdfBytes(template.pdfPath);
   const tplDoc = await PDFDocument.load(tplBytes);
   tplDoc.registerFontkit(fontkit);
+  tplDoc.setProducer("Druckwerk by Druckerei Thurnher GmbH");
+  tplDoc.setCreator("Druckwerk");
 
   const { fonts: Frutiger, report } = await loadFrutiger(tplDoc);
 
