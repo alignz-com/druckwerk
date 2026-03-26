@@ -228,7 +228,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
     })();
 
     // PDF: total pages + per-file breakdown for tooltip
-    const totalPageCount = isBC ? null : order.pdfOrderItems.reduce((s, i) => s + (i.pages ?? 0), 0) || null;
+    const totalPageCount = isBC ? null : order.pdfOrderItems.reduce((s, i) => s + (i.pages ?? 0) * i.quantity, 0) || null;
     const pageBreakdown = (() => {
       if (isBC || order.pdfOrderItems.length <= 1) return null;
       return order.pdfOrderItems.map((item) => {
@@ -236,7 +236,7 @@ export default async function OrdersPage({ searchParams: searchParamsPromise }: 
         const fmt = item.productFormat?.format;
         const product = prod ? ((locale === "de" ? prod.nameDe : prod.nameEn) ?? prod.name) : null;
         const format = fmt ? ((locale === "de" ? fmt.nameDe : null) ?? fmt.name) : null;
-        return { product, format, pages: item.pages ?? 0 };
+        return { product, format, pages: item.pages ?? 0, quantity: item.quantity };
       }).filter(i => i.pages > 0);
     })();
 

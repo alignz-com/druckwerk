@@ -27,7 +27,7 @@ export type OrderCardData = {
   primaryPageCount: number | null; // PDF: first/only file page count
   productBreakdown: Array<{ name: string; quantity: number }> | null; // PDF: per-product qty
   totalPageCount: number | null;                                       // PDF: sum of all pages
-  pageBreakdown: Array<{ product: string | null; format: string | null; pages: number }> | null;
+  pageBreakdown: Array<{ product: string | null; format: string | null; pages: number; quantity: number }> | null;
   status: string;
   statusLabel: string;
   deliveryDueAtLabel: string | null;
@@ -104,11 +104,10 @@ function Dot() {
 type DetailPillProps = {
   totalQty: number | null;
   totalPages: number | null;
-  breakdown: Array<{ product: string | null; format: string | null; pages: number }> | null;
-  productBreakdown: Array<{ name: string; quantity: number }> | null;
+  breakdown: Array<{ product: string | null; format: string | null; pages: number; quantity: number }> | null;
 };
 
-function DetailPill({ totalQty, totalPages, breakdown, productBreakdown }: DetailPillProps) {
+function DetailPill({ totalQty, totalPages, breakdown }: DetailPillProps) {
   const t = useTranslations("pdfOrder");
 
   const qtyLabel = totalQty ? `${totalQty} Stk` : null;
@@ -116,38 +115,30 @@ function DetailPill({ totalQty, totalPages, breakdown, productBreakdown }: Detai
   const pillText = [qtyLabel, pagesLabel].filter(Boolean).join(" · ");
   if (!pillText) return null;
 
-  // Build per-product summary: qty + pages, sorted alphabetically
-  const hasBreakdown = productBreakdown && productBreakdown.length > 0 && breakdown && breakdown.length > 0;
-
-  if (!hasBreakdown) {
+  if (!breakdown || breakdown.length === 0) {
     return (
-      <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+      <span className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
         {pillText}
       </span>
     );
   }
 
-  // Aggregate pages per product name
-  const pagesPerProduct = new Map<string, number>();
-  for (const item of breakdown!) {
-    const name = item.product ?? "";
-    pagesPerProduct.set(name, (pagesPerProduct.get(name) ?? 0) + item.pages);
-  }
-
-  // Merge qty + pages per product, sorted alphabetically
-  const rows = [...productBreakdown!]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(({ name, quantity }) => ({
-      name,
-      qty: quantity,
-      pages: pagesPerProduct.get(name) ?? 0,
-    }));
+  // Per-file rows sorted alphabetically by product, then format, then pages
+  const rows = [...breakdown].sort((a, b) => {
+    const pa = a.product ?? "";
+    const pb = b.product ?? "";
+    if (pa !== pb) return pa.localeCompare(pb);
+    const fa = a.format ?? "";
+    const fb = b.format ?? "";
+    if (fa !== fb) return fa.localeCompare(fb);
+    return a.pages - b.pages;
+  });
 
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight cursor-pointer hover:bg-slate-100 transition-colors">
+          <span className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight cursor-pointer hover:bg-slate-100 transition-colors">
             {pillText}
           </span>
         </TooltipPrimitive.Trigger>
@@ -157,12 +148,14 @@ function DetailPill({ totalQty, totalPages, breakdown, productBreakdown }: Detai
             sideOffset={6}
             className="z-50 rounded-lg bg-slate-900 px-3 py-2 drop-shadow-lg"
           >
-            <div className="flex flex-col gap-1 min-w-[140px]">
-              {rows.map(({ name, qty, pages }, i) => (
+            <div className="flex flex-col gap-1 min-w-[160px]">
+              {rows.map(({ product, format, pages, quantity }, i) => (
                 <div key={i} className="flex items-center justify-between gap-4">
-                  <span className="text-xs text-slate-300">{name}</span>
+                  <span className="text-xs text-slate-300">
+                    {[product, format].filter(Boolean).join(" · ")}
+                  </span>
                   <span className="text-xs text-white tabular-nums font-medium">
-                    {qty} Stk · {pages} {t("dropzonePagesAbbr")}
+                    {quantity}× · {pages} {t("dropzonePagesAbbr")}
                   </span>
                 </div>
               ))}
@@ -239,7 +232,6 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
         totalQty={order.quantity}
         totalPages={order.totalPageCount}
         breakdown={order.pageBreakdown}
-        productBreakdown={order.productBreakdown}
       />
     );
   } else {
