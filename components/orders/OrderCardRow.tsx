@@ -247,12 +247,13 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
           {order.brandName}
         </span>
       );
-    // Single-file PDF: simple pill with qty + pages (no breakdown popover)
+    // Single-file PDF: simple pill with qty + total pages (qty × pages)
     const singleQty = order.quantity;
     const singlePages = order.primaryPageCount;
+    const singleTotalPages = singleQty && singlePages ? singleQty * singlePages : singlePages;
     const singleParts = [
       singleQty ? `${singleQty} Stk` : null,
-      singlePages ? `${singlePages} ${t("dropzonePagesAbbr")}` : null,
+      singleTotalPages ? `${singleTotalPages} ${t("dropzonePagesAbbr")}` : null,
     ].filter(Boolean).join(" · ");
     if (singleParts)
       parts.push(
