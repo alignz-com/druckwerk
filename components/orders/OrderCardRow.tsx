@@ -101,13 +101,29 @@ function Dot() {
   return <span className="text-slate-300 text-xs shrink-0">·</span>;
 }
 
-function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ product: string | null; format: string | null; pages: number }>; children: React.ReactNode }) {
+function PageBreakdownTooltip({ breakdown, totalPages, children }: { breakdown: Array<{ product: string | null; format: string | null; pages: number }>; totalPages: number; children?: React.ReactNode }) {
   const t = useTranslations("pdfOrder");
+
+  // Sort by product name, then format
+  const sorted = [...breakdown].sort((a, b) => {
+    const pa = a.product ?? "";
+    const pb = b.product ?? "";
+    if (pa !== pb) return pa.localeCompare(pb);
+    return (a.format ?? "").localeCompare(b.format ?? "");
+  });
+
+  const trigger = children ?? (
+    <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight cursor-pointer hover:bg-slate-100 transition-colors">
+      <FileText className="h-3 w-3" strokeWidth={1.5} />
+      {totalPages} {t("dropzonePagesAbbr")}
+    </span>
+  );
+
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          <span className="cursor-pointer">{children}</span>
+          {trigger}
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
@@ -116,7 +132,7 @@ function PageBreakdownTooltip({ breakdown, children }: { breakdown: Array<{ prod
             className="z-50 rounded-lg bg-slate-900 px-3 py-2 drop-shadow-lg"
           >
             <div className="flex flex-col gap-1 min-w-[140px]">
-              {breakdown.map(({ product, format, pages }, i) => (
+              {sorted.map(({ product, format, pages }, i) => (
                 <div key={i} className="flex items-center justify-between gap-4">
                   <span className="text-xs text-slate-300">
                     {[product, format].filter(Boolean).join(" · ")}
@@ -178,22 +194,33 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
   // PDF
   const parts: React.ReactNode[] = [];
   if (isMultiFile && order.productBreakdown && order.productBreakdown.length > 0) {
-    // Multi-file: show "2 × Broschüre · 6 × Leaflet"
-    order.productBreakdown.forEach(({ name, quantity }, i) => {
+    // Multi-file: show distinct product names (e.g. "Broschüre · Leaflet")
+    const distinctNames = order.productBreakdown.map(({ name }) => name);
+    parts.push(
+      <span key="products" className="text-sm font-semibold text-slate-900 shrink-0">
+        {distinctNames.join(" · ")}
+      </span>
+    );
+    if (order.brandName)
       parts.push(
-        <span key={`bd-${i}`} className="text-sm font-semibold text-slate-900 shrink-0">
-          {quantity} × {name}
+        <span key="brand" className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          {order.brandName}
         </span>
       );
-    });
-    if (order.totalPageCount) {
-      const label = `${order.totalPageCount} ${t("dropzoneColPages")}`;
+    if (qtyText)
       parts.push(
-        order.pageBreakdown && order.pageBreakdown.length > 1
-          ? <PageBreakdownTooltip key="pages" breakdown={order.pageBreakdown}>
-              <span className="text-xs text-slate-400 shrink-0">{label}</span>
-            </PageBreakdownTooltip>
-          : <span key="pages" className="text-xs text-slate-400 shrink-0">{label}</span>
+        <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
+      );
+    if (order.totalPageCount && order.pageBreakdown && order.pageBreakdown.length > 0) {
+      parts.push(
+        <PageBreakdownTooltip key="pages" breakdown={order.pageBreakdown} totalPages={order.totalPageCount} />
+      );
+    } else if (order.totalPageCount) {
+      parts.push(
+        <span key="pages" className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          <FileText className="h-3 w-3" strokeWidth={1.5} />
+          {order.totalPageCount} {t("dropzonePagesAbbr")}
+        </span>
       );
     }
   } else {
@@ -203,13 +230,22 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
           {order.templateLabel}
         </span>
       );
+    if (order.brandName)
+      parts.push(
+        <span key="brand" className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          {order.brandName}
+        </span>
+      );
     if (qtyText)
       parts.push(
         <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
       );
     if (order.primaryPageCount != null)
       parts.push(
-        <span key="pages" className="text-xs text-slate-400 shrink-0">{order.primaryPageCount} {t("dropzoneColPages")}</span>
+        <span key="pages" className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          <FileText className="h-3 w-3" strokeWidth={1.5} />
+          {order.primaryPageCount} {t("dropzonePagesAbbr")}
+        </span>
       );
   }
 
@@ -236,10 +272,10 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
   const badgeClass = STATUS_STYLES[order.status] ?? STATUS_STYLES.DRAFT;
   const isMultiFile = (order.fileCount ?? 0) > 1;
 
-  // Line 2: template orders show requester + role; upload orders show company · ordered by
+  // Line 2: template orders show requester + role; upload orders show ordered by
   const line2 = isBC
     ? null // handled inline below for styling
-    : [order.company ?? (showBrand ? order.brandName : null), order.orderedByName].filter(Boolean).join(" · ") || null;
+    : [order.orderedByName].filter(Boolean).join(" · ") || null;
   const bcLine2Name = isBC ? order.requesterName : null;
   const bcLine2Role = isBC ? [order.requesterRole, order.requesterSeniority].filter(Boolean).join(", ") || null : null;
 
@@ -307,7 +343,7 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
     return (
       <div
         onClick={() => onToggle?.(order.id)}
-        className={`relative flex rounded-2xl border bg-white overflow-hidden cursor-pointer select-none transition-shadow ${
+        className={`relative flex min-h-[88px] rounded-2xl border bg-white overflow-hidden cursor-pointer select-none transition-shadow ${
           selected
             ? "border-blue-500 shadow-md"
             : "border-slate-200 shadow-sm hover:shadow-md"
@@ -328,7 +364,7 @@ export function OrderCardRow({ order, showBrand, selectMode = false, selected = 
   return (
     <Link
       href={`/orders/${order.id}`}
-      className="group flex rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all overflow-hidden"
+      className="group flex min-h-[88px] rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all overflow-hidden"
     >
       {cardContent}
     </Link>
