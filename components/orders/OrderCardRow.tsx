@@ -101,29 +101,55 @@ function Dot() {
   return <span className="text-slate-300 text-xs shrink-0">·</span>;
 }
 
-function PageBreakdownTooltip({ breakdown, totalPages, children }: { breakdown: Array<{ product: string | null; format: string | null; pages: number }>; totalPages: number; children?: React.ReactNode }) {
+type DetailPillProps = {
+  totalQty: number | null;
+  totalPages: number | null;
+  breakdown: Array<{ product: string | null; format: string | null; pages: number }> | null;
+  productBreakdown: Array<{ name: string; quantity: number }> | null;
+};
+
+function DetailPill({ totalQty, totalPages, breakdown, productBreakdown }: DetailPillProps) {
   const t = useTranslations("pdfOrder");
 
-  // Sort by product name, then format
-  const sorted = [...breakdown].sort((a, b) => {
-    const pa = a.product ?? "";
-    const pb = b.product ?? "";
-    if (pa !== pb) return pa.localeCompare(pb);
-    return (a.format ?? "").localeCompare(b.format ?? "");
-  });
+  const qtyLabel = totalQty ? `${totalQty} Stk` : null;
+  const pagesLabel = totalPages ? `${totalPages} ${t("dropzonePagesAbbr")}` : null;
+  const pillText = [qtyLabel, pagesLabel].filter(Boolean).join(" · ");
+  if (!pillText) return null;
 
-  const trigger = children ?? (
-    <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight cursor-pointer hover:bg-slate-100 transition-colors">
-      <FileText className="h-3 w-3" strokeWidth={1.5} />
-      {totalPages} {t("dropzonePagesAbbr")}
-    </span>
-  );
+  // Build per-product summary: qty + pages, sorted alphabetically
+  const hasBreakdown = productBreakdown && productBreakdown.length > 0 && breakdown && breakdown.length > 0;
+
+  if (!hasBreakdown) {
+    return (
+      <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+        {pillText}
+      </span>
+    );
+  }
+
+  // Aggregate pages per product name
+  const pagesPerProduct = new Map<string, number>();
+  for (const item of breakdown!) {
+    const name = item.product ?? "";
+    pagesPerProduct.set(name, (pagesPerProduct.get(name) ?? 0) + item.pages);
+  }
+
+  // Merge qty + pages per product, sorted alphabetically
+  const rows = [...productBreakdown!]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(({ name, quantity }) => ({
+      name,
+      qty: quantity,
+      pages: pagesPerProduct.get(name) ?? 0,
+    }));
 
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          {trigger}
+          <span className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight cursor-pointer hover:bg-slate-100 transition-colors">
+            {pillText}
+          </span>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
@@ -132,12 +158,12 @@ function PageBreakdownTooltip({ breakdown, totalPages, children }: { breakdown: 
             className="z-50 rounded-lg bg-slate-900 px-3 py-2 drop-shadow-lg"
           >
             <div className="flex flex-col gap-1 min-w-[140px]">
-              {sorted.map(({ product, format, pages }, i) => (
+              {rows.map(({ name, qty, pages }, i) => (
                 <div key={i} className="flex items-center justify-between gap-4">
-                  <span className="text-xs text-slate-300">
-                    {[product, format].filter(Boolean).join(" · ")}
+                  <span className="text-xs text-slate-300">{name}</span>
+                  <span className="text-xs text-white tabular-nums font-medium">
+                    {qty} Stk · {pages} {t("dropzonePagesAbbr")}
                   </span>
-                  <span className="text-xs text-white tabular-nums font-medium">{pages} {t("dropzonePagesAbbr")}</span>
                 </div>
               ))}
             </div>
@@ -194,8 +220,8 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
   // PDF
   const parts: React.ReactNode[] = [];
   if (isMultiFile && order.productBreakdown && order.productBreakdown.length > 0) {
-    // Multi-file: show distinct product names (e.g. "Broschüre · Leaflet")
-    const distinctNames = order.productBreakdown.map(({ name }) => name);
+    // Multi-file: show distinct product names sorted alphabetically
+    const distinctNames = [...order.productBreakdown].sort((a, b) => a.name.localeCompare(b.name)).map(({ name }) => name);
     parts.push(
       <span key="products" className="text-sm font-semibold text-slate-900 shrink-0">
         {distinctNames.join(" · ")}
@@ -207,22 +233,15 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
           {order.brandName}
         </span>
       );
-    if (qtyText)
-      parts.push(
-        <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
-      );
-    if (order.totalPageCount && order.pageBreakdown && order.pageBreakdown.length > 0) {
-      parts.push(
-        <PageBreakdownTooltip key="pages" breakdown={order.pageBreakdown} totalPages={order.totalPageCount} />
-      );
-    } else if (order.totalPageCount) {
-      parts.push(
-        <span key="pages" className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
-          <FileText className="h-3 w-3" strokeWidth={1.5} />
-          {order.totalPageCount} {t("dropzonePagesAbbr")}
-        </span>
-      );
-    }
+    parts.push(
+      <DetailPill
+        key="detail"
+        totalQty={order.quantity}
+        totalPages={order.totalPageCount}
+        breakdown={order.pageBreakdown}
+        productBreakdown={order.productBreakdown}
+      />
+    );
   } else {
     if (order.templateLabel)
       parts.push(
@@ -236,15 +255,17 @@ function Line1({ order, isBC, isMultiFile, qtyText }: Line1Props) {
           {order.brandName}
         </span>
       );
-    if (qtyText)
+    // Single-file PDF: simple pill with qty + pages (no breakdown popover)
+    const singleQty = order.quantity;
+    const singlePages = order.primaryPageCount;
+    const singleParts = [
+      singleQty ? `${singleQty} Stk` : null,
+      singlePages ? `${singlePages} ${t("dropzonePagesAbbr")}` : null,
+    ].filter(Boolean).join(" · ");
+    if (singleParts)
       parts.push(
-        <span key="qty" className="text-xs text-slate-400 shrink-0">{qtyText}</span>
-      );
-    if (order.primaryPageCount != null)
-      parts.push(
-        <span key="pages" className="shrink-0 inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
-          <FileText className="h-3 w-3" strokeWidth={1.5} />
-          {order.primaryPageCount} {t("dropzonePagesAbbr")}
+        <span key="detail" className="shrink-0 inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[10px] font-medium text-slate-500 leading-tight">
+          {singleParts}
         </span>
       );
   }
