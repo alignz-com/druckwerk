@@ -56,7 +56,27 @@ export async function POST(req: Request) {
     where: { id: { in: orderIds } },
     include: {
       brand: { select: { name: true } },
-      template: { select: { label: true, key: true } },
+      template: {
+        select: {
+          label: true,
+          key: true,
+          product: { select: { name: true } },
+        },
+      },
+      pdfOrderItems: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          productFormat: {
+            include: {
+              product: { select: { name: true } },
+              format: { select: { name: true } },
+            },
+          },
+          coverPaperStock: { select: { name: true } },
+          contentPaperStock: { select: { name: true } },
+          finish: { select: { name: true } },
+        },
+      },
     },
   });
 
@@ -78,6 +98,21 @@ export async function POST(req: Request) {
   });
   if (!address) {
     return NextResponse.json({ error: "Address not found for brand" }, { status: 404 });
+  }
+
+  // Check for orders that already have a confirmation
+  const existingItems = await prisma.deliveryItem.findMany({
+    where: { orderId: { in: orders.map((o) => o.id) } },
+    select: { orderId: true, delivery: { select: { number: true } } },
+  });
+  if (existingItems.length > 0) {
+    const refs = orders
+      .filter((o) => existingItems.some((i) => i.orderId === o.id))
+      .map((o) => o.referenceCode);
+    return NextResponse.json(
+      { error: `Orders already confirmed: ${refs.join(", ")}` },
+      { status: 409 },
+    );
   }
 
   const { deliveryNumber } = await reserveDeliveryNumber();
@@ -122,7 +157,6 @@ export async function POST(req: Request) {
     note,
     locale: locale === "de" ? "de" : "en",
     shippingAddress: [
-      address.label,
       address.company,
       address.street,
       address.addressExtra,
@@ -131,18 +165,45 @@ export async function POST(req: Request) {
     ]
       .filter((line) => line && line.toString().trim().length > 0)
       .join("\n"),
-    orders: orders.map((order) => ({
-      referenceCode: order.referenceCode,
-      requesterName: order.requesterName ?? "",
-      requesterRole: order.requesterRole ?? "",
-      customerReference:
-        typeof order.meta === "object" && order.meta && "customerReference" in order.meta
-          ? (order.meta as any).customerReference ?? null
-          : null,
-      templateLabel: order.template?.label ?? order.template?.key ?? "–",
-      brandName: order.brand?.name ?? null,
-      quantity: order.quantity ?? 0,
-    })),
+    orders: orders.map((order) => {
+      const base = {
+        referenceCode: order.referenceCode,
+        requesterName: order.requesterName ?? "",
+        requesterRole: order.requesterRole ?? "",
+        customerReference:
+          typeof order.meta === "object" && order.meta && "customerReference" in order.meta
+            ? (order.meta as any).customerReference ?? null
+            : null,
+        brandName: order.brand?.name ?? null,
+        deliveryTime: order.deliveryTime ?? "standard",
+      };
+
+      if (order.type === "UPLOAD") {
+        return {
+          ...base,
+          type: "UPLOAD" as const,
+          quantity: order.pdfOrderItems.reduce((sum, item) => sum + item.quantity, 0),
+          pdfOrderItems: order.pdfOrderItems.map((item) => ({
+            filename: item.filename,
+            quantity: item.quantity,
+            pages: item.pages,
+            productName: item.productFormat?.product?.name ?? null,
+            formatName: item.productFormat?.format?.name ?? null,
+            coverPaper: item.coverPaperStock?.name ?? null,
+            contentPaper: item.contentPaperStock?.name ?? null,
+            finishName: item.finish?.name ?? null,
+          })),
+        };
+      }
+
+      return {
+        ...base,
+        type: "TEMPLATE" as const,
+        templateLabel: order.template?.label ?? order.template?.key ?? "–",
+        productName: (order.template as any)?.product?.name ?? null,
+        quantity: order.quantity ?? 0,
+      };
+    }),
   });
 
   const pdfBuffer = Buffer.from(pdfBytes);

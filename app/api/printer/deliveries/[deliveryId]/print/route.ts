@@ -27,7 +27,27 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
           order: {
             include: {
               brand: { select: { name: true } },
-              template: { select: { label: true, key: true } },
+              template: {
+                select: {
+                  label: true,
+                  key: true,
+                  product: { select: { name: true } },
+                },
+              },
+              pdfOrderItems: {
+                orderBy: { createdAt: "asc" },
+                include: {
+                  productFormat: {
+                    include: {
+                      product: { select: { name: true } },
+                      format: { select: { name: true } },
+                    },
+                  },
+                  coverPaperStock: { select: { name: true } },
+                  contentPaperStock: { select: { name: true } },
+                  finish: { select: { name: true } },
+                },
+              },
             },
           },
         },
@@ -41,7 +61,6 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
 
   const locale = isLocale(session.user.locale) ? session.user.locale : "en";
   const shippingAddress = [
-    (delivery as any).shippingName,
     (delivery as any).shippingCompany,
     (delivery as any).shippingStreet,
     (delivery as any).shippingAddressExtra,
@@ -51,7 +70,7 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
     .filter((line) => line && line.toString().trim().length > 0)
     .join("\n");
 
-  const orders = (delivery as any).items ?? [];
+  const items = (delivery as any).items ?? [];
 
   const pdfBytes = await generateDeliveryNotePdf({
     deliveryNumber: delivery.number,
@@ -59,18 +78,45 @@ export async function POST(_: NextRequest, context: { params: Promise<{ delivery
     note: delivery.note,
     locale: locale === "de" ? "de" : "en",
     shippingAddress,
-    orders: orders.map(({ order }: any) => ({
-      referenceCode: order.referenceCode,
-      requesterName: order.requesterName,
-      requesterRole: order.requesterRole ?? "",
-      customerReference:
-        typeof order.meta === "object" && order.meta && "customerReference" in order.meta
-          ? order.meta.customerReference ?? null
-          : null,
-      templateLabel: order.template?.label ?? order.template?.key ?? "–",
-      brandName: order.brand?.name ?? null,
-      quantity: order.quantity,
-    })),
+    orders: items.map(({ order }: any) => {
+      const base = {
+        referenceCode: order.referenceCode,
+        requesterName: order.requesterName ?? "",
+        requesterRole: order.requesterRole ?? "",
+        customerReference:
+          typeof order.meta === "object" && order.meta && "customerReference" in order.meta
+            ? order.meta.customerReference ?? null
+            : null,
+        brandName: order.brand?.name ?? null,
+        deliveryTime: order.deliveryTime ?? "standard",
+      };
+
+      if (order.type === "UPLOAD") {
+        return {
+          ...base,
+          type: "UPLOAD" as const,
+          quantity: (order.pdfOrderItems ?? []).reduce((sum: number, i: any) => sum + i.quantity, 0),
+          pdfOrderItems: (order.pdfOrderItems ?? []).map((item: any) => ({
+            filename: item.filename,
+            quantity: item.quantity,
+            pages: item.pages,
+            productName: item.productFormat?.product?.name ?? null,
+            formatName: item.productFormat?.format?.name ?? null,
+            coverPaper: item.coverPaperStock?.name ?? null,
+            contentPaper: item.contentPaperStock?.name ?? null,
+            finishName: item.finish?.name ?? null,
+          })),
+        };
+      }
+
+      return {
+        ...base,
+        type: "TEMPLATE" as const,
+        templateLabel: order.template?.label ?? order.template?.key ?? "–",
+        productName: order.template?.product?.name ?? null,
+        quantity: order.quantity ?? 0,
+      };
+    }),
   });
 
   const pdfBuffer = Buffer.from(pdfBytes);

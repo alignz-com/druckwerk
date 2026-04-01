@@ -795,3 +795,29 @@ model FeatureComment {
 
   @@index([featureId])
 }
+
+model SystemSettings {
+  id                     String   @id @default("singleton")
+  companyName            String   @default("Thurnher Druckerei GmbH")
+  logoUrl                String?
+  street                 String?
+  postalCode             String?
+  city                   String?
+  countryCode            String?
+  confirmationFontFamily String?
+  // Letterhead PDF template
+  letterheadUrl          String?
+  letterheadStoragePath  String?
+  // Safe area (mm) — where dynamic content can be placed
+  safeTopMm              Float?
+  safeBottomMm           Float?
+  safeLeftMm             Float?
+  safeRightMm            Float?
+  // Address window (mm) — DIN envelope window position
+  addressWindowXMm       Float?
+  addressWindowYMm       Float?
+  addressWindowWidthMm   Float?
+  addressWindowHeightMm  Float?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}

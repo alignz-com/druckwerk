@@ -1,13 +1,39 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+
+import { prisma } from "@/lib/prisma";
+import { s3, FONT_BUCKET } from "@/lib/s3";
+import { getSystemSettings } from "@/lib/system-settings";
+import { getCountryLabel } from "@/lib/countries";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type DeliveryNotePdfItem = {
+  filename: string;
+  quantity: number;
+  pages: number | null;
+  productName: string | null;
+  formatName: string | null;
+  coverPaper: string | null;
+  contentPaper: string | null;
+  finishName: string | null;
+};
 
 export type DeliveryNoteOrder = {
   referenceCode: string;
   requesterName: string;
   requesterRole: string;
   customerReference?: string | null;
-  templateLabel: string;
   brandName: string | null;
   quantity: number;
+  deliveryTime: string;
+  type: "TEMPLATE" | "UPLOAD";
+  templateLabel?: string;
+  productName?: string | null;
+  pdfOrderItems?: DeliveryNotePdfItem[];
 };
 
 export type DeliveryNotePayload = {
@@ -19,186 +45,503 @@ export type DeliveryNotePayload = {
   orders: DeliveryNoteOrder[];
 };
 
-export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Promise<Uint8Array> {
-  const doc = await PDFDocument.create();
-  let page = doc.addPage([595.28, 841.89]); // A4 in points
-  const { height, width } = page.getSize();
-  const margin = 50;
-  const titleFont = await doc.embedFont(StandardFonts.HelveticaBold);
-  const bodyFont = await doc.embedFont(StandardFonts.Helvetica);
-  const titleSize = 18;
-  const bodySize = 10;
-  const roleSize = 9;
-  const commentSize = 9;
-  const rowHeight = 16;
-  const maxContentWidth = width - margin * 2;
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
-  const drawText = (
+const A4_W = 595.28;
+const A4_H = 841.89;
+const MM_TO_PT = 2.83465;
+
+// Defaults when no letterhead / safe area configured
+const DEFAULT_MARGIN = 50;
+const DEFAULT_TOP = 50;
+const DEFAULT_BOTTOM = 50;
+
+const TITLE_SIZE = 14;
+const HEADING_SIZE = 11;
+const BODY_SIZE = 9.5;
+const SMALL_SIZE = 8.5;
+const ROW_HEIGHT = 14;
+const EXPRESS_COLOR = rgb(0.75, 0.1, 0.1);
+const HEADER_COLOR = rgb(0.15, 0.15, 0.15);
+const BODY_COLOR = rgb(0.2, 0.2, 0.2);
+const MUTED_COLOR = rgb(0.45, 0.45, 0.45);
+const LINE_COLOR = rgb(0.85, 0.85, 0.85);
+
+// ---------------------------------------------------------------------------
+// Font loading
+// ---------------------------------------------------------------------------
+
+async function loadConfirmationFonts(doc: PDFDocument) {
+  const settings = await getSystemSettings();
+  const slug = settings.confirmationFontFamily;
+
+  if (slug) {
+    try {
+      const family = await prisma.fontFamily.findUnique({
+        where: { slug },
+        include: { variants: true },
+      });
+
+      if (family) {
+        doc.registerFontkit(fontkit);
+
+        const embeddable = (v: { format: string }) => v.format === "TTF" || v.format === "OTF";
+        const isNormal = (v: { style: string | null }) => {
+          const s = v.style?.toUpperCase();
+          return s === "NORMAL" || !s;
+        };
+        const isItalic = (v: { style: string | null }) => v.style?.toUpperCase() === "ITALIC";
+
+        const regularVariant = family.variants.find(
+          (v) => v.weight === 400 && isNormal(v) && embeddable(v),
+        ) ?? family.variants.find(
+          (v) => v.weight === 400 && !isItalic(v) && embeddable(v),
+        );
+
+        const boldVariant = family.variants.find(
+          (v) => v.weight === 700 && isNormal(v) && embeddable(v),
+        ) ?? family.variants.find(
+          (v) => v.weight === 700 && !isItalic(v) && embeddable(v),
+        ) ?? family.variants.find(
+          (v) => v.weight >= 600 && !isItalic(v) && embeddable(v),
+        );
+
+        const loadVariant = async (variant: { storageKey: string }) => {
+          const res = await s3.send(
+            new GetObjectCommand({ Bucket: FONT_BUCKET, Key: variant.storageKey }),
+          );
+          const bytes = await res.Body?.transformToByteArray();
+          if (!bytes) throw new Error("Empty font data");
+          const font = await doc.embedFont(bytes, { subset: true });
+          void font.widthOfTextAtSize("ÄÖÜ äöü ß", 10);
+          return font;
+        };
+
+        if (regularVariant && boldVariant) {
+          const [regular, bold] = await Promise.all([
+            loadVariant(regularVariant),
+            loadVariant(boldVariant),
+          ]);
+          return { regular, bold };
+        }
+
+        if (regularVariant) {
+          const regular = await loadVariant(regularVariant);
+          return { regular, bold: regular };
+        }
+      }
+    } catch (err) {
+      console.warn("[delivery-note] Failed to load custom font, falling back to Helvetica:", err);
+    }
+  }
+
+  const regular = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  return { regular, bold };
+}
+
+// ---------------------------------------------------------------------------
+// Letterhead loading
+// ---------------------------------------------------------------------------
+
+async function loadLetterhead(settings: Awaited<ReturnType<typeof getSystemSettings>>) {
+  if (!settings.letterheadUrl) return null;
+  try {
+    const res = await fetch(settings.letterheadUrl);
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    return PDFDocument.load(bytes);
+  } catch (err) {
+    console.warn("[delivery-note] Failed to load letterhead PDF:", err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Logo loading (fallback when no letterhead)
+// ---------------------------------------------------------------------------
+
+async function loadLogo(doc: PDFDocument, logoUrl: string | null): Promise<PDFImage | null> {
+  if (!logoUrl) return null;
+  try {
+    const res = await fetch(logoUrl);
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) return doc.embedPng(bytes);
+    return doc.embedJpg(bytes);
+  } catch (err) {
+    console.warn("[delivery-note] Failed to load logo:", err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function truncate(text: string, font: PDFFont, size: number, maxWidth: number): string {
+  const safe = (text ?? "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  if (font.widthOfTextAtSize(safe, size) <= maxWidth) return safe;
+  let t = safe;
+  while (t.length > 1 && font.widthOfTextAtSize(t + "\u2026", size) > maxWidth) {
+    t = t.slice(0, -1);
+  }
+  return t + "\u2026";
+}
+
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const trial = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(trial, size) <= maxWidth) {
+      current = trial;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [text];
+}
+
+// ---------------------------------------------------------------------------
+// PDF generation
+// ---------------------------------------------------------------------------
+
+export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Promise<Uint8Array> {
+  const settings = await getSystemSettings();
+  const letterheadDoc = await loadLetterhead(settings);
+  const hasLetterhead = Boolean(letterheadDoc);
+
+  const doc = await PDFDocument.create();
+  doc.setProducer("Druckwerk");
+  doc.setCreator("Druckwerk");
+
+  const fonts = await loadConfirmationFonts(doc);
+
+  // Safe area from settings (in points), with fallbacks
+  const safeLeft = (settings.safeLeftMm ?? DEFAULT_MARGIN / MM_TO_PT) * MM_TO_PT;
+  const safeRight = (settings.safeRightMm ?? DEFAULT_MARGIN / MM_TO_PT) * MM_TO_PT;
+  const safeTop = (settings.safeTopMm ?? DEFAULT_TOP / MM_TO_PT) * MM_TO_PT;
+  const safeBottom = (settings.safeBottomMm ?? DEFAULT_BOTTOM / MM_TO_PT) * MM_TO_PT;
+
+  // Address window from settings (in points)
+  const addrX = (settings.addressWindowXMm ?? 25) * MM_TO_PT;
+  const addrY = (settings.addressWindowYMm ?? 50) * MM_TO_PT;
+  const addrW = (settings.addressWindowWidthMm ?? 80) * MM_TO_PT;
+  const addrH = (settings.addressWindowHeightMm ?? 35) * MM_TO_PT;
+
+  const contentW = A4_W - safeLeft - safeRight;
+
+  // --- State ---
+  let page: PDFPage;
+  let cursorY: number;
+
+  const isDE = payload.locale === "de";
+  const labels = {
+    title: isDE ? "Auftragsbest\u00e4tigung" : "Order Confirmation",
+    brand: isDE ? "Marke" : "Brand",
+    note: isDE ? "Anmerkung" : "Note",
+    businessCards: isDE ? "Visitenkarten" : "Business Cards",
+    printJobs: isDE ? "Druckauftr\u00e4ge" : "Print Jobs",
+    ref: isDE ? "Bestellnummer" : "Order No.",
+    nameRole: isDE ? "Name / Funktion" : "Name / Role",
+    product: isDE ? "Produkt" : "Product",
+    template: isDE ? "Vorlage" : "Template",
+    file: isDE ? "Datei" : "File",
+    qty: isDE ? "Menge" : "Qty",
+    express: "EXPRESS",
+    continued: isDE ? "(Fortsetzung)" : "(continued)",
+    format: "Format",
+    pages: isDE ? "Seiten" : "Pages",
+    paper: isDE ? "Papier" : "Paper",
+    finish: isDE ? "Veredelung" : "Finish",
+    comment: isDE ? "Kommentar" : "Comment",
+  };
+
+  const formatDate = new Intl.DateTimeFormat(isDE ? "de-AT" : "en-GB", {
+    dateStyle: "medium",
+  }).format(payload.createdAt);
+
+  // --- Drawing helpers ---
+  const draw = (
     text: string,
     x: number,
     y: number,
-    options?: { size?: number; bold?: boolean; pageRef?: typeof page; color?: ReturnType<typeof rgb> },
+    opts?: { font?: PDFFont; size?: number; color?: ReturnType<typeof rgb>; maxWidth?: number },
   ) => {
-    const font = options?.bold ? titleFont : bodyFont;
-    const size = options?.size ?? bodySize;
-    const targetPage = options?.pageRef ?? page;
-    const safeText = (text ?? "").replace(/\r?\n/g, " ");
-    const trimmed = safeText.replace(/\s+/g, " ").trim();
-    const maxWidth = maxContentWidth - x + margin;
-    const textWidth = font.widthOfTextAtSize(trimmed, size);
-    const content =
-      textWidth > maxWidth
-        ? font.widthOfTextAtSize(trimmed.slice(0, 40), size) > maxWidth
-          ? trimmed.slice(0, 40)
-          : trimmed.slice(0, Math.min(trimmed.length, 64))
-        : trimmed;
-    targetPage.drawText(content, {
-      x,
-      y,
-      size,
-      font,
-      color: options?.color ?? rgb(0.1, 0.1, 0.1),
-    });
+    const f = opts?.font ?? fonts.regular;
+    const s = opts?.size ?? BODY_SIZE;
+    const mw = opts?.maxWidth ?? contentW - (x - safeLeft);
+    const content = truncate(text, f, s, mw);
+    page.drawText(content, { x, y, size: s, font: f, color: opts?.color ?? BODY_COLOR });
   };
 
-  const wrapText = (text: string, maxWidth: number, size = bodySize) => {
-    const words = text.split(/\s+/).filter(Boolean);
-    const lines: string[] = [];
-    let current = "";
-    words.forEach((word) => {
-      const tentative = current ? `${current} ${word}` : word;
-      const width = bodyFont.widthOfTextAtSize(tentative, size);
-      if (width <= maxWidth) {
-        current = tentative;
-      } else {
-        if (current) lines.push(current);
-        current = word;
-      }
-    });
-    if (current) lines.push(current);
-    return lines.length ? lines : [text];
-  };
-
-  const formatDate = new Intl.DateTimeFormat(payload.locale === "de" ? "de-AT" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(payload.createdAt);
-
-  let cursorY = height - margin;
-  drawText("Order Confirmation", margin, cursorY, { size: titleSize, bold: true });
-  cursorY -= 20;
-  drawText(`Confirmation #: ${payload.deliveryNumber}`, margin, cursorY);
-  cursorY -= 16;
-  drawText(`Created: ${formatDate}`, margin, cursorY);
-
-  // Ship from block
-  cursorY -= 24;
-  drawText("Ship from:", margin, cursorY, { bold: true });
-  cursorY -= 12;
-  const shipFromLines = ["Thurnher Druckerei GmbH", "Grundweg 4", "6830 Rankweil", "AT"];
-  shipFromLines.forEach((line) => {
-    drawText(line, margin, cursorY);
-    cursorY -= 12;
-  });
-
-  if (payload.shippingAddress && payload.shippingAddress.trim()) {
-    cursorY -= 18;
-    drawText("Ship to:", margin, cursorY, { bold: true });
-    cursorY -= 12;
-    const lines = payload.shippingAddress.split(/\r?\n/).filter((line) => line.trim().length > 0);
-    lines.forEach((line) => {
-      drawText(line, margin, cursorY);
-      cursorY -= 12;
-    });
-  }
-
-  cursorY -= 30;
-  if (payload.note && payload.note.trim()) {
-    drawText("Note:", margin, cursorY, { bold: true });
-    cursorY -= 14;
-    const noteLines = payload.note.split(/\r?\n/);
-    noteLines.forEach((line) => {
-      drawText(line, margin + 12, cursorY);
-      cursorY -= 14;
-    });
-    cursorY -= 12;
-  }
-
-  drawText("Orders", margin, cursorY, { bold: true });
-  cursorY -= 18;
-
-  const colRef = margin;
-  const colName = margin + 100;
-  const colTemplate = margin + 320;
-  const colQty = width - margin - 40;
-
-  const renderHeader = () => {
-    drawText("Ref", colRef, cursorY, { bold: true });
-    drawText("Name / Function", colName, cursorY, { bold: true });
-    drawText("Template", colTemplate, cursorY, { bold: true });
-    drawText("Qty", colQty, cursorY, { bold: true });
-    cursorY -= rowHeight;
-    // underline headers
-    const headerLineY = cursorY - 4;
+  const hLine = (y: number) => {
     page.drawLine({
-      start: { x: margin, y: headerLineY },
-      end: { x: width - margin, y: headerLineY },
-      thickness: 0.6,
-      color: rgb(0.85, 0.85, 0.85),
+      start: { x: safeLeft, y },
+      end: { x: A4_W - safeRight, y },
+      thickness: 0.5,
+      color: LINE_COLOR,
     });
-    cursorY = headerLineY - 14;
   };
 
-  renderHeader();
-
-  payload.orders.forEach((order) => {
-    if (cursorY < margin + 60) {
-      page = doc.addPage([595.28, 841.89]);
-      cursorY = height - margin;
-      drawText("Orders (continued)", margin, cursorY, { pageRef: page });
-      cursorY -= rowHeight;
-      renderHeader();
+  // Add a new page — either from letterhead or blank
+  const addPage = async (): Promise<PDFPage> => {
+    if (letterheadDoc) {
+      const [tplPage] = await doc.copyPages(letterheadDoc, [0]);
+      doc.addPage(tplPage);
+      return tplPage;
     }
-    const startY = cursorY;
-    drawText(order.referenceCode, colRef, startY);
-    drawText(order.requesterName, colName, startY);
-    drawText(order.templateLabel, colTemplate, startY);
-    drawText(order.quantity.toString(), colQty, startY);
+    return doc.addPage([A4_W, A4_H]);
+  };
 
-    const roleLine = order.requesterRole && order.requesterRole.trim().length > 0 ? order.requesterRole : "–";
-    drawText(roleLine, colName, startY - rowHeight + 4, { size: roleSize });
+  const ensureSpace = async (needed: number) => {
+    if (cursorY - needed < safeBottom) {
+      page = await addPage();
+      cursorY = A4_H - safeTop;
+    }
+  };
 
-    // Add extra spacing before the reference block to match the gap between name and role.
-    const customerRefRaw = order.customerReference?.toString().trim() ?? "";
-    const customerRef = customerRefRaw.replace(/^Kundenreferenz:\s*/i, "");
+  // =========================================================================
+  // FIRST PAGE
+  // =========================================================================
 
-    // Base height for name + role block
-    const baseHeight = rowHeight * 2 - 4; // tighten name/role stack
-    let refHeight = 0;
-    const lineHeightRef = commentSize + 1; // slightly tighter than default
-    if (customerRef) {
-      const refMaxWidth = colTemplate - colName - 12;
-      const refLines = wrapText(`Comment: ${customerRef}`, refMaxWidth, commentSize);
-      refHeight = refLines.length * (lineHeightRef + 1);
-      let currentY = startY - baseHeight - 6;
-      refLines.forEach((line) => {
-        drawText(line, colName, currentY, { size: commentSize, color: rgb(0.45, 0.45, 0.45) });
-        currentY -= lineHeightRef + 1;
+  page = await addPage();
+  cursorY = A4_H - safeTop;
+
+  // --- Address window (recipient) ---
+  if (payload.shippingAddress?.trim()) {
+    const lines = payload.shippingAddress.split(/\r?\n/).filter((l) => l.trim()).map((line) => {
+      // Convert 2-letter country codes to full names
+      if (/^[A-Z]{2}$/.test(line.trim())) {
+        return getCountryLabel(isDE ? "de" : "en", line.trim());
+      }
+      return line;
+    });
+    let addrCursorY = A4_H - addrY;
+    for (const line of lines) {
+      if (addrCursorY < A4_H - addrY - addrH) break;
+      draw(line, addrX, addrCursorY, { size: BODY_SIZE, maxWidth: addrW });
+      addrCursorY -= ROW_HEIGHT;
+    }
+  }
+
+  // --- If no letterhead, draw header with logo ---
+  if (!hasLetterhead) {
+    const logo = await loadLogo(doc, settings.logoUrl);
+    const logoMaxH = 36;
+    const logoMaxW = 100;
+
+    if (logo) {
+      const aspect = logo.width / logo.height;
+      let drawH = logoMaxH;
+      let drawW = drawH * aspect;
+      if (drawW > logoMaxW) { drawW = logoMaxW; drawH = drawW / aspect; }
+      page.drawImage(logo, {
+        x: safeLeft,
+        y: cursorY - drawH,
+        width: drawW,
+        height: drawH,
       });
     }
 
-    // Row separator with consistent spacing below content
-    const rowBlockHeight = baseHeight + refHeight;
-    const lineY = startY - rowBlockHeight - 10;
-    page.drawLine({
-      start: { x: margin, y: lineY },
-      end: { x: width - margin, y: lineY },
-      thickness: 0.5,
-      color: rgb(0.85, 0.85, 0.85),
-    });
+    // Company info top-right
+    const companyLines = [
+      settings.companyName,
+      settings.street,
+      [settings.postalCode, settings.city].filter(Boolean).join(" "),
+      settings.countryCode,
+    ].filter((l): l is string => Boolean(l?.trim()));
 
-    cursorY = lineY - 16; // add breathing room before next row
+    let infoY = cursorY;
+    for (const line of companyLines) {
+      const w = fonts.regular.widthOfTextAtSize(line, SMALL_SIZE);
+      draw(line, A4_W - safeRight - w, infoY, { size: SMALL_SIZE, color: MUTED_COLOR });
+      infoY -= ROW_HEIGHT;
+    }
+
+    cursorY -= logoMaxH + 16;
+  }
+
+  // --- Title block ---
+  // Content must start below the address window (with 10mm gap) AND below the safe top
+  const ADDR_GAP = 10 * MM_TO_PT; // 10mm gap below address window
+  const belowAddrWindow = A4_H - addrY - addrH - ADDR_GAP;
+  cursorY = Math.min(cursorY, belowAddrWindow);
+
+  // City + date, left-aligned
+  const cityName = settings.city ?? "";
+  const cityDate = [cityName, formatDate].filter(Boolean).join(", ");
+  draw(cityDate, safeLeft, cursorY, { size: BODY_SIZE, color: MUTED_COLOR });
+  cursorY -= 32;
+
+  // Title
+  draw(`${labels.title} ${payload.deliveryNumber}`, safeLeft, cursorY, {
+    font: fonts.bold, size: TITLE_SIZE, color: HEADER_COLOR,
   });
+  cursorY -= 32;
+
+  // Note
+  if (payload.note?.trim()) {
+    draw(`${labels.note}: ${payload.note}`, safeLeft, cursorY, { size: BODY_SIZE, color: MUTED_COLOR, maxWidth: contentW });
+    cursorY -= ROW_HEIGHT + 4;
+  }
+
+  // =========================================================================
+  // BUSINESS CARDS (template orders)
+  // =========================================================================
+
+  const templateOrders = payload.orders.filter((o) => o.type === "TEMPLATE");
+
+  if (templateOrders.length > 0) {
+    const colRef = safeLeft;
+    const colQty = safeLeft + 80;
+    const colProduct = safeLeft + 115;
+    const colName = safeLeft + 220;
+    const colBrandTpl = safeLeft + 370;
+
+    draw(labels.businessCards, safeLeft, cursorY, { font: fonts.bold, size: HEADING_SIZE, color: HEADER_COLOR });
+    cursorY -= 18;
+
+    draw(labels.ref, colRef, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.qty, colQty, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.product, colProduct, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.nameRole, colName, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(`${labels.brand} / ${labels.template}`, colBrandTpl, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    cursorY -= 4;
+    hLine(cursorY);
+    cursorY -= 12;
+
+    for (const order of templateOrders) {
+      await ensureSpace(50);
+      const rowY = cursorY;
+
+      draw(order.referenceCode, colRef, rowY, { size: BODY_SIZE });
+      draw(order.quantity.toString(), colQty, rowY, { size: BODY_SIZE });
+      draw(order.productName ?? "\u2013", colProduct, rowY, { size: BODY_SIZE, maxWidth: colName - colProduct - 8 });
+      draw(order.requesterName, colName, rowY, { size: BODY_SIZE, maxWidth: colBrandTpl - colName - 8 });
+
+      const brandTpl = [order.brandName, order.templateLabel].filter(Boolean).join(" / ");
+      const brandTplMaxW = contentW - (colBrandTpl - safeLeft);
+      const brandTplLines = wrapText(brandTpl || "\u2013", fonts.regular, BODY_SIZE, brandTplMaxW);
+      brandTplLines.forEach((line, i) => {
+        draw(line, colBrandTpl, rowY - i * ROW_HEIGHT, { size: BODY_SIZE });
+      });
+
+      cursorY -= ROW_HEIGHT;
+
+      // Second line: EXPRESS + role + brand wrap overflow
+      const hasExpress = order.deliveryTime === "express";
+      const role = order.requesterRole?.trim();
+      const hasSecondLine = hasExpress || role || brandTplLines.length > 1;
+
+      if (hasSecondLine) {
+        if (hasExpress) {
+          draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
+        }
+        if (role) {
+          draw(role, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
+        }
+        cursorY -= ROW_HEIGHT;
+      }
+
+      // Extra brand/template wrap lines beyond the second
+      if (brandTplLines.length > 2) {
+        cursorY -= ROW_HEIGHT * (brandTplLines.length - 2);
+      }
+
+      // Customer reference
+      if (order.customerReference?.trim()) {
+        const ref = order.customerReference.replace(/^Kundenreferenz:\s*/i, "").trim();
+        if (ref) {
+          const refLines = wrapText(`${labels.comment}: ${ref}`, fonts.regular, SMALL_SIZE, colBrandTpl - colName - 8);
+          for (const line of refLines) {
+            draw(line, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
+            cursorY -= ROW_HEIGHT;
+          }
+        }
+      }
+
+      // Consistent separator
+      cursorY -= 6;
+      hLine(cursorY);
+      cursorY -= 10;
+    }
+
+    cursorY -= 20;
+  }
+
+  // =========================================================================
+  // PRINT JOBS (upload orders)
+  // =========================================================================
+
+  const uploadOrders = payload.orders.filter((o) => o.type === "UPLOAD");
+
+  if (uploadOrders.length > 0) {
+    const colRef = safeLeft;
+    const colQty = safeLeft + 80;
+    const colProduct = safeLeft + 115;
+    const colFile = safeLeft + 220;
+
+    await ensureSpace(60);
+
+    draw(labels.printJobs, safeLeft, cursorY, { font: fonts.bold, size: HEADING_SIZE, color: HEADER_COLOR });
+    cursorY -= 18;
+
+    draw(labels.ref, colRef, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.qty, colQty, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.product, colProduct, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.file, colFile, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    cursorY -= 4;
+    hLine(cursorY);
+    cursorY -= 12;
+
+    for (const order of uploadOrders) {
+      const items = order.pdfOrderItems ?? [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        await ensureSpace(30);
+        const rowY = cursorY;
+
+        if (i === 0) {
+          draw(order.referenceCode, colRef, rowY, { size: BODY_SIZE });
+        }
+
+        draw(item.quantity.toString(), colQty, rowY, { size: BODY_SIZE });
+
+        const productParts = [item.productName, item.formatName].filter(Boolean);
+        if (item.pages && item.pages > 1) productParts.push(`${item.pages}p`);
+        draw(productParts.join(" / ") || "\u2013", colProduct, rowY, { size: BODY_SIZE, maxWidth: colFile - colProduct - 8 });
+
+        draw(item.filename, colFile, rowY, { size: BODY_SIZE, maxWidth: contentW - (colFile - safeLeft) });
+
+        cursorY -= ROW_HEIGHT;
+
+        if (i === 0 && order.deliveryTime === "express") {
+          draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
+          cursorY -= ROW_HEIGHT;
+        }
+      }
+
+      if (order.customerReference?.trim()) {
+        const ref = order.customerReference.replace(/^Kundenreferenz:\s*/i, "").trim();
+        if (ref) {
+          draw(`${labels.comment}: ${ref}`, colProduct, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR, maxWidth: contentW - (colProduct - safeLeft) });
+          cursorY -= ROW_HEIGHT;
+        }
+      }
+
+      cursorY -= 6;
+      hLine(cursorY);
+      cursorY -= 10;
+    }
+  }
 
   const pdfBytes = await doc.save();
   return pdfBytes;

@@ -57,6 +57,7 @@ export default async function AppLayout({ children }: Props) {
         { href: "/admin/templates", label: t.nav.adminTemplates, icon: "admin-templates" },
         { href: "/admin/fonts", label: t.nav.adminFonts, icon: "admin-fonts" },
         { href: "/admin/features", label: t.nav.adminFeatures, icon: "admin-features" },
+        { href: "/admin/settings", label: t.nav.adminSettings, icon: "admin-settings" },
       ]
     : [];
 
