@@ -10,8 +10,8 @@ import { isLocale } from "@/lib/i18n/messages";
 
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
-function formatDeliveryNumber(year: number, sequence: number) {
-  return `CONF-${year}-${sequence.toString().padStart(5, "0")}`;
+function formatDeliveryNumber(_year: number, sequence: number) {
+  return `AB-${sequence.toString().padStart(5, "0")}`;
 }
 
 async function reserveDeliveryNumber() {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         select: {
           label: true,
           key: true,
-          product: { select: { name: true } },
+          product: { select: { name: true, nameEn: true, nameDe: true } },
         },
       },
       pdfOrderItems: {
@@ -68,8 +68,8 @@ export async function POST(req: Request) {
         include: {
           productFormat: {
             include: {
-              product: { select: { name: true } },
-              format: { select: { name: true } },
+              product: { select: { name: true, nameEn: true, nameDe: true } },
+              format: { select: { name: true, nameDe: true } },
             },
           },
           coverPaperStock: { select: { name: true } },
@@ -151,6 +151,12 @@ export async function POST(req: Request) {
   });
 
   const locale = isLocale(session.user.locale) ? session.user.locale : "en";
+  const isDE = locale === "de";
+  const pn = (p: { name: string; nameEn?: string | null; nameDe?: string | null } | null | undefined) =>
+    p ? (isDE ? p.nameDe : p.nameEn) ?? p.name : null;
+  const fn = (f: { name: string; nameDe?: string | null } | null | undefined) =>
+    f ? (isDE ? f.nameDe : null) ?? f.name : null;
+
   const pdfBytes = await generateDeliveryNotePdf({
     deliveryNumber,
     createdAt: new Date(delivery.createdAt),
@@ -187,8 +193,8 @@ export async function POST(req: Request) {
             filename: item.filename,
             quantity: item.quantity,
             pages: item.pages,
-            productName: item.productFormat?.product?.name ?? null,
-            formatName: item.productFormat?.format?.name ?? null,
+            productName: pn(item.productFormat?.product),
+            formatName: fn(item.productFormat?.format),
             coverPaper: item.coverPaperStock?.name ?? null,
             contentPaper: item.contentPaperStock?.name ?? null,
             finishName: item.finish?.name ?? null,
@@ -200,7 +206,7 @@ export async function POST(req: Request) {
         ...base,
         type: "TEMPLATE" as const,
         templateLabel: order.template?.label ?? order.template?.key ?? "–",
-        productName: (order.template as any)?.product?.name ?? null,
+        productName: pn((order.template as any)?.product),
         quantity: order.quantity ?? 0,
       };
     }),
@@ -225,7 +231,7 @@ export async function POST(req: Request) {
       createdAt: delivery.createdAt,
       orderCount: orders.length,
       deliveryNoteUrl: upload.url,
-      detailUrl: APP_URL ? `${APP_URL}/deliveries?detail=${encodeURIComponent(delivery.id)}` : undefined,
+      detailUrl: APP_URL ? `${APP_URL}/confirmations/${encodeURIComponent(delivery.id)}` : undefined,
     },
   });
 }

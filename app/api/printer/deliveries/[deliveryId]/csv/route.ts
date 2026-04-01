@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isLocale } from "@/lib/i18n/messages";
 
 const CSV_HEADERS = [
   "Order No.",
@@ -64,10 +65,10 @@ export async function GET(_: Request, context: { params: Promise<{ deliveryId: s
                 select: {
                   label: true,
                   key: true,
-                  product: { select: { name: true } },
+                  product: { select: { name: true, nameEn: true, nameDe: true } },
                   productFormat: {
                     select: {
-                      format: { select: { name: true } },
+                      format: { select: { name: true, nameDe: true } },
                     },
                   },
                 },
@@ -77,8 +78,8 @@ export async function GET(_: Request, context: { params: Promise<{ deliveryId: s
                 include: {
                   productFormat: {
                     include: {
-                      product: { select: { name: true } },
-                      format: { select: { name: true } },
+                      product: { select: { name: true, nameEn: true, nameDe: true } },
+                      format: { select: { name: true, nameDe: true } },
                     },
                   },
                 },
@@ -93,6 +94,13 @@ export async function GET(_: Request, context: { params: Promise<{ deliveryId: s
   if (!delivery) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const locale = isLocale(session.user.locale) ? session.user.locale : "en";
+  const isDE = locale === "de";
+  const pn = (p: { name: string; nameEn?: string | null; nameDe?: string | null } | null | undefined) =>
+    p ? (isDE ? p.nameDe : p.nameEn) ?? p.name : null;
+  const fn = (f: { name: string; nameDe?: string | null } | null | undefined) =>
+    f ? (isDE ? f.nameDe : null) ?? f.name : null;
 
   // Ship To — same for all rows in a confirmation
   const shipTo = [
@@ -126,8 +134,8 @@ export async function GET(_: Request, context: { params: Promise<{ deliveryId: s
             "Print Job",
             isExpress ? "Yes" : "No",
             pdfItem.quantity,
-            pdfItem.productFormat?.product?.name ?? "",
-            pdfItem.productFormat?.format?.name ?? "",
+            pn(pdfItem.productFormat?.product) ?? "",
+            fn(pdfItem.productFormat?.format) ?? "",
             brandName,
             pdfItem.filename,
             order.requesterName,
@@ -147,8 +155,8 @@ export async function GET(_: Request, context: { params: Promise<{ deliveryId: s
           "Business Card",
           isExpress ? "Yes" : "No",
           order.quantity,
-          order.template?.product?.name ?? "",
-          order.template?.productFormat?.format?.name ?? "",
+          pn(order.template?.product) ?? "",
+          fn(order.template?.productFormat?.format) ?? "",
           brandName,
           order.template?.label ?? order.template?.key ?? "",
           order.requesterName,

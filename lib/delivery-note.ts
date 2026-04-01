@@ -485,8 +485,10 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
   if (uploadOrders.length > 0) {
     const colRef = safeLeft;
     const colQty = safeLeft + 80;
-    const colProduct = safeLeft + 115;
-    const colFile = safeLeft + 220;
+    const colProduct = safeLeft + 110;
+    const colFormat = safeLeft + 175;
+    const colPages = safeLeft + 230;
+    const colFile = safeLeft + 260;
 
     await ensureSpace(60);
 
@@ -496,6 +498,8 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     draw(labels.ref, colRef, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
     draw(labels.qty, colQty, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
     draw(labels.product, colProduct, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.format, colFormat, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.pages, colPages, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
     draw(labels.file, colFile, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
     cursorY -= 4;
     hLine(cursorY);
@@ -514,11 +518,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
         }
 
         draw(item.quantity.toString(), colQty, rowY, { size: BODY_SIZE });
-
-        const productParts = [item.productName, item.formatName].filter(Boolean);
-        if (item.pages && item.pages > 1) productParts.push(`${item.pages}p`);
-        draw(productParts.join(" / ") || "\u2013", colProduct, rowY, { size: BODY_SIZE, maxWidth: colFile - colProduct - 8 });
-
+        draw(item.productName ?? "\u2013", colProduct, rowY, { size: BODY_SIZE, maxWidth: colFormat - colProduct - 6 });
+        draw(item.formatName ?? "\u2013", colFormat, rowY, { size: BODY_SIZE, maxWidth: colPages - colFormat - 6 });
+        draw(item.pages != null ? String(item.pages) : "\u2013", colPages, rowY, { size: BODY_SIZE });
         draw(item.filename, colFile, rowY, { size: BODY_SIZE, maxWidth: contentW - (colFile - safeLeft) });
 
         cursorY -= ROW_HEIGHT;
