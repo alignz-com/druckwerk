@@ -62,6 +62,7 @@ const TITLE_SIZE = 14;
 const HEADING_SIZE = 11;
 const BODY_SIZE = 9.5;
 const SMALL_SIZE = 8.5;
+const COL_HEADER_SIZE = 7;
 const ROW_HEIGHT = 14;
 const EXPRESS_COLOR = rgb(0.75, 0.1, 0.1);
 const HEADER_COLOR = rgb(0.15, 0.15, 0.15);
@@ -408,16 +409,17 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     draw(labels.businessCards, safeLeft, cursorY, { font: fonts.bold, size: HEADING_SIZE, color: HEADER_COLOR });
     cursorY -= 18;
 
-    draw(labels.ref, colRef, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.qty, colQty, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.product, colProduct, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.nameRole, colName, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(`${labels.brand} / ${labels.template}`, colBrandTpl, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.ref.toUpperCase(), colRef, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.qty.toUpperCase(), colQty, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.product.toUpperCase(), colProduct, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.nameRole.toUpperCase(), colName, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(`${labels.brand} / ${labels.template}`.toUpperCase(), colBrandTpl, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     cursorY -= 4;
     hLine(cursorY);
     cursorY -= 12;
 
-    for (const order of templateOrders) {
+    for (let oi = 0; oi < templateOrders.length; oi++) {
+      const order = templateOrders[oi];
       await ensureSpace(50);
       const rowY = cursorY;
 
@@ -435,12 +437,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
       cursorY -= ROW_HEIGHT;
 
-      // Second line: EXPRESS + role + brand wrap overflow
       const hasExpress = order.deliveryTime === "express";
       const role = order.requesterRole?.trim();
-      const hasSecondLine = hasExpress || role || brandTplLines.length > 1;
-
-      if (hasSecondLine) {
+      if (hasExpress || role || brandTplLines.length > 1) {
         if (hasExpress) {
           draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
         }
@@ -450,27 +449,27 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
         cursorY -= ROW_HEIGHT;
       }
 
-      // Extra brand/template wrap lines beyond the second
       if (brandTplLines.length > 2) {
         cursorY -= ROW_HEIGHT * (brandTplLines.length - 2);
       }
 
-      // Customer reference
-      if (order.customerReference?.trim()) {
-        const ref = order.customerReference.replace(/^Kundenreferenz:\s*/i, "").trim();
-        if (ref) {
-          const refLines = wrapText(`${labels.comment}: ${ref}`, fonts.regular, SMALL_SIZE, colBrandTpl - colName - 8);
-          for (const line of refLines) {
-            draw(line, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
-            cursorY -= ROW_HEIGHT;
-          }
+      const customerRef = order.customerReference?.replace(/^Kundenreferenz:\s*/i, "").trim();
+      if (customerRef) {
+        const refLines = wrapText(`${labels.comment}: ${customerRef}`, fonts.regular, SMALL_SIZE, colBrandTpl - colName - 8);
+        for (const line of refLines) {
+          draw(line, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
+          cursorY -= ROW_HEIGHT;
         }
       }
 
-      // Consistent separator
-      cursorY -= 6;
-      hLine(cursorY);
-      cursorY -= 10;
+      // Separator line between rows (not after last)
+      if (oi < templateOrders.length - 1) {
+        cursorY -= 4;
+        hLine(cursorY);
+        cursorY -= 8;
+      } else {
+        cursorY -= 4;
+      }
     }
 
     cursorY -= 20;
@@ -495,22 +494,26 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     draw(labels.printJobs, safeLeft, cursorY, { font: fonts.bold, size: HEADING_SIZE, color: HEADER_COLOR });
     cursorY -= 18;
 
-    draw(labels.ref, colRef, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.qty, colQty, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.product, colProduct, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.format, colFormat, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.pages, colPages, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
-    draw(labels.file, colFile, cursorY, { font: fonts.bold, size: SMALL_SIZE, color: MUTED_COLOR });
+    draw(labels.ref.toUpperCase(), colRef, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.qty.toUpperCase(), colQty, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.product.toUpperCase(), colProduct, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.format.toUpperCase(), colFormat, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.pages.toUpperCase(), colPages, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
+    draw(labels.file.toUpperCase(), colFile, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     cursorY -= 4;
     hLine(cursorY);
     cursorY -= 12;
 
-    for (const order of uploadOrders) {
+    for (let oi = 0; oi < uploadOrders.length; oi++) {
+      const order = uploadOrders[oi];
       const items = order.pdfOrderItems ?? [];
+      const hasExpress = order.deliveryTime === "express";
+      const customerRef = order.customerReference?.replace(/^Kundenreferenz:\s*/i, "").trim();
+
+      await ensureSpace(40);
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        await ensureSpace(30);
         const rowY = cursorY;
 
         if (i === 0) {
@@ -525,23 +528,25 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
         cursorY -= ROW_HEIGHT;
 
-        if (i === 0 && order.deliveryTime === "express") {
+        if (i === 0 && hasExpress) {
           draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
           cursorY -= ROW_HEIGHT;
         }
       }
 
-      if (order.customerReference?.trim()) {
-        const ref = order.customerReference.replace(/^Kundenreferenz:\s*/i, "").trim();
-        if (ref) {
-          draw(`${labels.comment}: ${ref}`, colProduct, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR, maxWidth: contentW - (colProduct - safeLeft) });
-          cursorY -= ROW_HEIGHT;
-        }
+      if (customerRef) {
+        draw(`${labels.comment}: ${customerRef}`, colProduct, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR, maxWidth: contentW - (colProduct - safeLeft) });
+        cursorY -= ROW_HEIGHT;
       }
 
-      cursorY -= 6;
-      hLine(cursorY);
-      cursorY -= 10;
+      // Separator between orders (not after last)
+      if (oi < uploadOrders.length - 1) {
+        cursorY -= 4;
+        hLine(cursorY);
+        cursorY -= 8;
+      } else {
+        cursorY -= 4;
+      }
     }
   }
 
