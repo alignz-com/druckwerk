@@ -253,7 +253,6 @@ export function OrderCardList({
       if (!res.ok) throw new Error();
       const data = await res.json();
       router.push(`/confirmations/${data.delivery.id}`);
-      }, 1200);
     } catch {
       setDeliveryState("error");
       setDeliveryMessage(bulkLabels?.deliveryError ?? "");
