@@ -414,15 +414,16 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     draw(labels.product.toUpperCase(), colProduct, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     draw(labels.nameRole.toUpperCase(), colName, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     draw(`${labels.brand} / ${labels.template}`.toUpperCase(), colBrandTpl, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
-    cursorY -= 4;
+    cursorY -= 6;
     hLine(cursorY);
-    cursorY -= 12;
+    cursorY -= ROW_HEIGHT;
 
     for (let oi = 0; oi < templateOrders.length; oi++) {
       const order = templateOrders[oi];
       await ensureSpace(50);
       const rowY = cursorY;
 
+      // Row 1: main content
       draw(order.referenceCode, colRef, rowY, { size: BODY_SIZE });
       draw(order.quantity.toString(), colQty, rowY, { size: BODY_SIZE });
       draw(order.productName ?? "\u2013", colProduct, rowY, { size: BODY_SIZE, maxWidth: colName - colProduct - 8 });
@@ -434,25 +435,21 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
       brandTplLines.forEach((line, i) => {
         draw(line, colBrandTpl, rowY - i * ROW_HEIGHT, { size: BODY_SIZE });
       });
-
       cursorY -= ROW_HEIGHT;
 
+      // Row 2: role + express (if any)
       const hasExpress = order.deliveryTime === "express";
       const role = order.requesterRole?.trim();
       if (hasExpress || role || brandTplLines.length > 1) {
-        if (hasExpress) {
-          draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
-        }
-        if (role) {
-          draw(role, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
-        }
+        if (hasExpress) draw(labels.express, colRef, cursorY, { font: fonts.bold, size: 7, color: EXPRESS_COLOR });
+        if (role) draw(role, colName, cursorY, { size: SMALL_SIZE, color: MUTED_COLOR });
         cursorY -= ROW_HEIGHT;
       }
 
-      if (brandTplLines.length > 2) {
-        cursorY -= ROW_HEIGHT * (brandTplLines.length - 2);
-      }
+      // Extra brand wrap lines
+      if (brandTplLines.length > 2) cursorY -= ROW_HEIGHT * (brandTplLines.length - 2);
 
+      // Customer reference
       const customerRef = order.customerReference?.replace(/^Kundenreferenz:\s*/i, "").trim();
       if (customerRef) {
         const refLines = wrapText(`${labels.comment}: ${customerRef}`, fonts.regular, SMALL_SIZE, colBrandTpl - colName - 8);
@@ -462,13 +459,10 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
         }
       }
 
-      // Separator line between rows (not after last)
+      // Separator: same pattern as header line — line at cursorY, then gap
       if (oi < templateOrders.length - 1) {
-        cursorY -= 4;
         hLine(cursorY);
-        cursorY -= 8;
-      } else {
-        cursorY -= 4;
+        cursorY -= ROW_HEIGHT;
       }
     }
 
@@ -500,9 +494,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
     draw(labels.format.toUpperCase(), colFormat, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     draw(labels.pages.toUpperCase(), colPages, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
     draw(labels.file.toUpperCase(), colFile, cursorY, { size: COL_HEADER_SIZE, color: MUTED_COLOR });
-    cursorY -= 4;
+    cursorY -= 6;
     hLine(cursorY);
-    cursorY -= 12;
+    cursorY -= ROW_HEIGHT;
 
     for (let oi = 0; oi < uploadOrders.length; oi++) {
       const order = uploadOrders[oi];
@@ -541,11 +535,8 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
       // Separator between orders (not after last)
       if (oi < uploadOrders.length - 1) {
-        cursorY -= 4;
         hLine(cursorY);
-        cursorY -= 8;
-      } else {
-        cursorY -= 4;
+        cursorY -= ROW_HEIGHT;
       }
     }
   }
