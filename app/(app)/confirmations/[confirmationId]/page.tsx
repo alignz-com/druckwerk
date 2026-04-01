@@ -130,90 +130,85 @@ export default async function ConfirmationDetailPage({ params }: Props) {
         <span className="text-slate-700 font-medium">{delivery.number}</span>
       </nav>
 
-      {/* Header + Sidebar */}
-      <div className="grid gap-8 lg:grid-cols-[1fr_280px] items-start">
-        {/* Left — Header + Orders */}
-        <div className="space-y-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{delivery.number}</h1>
-          <ConfirmationDetailClient
-          confirmationId={delivery.id}
-          deliveryNoteUrl={delivery.deliveryNoteUrl}
-          orders={orders}
-          labels={{
-            businessCards: isDE ? "Visitenkarten" : "Business Cards",
-            printJobs: isDE ? "Druckauftr\u00e4ge" : "Print Jobs",
-            ref: isDE ? "Bestellnummer" : "Order No.",
-            qty: isDE ? "Menge" : "Qty",
-            product: isDE ? "Produkt" : "Product",
-            name: isDE ? "Name / Funktion" : "Name / Role",
-            brandTemplate: isDE ? "Marke / Vorlage" : "Brand / Template",
-            file: isDE ? "Datei" : "File",
-            format: "Format",
-            pages: isDE ? "Seiten" : "Pages",
-            express: "EXPRESS",
-            downloadPdf: isDE ? "PDF herunterladen" : "Download PDF",
-            downloadCsv: isDE ? "CSV herunterladen" : "Download CSV",
-            regenerate: isDE ? "PDF neu generieren" : "Regenerate PDF",
-          }}
-        />
-        </div>
+      {/* Header */}
+      <h1 className="text-2xl font-semibold tracking-tight">{delivery.number}</h1>
 
-        {/* Right — Sidebar */}
-        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          {/* Shipping address */}
-          {shippingLines.length > 0 && (
-            <section className="rounded-lg border p-4">
-              <h2 className="text-sm font-semibold text-slate-900 mb-1">
-                {isDE ? "Lieferadresse" : "Ship To"}
-              </h2>
-              <div className="text-sm text-slate-600">
-                {shippingLines.map((line, i) => (
-                  <div key={i}>{line}</div>
-                ))}
-              </div>
-            </section>
+      {/* Row 1: Info cards */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        {/* Shipping address */}
+        <section className="rounded-lg border p-4">
+          <h2 className="text-sm font-semibold text-slate-900 mb-1">
+            {isDE ? "Lieferadresse" : "Ship To"}
+          </h2>
+          {shippingLines.length > 0 ? (
+            <div className="text-sm text-slate-600">
+              {shippingLines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">\u2013</p>
           )}
-
-          {/* Note */}
           {delivery.note && (
-            <section className="rounded-lg border p-4">
-              <h2 className="text-sm font-semibold text-slate-900 mb-1">
-                {isDE ? "Anmerkung" : "Note"}
-              </h2>
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <h3 className="text-xs text-slate-400 mb-0.5">{isDE ? "Anmerkung" : "Note"}</h3>
               <p className="text-sm text-slate-600">{delivery.note}</p>
-            </section>
+            </div>
           )}
+        </section>
 
-          {/* Details */}
-          <section className="rounded-lg border p-4">
-            <h2 className="text-sm font-semibold text-slate-900 mb-1">
-              Details
-            </h2>
-            <dl className="divide-y divide-slate-100">
+        {/* Details */}
+        <section className="rounded-lg border p-4">
+          <h2 className="text-sm font-semibold text-slate-900 mb-1">
+            Details
+          </h2>
+          <dl className="divide-y divide-slate-100">
+            <div className="flex items-start gap-4 py-2.5">
+              <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                {isDE ? "Erstellt" : "Created"}
+              </dt>
+              <dd className="text-sm text-slate-900">{createdAtLabel}</dd>
+            </div>
+            {createdByLabel && (
               <div className="flex items-start gap-4 py-2.5">
                 <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
-                  {isDE ? "Erstellt" : "Created"}
+                  {isDE ? "Erstellt von" : "Created by"}
                 </dt>
-                <dd className="text-sm text-slate-900">{createdAtLabel}</dd>
+                <dd className="text-sm text-slate-900">{createdByLabel}</dd>
               </div>
-              {createdByLabel && (
-                <div className="flex items-start gap-4 py-2.5">
-                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
-                    {isDE ? "Erstellt von" : "Created by"}
-                  </dt>
-                  <dd className="text-sm text-slate-900">{createdByLabel}</dd>
-                </div>
-              )}
-              <div className="flex items-start gap-4 py-2.5">
-                <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
-                  {isDE ? "Positionen" : "Orders"}
-                </dt>
-                <dd className="text-sm text-slate-900">{orders.length}</dd>
-              </div>
-            </dl>
-          </section>
-        </div>
+            )}
+            <div className="flex items-start gap-4 py-2.5">
+              <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                {isDE ? "Positionen" : "Orders"}
+              </dt>
+              <dd className="text-sm text-slate-900">{orders.length}</dd>
+            </div>
+          </dl>
+        </section>
       </div>
+
+      {/* Row 2+: Order tables */}
+      <ConfirmationDetailClient
+        confirmationId={delivery.id}
+        deliveryNoteUrl={delivery.deliveryNoteUrl}
+        orders={orders}
+        labels={{
+          businessCards: isDE ? "Visitenkarten" : "Business Cards",
+          printJobs: isDE ? "Druckauftr\u00e4ge" : "Print Jobs",
+          ref: isDE ? "Bestellnummer" : "Order No.",
+          qty: isDE ? "Menge" : "Qty",
+          product: isDE ? "Produkt" : "Product",
+          name: isDE ? "Name / Funktion" : "Name / Role",
+          brandTemplate: isDE ? "Marke / Vorlage" : "Brand / Template",
+          file: isDE ? "Datei" : "File",
+          format: "Format",
+          pages: isDE ? "Seiten" : "Pages",
+          express: "EXPRESS",
+          downloadPdf: isDE ? "PDF herunterladen" : "Download PDF",
+          downloadCsv: isDE ? "CSV herunterladen" : "Download CSV",
+          regenerate: isDE ? "PDF neu generieren" : "Regenerate PDF",
+        }}
+      />
     </div>
   );
 }
