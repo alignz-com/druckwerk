@@ -53,8 +53,7 @@ export function OrderCreateConfirmationButton({ orderId, addresses, labels }: Pr
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? labels.confirmationCreateError);
-      setResult({ number: data.delivery.number, pdfUrl: data.delivery.deliveryNoteUrl ?? null });
-      router.refresh();
+      router.push(`/confirmations/${data.delivery.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : labels.confirmationCreateError);
     } finally {

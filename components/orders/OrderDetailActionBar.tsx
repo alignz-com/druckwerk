@@ -150,8 +150,7 @@ export function OrderDetailActionBar({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? labels.confirmationCreateError);
-      setConfResult({ number: data.delivery.number, pdfUrl: data.delivery.deliveryNoteUrl ?? null });
-      router.refresh();
+      router.push(`/confirmations/${data.delivery.id}`);
     } catch (err) {
       setConfError(err instanceof Error ? err.message : labels.confirmationCreateError);
     } finally {

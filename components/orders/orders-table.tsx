@@ -556,15 +556,7 @@ export function OrdersTable({
         throw new Error("Request failed");
       }
       const data = await response.json();
-      const link = data?.delivery?.deliveryNoteUrl;
-      setDeliveryMessage({ text: bulkDelivery.success, tone: "success" });
-      setIsCreateDeliveryOpen(false);
-      setDeliveryNote("");
-      setSelected(new Set());
-      if (link) {
-        window.open(link, "_blank", "noopener,noreferrer");
-      }
-      router.refresh();
+      router.push(`/confirmations/${data.delivery.id}`);
     } catch (error) {
       console.error("[deliveries] create delivery failed", error);
       setDeliveryMessage({ text: bulkDelivery.error, tone: "error" });

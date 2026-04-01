@@ -251,12 +251,8 @@ export function OrderCardList({
         }),
       });
       if (!res.ok) throw new Error();
-      setDeliveryState("success");
-      setDeliveryMessage(bulkLabels?.deliverySuccess ?? "");
-      setTimeout(() => {
-        setDeliveryOpen(false);
-        router.refresh();
-        exitSelectMode();
+      const data = await res.json();
+      router.push(`/confirmations/${data.delivery.id}`);
       }, 1200);
     } catch {
       setDeliveryState("error");
