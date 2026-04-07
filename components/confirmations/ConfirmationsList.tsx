@@ -16,7 +16,7 @@ type ConfirmationRow = {
   createdAtValue: number;
   orderCount: number;
   note: string | null;
-  deliveryNoteUrl: string | null;
+  shipTo: string | null;
 };
 
 type Props = {
@@ -26,6 +26,7 @@ type Props = {
     number: string;
     created: string;
     orders: string;
+    shipTo: string;
     note: string;
   };
   empty: string;
@@ -42,13 +43,14 @@ export function ConfirmationsList({ confirmations, searchPlaceholder, columns, e
     return confirmations.filter(
       (c) =>
         c.number.toLowerCase().includes(q) ||
-        (c.note ?? "").toLowerCase().includes(q),
+        (c.note ?? "").toLowerCase().includes(q) ||
+        (c.shipTo ?? "").toLowerCase().includes(q),
     );
   }, [confirmations, q]);
 
   return (
-    <div className="space-y-6">
-      <div className="relative w-full max-w-md">
+    <>
+      <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <Input
           value={search}
@@ -62,16 +64,17 @@ export function ConfirmationsList({ confirmations, searchPlaceholder, columns, e
         <Table>
           <TableHeader className={dataTableHeaderClass}>
             <TableRow>
-              <TableHead className="w-52 whitespace-nowrap">{columns.number}</TableHead>
-              <TableHead>{columns.created}</TableHead>
-              <TableHead className="w-28">{columns.orders}</TableHead>
+              <TableHead className="w-44 whitespace-nowrap">{columns.number}</TableHead>
+              <TableHead className="w-32">{columns.created}</TableHead>
+              <TableHead className="w-20">{columns.orders}</TableHead>
+              <TableHead>{columns.shipTo}</TableHead>
               <TableHead>{columns.note}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow className={dataTableRowClass}>
-                <TableCell colSpan={4} className="text-center text-sm text-slate-500">
+                <TableCell colSpan={5} className="text-center text-sm text-slate-500">
                   {confirmations.length === 0 ? empty : noResults}
                 </TableCell>
               </TableRow>
@@ -89,13 +92,14 @@ export function ConfirmationsList({ confirmations, searchPlaceholder, columns, e
                   <TableCell>
                     <Badge variant="outline">{c.orderCount}</Badge>
                   </TableCell>
-                  <TableCell className="truncate text-slate-600">{c.note || "–"}</TableCell>
+                  <TableCell className="text-slate-600">{c.shipTo || "–"}</TableCell>
+                  <TableCell className="truncate text-slate-500">{c.note || "–"}</TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
-    </div>
+    </>
   );
 }
