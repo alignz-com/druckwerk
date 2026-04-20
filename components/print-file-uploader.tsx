@@ -124,7 +124,7 @@ function SortableRow({
         {file.pages > 0 ? file.pages : "—"}
       </td>
       {products.length > 0 && (
-        <td className="px-3 py-3 w-36" onClick={(e) => e.stopPropagation()}>
+        <td className="px-3 py-3 w-44" onClick={(e) => e.stopPropagation()}>
           {(() => {
             const sizeMatches = file.error ? [] : getProductFormatsForSize(file.trimWidthMm, file.trimHeightMm, products)
             if (sizeMatches.length === 0) {
@@ -150,7 +150,7 @@ function SortableRow({
         </td>
       )}
       {papers.length > 1 && (
-        <td className="px-3 py-3 w-36" onClick={(e) => e.stopPropagation()}>
+        <td className="px-3 py-3 w-44" onClick={(e) => e.stopPropagation()}>
           <select
             value={file.paperStockId ?? ""}
             onChange={(e) => onPaperChange(file.id, e.target.value || null)}

@@ -142,78 +142,78 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
         </p>
       </div>
 
-      {/* Order info strip */}
-      <div className="flex flex-wrap items-start gap-4 rounded-xl border bg-muted/20 p-4">
-        {/* Brand — only shown if multiple brands available */}
-        {availableBrands.length > 1 && (
-          <div className="space-y-1.5 w-40 shrink-0">
-            <Label>{t("pdfOrder.brand")}</Label>
-            <Select value={brandId} onValueChange={setBrandId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableBrands.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
+      {/* Order info */}
+      <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+        {/* Row 1: Brand + Delivery */}
+        {(availableBrands.length > 1 || true) && (
+          <div className="flex flex-wrap items-end gap-4">
+            {availableBrands.length > 1 && (
+              <div className="space-y-1.5 w-56 shrink-0">
+                <Label>{t("pdfOrder.brand")}</Label>
+                <Select value={brandId} onValueChange={setBrandId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBrands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-1.5 shrink-0">
+              <Label>{t("pdfOrder.delivery")}</Label>
+              <div className="flex w-fit gap-2">
+                {(["standard", "express"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setDeliveryTime(value)}
+                    className={`flex flex-col items-center justify-center rounded-xl border-2 px-5 py-2.5 transition-all ${
+                      deliveryTime === value
+                        ? "border-slate-400 bg-background shadow-sm"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-slate-300 hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold leading-none">{t(`orderForm.deliveryTimeLabels.${value}`)}</span>
+                    <span className="text-xs mt-1 opacity-70">{t(`orderForm.deliveryTimeDurations.${value}`)}</span>
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground pb-1">
+              <span>{t("pdfOrder.estimatedDelivery")}: {estimatedLabel}</span>
+              {deliveryTime === "express" && (
+                <span className="text-destructive ml-2">{t("pdfOrder.expressNotice")}</span>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Delivery toggle */}
-        <div className="space-y-1.5 shrink-0">
-          <Label>{t("pdfOrder.delivery")}</Label>
-          <div className="flex w-fit gap-2">
-            {(["standard", "express"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setDeliveryTime(value)}
-                className={`flex flex-col items-center justify-center rounded-xl border-2 px-5 py-2.5 transition-all ${
-                  deliveryTime === value
-                    ? "border-slate-400 bg-background shadow-sm"
-                    : "border-border bg-muted/30 text-muted-foreground hover:border-slate-300 hover:bg-muted/50"
-                }`}
-              >
-                <span className="text-sm font-semibold leading-none">{t(`orderForm.deliveryTimeLabels.${value}`)}</span>
-                <span className="text-xs mt-1 opacity-70">{t(`orderForm.deliveryTimeDurations.${value}`)}</span>
-              </button>
-            ))}
+        {/* Row 2: Reference + Notes */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-4">
+          <div className="space-y-1.5">
+            <Label>{t("pdfOrder.reference")}</Label>
+            <Input
+              value={customerReference}
+              onChange={(e) => setCustomerReference(e.target.value)}
+              placeholder={t("pdfOrder.referencePlaceholder")}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("pdfOrder.notes")}</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("pdfOrder.notesPlaceholder")}
+              className="resize-none"
+              rows={2}
+            />
           </div>
         </div>
-
-        {/* Reference */}
-        <div className="space-y-1.5 w-44 shrink-0">
-          <Label>{t("pdfOrder.reference")}</Label>
-          <Input
-            value={customerReference}
-            onChange={(e) => setCustomerReference(e.target.value)}
-            placeholder={t("pdfOrder.referencePlaceholder")}
-          />
-        </div>
-
-        {/* Notes */}
-        <div className="space-y-1.5 flex-1 min-w-[200px]">
-          <Label>{t("pdfOrder.notes")}</Label>
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={t("pdfOrder.notesPlaceholder")}
-            className="resize-none"
-            rows={2}
-          />
-        </div>
-      </div>
-
-      {/* Delivery info */}
-      <div className="text-xs text-muted-foreground -mt-4">
-        <span>{t("pdfOrder.estimatedDelivery")}: {estimatedLabel}</span>
-        {deliveryTime === "express" && (
-          <span className="text-destructive ml-2">{t("pdfOrder.expressNotice")}</span>
-        )}
       </div>
 
       {/* Drop zone + file list */}
