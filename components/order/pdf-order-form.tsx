@@ -98,6 +98,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
           stagingUrl: f.previewUrl ?? null,
           thumbnailDataUrl: f.thumbnailDataUrl ?? null,
           productFormatId: f.productFormatId ?? null,
+          paperStockId: f.paperStockId ?? null,
         }
       })
       formData.append("itemsMeta", JSON.stringify(itemsMeta))
@@ -216,7 +217,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       </div>
 
       {/* Drop zone + file list */}
-      <PrintFileUploader files={files} onChange={setFiles} products={products} />
+      <PrintFileUploader files={files} onChange={setFiles} products={products} brandId={brandId} />
 
       {/* Error */}
       {error && (

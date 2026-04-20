@@ -74,7 +74,7 @@ export function getProductFormatsForSize(
   trimHeightMm: number,
   productFormats: ProductFormatForMatching[]
 ): ProductFormatForMatching[] {
-  return productFormats.filter((pf) => {
+  const matches = productFormats.filter((pf) => {
     const tol = pf.toleranceMm
     const fitsNormal =
       Math.abs(trimWidthMm - pf.trimWidthMm) <= tol &&
@@ -84,6 +84,23 @@ export function getProductFormatsForSize(
       Math.abs(trimHeightMm - pf.trimWidthMm) <= tol
     return fitsNormal || fitsRotated
   })
+
+  // Deduplicate: when multiple formats from the same product match (e.g. portrait
+  // and landscape variants), keep only the best fit (smallest dimensional error).
+  const byProduct = new Map<string, ProductFormatForMatching>()
+  for (const pf of matches) {
+    const existing = byProduct.get(pf.productId)
+    if (!existing) {
+      byProduct.set(pf.productId, pf)
+      continue
+    }
+    const errExisting = Math.abs(trimWidthMm - existing.trimWidthMm) + Math.abs(trimHeightMm - existing.trimHeightMm)
+    const errCurrent = Math.abs(trimWidthMm - pf.trimWidthMm) + Math.abs(trimHeightMm - pf.trimHeightMm)
+    if (errCurrent < errExisting) {
+      byProduct.set(pf.productId, pf)
+    }
+  }
+  return Array.from(byProduct.values())
 }
 
 export function getProductFormatLabel(pf: ProductFormatForMatching, locale: string): string {

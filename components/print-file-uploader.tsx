@@ -32,26 +32,33 @@ export type SortableFile = PdfFileInfo & {
   id: string
   quantity: number
   productFormatId: string | null
+  paperStockId: string | null
   /** Original File for direct PDFs; parent archive for ZIP/7z-extracted */
   _sourceFile?: File
 }
+
+type PaperOption = { paperStockId: string; name: string; finish: string | null; weightGsm: number | null; isDefault: boolean }
 
 function SortableRow({
   file,
   onRemove,
   onQuantityChange,
   onProductChange,
+  onPaperChange,
   isSelected,
   onSelect,
   products,
+  papers,
 }: {
   file: SortableFile
   onRemove: (id: string) => void
   onQuantityChange: (id: string, qty: number) => void
   onProductChange: (id: string, productFormatId: string | null) => void
+  onPaperChange: (id: string, paperStockId: string | null) => void
   isSelected: boolean
   onSelect: (id: string) => void
   products: ProductFormatForMatching[]
+  papers: PaperOption[]
 }) {
   const { locale } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -140,6 +147,21 @@ function SortableRow({
               </select>
             )
           })()}
+        </td>
+      )}
+      {papers.length > 1 && (
+        <td className="px-3 py-3 w-36" onClick={(e) => e.stopPropagation()}>
+          <select
+            value={file.paperStockId ?? ""}
+            onChange={(e) => onPaperChange(file.id, e.target.value || null)}
+            className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {papers.map((p) => (
+              <option key={p.paperStockId} value={p.paperStockId}>
+                {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}
+              </option>
+            ))}
+          </select>
         </td>
       )}
       <td className="px-3 py-3 w-24" onClick={(e) => e.stopPropagation()}>
@@ -313,10 +335,12 @@ export function PrintFileUploader({
   files,
   onChange,
   products = [],
+  brandId,
 }: {
   files: SortableFile[]
   onChange: (files: SortableFile[]) => void
   products?: ProductFormatForMatching[]
+  brandId?: string | null
 }) {
   const t = useTranslations()
   const [phase, setPhase] = React.useState<Phase>("idle")
@@ -338,6 +362,52 @@ export function PrintFileUploader({
   React.useEffect(() => {
     setViewObjectUrl(viewingFile?.previewUrl ?? null)
   }, [viewingFile])
+
+  // ── Paper stock fetching (cached per productFormatId) ───────
+  const [papersCache, setPapersCache] = React.useState<Record<string, PaperOption[]>>({})
+  const papersFetchedRef = React.useRef<Set<string>>(new Set())
+
+  // Collect unique productFormatIds that need papers fetched
+  React.useEffect(() => {
+    if (!brandId) return
+    const needed = new Set<string>()
+    for (const f of files) {
+      if (f.productFormatId && !papersCache[f.productFormatId] && !papersFetchedRef.current.has(f.productFormatId)) {
+        needed.add(f.productFormatId)
+      }
+    }
+    if (needed.size === 0) return
+    for (const pfId of needed) {
+      papersFetchedRef.current.add(pfId)
+      void fetch(`/api/orders/papers?brandId=${brandId}&productFormatId=${pfId}`)
+        .then((res) => res.ok ? res.json() : [])
+        .then((data: PaperOption[]) => {
+          setPapersCache((prev) => ({ ...prev, [pfId]: data }))
+          // Auto-select default paper for files with this format that have no paper yet
+          if (data.length > 0) {
+            const defaultPaper = data.find((p) => p.isDefault) ?? data[0]
+            onChange(files.map((f) =>
+              f.productFormatId === pfId && !f.paperStockId
+                ? { ...f, paperStockId: defaultPaper.paperStockId }
+                : f
+            ))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [files, brandId])
+
+  function handlePaperChange(id: string, paperStockId: string | null) {
+    onChange(files.map((f) => f.id === id ? { ...f, paperStockId } : f))
+  }
+
+  // Get papers for a specific file's product format
+  const getPapersForFile = (file: SortableFile): PaperOption[] => {
+    if (!file.productFormatId) return []
+    return papersCache[file.productFormatId] ?? []
+  }
+
+  const showPaperColumn = files.some((f) => getPapersForFile(f).length > 1)
 
   const selectedFile = files.find((f) => f.id === selectedId) ?? files[0] ?? null
 
@@ -393,6 +463,7 @@ export function PrintFileUploader({
           id: `${f.filename}-${Date.now()}-${i}`,
           quantity: 1,
           productFormatId: matched?.id ?? null,
+          paperStockId: null,
           _sourceFile: sourceFile,
         }
       })
@@ -432,7 +503,7 @@ export function PrintFileUploader({
   }
 
   function handleProductChange(id: string, productFormatId: string | null) {
-    onChange(files.map((f) => f.id === id ? { ...f, productFormatId } : f))
+    onChange(files.map((f) => f.id === id ? { ...f, productFormatId, paperStockId: null } : f))
   }
 
   function handleSetAll() {
@@ -540,7 +611,7 @@ export function PrintFileUploader({
 
       {/* File list + detail panel */}
       {files.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
           {/* Left: file list */}
           <div className="rounded-lg border overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
@@ -590,6 +661,7 @@ export function PrintFileUploader({
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColFormat")}</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColPages")}</th>
                     {products.length > 0 && <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Product</th>}
+                    {showPaperColumn && <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColPaper") ?? "Paper"}</th>}
                     <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">{t("pdfOrder.dropzoneColQty")}</th>
                     <th className="px-2" />
                   </tr>
@@ -608,9 +680,11 @@ export function PrintFileUploader({
                           onRemove={handleRemove}
                           onQuantityChange={handleQuantityChange}
                           onProductChange={handleProductChange}
+                          onPaperChange={handlePaperChange}
                           isSelected={selectedFile?.id === f.id}
                           onSelect={setSelectedId}
                           products={products}
+                          papers={showPaperColumn ? getPapersForFile(f) : []}
                         />
                       ))}
                     </tbody>
