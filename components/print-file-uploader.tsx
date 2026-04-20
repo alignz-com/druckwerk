@@ -179,7 +179,7 @@ function SortableRow({
           className="w-16 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </td>
-      <td className="px-2 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+      <td className="px-3 py-3 w-10" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={() => onRemove(file.id)}
