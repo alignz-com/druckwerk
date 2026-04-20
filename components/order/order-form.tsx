@@ -1932,7 +1932,7 @@ export default function OrderForm({
             <Button
               onClick={openConfirm}
               className="w-full"
-              disabled={!canSubmitOrder || hasOverflow || isSubmitting}
+              disabled={!canSubmitOrder || hasOverflow || hasGlyphWarnings || isSubmitting}
             >
               {tOrder("buttons.order")}
             </Button>
@@ -2093,7 +2093,7 @@ export default function OrderForm({
               </p>
             )}
             <div className="flex justify-end">
-              <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
+              <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || hasGlyphWarnings || isSubmitting}>
                 {tOrder("buttons.order")}
               </Button>
             </div>
@@ -2282,7 +2282,7 @@ export default function OrderForm({
               onClick={confirmOrder}
               loading={isSubmitting}
               loadingText={tOrder("confirm.submitting")}
-              disabled={hasOverflow || !canSubmitOrder}
+              disabled={hasOverflow || hasGlyphWarnings || !canSubmitOrder}
             >
               {tOrder("confirm.submit")}
             </LoadingButton>
