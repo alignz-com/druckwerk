@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { AlertCircle, ChevronDown, Info, ImagePlus } from "lucide-react";
+import { AlertCircle, AlertTriangle, ChevronDown, Info, ImagePlus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Cropper, { type Area } from "react-easy-crop";
@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { designHasBinding } from "@/lib/template-design";
 import { DEFAULT_ORDER_QUANTITIES } from "@/lib/order-quantities";
+import { useGlyphCheck } from "@/lib/useGlyphCheck";
 
 const DEMO_PROFILE: ProfilePrefill = {
   name: "Anna Berger",
@@ -679,6 +680,31 @@ export default function OrderForm({
   const linkedinOverflow = overflowFieldSet.has("linkedin");
   const addressBlockOverflow = overflowFieldSet.has("addressBlock") || addressBlockHasOverflow;
   const hasOverflow = frontOverflow || backOverflow || addressBlockOverflow;
+
+  // ── Glyph support check (real-time) ───────────────────────────
+  const glyphCheckFields = useMemo(
+    () => ({ name, role, seniority, email, phone, mobile, url, linkedin }),
+    [name, role, seniority, email, phone, mobile, url, linkedin],
+  );
+  const { unsupportedByField: glyphWarnings } = useGlyphCheck(selectedTemplate, glyphCheckFields);
+  const glyphWarnClass = "border-amber-400 focus-visible:ring-amber-200 focus-visible:border-amber-400";
+  const nameGlyphWarn = glyphWarnings.has("name");
+  const roleGlyphWarn = glyphWarnings.has("role");
+  const seniorityGlyphWarn = glyphWarnings.has("seniority");
+  const emailGlyphWarn = glyphWarnings.has("email");
+  const phoneGlyphWarn = glyphWarnings.has("phone");
+  const mobileGlyphWarn = glyphWarnings.has("mobile");
+  const urlGlyphWarn = glyphWarnings.has("url");
+  const linkedinGlyphWarn = glyphWarnings.has("linkedin");
+  const hasGlyphWarnings = glyphWarnings.size > 0;
+  const glyphWarnMessage = useMemo(() => {
+    if (!hasGlyphWarnings) return "";
+    const allChars = new Set<string>();
+    for (const chars of glyphWarnings.values()) {
+      for (const ch of chars) allChars.add(ch);
+    }
+    return tOrder("errors.unsupportedGlyphs", { chars: [...allChars].join(" ") });
+  }, [hasGlyphWarnings, glyphWarnings, tOrder]);
 
   const getAddressBlockFromEntry = useCallback(
     (entry?: BrandAddressEntry | null) => {
@@ -1539,6 +1565,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : nameGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <Input
@@ -1546,7 +1576,7 @@ export default function OrderForm({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     onBlur={handleFieldBlur}
-                    className={cn(nameOverflow && fieldErrorClass)}
+                    className={cn(nameOverflow ? fieldErrorClass : nameGlyphWarn && glyphWarnClass)}
                     aria-invalid={nameOverflow || undefined}
                     title={getFieldTitle("name")}
                   />
@@ -1559,6 +1589,10 @@ export default function OrderForm({
                         <span className="inline-flex" title={fieldOverflowMessage}>
                           <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                         </span>
+                      ) : seniorityGlyphWarn ? (
+                        <span className="inline-flex" title={glyphWarnMessage}>
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                        </span>
                       ) : null}
                     </Label>
                     <Input
@@ -1566,7 +1600,7 @@ export default function OrderForm({
                       value={seniority}
                       onChange={(e) => setSeniority(e.target.value)}
                       onBlur={handleFieldBlur}
-                      className={cn(seniorityOverflow && fieldErrorClass)}
+                      className={cn(seniorityOverflow ? fieldErrorClass : seniorityGlyphWarn && glyphWarnClass)}
                       aria-invalid={seniorityOverflow || undefined}
                       title={getFieldTitle("seniority")}
                     />
@@ -1579,6 +1613,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : roleGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <Input
@@ -1586,7 +1624,7 @@ export default function OrderForm({
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     onBlur={handleFieldBlur}
-                    className={cn(roleOverflow && fieldErrorClass)}
+                    className={cn(roleOverflow ? fieldErrorClass : roleGlyphWarn && glyphWarnClass)}
                     aria-invalid={roleOverflow || undefined}
                     title={getFieldTitle("role")}
                   />
@@ -1598,6 +1636,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : phoneGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <div className="flex gap-2">
@@ -1606,7 +1648,7 @@ export default function OrderForm({
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       onBlur={handleFieldBlur}
-                      className={cn("flex-1", phoneOverflow && fieldErrorClass)}
+                      className={cn("flex-1", phoneOverflow ? fieldErrorClass : phoneGlyphWarn && glyphWarnClass)}
                       aria-invalid={phoneOverflow || undefined}
                       title={getFieldTitle("phone")}
                     />
@@ -1627,6 +1669,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : mobileGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <div className="flex gap-2">
@@ -1635,7 +1681,7 @@ export default function OrderForm({
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
                       onBlur={handleFieldBlur}
-                      className={cn("flex-1", mobileOverflow && fieldErrorClass)}
+                      className={cn("flex-1", mobileOverflow ? fieldErrorClass : mobileGlyphWarn && glyphWarnClass)}
                       aria-invalid={mobileOverflow || undefined}
                       title={getFieldTitle("mobile")}
                     />
@@ -1656,6 +1702,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : emailGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <Input
@@ -1664,7 +1714,7 @@ export default function OrderForm({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={handleFieldBlur}
-                    className={cn(emailOverflow && fieldErrorClass)}
+                    className={cn(emailOverflow ? fieldErrorClass : emailGlyphWarn && glyphWarnClass)}
                     aria-invalid={emailOverflow || undefined}
                     title={getFieldTitle("email")}
                   />
@@ -1677,6 +1727,10 @@ export default function OrderForm({
                         {linkedinOverflow ? (
                           <span className="inline-flex" title={fieldOverflowMessage}>
                             <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                          </span>
+                        ) : linkedinGlyphWarn ? (
+                          <span className="inline-flex" title={glyphWarnMessage}>
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
                           </span>
                         ) : null}
                       </Label>
@@ -1692,7 +1746,7 @@ export default function OrderForm({
                       onChange={(e) => setLinkedin(e.target.value)}
                       onBlur={handleFieldBlur}
                       aria-describedby="linkedin-hint"
-                      className={cn(linkedinOverflow && fieldErrorClass)}
+                      className={cn(linkedinOverflow ? fieldErrorClass : linkedinGlyphWarn && glyphWarnClass)}
                       aria-invalid={linkedinOverflow || undefined}
                       title={getFieldTitle("linkedin")}
                     />
@@ -1772,6 +1826,10 @@ export default function OrderForm({
                       <span className="inline-flex" title={fieldOverflowMessage}>
                         <AlertCircle className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       </span>
+                    ) : urlGlyphWarn ? (
+                      <span className="inline-flex" title={glyphWarnMessage}>
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      </span>
                     ) : null}
                   </Label>
                   <Input
@@ -1779,7 +1837,7 @@ export default function OrderForm({
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onBlur={handleFieldBlur}
-                    className={cn(urlOverflow && fieldErrorClass)}
+                    className={cn(urlOverflow ? fieldErrorClass : urlGlyphWarn && glyphWarnClass)}
                     aria-invalid={urlOverflow || undefined}
                     title={getFieldTitle("url")}
                   />
@@ -1865,6 +1923,12 @@ export default function OrderForm({
             </CardContent>
           </Card>
           <div className="pt-4 xl:hidden">
+            {hasGlyphWarnings && (
+              <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {glyphWarnMessage}
+              </p>
+            )}
             <Button
               onClick={openConfirm}
               className="w-full"
@@ -2021,10 +2085,18 @@ export default function OrderForm({
               )}
             </div>
           </Card>
-          <div className="hidden xl:flex xl:justify-end">
-            <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
-              {tOrder("buttons.order")}
-            </Button>
+          <div className="hidden xl:block">
+            {hasGlyphWarnings && (
+              <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {glyphWarnMessage}
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button onClick={openConfirm} className="px-6" disabled={!canSubmitOrder || hasOverflow || isSubmitting}>
+                {tOrder("buttons.order")}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
