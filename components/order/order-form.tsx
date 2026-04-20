@@ -589,6 +589,32 @@ export default function OrderForm({
     };
   }, [selectedTemplate, loadTemplate, clearTemplateRefreshTimeout]);
 
+  // ── Paper stock selection ──────────────────────────────────────
+  type PaperOption = { id: string; paperStockId: string; name: string; finish: string | null; weightGsm: number | null; role: string | null; isDefault: boolean; pcmCode: string | null };
+  const [availablePapers, setAvailablePapers] = useState<PaperOption[]>([]);
+  const [selectedPaperStockId, setSelectedPaperStockId] = useState<string>("");
+  useEffect(() => {
+    const brandId = currentBrandId;
+    const productFormatId = selectedTemplate?.productFormatId;
+    if (!brandId || !productFormatId) {
+      setAvailablePapers([]);
+      setSelectedPaperStockId("");
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await fetch(`/api/orders/papers?brandId=${brandId}&productFormatId=${productFormatId}`);
+        if (!res.ok) { setAvailablePapers([]); return; }
+        const data: PaperOption[] = await res.json();
+        setAvailablePapers(data);
+        const defaultPaper = data.find((p) => p.isDefault);
+        setSelectedPaperStockId(defaultPaper?.paperStockId ?? data[0]?.paperStockId ?? "");
+      } catch {
+        setAvailablePapers([]);
+      }
+    })();
+  }, [currentBrandId, selectedTemplate?.productFormatId]);
+
   const [deliveryTime, setDeliveryTime] = useState<DeliveryOption>("standard");
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -1321,6 +1347,7 @@ export default function OrderForm({
           quantity: Number(quantity),
           deliveryTime,
           customerReference,
+          paperStockId: selectedPaperStockId || undefined,
           qrMode: templateHasQrCode ? selectedQrMode : undefined,
           draftContactId: isPublicQrMode ? draftContactId ?? undefined : undefined,
           addressId: qrAddressId,
@@ -1486,6 +1513,26 @@ export default function OrderForm({
                     </p>
                   ) : null}
                 </div>
+
+                {availablePapers.length > 1 && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="paper">{tOrder("fields.paper")}</Label>
+                    <Select value={selectedPaperStockId} onValueChange={setSelectedPaperStockId}>
+                      <SelectTrigger id="paper">
+                        <SelectValue placeholder={tOrder("placeholders.paper")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePapers.map((p) => (
+                          <SelectItem key={p.paperStockId} value={p.paperStockId}>
+                            {p.name}
+                            {p.weightGsm ? ` · ${p.weightGsm}g` : ""}
+                            {p.finish ? ` · ${p.finish}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="customerReference">{tOrder("fields.customerReference")}</Label>

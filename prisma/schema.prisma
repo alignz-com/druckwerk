@@ -205,6 +205,7 @@ model Brand {
   orderProfiles UserOrderProfile[]
   deliveries Delivery[] @relation("BrandDeliveries")
   apiKeys    ApiKey[]
+  papers     BrandPaper[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
@@ -371,6 +372,7 @@ model PaperStock {
   updatedAt       DateTime            @updatedAt
   templates               Template[]
   productFormatPapers     ProductFormatPaper[]
+  brandPapers             BrandPaper[]
   brandCoverPreferences   BrandProductFormatPreference[] @relation("BrandCoverPaper")
   brandContentPreferences BrandProductFormatPreference[] @relation("BrandContentPaper")
   orderItemsCover         PdfOrderItem[]                 @relation("OrderItemCoverPaper")
@@ -391,6 +393,19 @@ model BrandTemplate {
 
   @@unique([brandId, templateId])
   @@index([brandId, orderIndex])
+}
+
+model BrandPaper {
+  id           String     @id @default(cuid())
+  brandId      String
+  paperStockId String
+  createdAt    DateTime   @default(now())
+
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  paperStock PaperStock @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, paperStockId])
+  @@index([brandId])
 }
 
 model Order {
@@ -695,6 +710,7 @@ model ProductFormatPaper {
   paperStockId    String
   role            String?       // "cover" | "content" | null (null = single-paper product)
   isDefault       Boolean       @default(false)
+  pcmCode         String?       // PCM code for press routing (product+format+paper combination)
   productFormat   ProductFormat @relation(fields: [productFormatId], references: [id], onDelete: Cascade)
   paperStock      PaperStock    @relation(fields: [paperStockId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())

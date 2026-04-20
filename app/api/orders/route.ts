@@ -86,6 +86,7 @@ const requestSchema = z.object({
   quantity: z.number().int().positive(),
   deliveryTime: z.enum(["express", "standard"]),
   customerReference: z.string().optional().default(""),
+  paperStockId: z.string().optional(),
   qrMode: z.enum(["vcard", "public"]).optional(),
   draftContactId: z.string().optional(),
   addressId: z.string().optional().nullable(),
@@ -419,10 +420,20 @@ export async function POST(req: Request) {
         }
       : undefined;
 
+    // Resolve PCM code: paper-specific → template/product fallback
+    let resolvedPcmCode = templateDefinition.pcmCode ?? null;
+    if (data.paperStockId && templateDefinition.productFormatId) {
+      const pfp = await prisma.productFormatPaper.findFirst({
+        where: { productFormatId: templateDefinition.productFormatId, paperStockId: data.paperStockId },
+        select: { pcmCode: true },
+      });
+      if (pfp?.pcmCode) resolvedPcmCode = pfp.pcmCode;
+    }
+
     const jdfXml = buildJdfDocument({
       referenceCode,
       templateKey: data.template,
-      pcmCode: templateDefinition.pcmCode ?? null,
+      pcmCode: resolvedPcmCode,
       brandName: brand?.name,
       requester: requesterContact,
       administrator: administratorContact,
@@ -475,6 +486,7 @@ export async function POST(req: Request) {
         meta: {
           templateKey: data.template,
           ...(data.customerReference ? { customerReference: data.customerReference } : {}),
+          ...(data.paperStockId ? { paperStockId: data.paperStockId } : {}),
           ...(addressMeta ? { address: addressMeta } : {}),
           ...(fontReport?.length ? { fontReport } : {}),
           ...(templateHasQrCode ? { qrMode: resolvedQrMode } : {}),

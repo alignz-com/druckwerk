@@ -23,6 +23,14 @@ export type AdminBrandAddress = {
   updatedAt: string;
 };
 
+export type AdminBrandPaper = {
+  id: string;
+  paperStockId: string;
+  paperStockName: string;
+  finish: string | null;
+  weightGsm: number | null;
+};
+
 export type AdminBrandSummary = {
   id: string;
   name: string;
@@ -42,6 +50,7 @@ export type AdminBrandSummary = {
   defaultTemplateId: string | null;
   templates: AdminBrandTemplateLink[];
   addresses: AdminBrandAddress[];
+  papers: AdminBrandPaper[];
   domains: { id: string; domain: string }[];
   publicDomains: { id: string; domain: string; isPrimary: boolean }[];
   canUseTemplates: boolean;
@@ -73,6 +82,10 @@ const brandInclude = {
   },
   publicDomains: {
     orderBy: [{ isPrimary: "desc" as const }, { domain: "asc" as const }],
+  },
+  papers: {
+    include: { paperStock: true },
+    orderBy: [{ paperStock: { name: "asc" as const } }],
   },
 };
 
@@ -110,6 +123,16 @@ type RawBrand = Awaited<ReturnType<typeof prisma.brand.findMany>>[number] & {
     isPrimary: boolean;
     createdAt: Date;
     updatedAt: Date;
+  }[];
+  papers: {
+    id: string;
+    paperStockId: string;
+    paperStock: {
+      id: string;
+      name: string;
+      finish: string | null;
+      weightGsm: number | null;
+    };
   }[];
 };
 
@@ -160,6 +183,13 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
     publicDomains: brand.publicDomains
       .map((domain) => ({ id: domain.id, domain: domain.domain, isPrimary: domain.isPrimary }))
       .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.domain.localeCompare(b.domain)),
+    papers: brand.papers.map((bp) => ({
+      id: bp.id,
+      paperStockId: bp.paperStockId,
+      paperStockName: bp.paperStock.name,
+      finish: bp.paperStock.finish ?? null,
+      weightGsm: bp.paperStock.weightGsm ?? null,
+    })),
     canUseTemplates: brand.canUseTemplates,
     canUploadFiles: brand.canUploadFiles,
     azureTenantId: brand.azureTenantId ?? null,

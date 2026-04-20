@@ -87,6 +87,7 @@ export type ResolvedTemplateProduct = {
 export type ResolvedTemplate = Omit<TemplateDefinition, "paperStock" | "hasQrCode" | "hasPhotoSlot"> & {
   fonts: ResolvedTemplateFont[];
   paperStock: TemplatePaperStock | null;
+  productFormatId: string | null;
   hasQrCode: boolean;
   hasPhotoSlot: boolean;
   photoSlot: TemplatePhotoSlot | null;
@@ -112,6 +113,7 @@ function resolvedFromDefinition(def: TemplateDefinition): ResolvedTemplate {
     assets: rest.assets ? clone(rest.assets) : [],
     design: rest.design ? clone(rest.design) : DEFAULT_TEMPLATE_DESIGN,
     fonts: [],
+    productFormatId: null,
     paperStock: paperStock ? { ...paperStock } : null,
     hasQrCode: detectHasQrCode(def.hasQrCode ?? null, def.config),
     hasPhotoSlot: detectHasPhotoSlot(def.hasPhotoSlot ?? null, def.config),
@@ -341,6 +343,7 @@ async function resolveTemplateFromDb(tpl: TemplateWithAssets, fallback?: Templat
     assets,
     design,
     fonts,
+    productFormatId: tpl.productFormatId ?? null,
     paperStock: paperStockFromDb ?? (fallback?.paperStock ? { ...fallback.paperStock } : null),
     spotColors: (tpl.spotColors as TemplateDefinition["spotColors"]) ?? fallback?.spotColors,
     hasQrCode: detectHasQrCode(tpl.hasQrCode, mergedConfig),

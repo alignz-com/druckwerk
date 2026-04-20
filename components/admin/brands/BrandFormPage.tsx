@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
+  FileText,
   Key,
   LayoutTemplate,
   MapPin,
@@ -43,6 +44,7 @@ import {
 import { AddressSheet, type AddressSheetState, type BrandAddressDraft } from "./AddressSheet";
 import BrandTemplateSection from "./BrandTemplateSection";
 import BrandApiKeysSection from "./BrandApiKeysSection";
+import BrandPaperSection from "./BrandPaperSection";
 import LogoUpload from "./LogoUpload";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -545,6 +547,10 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                       <MapPin className="h-4 w-4" />
                       {t("tabs.addresses")}
                     </TabsTrigger>
+                    <TabsTrigger value="papers" className="flex items-center gap-2 data-[state=active]:bg-white">
+                      <FileText className="h-4 w-4" />
+                      {t("tabs.papers")}
+                    </TabsTrigger>
                     <TabsTrigger value="api" className="flex items-center gap-2 data-[state=active]:bg-white">
                       <Key className="h-4 w-4" />
                       {t("tabs.api")}
@@ -929,6 +935,14 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                       </TableBody>
                     </Table>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="papers">
+                  <BrandPaperSection
+                    brandId={snapshot?.id}
+                    papers={snapshot?.papers ?? []}
+                    onBrandUpdated={(updated) => setSnapshot(updated)}
+                  />
                 </TabsContent>
 
                 <TabsContent value="api">

@@ -66,7 +66,7 @@ type VariantFormState = {
   isActive: boolean
 }
 
-type PaperEntry = { paperStockId: string; role: string | null; isDefault: boolean }
+type PaperEntry = { paperStockId: string; role: string | null; isDefault: boolean; pcmCode: string }
 
 const emptyVariantForm = (): VariantFormState => ({
   formatId: "",
@@ -127,7 +127,7 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
       maxPages: v.maxPages != null ? String(v.maxPages) : "",
       isActive: v.isActive,
     })
-    setPaperEntries(v.papers.map((p) => ({ paperStockId: p.paperStockId, role: p.role, isDefault: p.isDefault })))
+    setPaperEntries(v.papers.map((p) => ({ paperStockId: p.paperStockId, role: p.role, isDefault: p.isDefault, pcmCode: (p as any).pcmCode ?? "" })))
     setSelectedFinishIds(v.finishes.map((f) => f.finishId))
     setError(null)
     setDialog({ edit: v })
@@ -175,7 +175,7 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
       await fetch(`/api/admin/product-formats/${variantId}/papers`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ papers: paperEntries }),
+        body: JSON.stringify({ papers: paperEntries.map((p) => ({ ...p, pcmCode: p.pcmCode || undefined })) }),
       })
 
       // Save finishes
@@ -204,7 +204,7 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
     setPaperEntries((prev) => {
       const exists = prev.find((p) => p.paperStockId === paperStockId)
       if (exists) return prev.filter((p) => p.paperStockId !== paperStockId)
-      return [...prev, { paperStockId, role: null, isDefault: false }]
+      return [...prev, { paperStockId, role: null, isDefault: false, pcmCode: "" }]
     })
   }
 
@@ -253,6 +253,7 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
                   {v.papers.map((p) => (
                     <span key={p.id} className="text-xs bg-muted rounded px-1.5 py-0.5">
                       {p.role ? `${p.role}: ` : ""}{p.paperStock.name}
+                      {(p as any).pcmCode && <span className="text-muted-foreground"> ({(p as any).pcmCode})</span>}
                     </span>
                   ))}
                   {v.finishes.map((f) => (
@@ -398,6 +399,20 @@ export function ProductFormatsSection({ productId }: { productId: string }) {
                               <SelectItem value="content">{t("fields.roleContent")}</SelectItem>
                             </SelectContent>
                           </Select>
+                        )}
+                        {checked && (
+                          <Input
+                            placeholder={t("fields.pcmCode")}
+                            value={entry?.pcmCode ?? ""}
+                            onChange={(e) =>
+                              setPaperEntries((prev) =>
+                                prev.map((p) =>
+                                  p.paperStockId === paper.id ? { ...p, pcmCode: e.target.value } : p
+                                )
+                              )
+                            }
+                            className="w-28 h-7 text-xs"
+                          />
                         )}
                       </div>
                     )

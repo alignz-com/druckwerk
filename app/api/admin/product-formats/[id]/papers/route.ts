@@ -15,6 +15,7 @@ const putSchema = z.object({
     paperStockId: z.string(),
     role: z.enum(["cover", "content"]).nullable().optional(),
     isDefault: z.boolean().optional(),
+    pcmCode: z.string().nullable().optional(),
   })),
 })
 
@@ -41,6 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         paperStockId: p.paperStockId,
         role: p.role ?? null,
         isDefault: p.isDefault ?? false,
+        pcmCode: p.pcmCode ?? null,
       })),
     }),
   ])
