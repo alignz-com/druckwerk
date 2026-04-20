@@ -59,6 +59,7 @@ function SortableRow({
   onSelect: (id: string) => void
   products: ProductFormatForMatching[]
   papers: PaperOption[]
+  showPaperColumn: boolean
 }) {
   const { locale } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -149,19 +150,23 @@ function SortableRow({
           })()}
         </td>
       )}
-      {papers.length > 1 && (
+      {showPaperColumn && (
         <td className="px-3 py-3 w-44" onClick={(e) => e.stopPropagation()}>
-          <select
-            value={file.paperStockId ?? ""}
-            onChange={(e) => onPaperChange(file.id, e.target.value || null)}
-            className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            {papers.map((p) => (
-              <option key={p.paperStockId} value={p.paperStockId}>
-                {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}
-              </option>
-            ))}
-          </select>
+          {papers.length > 1 ? (
+            <select
+              value={file.paperStockId ?? ""}
+              onChange={(e) => onPaperChange(file.id, e.target.value || null)}
+              className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {papers.map((p) => (
+                <option key={p.paperStockId} value={p.paperStockId}>
+                  {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
         </td>
       )}
       <td className="px-3 py-3 w-24" onClick={(e) => e.stopPropagation()}>
@@ -684,7 +689,8 @@ export function PrintFileUploader({
                           isSelected={selectedFile?.id === f.id}
                           onSelect={setSelectedId}
                           products={products}
-                          papers={showPaperColumn ? getPapersForFile(f) : []}
+                          papers={getPapersForFile(f)}
+                          showPaperColumn={showPaperColumn}
                         />
                       ))}
                     </tbody>
