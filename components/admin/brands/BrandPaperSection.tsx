@@ -43,7 +43,7 @@ export default function BrandPaperSection({ brandId, papers, onBrandUpdated }: B
         const res = await fetch("/api/admin/paper-stocks");
         if (!res.ok) return;
         const data = await res.json();
-        const list = Array.isArray(data) ? data : data.papers ?? [];
+        const list = Array.isArray(data) ? data : data.paperStocks ?? data.papers ?? [];
         setAllPapers(
           list.map((p: any) => ({
             id: p.id,
