@@ -49,6 +49,7 @@ function SortableRow({
   onSelect,
   products,
   papers,
+  showPaperColumn,
 }: {
   file: SortableFile
   onRemove: (id: string) => void
@@ -371,27 +372,28 @@ export function PrintFileUploader({
   // ── Paper stock fetching (cached per productFormatId) ───────
   const [papersCache, setPapersCache] = React.useState<Record<string, PaperOption[]>>({})
   const papersFetchedRef = React.useRef<Set<string>>(new Set())
+  const filesRef = React.useRef(files)
+  filesRef.current = files
 
   // Collect unique productFormatIds that need papers fetched
+  const productFormatIds = React.useMemo(
+    () => [...new Set(files.map((f) => f.productFormatId).filter(Boolean))] as string[],
+    [files],
+  )
+
   React.useEffect(() => {
     if (!brandId) return
-    const needed = new Set<string>()
-    for (const f of files) {
-      if (f.productFormatId && !papersCache[f.productFormatId] && !papersFetchedRef.current.has(f.productFormatId)) {
-        needed.add(f.productFormatId)
-      }
-    }
-    if (needed.size === 0) return
-    for (const pfId of needed) {
+    for (const pfId of productFormatIds) {
+      if (papersFetchedRef.current.has(pfId)) continue
       papersFetchedRef.current.add(pfId)
       void fetch(`/api/orders/papers?brandId=${brandId}&productFormatId=${pfId}`)
         .then((res) => res.ok ? res.json() : [])
         .then((data: PaperOption[]) => {
           setPapersCache((prev) => ({ ...prev, [pfId]: data }))
-          // Auto-select default paper for files with this format that have no paper yet
+          // Auto-select default paper for files that have no paper yet
           if (data.length > 0) {
             const defaultPaper = data.find((p) => p.isDefault) ?? data[0]
-            onChange(files.map((f) =>
+            onChange(filesRef.current.map((f) =>
               f.productFormatId === pfId && !f.paperStockId
                 ? { ...f, paperStockId: defaultPaper.paperStockId }
                 : f
@@ -400,7 +402,7 @@ export function PrintFileUploader({
         })
         .catch(() => {})
     }
-  }, [files, brandId])
+  }, [productFormatIds, brandId])
 
   function handlePaperChange(id: string, paperStockId: string | null) {
     onChange(files.map((f) => f.id === id ? { ...f, paperStockId } : f))
