@@ -141,11 +141,11 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       </div>
 
       {/* Order info — compact strip */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-muted/20 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 px-3 py-2.5">
         {/* Brand */}
         {availableBrands.length > 1 && (
           <Select value={brandId} onValueChange={setBrandId}>
-            <SelectTrigger className="w-auto min-w-[140px] h-9 text-sm">
+            <SelectTrigger className="w-auto min-w-[140px] h-9 rounded-md text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -159,32 +159,41 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
         )}
 
         {/* Delivery toggle */}
-        <div className="flex items-center gap-1">
+        <div className="flex h-9 rounded-md border border-input overflow-hidden">
           {(["standard", "express"] as const).map((value) => (
             <button
               key={value}
               type="button"
               onClick={() => setDeliveryTime(value)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`px-3 text-xs font-medium transition-colors ${
                 deliveryTime === value
-                  ? "border-slate-400 bg-background shadow-sm text-foreground"
-                  : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/50"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "bg-transparent text-muted-foreground hover:bg-muted/50"
               }`}
             >
-              {t(`orderForm.deliveryTimeLabels.${value}`)}
+              <span>{t(`orderForm.deliveryTimeLabels.${value}`)}</span>
+              <span className="block text-[10px] opacity-60">{t(`orderForm.deliveryTimeDurations.${value}`)}</span>
             </button>
           ))}
-          <span className="text-xs text-muted-foreground ml-1">
-            {t("pdfOrder.estimatedDelivery")}: {estimatedLabel}
-          </span>
         </div>
+
+        {/* Est. delivery */}
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {t("pdfOrder.estimatedDelivery")}: {estimatedLabel}
+          {deliveryTime === "express" && (
+            <span className="text-destructive ml-1">{t("pdfOrder.expressNotice")}</span>
+          )}
+        </span>
+
+        {/* Spacer to push inputs right */}
+        <div className="flex-1" />
 
         {/* Reference */}
         <Input
           value={customerReference}
           onChange={(e) => setCustomerReference(e.target.value)}
           placeholder={t("pdfOrder.referencePlaceholder")}
-          className="w-44 h-9 text-sm"
+          className="w-44 h-9 rounded-md text-sm"
         />
 
         {/* Notes */}
@@ -192,7 +201,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={t("pdfOrder.notesPlaceholder")}
-          className="flex-1 min-w-[180px] h-9 text-sm"
+          className="w-56 h-9 rounded-md text-sm"
         />
       </div>
 
