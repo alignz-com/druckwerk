@@ -170,10 +170,30 @@ export default function TemplateDetailPage({ template }: Props) {
     config: stringifyConfig(template.config),
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
+    paperStockId: template.paperStockId ?? "",
   }));
 
   const [productOptions, setProductOptions] = useState<{ id: string; name: string; type: string }[]>([]);
   const [formatOptions, setFormatOptions] = useState<FormatOption[]>([]);
+
+  // Paper options for selected product format
+  type PaperStockOption = { paperStockId: string; name: string; finish: string | null; weightGsm: number | null };
+  const [paperOptions, setPaperOptions] = useState<PaperStockOption[]>([]);
+  useEffect(() => {
+    if (!metadata.productFormatId) { setPaperOptions([]); return; }
+    fetch(`/api/admin/product-formats/${metadata.productFormatId}/papers`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: any[]) => {
+        if (!Array.isArray(data)) { setPaperOptions([]); return; }
+        setPaperOptions(data.map((p) => ({
+          paperStockId: p.paperStockId ?? p.paperStock?.id ?? p.id,
+          name: p.paperStock?.name ?? p.name ?? "?",
+          finish: p.paperStock?.finish ?? null,
+          weightGsm: p.paperStock?.weightGsm ?? null,
+        })));
+      })
+      .catch(() => setPaperOptions([]));
+  }, [metadata.productFormatId]);
 
   // ── Brand state ─────────────────────────────────────────────────────────────
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
@@ -327,6 +347,7 @@ export default function TemplateDetailPage({ template }: Props) {
       config: stringifyConfig(template.config),
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
+      paperStockId: template.paperStockId ?? "",
     });
     setMetadataError(null);
     setMetadataSuccess(null);
@@ -492,6 +513,7 @@ export default function TemplateDetailPage({ template }: Props) {
           config: parsedConfig,
           hasQrCode: metadata.hasQrCode,
           hasPhotoSlot: metadata.hasPhotoSlot,
+          paperStockId: metadata.paperStockId || null,
         }),
       });
 
@@ -910,6 +932,31 @@ export default function TemplateDetailPage({ template }: Props) {
                         })()}
                       </div>
                     ) : null}
+
+                    {paperOptions.length > 0 && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="template-paper">Paper</Label>
+                        <Select
+                          value={metadata.paperStockId || "none"}
+                          onValueChange={(v) => {
+                            setMetadata((c) => ({ ...c, paperStockId: v === "none" ? "" : v }));
+                            setMetadataSuccess(null);
+                          }}
+                        >
+                          <SelectTrigger id="template-paper">
+                            <SelectValue placeholder="No paper selected" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No paper selected</SelectItem>
+                            {paperOptions.map((p) => (
+                              <SelectItem key={p.paperStockId} value={p.paperStockId}>
+                                {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}{p.finish ? ` · ${p.finish}` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </section>
 
