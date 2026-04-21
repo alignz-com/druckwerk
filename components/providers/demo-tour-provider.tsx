@@ -35,11 +35,15 @@ export function DemoTourProvider({ isDemo }: Props) {
 
     // Wait for elements to render
     const timeout = setTimeout(() => {
-      // Filter steps to only those whose elements exist in the DOM
+      // Filter steps to only those whose elements are visible in the DOM
       const availableSteps = resolvedSteps.filter((step) => {
         if (!step.element) return true
         const selector = typeof step.element === "string" ? step.element : null
-        return selector ? document.querySelector(selector) !== null : true
+        if (!selector) return true
+        const el = document.querySelector(selector) as HTMLElement | null
+        if (!el) return false
+        // Skip hidden elements (e.g. mobile-only divs on desktop)
+        return el.offsetParent !== null || el.offsetWidth > 0
       })
 
       if (availableSteps.length === 0) return
@@ -47,9 +51,10 @@ export function DemoTourProvider({ isDemo }: Props) {
       tourStarted.current = true
 
       const driverObj = driver({
-        showProgress: true,
+        showProgress: false,
         animate: true,
         allowClose: true,
+        showButtons: ["next", "previous", "close"],
         overlayColor: "rgba(0, 0, 0, 0.6)",
         stagePadding: 8,
         stageRadius: 12,

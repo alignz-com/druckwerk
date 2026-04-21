@@ -1923,7 +1923,7 @@ export default function OrderForm({
               </div>
             </CardContent>
           </Card>
-          <div data-tour="bc-submit" className="pt-4 xl:hidden">
+          <div data-tour="bc-submit-mobile" className="pt-4 xl:hidden">
             {hasGlyphWarnings && (
               <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -2086,7 +2086,7 @@ export default function OrderForm({
               )}
             </div>
           </Card>
-          <div data-tour="bc-submit-desktop" className="hidden xl:block">
+          <div data-tour="bc-submit" className="hidden xl:block">
             {hasGlyphWarnings && (
               <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
