@@ -48,6 +48,10 @@ export async function GET(req: Request) {
     quantityMax,
     quantityStep,
     quantityOptions,
+    uploadQuantityMin,
+    uploadQuantityMax,
+    uploadQuantityStep,
+    uploadQuantityOptions,
   } =
     await getBrandResources(resolvedBrandId);
   const profile = await getUserOrderProfile(session.user.id, resolvedBrandId);
@@ -65,6 +69,10 @@ export async function GET(req: Request) {
     quantityMax,
     quantityStep,
     quantityOptions,
+    uploadQuantityMin,
+    uploadQuantityMax,
+    uploadQuantityStep,
+    uploadQuantityOptions,
     profile,
   });
 }

@@ -37,6 +37,10 @@ type BrandResources = {
   quantityMax: number | null;
   quantityStep: number | null;
   quantityOptions: number[] | null;
+  uploadQuantityMin: number | null;
+  uploadQuantityMax: number | null;
+  uploadQuantityStep: number | null;
+  uploadQuantityOptions: number[] | null;
   initialTemplate: Awaited<ReturnType<typeof getTemplateForBrandOrGlobal>> | null;
   initialTemplateKey: string | null;
 };
@@ -54,6 +58,10 @@ export async function getBrandResources(brandId: string | null): Promise<BrandRe
       quantityMax: null,
       quantityStep: null,
       quantityOptions: null,
+      uploadQuantityMin: null,
+      uploadQuantityMax: null,
+      uploadQuantityStep: null,
+      uploadQuantityOptions: null,
       initialTemplate: null,
       initialTemplateKey: null,
       brandId: null,
@@ -88,6 +96,10 @@ export async function getBrandResources(brandId: string | null): Promise<BrandRe
         quantityMax: true,
         quantityStep: true,
         quantityOptions: true,
+        uploadQuantityMin: true,
+        uploadQuantityMax: true,
+        uploadQuantityStep: true,
+        uploadQuantityOptions: true,
       },
     }),
     prisma.brandPublicDomain.findMany({
@@ -169,6 +181,10 @@ export async function getBrandResources(brandId: string | null): Promise<BrandRe
     quantityMax: brand?.quantityMax ?? null,
     quantityStep: brand?.quantityStep ?? null,
     quantityOptions: brand?.quantityOptions ?? null,
+    uploadQuantityMin: brand?.uploadQuantityMin ?? null,
+    uploadQuantityMax: brand?.uploadQuantityMax ?? null,
+    uploadQuantityStep: brand?.uploadQuantityStep ?? null,
+    uploadQuantityOptions: brand?.uploadQuantityOptions ?? null,
     initialTemplate,
     initialTemplateKey: initialSummary?.key ?? null,
   };

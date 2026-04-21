@@ -70,6 +70,18 @@ export async function PATCH(req: NextRequest, context: { params: Promise<RoutePa
   const quantityOptions = Object.prototype.hasOwnProperty.call(payload, "quantityOptions")
     ? payload.quantityOptions ?? []
     : existingBrand.quantityOptions;
+  const uploadQuantityMin = Object.prototype.hasOwnProperty.call(payload, "uploadQuantityMin")
+    ? payload.uploadQuantityMin ?? null
+    : existingBrand.uploadQuantityMin;
+  const uploadQuantityMax = Object.prototype.hasOwnProperty.call(payload, "uploadQuantityMax")
+    ? payload.uploadQuantityMax ?? null
+    : existingBrand.uploadQuantityMax;
+  const uploadQuantityStep = Object.prototype.hasOwnProperty.call(payload, "uploadQuantityStep")
+    ? payload.uploadQuantityStep ?? null
+    : existingBrand.uploadQuantityStep;
+  const uploadQuantityOptions = Object.prototype.hasOwnProperty.call(payload, "uploadQuantityOptions")
+    ? payload.uploadQuantityOptions ?? []
+    : existingBrand.uploadQuantityOptions;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -88,6 +100,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<RoutePa
           quantityMax,
           quantityStep,
           quantityOptions,
+          uploadQuantityMin,
+          uploadQuantityMax,
+          uploadQuantityStep,
+          uploadQuantityOptions,
           azureTenantId: Object.prototype.hasOwnProperty.call(payload, "azureTenantId")
             ? (payload.azureTenantId?.trim().toLowerCase() || null)
             : existingBrand.azureTenantId,

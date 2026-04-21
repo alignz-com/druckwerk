@@ -27,6 +27,10 @@ export const brandSchema = z.object({
   quantityMax: z.number().int().positive().optional().nullable(),
   quantityStep: z.number().int().positive().optional().nullable(),
   quantityOptions: z.array(z.number().int().positive()).optional().nullable(),
+  uploadQuantityMin: z.number().int().positive().optional().nullable(),
+  uploadQuantityMax: z.number().int().positive().optional().nullable(),
+  uploadQuantityStep: z.number().int().positive().optional().nullable(),
+  uploadQuantityOptions: z.array(z.number().int().positive()).optional().nullable(),
   addresses: z.array(addressSchema).optional(),
   azureTenantId: z.string().trim().max(100).optional().nullable(),
 });

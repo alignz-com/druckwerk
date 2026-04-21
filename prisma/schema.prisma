@@ -189,6 +189,10 @@ model Brand {
   quantityMax Int?
   quantityStep Int?
   quantityOptions         Int[]       @default([])
+  uploadQuantityMin       Int?
+  uploadQuantityMax       Int?
+  uploadQuantityStep      Int?
+  uploadQuantityOptions   Int[]       @default([])
   canUseTemplates         Boolean     @default(true)
   canUploadFiles          Boolean     @default(false)
   azureTenantId           String?     @unique

@@ -46,6 +46,10 @@ export async function POST(req: NextRequest) {
       quantityMax: payload.quantityMax ?? null,
       quantityStep: payload.quantityStep ?? null,
       quantityOptions: payload.quantityOptions ?? [],
+      uploadQuantityMin: payload.uploadQuantityMin ?? null,
+      uploadQuantityMax: payload.uploadQuantityMax ?? null,
+      uploadQuantityStep: payload.uploadQuantityStep ?? null,
+      uploadQuantityOptions: payload.uploadQuantityOptions ?? [],
       addresses: payload.addresses
         ? {
             create: payload.addresses.map((addr) => ({

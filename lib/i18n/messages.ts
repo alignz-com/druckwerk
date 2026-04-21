@@ -1208,7 +1208,7 @@ export const messages = {
               description: "QR mode, quantity limits, and email domains for this brand.",
             },
             quantities: {
-              title: "Quantities",
+              title: "Template Quantities",
             },
             access: {
               title: "Order access",
@@ -2812,7 +2812,7 @@ export const messages = {
               description: "QR-Modus, Mengenlimits und E-Mail-Domains dieser Marke.",
             },
             quantities: {
-              title: "Mengen",
+              title: "Vorlagen-Mengen",
             },
             access: {
               title: "Bestellzugang",

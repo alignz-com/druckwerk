@@ -62,6 +62,10 @@ type FormState = {
   quantityMax: string;
   quantityStep: string;
   quantityOptions: string;
+  uploadQuantityMin: string;
+  uploadQuantityMax: string;
+  uploadQuantityStep: string;
+  uploadQuantityOptions: string;
   canUseTemplates: boolean;
   canUploadFiles: boolean;
 };
@@ -108,6 +112,10 @@ function mapBrandToForm(brand: AdminBrandSummary): FormState {
     quantityMax: brand.quantityMax != null ? String(brand.quantityMax) : "",
     quantityStep: brand.quantityStep != null ? String(brand.quantityStep) : "",
     quantityOptions: brand.quantityOptions?.join(", ") ?? "",
+    uploadQuantityMin: (brand as any).uploadQuantityMin != null ? String((brand as any).uploadQuantityMin) : "",
+    uploadQuantityMax: (brand as any).uploadQuantityMax != null ? String((brand as any).uploadQuantityMax) : "",
+    uploadQuantityStep: (brand as any).uploadQuantityStep != null ? String((brand as any).uploadQuantityStep) : "",
+    uploadQuantityOptions: (brand as any).uploadQuantityOptions?.join(", ") ?? "",
     canUseTemplates: brand.canUseTemplates ?? true,
     canUploadFiles: brand.canUploadFiles ?? false,
   };
@@ -127,6 +135,10 @@ function emptyForm(): FormState {
     quantityMax: "",
     quantityStep: "",
     quantityOptions: "",
+    uploadQuantityMin: "",
+    uploadQuantityMax: "",
+    uploadQuantityStep: "",
+    uploadQuantityOptions: "",
     canUseTemplates: true,
     canUploadFiles: false,
   };
@@ -329,8 +341,13 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
     const maxResult = parseOptionalPositiveInt(form.quantityMax);
     const stepResult = parseOptionalPositiveInt(form.quantityStep);
     const optResult = parseQuantityOptions(form.quantityOptions);
+    const upMinResult = parseOptionalPositiveInt(form.uploadQuantityMin);
+    const upMaxResult = parseOptionalPositiveInt(form.uploadQuantityMax);
+    const upStepResult = parseOptionalPositiveInt(form.uploadQuantityStep);
+    const upOptResult = parseQuantityOptions(form.uploadQuantityOptions);
 
-    if (minResult.error || maxResult.error || stepResult.error || optResult.error) {
+    if (minResult.error || maxResult.error || stepResult.error || optResult.error ||
+        upMinResult.error || upMaxResult.error || upStepResult.error || upOptResult.error) {
       setFormError(t("form.quantityInvalid"));
       return;
     }
@@ -338,6 +355,14 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
       minResult.value !== null &&
       maxResult.value !== null &&
       maxResult.value < minResult.value
+    ) {
+      setFormError(t("form.quantityRangeInvalid"));
+      return;
+    }
+    if (
+      upMinResult.value !== null &&
+      upMaxResult.value !== null &&
+      upMaxResult.value < upMinResult.value
     ) {
       setFormError(t("form.quantityRangeInvalid"));
       return;
@@ -359,6 +384,10 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
       quantityMax: maxResult.value,
       quantityStep: stepResult.value,
       quantityOptions: optResult.value,
+      uploadQuantityMin: upMinResult.value,
+      uploadQuantityMax: upMaxResult.value,
+      uploadQuantityStep: upStepResult.value,
+      uploadQuantityOptions: upOptResult.value,
     };
 
     try {
@@ -727,6 +756,56 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                         value={form.quantityOptions}
                         onChange={(e) => setField("quantityOptions", e.target.value)}
                         placeholder="50, 100, 250"
+                      />
+                      <p className="text-xs text-slate-500">{t("form.quantityOptionsHint")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload quantities */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">{t("detail.sections.uploadQuantities.title")}</h3>
+                    <p className="text-xs text-slate-500">{t("detail.sections.uploadQuantities.description")}</p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fp-uq-min">{t("form.quantityMin")}</Label>
+                      <Input
+                        id="fp-uq-min"
+                        inputMode="numeric"
+                        value={form.uploadQuantityMin}
+                        onChange={(e) => setField("uploadQuantityMin", e.target.value)}
+                        placeholder="100"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fp-uq-max">{t("form.quantityMax")}</Label>
+                      <Input
+                        id="fp-uq-max"
+                        inputMode="numeric"
+                        value={form.uploadQuantityMax}
+                        onChange={(e) => setField("uploadQuantityMax", e.target.value)}
+                        placeholder="5000"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fp-uq-step">{t("form.quantityStep")}</Label>
+                      <Input
+                        id="fp-uq-step"
+                        inputMode="numeric"
+                        value={form.uploadQuantityStep}
+                        onChange={(e) => setField("uploadQuantityStep", e.target.value)}
+                        placeholder="100"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="fp-uq-options">{t("form.quantityOptions")}</Label>
+                      <Input
+                        id="fp-uq-options"
+                        value={form.uploadQuantityOptions}
+                        onChange={(e) => setField("uploadQuantityOptions", e.target.value)}
+                        placeholder="100, 500, 1000"
                       />
                       <p className="text-xs text-slate-500">{t("form.quantityOptionsHint")}</p>
                     </div>

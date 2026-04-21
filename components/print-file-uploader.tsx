@@ -50,6 +50,7 @@ function SortableRow({
   products,
   papers,
   showPaperColumn,
+  allowedQuantities,
 }: {
   file: SortableFile
   onRemove: (id: string) => void
@@ -61,6 +62,7 @@ function SortableRow({
   products: ProductFormatForMatching[]
   papers: PaperOption[]
   showPaperColumn: boolean
+  allowedQuantities: number[] | null
 }) {
   const { locale } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -171,14 +173,26 @@ function SortableRow({
         </td>
       )}
       <td className="px-3 py-3 w-24" onClick={(e) => e.stopPropagation()}>
-        <input
-          type="number"
-          min={1}
-          value={file.quantity || ""}
-          onChange={(e) => onQuantityChange(file.id, parseInt(e.target.value) || 0)}
-          onBlur={() => { if (!file.quantity || file.quantity < 1) onQuantityChange(file.id, 1) }}
-          className="w-16 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-ring"
-        />
+        {allowedQuantities ? (
+          <select
+            value={file.quantity}
+            onChange={(e) => onQuantityChange(file.id, parseInt(e.target.value) || allowedQuantities[0])}
+            className="w-20 rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {allowedQuantities.map((q) => (
+              <option key={q} value={q}>{q.toLocaleString()}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="number"
+            min={1}
+            value={file.quantity || ""}
+            onChange={(e) => onQuantityChange(file.id, parseInt(e.target.value) || 0)}
+            onBlur={() => { if (!file.quantity || file.quantity < 1) onQuantityChange(file.id, 1) }}
+            className="w-16 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        )}
       </td>
       <td className="px-3 py-3 w-10" onClick={(e) => e.stopPropagation()}>
         <button
@@ -343,11 +357,13 @@ export function PrintFileUploader({
   onChange,
   products = [],
   brandId,
+  allowedQuantities = null,
 }: {
   files: SortableFile[]
   onChange: (files: SortableFile[]) => void
   products?: ProductFormatForMatching[]
   brandId?: string | null
+  allowedQuantities?: number[] | null
 }) {
   const t = useTranslations()
   const [phase, setPhase] = React.useState<Phase>("idle")
@@ -469,7 +485,7 @@ export function PrintFileUploader({
         return {
           ...f,
           id: `${f.filename}-${Date.now()}-${i}`,
-          quantity: 1,
+          quantity: allowedQuantities?.[0] ?? 1,
           productFormatId: matched?.id ?? null,
           paperStockId: null,
           _sourceFile: sourceFile,
@@ -626,15 +642,28 @@ export function PrintFileUploader({
               <p className="text-sm font-medium">{files.length} {files.length !== 1 ? t("pdfOrder.dropzoneFiles") : t("pdfOrder.dropzoneFile")}</p>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{t("pdfOrder.dropzoneSetAllQty")}</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={setAllQty}
-                  onChange={(e) => setSetAllQty(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSetAll()}
-                  placeholder="1"
-                  className="w-14 rounded border border-input bg-background px-2 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
-                />
+                {allowedQuantities ? (
+                  <select
+                    value={setAllQty}
+                    onChange={(e) => setSetAllQty(e.target.value)}
+                    className="w-20 rounded border border-input bg-background px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="">—</option>
+                    {allowedQuantities.map((q) => (
+                      <option key={q} value={String(q)}>{q.toLocaleString()}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="number"
+                    min={1}
+                    value={setAllQty}
+                    onChange={(e) => setSetAllQty(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSetAll()}
+                    placeholder="1"
+                    className="w-14 rounded border border-input bg-background px-2 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={handleSetAll}
@@ -695,6 +724,7 @@ export function PrintFileUploader({
                           products={products}
                           papers={getPapersForFile(f)}
                           showPaperColumn={showPaperColumn}
+                          allowedQuantities={allowedQuantities ?? null}
                         />
                       ))}
                     </tbody>

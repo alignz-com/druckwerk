@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { PrintFileUploader, type SortableFile } from "@/components/print-file-uploader"
 import type { ProductFormatForMatching } from "@/lib/product-matching"
+import { resolveAllowedQuantities } from "@/lib/order-quantities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -48,6 +49,31 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
   const [files, setFiles] = React.useState<SortableFile[]>([])
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+
+  // Fetch upload quantity restrictions for the selected brand
+  const [uploadQuantityOptions, setUploadQuantityOptions] = React.useState<number[] | null>(null)
+  React.useEffect(() => {
+    if (!brandId) { setUploadQuantityOptions(null); return }
+    fetch(`/api/orders/brand-data?brandId=${brandId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) { setUploadQuantityOptions(null); return }
+        const resolved = resolveAllowedQuantities({
+          quantityMin: data.uploadQuantityMin ?? null,
+          quantityMax: data.uploadQuantityMax ?? null,
+          quantityStep: data.uploadQuantityStep ?? null,
+          quantityOptions: data.uploadQuantityOptions ?? null,
+        })
+        // If resolved equals DEFAULT_ORDER_QUANTITIES (no brand config), treat as unrestricted
+        setUploadQuantityOptions(
+          data.uploadQuantityMin != null || data.uploadQuantityMax != null ||
+          (data.uploadQuantityOptions?.length > 0)
+            ? resolved
+            : null
+        )
+      })
+      .catch(() => setUploadQuantityOptions(null))
+  }, [brandId])
 
   const estimatedDate = estimateDeliveryDate(deliveryTime)
   const estimatedLabel = estimatedDate.toLocaleDateString(undefined, {
@@ -216,7 +242,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       </div>
 
       {/* Drop zone + file list */}
-      <PrintFileUploader files={files} onChange={setFiles} products={products} brandId={brandId} />
+      <PrintFileUploader files={files} onChange={setFiles} products={products} brandId={brandId} allowedQuantities={uploadQuantityOptions} />
 
       {/* Error */}
       {error && (

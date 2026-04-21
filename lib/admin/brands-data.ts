@@ -45,6 +45,10 @@ export type AdminBrandSummary = {
   quantityMax: number | null;
   quantityStep: number | null;
   quantityOptions: number[] | null;
+  uploadQuantityMin: number | null;
+  uploadQuantityMax: number | null;
+  uploadQuantityStep: number | null;
+  uploadQuantityOptions: number[] | null;
   templateCount: number;
   orderCount: number;
   defaultTemplateId: string | null;
@@ -151,6 +155,10 @@ function mapBrand(brand: RawBrand): AdminBrandSummary {
   quantityMax: brand.quantityMax ?? null,
   quantityStep: brand.quantityStep ?? null,
   quantityOptions: brand.quantityOptions ?? null,
+  uploadQuantityMin: brand.uploadQuantityMin ?? null,
+  uploadQuantityMax: brand.uploadQuantityMax ?? null,
+  uploadQuantityStep: brand.uploadQuantityStep ?? null,
+  uploadQuantityOptions: brand.uploadQuantityOptions ?? null,
   templateCount: brand.templates.length,
     orderCount: brand.orders.length,
     defaultTemplateId: brand.defaultTemplateId ?? null,
