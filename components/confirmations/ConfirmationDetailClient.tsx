@@ -204,52 +204,46 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, lief
       )}
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-white shadow-xl">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 rounded-2xl bg-slate-900 px-3 py-2 text-white shadow-xl">
+        {/* AB group */}
         {pdfUrl && (
           <a
             href={pdfUrl}
             target="_blank"
             rel="noreferrer"
-            className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+            className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
           >
             <FileDown className="h-3.5 w-3.5" />
-            {labels.downloadPdf}
+            AB
           </a>
         )}
-        <a
-          href={`/api/printer/deliveries/${confirmationId}/csv`}
-          target="_blank"
-          rel="noreferrer"
-          className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
-        >
-          <FileSpreadsheet className="h-3.5 w-3.5" />
-          {labels.downloadCsv}
-        </a>
-        <div className="w-px h-5 bg-slate-600 shrink-0" />
         <button
           onClick={handleRegenerate}
           disabled={isRegenerating}
-          className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
         >
           <RefreshCcw className={`h-3.5 w-3.5 ${isRegenerating ? "animate-spin" : ""}`} />
           {isRegenerating ? "…" : labels.regenerate}
         </button>
+
         <div className="w-px h-5 bg-slate-600 shrink-0" />
+
+        {/* LS group */}
         {lsUrl ? (
           <>
             <a
               href={lsUrl}
               target="_blank"
               rel="noreferrer"
-              className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+              className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
             >
               <FileDown className="h-3.5 w-3.5" />
-              {labels.downloadLieferschein}
+              LS
             </a>
             <button
               onClick={handleLieferschein}
               disabled={isCreatingLs}
-              className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+              className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
             >
               <RefreshCcw className={`h-3.5 w-3.5 ${isCreatingLs ? "animate-spin" : ""}`} />
               {isCreatingLs ? "…" : labels.regenerateLieferschein}
@@ -259,12 +253,25 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, lief
           <button
             onClick={handleLieferschein}
             disabled={isCreatingLs}
-            className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+            className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
           >
             <FilePlus2 className={`h-3.5 w-3.5 ${isCreatingLs ? "animate-spin" : ""}`} />
             {isCreatingLs ? "…" : labels.createLieferschein}
           </button>
         )}
+
+        <div className="w-px h-5 bg-slate-600 shrink-0" />
+
+        {/* CSV */}
+        <a
+          href={`/api/printer/deliveries/${confirmationId}/csv`}
+          target="_blank"
+          rel="noreferrer"
+          className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5" />
+          CSV
+        </a>
       </div>
     </div>
   );
