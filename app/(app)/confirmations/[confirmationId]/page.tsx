@@ -191,6 +191,8 @@ export default async function ConfirmationDetailPage({ params }: Props) {
       <ConfirmationDetailClient
         confirmationId={delivery.id}
         deliveryNoteUrl={delivery.deliveryNoteUrl}
+        lieferscheinUrl={delivery.lieferscheinUrl}
+        lieferscheinNumber={delivery.lieferscheinNumber}
         orders={orders}
         labels={{
           businessCards: isDE ? "Visitenkarten" : "Business Cards",
@@ -207,6 +209,9 @@ export default async function ConfirmationDetailPage({ params }: Props) {
           downloadPdf: isDE ? "PDF herunterladen" : "Download PDF",
           downloadCsv: isDE ? "CSV herunterladen" : "Download CSV",
           regenerate: isDE ? "PDF neu generieren" : "Regenerate PDF",
+          createLieferschein: isDE ? "Lieferschein erstellen" : "Create Delivery Note",
+          downloadLieferschein: isDE ? "Lieferschein herunterladen" : "Download Delivery Note",
+          regenerateLieferschein: isDE ? "Lieferschein neu generieren" : "Regenerate Delivery Note",
         }}
       />
     </div>

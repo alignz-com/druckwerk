@@ -102,7 +102,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
       deliveryItems: {
         take: 1,
         include: {
-          delivery: { select: { id: true, number: true, deliveryNoteUrl: true } },
+          delivery: { select: { id: true, number: true, deliveryNoteUrl: true, lieferscheinUrl: true, lieferscheinNumber: true } },
         },
       },
     },
@@ -567,6 +567,23 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                     ) : (
                       delivery.number
                     )}
+                  </dd>
+                </div>
+              )}
+              {delivery?.lieferscheinUrl && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {locale === "de" ? "Lieferschein" : "Delivery Note"}
+                  </dt>
+                  <dd className="text-sm text-slate-900">
+                    <a
+                      href={delivery.lieferscheinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-900 underline decoration-slate-300 hover:decoration-slate-500"
+                    >
+                      {delivery.lieferscheinNumber ?? "Lieferschein"}
+                    </a>
                   </dd>
                 </div>
               )}

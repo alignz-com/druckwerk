@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileDown, FileSpreadsheet, RefreshCcw } from "lucide-react";
+import { FileDown, FilePlus2, FileSpreadsheet, RefreshCcw } from "lucide-react";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ type OrderRow = {
 type Props = {
   confirmationId: string;
   deliveryNoteUrl: string | null;
+  lieferscheinUrl: string | null;
+  lieferscheinNumber: string | null;
   orders: OrderRow[];
   labels: {
     businessCards: string;
@@ -47,12 +49,17 @@ type Props = {
     downloadPdf: string;
     downloadCsv: string;
     regenerate: string;
+    createLieferschein: string;
+    downloadLieferschein: string;
+    regenerateLieferschein: string;
   };
 };
 
-export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, orders, labels }: Props) {
+export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, lieferscheinUrl, lieferscheinNumber, orders, labels }: Props) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(deliveryNoteUrl);
+  const [lsUrl, setLsUrl] = useState(lieferscheinUrl);
+  const [isCreatingLs, setIsCreatingLs] = useState(false);
 
   const handleRegenerate = async () => {
     setIsRegenerating(true);
@@ -65,6 +72,20 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, orde
       }
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleLieferschein = async () => {
+    setIsCreatingLs(true);
+    try {
+      const res = await fetch(`/api/printer/deliveries/${confirmationId}/lieferschein`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.url) {
+        setLsUrl(data.url);
+        window.open(data.url as string, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setIsCreatingLs(false);
     }
   };
 
@@ -213,6 +234,37 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, orde
           <RefreshCcw className={`h-3.5 w-3.5 ${isRegenerating ? "animate-spin" : ""}`} />
           {isRegenerating ? "…" : labels.regenerate}
         </button>
+        <div className="w-px h-5 bg-slate-600 shrink-0" />
+        {lsUrl ? (
+          <>
+            <a
+              href={lsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {labels.downloadLieferschein}
+            </a>
+            <button
+              onClick={handleLieferschein}
+              disabled={isCreatingLs}
+              className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+            >
+              <RefreshCcw className={`h-3.5 w-3.5 ${isCreatingLs ? "animate-spin" : ""}`} />
+              {isCreatingLs ? "…" : labels.regenerateLieferschein}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleLieferschein}
+            disabled={isCreatingLs}
+            className="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-medium disabled:opacity-40 hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
+          >
+            <FilePlus2 className={`h-3.5 w-3.5 ${isCreatingLs ? "animate-spin" : ""}`} />
+            {isCreatingLs ? "…" : labels.createLieferschein}
+          </button>
+        )}
       </div>
     </div>
   );

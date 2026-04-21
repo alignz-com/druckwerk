@@ -38,6 +38,8 @@ export type DeliveryNoteOrder = {
 
 export type DeliveryNotePayload = {
   deliveryNumber: string;
+  /** "AB" = Auftragsbestätigung (default), "LS" = Lieferschein */
+  documentType?: "AB" | "LS";
   createdAt: Date;
   note?: string | null;
   locale: "en" | "de";
@@ -244,7 +246,9 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
   const isDE = payload.locale === "de";
   const labels = {
-    title: isDE ? "Auftragsbest\u00e4tigung" : "Order Confirmation",
+    title: payload.documentType === "LS"
+      ? (isDE ? "Lieferschein" : "Delivery Note")
+      : (isDE ? "Auftragsbest\u00e4tigung" : "Order Confirmation"),
     brand: isDE ? "Marke" : "Brand",
     note: isDE ? "Anmerkung" : "Note",
     businessCards: isDE ? "Visitenkarten" : "Business Cards",
@@ -543,4 +547,133 @@ export async function generateDeliveryNotePdf(payload: DeliveryNotePayload): Pro
 
   const pdfBytes = await doc.save();
   return pdfBytes;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers for API routes
+// ---------------------------------------------------------------------------
+
+export function formatLieferscheinNumber(sequence: number) {
+  return `LS-${sequence.toString().padStart(5, "0")}`;
+}
+
+export async function reserveLieferscheinNumber() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const counter = await prisma.$transaction((tx) =>
+    tx.lieferscheinReferenceCounter.upsert({
+      where: { year },
+      update: { lastValue: { increment: 1 } },
+      create: { year, lastValue: 1 },
+    }),
+  );
+  return formatLieferscheinNumber(counter.lastValue);
+}
+
+/** Prisma include for fetching a delivery with all data needed for PDF generation */
+export const deliveryPdfInclude = {
+  items: {
+    orderBy: { position: "asc" as const },
+    include: {
+      order: {
+        include: {
+          brand: { select: { name: true } },
+          template: {
+            select: {
+              label: true,
+              key: true,
+              product: { select: { name: true, nameEn: true, nameDe: true } },
+            },
+          },
+          pdfOrderItems: {
+            orderBy: { createdAt: "asc" as const },
+            include: {
+              productFormat: {
+                include: {
+                  product: { select: { name: true, nameEn: true, nameDe: true } },
+                  format: { select: { name: true, nameDe: true } },
+                },
+              },
+              coverPaperStock: { select: { name: true } },
+              contentPaperStock: { select: { name: true } },
+              finish: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+/** Build a DeliveryNotePayload from a fetched delivery record */
+export function buildDeliveryNotePayload(
+  delivery: any,
+  locale: "en" | "de",
+  opts?: { documentType?: "AB" | "LS"; numberOverride?: string },
+): DeliveryNotePayload {
+  const isDE = locale === "de";
+  const pn = (p: { name: string; nameEn?: string | null; nameDe?: string | null } | null | undefined) =>
+    p ? (isDE ? p.nameDe : p.nameEn) ?? p.name : null;
+  const fn = (f: { name: string; nameDe?: string | null } | null | undefined) =>
+    f ? (isDE ? f.nameDe : null) ?? f.name : null;
+
+  const shippingAddress = [
+    delivery.shippingCompany,
+    delivery.shippingStreet,
+    delivery.shippingAddressExtra,
+    [delivery.shippingPostalCode, delivery.shippingCity].filter(Boolean).join(" ").trim(),
+    delivery.shippingCountryCode,
+  ]
+    .filter((line: unknown) => line && String(line).trim().length > 0)
+    .join("\n");
+
+  const items = delivery.items ?? [];
+
+  return {
+    deliveryNumber: opts?.numberOverride ?? delivery.number,
+    documentType: opts?.documentType,
+    createdAt: delivery.createdAt,
+    note: delivery.note,
+    locale,
+    shippingAddress,
+    orders: items.map(({ order }: any) => {
+      const base = {
+        referenceCode: order.referenceCode,
+        requesterName: order.requesterName ?? "",
+        requesterRole: order.requesterRole ?? "",
+        customerReference:
+          typeof order.meta === "object" && order.meta && "customerReference" in order.meta
+            ? order.meta.customerReference ?? null
+            : null,
+        brandName: order.brand?.name ?? null,
+        deliveryTime: order.deliveryTime ?? "standard",
+      };
+
+      if (order.type === "UPLOAD") {
+        return {
+          ...base,
+          type: "UPLOAD" as const,
+          quantity: (order.pdfOrderItems ?? []).reduce((sum: number, i: any) => sum + i.quantity, 0),
+          pdfOrderItems: (order.pdfOrderItems ?? []).map((item: any) => ({
+            filename: item.filename,
+            quantity: item.quantity,
+            pages: item.pages,
+            productName: pn(item.productFormat?.product),
+            formatName: fn(item.productFormat?.format),
+            coverPaper: item.coverPaperStock?.name ?? null,
+            contentPaper: item.contentPaperStock?.name ?? null,
+            finishName: item.finish?.name ?? null,
+          })),
+        };
+      }
+
+      return {
+        ...base,
+        type: "TEMPLATE" as const,
+        templateLabel: order.template?.label ?? order.template?.key ?? "–",
+        productName: pn(order.template?.product),
+        quantity: order.quantity ?? 0,
+      };
+    }),
+  };
 }

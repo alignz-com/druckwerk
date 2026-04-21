@@ -491,8 +491,10 @@ model Delivery {
   id               String          @id @default(cuid())
   number           String          @unique
   note             String?
-  deliveryNoteUrl  String?
-  brandId          String
+  deliveryNoteUrl      String?
+  lieferscheinUrl      String?
+  lieferscheinNumber   String?   @unique
+  brandId              String
   shippingName     String?
   shippingCompany  String?
   shippingStreet   String?
@@ -520,6 +522,12 @@ model DeliveryItem {
 }
 
 model DeliveryReferenceCounter {
+  year      Int    @id
+  lastValue Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model LieferscheinReferenceCounter {
   year      Int    @id
   lastValue Int    @default(0)
   updatedAt DateTime @updatedAt
