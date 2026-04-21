@@ -174,8 +174,9 @@ function SortableRow({
         <input
           type="number"
           min={1}
-          value={file.quantity}
-          onChange={(e) => onQuantityChange(file.id, Math.max(1, parseInt(e.target.value) || 1))}
+          value={file.quantity || ""}
+          onChange={(e) => onQuantityChange(file.id, parseInt(e.target.value) || 0)}
+          onBlur={() => { if (!file.quantity || file.quantity < 1) onQuantityChange(file.id, 1) }}
           className="w-16 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </td>
