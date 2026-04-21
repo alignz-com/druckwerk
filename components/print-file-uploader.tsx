@@ -65,6 +65,7 @@ function SortableRow({
   allowedQuantities: number[] | null
 }) {
   const { locale } = useLocale()
+  const t = useTranslations()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: file.id })
 
