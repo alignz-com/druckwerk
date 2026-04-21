@@ -27,6 +27,7 @@ const itemMetaSchema = z.object({
   stagingUrl: z.string().nullable().optional(),
   thumbnailDataUrl: z.string().nullable().optional(),
   productFormatId: z.string().nullable().optional(),
+  paperStockId: z.string().nullable().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
         pantoneColors: meta.pantoneColors,
         pages: meta.pages ?? null,
         productFormatId: meta.productFormatId ?? null,
+        coverPaperStockId: meta.paperStockId ?? null,
         _thumbnailDataUrl: meta.thumbnailDataUrl ?? null,
       }
     })
