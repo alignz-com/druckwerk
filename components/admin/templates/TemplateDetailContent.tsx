@@ -109,6 +109,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
   type PaperStockOption = { id: string; paperStockId: string; name: string; finish: string | null; weightGsm: number | null };
   const [paperOptions, setPaperOptions] = useState<PaperStockOption[]>([]);
   useEffect(() => {
+    console.log("[paper] productFormatId:", metadata.productFormatId, "productId:", metadata.productId);
     if (!metadata.productFormatId) {
       setPaperOptions([]);
       return;
