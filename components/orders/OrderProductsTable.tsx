@@ -28,6 +28,7 @@ export type PdfProductItem = {
   formatName: string | null;
   colorSpaces: string[];
   pantoneColors: string[];
+  paperStockLabel: string | null;
 };
 
 export type BcProductItem = {
@@ -66,6 +67,7 @@ export type OrderProductsTableLabels = {
   url: string;
   linkedin: string;
   details: string;
+  paper: string;
   download: string;
   open: string;
 };
@@ -353,6 +355,11 @@ export function OrderProductsTable(props: Props) {
                 <SpecRow label={labels.qty}>
                   <span className="text-xs tabular-nums">{selected.quantity}</span>
                 </SpecRow>
+                {selected.paperStockLabel && (
+                  <SpecRow label={labels.paper}>
+                    <span className="text-xs">{selected.paperStockLabel}</span>
+                  </SpecRow>
+                )}
               </div>
 
             </div>

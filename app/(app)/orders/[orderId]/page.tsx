@@ -94,6 +94,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         orderBy: { createdAt: "asc" },
         include: {
           productFormat: { select: { product: { select: { name: true, nameEn: true, nameDe: true } }, format: { select: { name: true, nameDe: true } } } },
+          coverPaperStock: { select: { name: true, finish: true, weightGsm: true } },
+          contentPaperStock: { select: { name: true, finish: true, weightGsm: true } },
           jdfJob: { select: { jdfUrl: true, jdfFileName: true } },
         },
       },
@@ -159,6 +161,15 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const addressMeta = meta.address && typeof meta.address === "object" ? meta.address as Record<string, string> : null;
   const isExpress = order.deliveryTime === "express";
 
+  // Resolve paper stock name from meta
+  const metaPaperStockId = typeof meta.paperStockId === "string" ? meta.paperStockId : null;
+  const orderPaperStock = metaPaperStockId
+    ? await prisma.paperStock.findUnique({ where: { id: metaPaperStockId }, select: { name: true, finish: true, weightGsm: true } })
+    : null;
+  const paperStockLabel = orderPaperStock
+    ? [orderPaperStock.name, orderPaperStock.weightGsm ? `${orderPaperStock.weightGsm}g` : null, orderPaperStock.finish].filter(Boolean).join(" · ")
+    : null;
+
   const statusLabel = t.statuses[order.status] ?? order.status;
   const deliveryTimeLabel =
     (order.deliveryTime in t.orderForm.deliveryTimes
@@ -204,6 +215,14 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     colorSpaces: (item.colorSpaces as string[]) ?? [],
     pantoneColors: (item.pantoneColors as string[]) ?? [],
     formatName: (locale === "de" ? item.productFormat?.format?.nameDe : null) ?? item.productFormat?.format?.name ?? null,
+    paperStockLabel: (() => {
+      const ps = item.coverPaperStock ?? item.contentPaperStock;
+      if (!ps) return null;
+      const parts = [ps.name];
+      if (ps.weightGsm) parts.push(`${ps.weightGsm}g`);
+      if (ps.finish) parts.push(ps.finish);
+      return parts.join(" · ");
+    })(),
   }));
 
   // BC item for products table
@@ -245,6 +264,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     mobile: t.ordersPage.detail.mobile,
     url: t.ordersPage.detail.url,
     linkedin: t.ordersPage.detail.linkedin,
+    paper: locale === "de" ? "Papier" : "Paper",
     details: t.ordersPage.detail.details,
     download: t.ordersPage.detail.downloadFile,
     open: t.ordersPage.detail.expandPreview,
@@ -502,6 +522,15 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   />
                 </dd>
               </div>
+              {/* Paper stock */}
+              {paperStockLabel && (
+                <div className="flex items-start gap-4 py-2.5">
+                  <dt className="w-20 shrink-0 text-xs text-slate-400 pt-0.5">
+                    {locale === "de" ? "Papier" : "Paper"}
+                  </dt>
+                  <dd className="text-sm text-slate-900">{paperStockLabel}</dd>
+                </div>
+              )}
               {/* BC: quantity editor */}
               {order.type === "TEMPLATE" && (
                 <div className="flex items-start gap-4 py-2.5">
