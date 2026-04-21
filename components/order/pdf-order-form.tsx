@@ -58,19 +58,15 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!data) { setUploadQuantityOptions(null); return }
-        const resolved = resolveAllowedQuantities({
+        const hasExplicit = Array.isArray(data.uploadQuantityOptions) && data.uploadQuantityOptions.length > 0
+        const hasRange = data.uploadQuantityMin != null && data.uploadQuantityMax != null
+        if (!hasExplicit && !hasRange) { setUploadQuantityOptions(null); return }
+        setUploadQuantityOptions(resolveAllowedQuantities({
           quantityMin: data.uploadQuantityMin ?? null,
           quantityMax: data.uploadQuantityMax ?? null,
           quantityStep: data.uploadQuantityStep ?? null,
           quantityOptions: data.uploadQuantityOptions ?? null,
-        })
-        // If resolved equals DEFAULT_ORDER_QUANTITIES (no brand config), treat as unrestricted
-        setUploadQuantityOptions(
-          data.uploadQuantityMin != null || data.uploadQuantityMax != null ||
-          (data.uploadQuantityOptions?.length > 0)
-            ? resolved
-            : null
-        )
+        }))
       })
       .catch(() => setUploadQuantityOptions(null))
   }, [brandId])
