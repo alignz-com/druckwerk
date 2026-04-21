@@ -651,15 +651,16 @@ export function PrintFileUploader({
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: products.length > 0 ? "620px" : "460px" }}>
+              <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: showPaperColumn ? "780px" : products.length > 0 ? "620px" : "460px" }}>
                 <colgroup>
                   <col style={{ width: "32px" }} />
                   <col />
                   <col style={{ width: "130px" }} />
                   <col style={{ width: "58px" }} />
-                  {products.length > 0 && <col style={{ width: "144px" }} />}
-                  <col style={{ width: "88px" }} />
-                  <col style={{ width: "32px" }} />
+                  {products.length > 0 && <col style={{ width: "160px" }} />}
+                  {showPaperColumn && <col style={{ width: "160px" }} />}
+                  <col style={{ width: "80px" }} />
+                  <col style={{ width: "40px" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b bg-muted/20">
