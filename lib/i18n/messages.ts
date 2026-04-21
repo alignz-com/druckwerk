@@ -1209,6 +1209,11 @@ export const messages = {
             },
             quantities: {
               title: "Template Quantities",
+              description: "Restrict the quantities users can order for template-based products.",
+            },
+            uploadQuantities: {
+              title: "Upload Quantities",
+              description: "Restrict the quantities for upload-based (PDF) orders. Leave empty for free input.",
             },
             access: {
               title: "Order access",
@@ -2813,6 +2818,11 @@ export const messages = {
             },
             quantities: {
               title: "Vorlagen-Mengen",
+              description: "Bestellbare Mengen für vorlagenbasierte Produkte einschränken.",
+            },
+            uploadQuantities: {
+              title: "Upload-Mengen",
+              description: "Bestellbare Mengen für Upload-Bestellungen (PDF) einschränken. Leer lassen für freie Eingabe.",
             },
             access: {
               title: "Bestellzugang",
