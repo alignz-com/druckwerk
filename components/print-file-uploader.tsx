@@ -622,7 +622,7 @@ export function PrintFileUploader({
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
           {/* Left: file list */}
           <div className="rounded-lg border overflow-x-auto">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
+            <div className="sticky left-0 flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
               <p className="text-sm font-medium">{files.length} {files.length !== 1 ? t("pdfOrder.dropzoneFiles") : t("pdfOrder.dropzoneFile")}</p>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{t("pdfOrder.dropzoneSetAllQty")}</span>
