@@ -114,17 +114,21 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       return;
     }
     fetch(`/api/admin/product-formats/${metadata.productFormatId}/papers`)
-      .then((r) => r.json())
-      .then((data: any[]) =>
+      .then((r) => {
+        if (!r.ok) { console.warn("[paper] fetch failed", r.status); return []; }
+        return r.json();
+      })
+      .then((data: any[]) => {
+        if (!Array.isArray(data)) { setPaperOptions([]); return; }
         setPaperOptions(data.map((p) => ({
           id: p.id,
           paperStockId: p.paperStockId ?? p.paperStock?.id ?? p.id,
           name: p.paperStock?.name ?? p.name ?? "?",
           finish: p.paperStock?.finish ?? null,
           weightGsm: p.paperStock?.weightGsm ?? null,
-        }))),
-      )
-      .catch(() => setPaperOptions([]));
+        })));
+      })
+      .catch((err) => { console.warn("[paper] error", err); setPaperOptions([]); });
   }, [metadata.productFormatId]);
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
