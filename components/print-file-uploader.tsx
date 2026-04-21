@@ -651,7 +651,7 @@ export function PrintFileUploader({
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: showPaperColumn ? "780px" : products.length > 0 ? "620px" : "460px" }}>
                 <colgroup>
                   <col style={{ width: "32px" }} />
