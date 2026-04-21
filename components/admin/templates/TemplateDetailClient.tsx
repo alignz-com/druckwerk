@@ -171,6 +171,7 @@ export default function TemplateDetailPage({ template }: Props) {
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
     paperStockId: template.paperStockId ?? "",
+    pcmCode: template.pcmCode ?? "",
   }));
 
   const [productOptions, setProductOptions] = useState<{ id: string; name: string; type: string }[]>([]);
@@ -348,6 +349,7 @@ export default function TemplateDetailPage({ template }: Props) {
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
       paperStockId: template.paperStockId ?? "",
+      pcmCode: template.pcmCode ?? "",
     });
     setMetadataError(null);
     setMetadataSuccess(null);
@@ -514,6 +516,7 @@ export default function TemplateDetailPage({ template }: Props) {
           hasQrCode: metadata.hasQrCode,
           hasPhotoSlot: metadata.hasPhotoSlot,
           paperStockId: metadata.paperStockId || null,
+          pcmCode: metadata.pcmCode.trim() || null,
         }),
       });
 
@@ -955,6 +958,27 @@ export default function TemplateDetailPage({ template }: Props) {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+
+                    {metadata.productId && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="template-pcm">PCM Code Override</Label>
+                        <Input
+                          id="template-pcm"
+                          value={metadata.pcmCode}
+                          onChange={(e) => {
+                            setMetadata((c) => ({ ...c, pcmCode: e.target.value }));
+                            setMetadataSuccess(null);
+                          }}
+                          placeholder={(() => {
+                            const pf = formatOptions.find((f) => f.id === metadata.productFormatId);
+                            return pf?.pcmCode ? `Inherited: ${pf.pcmCode}` : "No PCM code set";
+                          })()}
+                        />
+                        <p className="text-xs text-slate-500">
+                          Overrides the PCM code from Product/Format. Leave empty to inherit.
+                        </p>
                       </div>
                     )}
                   </div>
