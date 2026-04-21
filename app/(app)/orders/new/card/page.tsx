@@ -44,6 +44,7 @@ export default async function NewCardOrderPage() {
     userId,
     role: session.user.role ?? "USER",
     knownBrandId: preferredBrandId,
+    requireTemplates: true,
   });
 
   let initialBrandId: string | null = null;

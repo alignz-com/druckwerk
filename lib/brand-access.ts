@@ -12,6 +12,8 @@ type GetBrandsForUserParams = {
   role: UserRole | string;
   knownBrandId?: string | null;
   additionalBrandIds?: string[] | null;
+  /** Only return brands that have at least one template assigned */
+  requireTemplates?: boolean;
 };
 
 export async function getBrandsForUser({
@@ -19,9 +21,13 @@ export async function getBrandsForUser({
   role,
   knownBrandId,
   additionalBrandIds,
+  requireTemplates,
 }: GetBrandsForUserParams): Promise<BrandOption[]> {
+  const templateFilter = requireTemplates ? { templates: { some: {} } } : {};
+
   if (role === "ADMIN" || role === "PRINTER") {
     return prisma.brand.findMany({
+      where: templateFilter,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
@@ -50,7 +56,7 @@ export async function getBrandsForUser({
   }
 
   return prisma.brand.findMany({
-    where: { id: { in: Array.from(candidateIds) } },
+    where: { id: { in: Array.from(candidateIds) }, ...templateFilter },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

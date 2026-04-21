@@ -133,7 +133,12 @@ function SortableRow({
             const sizeMatches = file.error ? [] : getProductFormatsForSize(file.trimWidthMm, file.trimHeightMm, products)
             if (sizeMatches.length === 0) {
               return (
-                <span className="text-xs text-muted-foreground italic">No match</span>
+                <span
+                  className="text-xs text-amber-600 italic cursor-help"
+                  title={t("pdfOrder.noProductMatchHint")}
+                >
+                  {t("pdfOrder.noProductMatch")}
+                </span>
               )
             }
             return (
