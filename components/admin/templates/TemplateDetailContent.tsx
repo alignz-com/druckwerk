@@ -804,7 +804,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
 
           {paperOptions.length > 0 && (
             <div className="space-y-1.5">
-              <Label htmlFor="template-paper">{locale === "de" ? "Papier" : "Paper"}</Label>
+              <Label htmlFor="template-paper">Paper</Label>
               <Select
                 value={metadata.paperStockId || "none"}
                 onValueChange={(v) => {
@@ -813,10 +813,10 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
                 }}
               >
                 <SelectTrigger id="template-paper">
-                  <SelectValue placeholder={locale === "de" ? "Kein Papier" : "No paper selected"} />
+                  <SelectValue placeholder="No paper selected" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{locale === "de" ? "Kein Papier" : "No paper selected"}</SelectItem>
+                  <SelectItem value="none">No paper selected</SelectItem>
                   {paperOptions.map((p) => (
                     <SelectItem key={p.paperStockId} value={p.paperStockId}>
                       {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}{p.finish ? ` · ${p.finish}` : ""}
