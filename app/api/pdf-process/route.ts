@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PDFDocument, PDFName, PDFArray, PDFDict, PDFRef, PDFNumber, PDFRawStream } from "pdf-lib"
+import { PDFDocument, PDFName, PDFArray, PDFDict, PDFRef, PDFNumber, PDFRawStream, PDFString, PDFHexString } from "pdf-lib"
 import unzipper from "unzipper"
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sevenZip = require("7zip-min") as {
@@ -174,6 +174,42 @@ async function extractColorInfo(
         const res = resolve(resourcesEntry)
         if (res instanceof PDFDict) inspectResourcesDict(res)
       }
+    }
+
+    // Check OutputIntents in the PDF catalog (catches QuarkXPress and other
+    // workflows that declare CMYK intent at catalog level rather than per-page)
+    try {
+      const catalog = resolve(context.trailerInfo.Root) as PDFDict | null;
+      const outputIntents = catalog?.get(PDFName.of("OutputIntents"));
+      const intentsArr = resolve(outputIntents);
+      if (intentsArr instanceof PDFArray) {
+        for (let i = 0; i < intentsArr.size(); i++) {
+          const intent = resolve(intentsArr.get(i));
+          if (!(intent instanceof PDFDict)) continue;
+          // Check OutputConditionIdentifier (e.g. "FOGRA39", "CGATS TR 001")
+          const oci = intent.get(PDFName.of("OutputConditionIdentifier"));
+          const ociStr = oci instanceof PDFString ? oci.asString() : oci instanceof PDFHexString ? oci.decodeText() : "";
+          // Check the ICC profile's N components
+          const destProfile = resolve(intent.get(PDFName.of("DestOutputProfile")));
+          if (destProfile instanceof PDFRawStream) {
+            const n = destProfile.dict.get(PDFName.of("N"));
+            if (n instanceof PDFNumber) {
+              const ch = n.asNumber();
+              if (ch === 4) colorSpaces.add("CMYK");
+              else if (ch === 3) colorSpaces.add("RGB");
+            }
+          }
+          // Many CMYK output intents use /GTS_PDFX subtype
+          const subtype = intent.get(PDFName.of("S"));
+          if (subtype instanceof PDFName && /PDFX|PDFA/i.test(subtype.asString())) {
+            if (/cmyk|fogra|swop|gracol|cgats/i.test(ociStr)) {
+              colorSpaces.add("CMYK");
+            }
+          }
+        }
+      }
+    } catch {
+      // OutputIntent parsing is best-effort
     }
 
     const text = rawBuffer.toString("latin1")
