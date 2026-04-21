@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import OrderForm from "@/components/order/order-form";
 import { getServerAuthSession } from "@/lib/auth";
@@ -75,11 +76,11 @@ export default async function NewOrderPage() {
   }
 
   if (hasTemplate && access.hasUpload) {
-    return <OrderTypeSelector />;
+    return <Suspense fallback={null}><OrderTypeSelector /></Suspense>;
   }
 
   if (isAdminOrPrinter) {
-    return <OrderTypeSelector />;
+    return <Suspense fallback={null}><OrderTypeSelector /></Suspense>;
   }
 
   const {

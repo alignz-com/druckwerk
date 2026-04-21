@@ -1612,6 +1612,59 @@ export const messages = {
         },
       },
     },
+    tour: {
+      next: "Next",
+      prev: "Back",
+      done: "Done",
+      bc: {
+        preview: {
+          title: "Live Preview",
+          description: "This is your business card preview. It updates in real-time as you fill in the form. You can switch between front and back.",
+        },
+        template: {
+          title: "Template",
+          description: "Choose a card design. Each template has its own layout, fonts, and style. The preview updates instantly.",
+        },
+        quantity: {
+          title: "Quantity",
+          description: "Select how many cards you need. Available quantities depend on your brand settings.",
+        },
+        delivery: {
+          title: "Delivery Time",
+          description: "Standard delivery takes about 3 weeks. Express is faster but costs extra.",
+        },
+        name: {
+          title: "Your Details",
+          description: "Enter your name here. If the text is too long for the card, a red warning icon appears next to the field.",
+        },
+        personal: {
+          title: "Personal Information",
+          description: "Fill in your contact details. Each field is checked against the template layout — overflow warnings help you stay within bounds.",
+        },
+        address: {
+          title: "Company & Address",
+          description: "Select a pre-configured company address or enter a custom one. This determines what prints on the card.",
+        },
+        submit: {
+          title: "Place Order",
+          description: "When everything looks good, hit this button to review and confirm. In demo mode, nothing is actually saved.",
+        },
+      },
+      pdf: {
+        orderInfo: {
+          title: "Order Settings",
+          description: "Set brand, delivery time, and add a reference or notes. These apply to all files in this order.",
+        },
+        dropzone: {
+          title: "Upload Files",
+          description: "Drag and drop PDF, ZIP, or 7z files here. Each file is automatically analyzed: dimensions, bleed, colors, and page count. You can set quantity and paper per file.",
+        },
+        submit: {
+          title: "Submit Order",
+          description: "Review your files and hit submit. In demo mode, nothing is saved — feel free to explore!",
+        },
+      },
+    },
   },
   de: {
     nav: {
@@ -3221,6 +3274,59 @@ export const messages = {
           nameDePlaceholder: "z. B. Glanzlack",
           code: "Code",
           codePlaceholder: "z. B. GLOSS",
+        },
+      },
+    },
+    tour: {
+      next: "Weiter",
+      prev: "Zur\u00fcck",
+      done: "Fertig",
+      bc: {
+        preview: {
+          title: "Live-Vorschau",
+          description: "Das ist die Vorschau Ihrer Visitenkarte. Sie aktualisiert sich in Echtzeit, w\u00e4hrend Sie das Formular ausf\u00fcllen. Wechseln Sie zwischen Vorder- und R\u00fcckseite.",
+        },
+        template: {
+          title: "Vorlage",
+          description: "W\u00e4hlen Sie ein Kartendesign. Jede Vorlage hat ein eigenes Layout, eigene Schriften und einen eigenen Stil. Die Vorschau aktualisiert sich sofort.",
+        },
+        quantity: {
+          title: "Menge",
+          description: "W\u00e4hlen Sie die gew\u00fcnschte Kartenanzahl. Die verf\u00fcgbaren Mengen h\u00e4ngen von Ihren Markeneinstellungen ab.",
+        },
+        delivery: {
+          title: "Lieferzeit",
+          description: "Standardlieferung dauert ca. 3 Wochen. Express ist schneller, kostet aber extra.",
+        },
+        name: {
+          title: "Ihre Angaben",
+          description: "Geben Sie hier Ihren Namen ein. Wenn der Text zu lang f\u00fcr die Karte ist, erscheint ein rotes Warnsymbol neben dem Feld.",
+        },
+        personal: {
+          title: "Pers\u00f6nliche Daten",
+          description: "Tragen Sie Ihre Kontaktdaten ein. Jedes Feld wird gegen das Vorlagenlayout gepr\u00fcft — \u00dcberlaufwarnungen helfen Ihnen, im Rahmen zu bleiben.",
+        },
+        address: {
+          title: "Firma & Adresse",
+          description: "W\u00e4hlen Sie eine vorkonfigurierte Firmenadresse oder geben Sie eine eigene ein. Diese bestimmt, was auf der Karte gedruckt wird.",
+        },
+        submit: {
+          title: "Bestellen",
+          description: "Wenn alles passt, klicken Sie hier zum Pr\u00fcfen und Best\u00e4tigen. Im Demo-Modus wird nichts gespeichert.",
+        },
+      },
+      pdf: {
+        orderInfo: {
+          title: "Bestelleinstellungen",
+          description: "Marke, Lieferzeit, Referenz und Notizen festlegen. Diese gelten f\u00fcr alle Dateien in dieser Bestellung.",
+        },
+        dropzone: {
+          title: "Dateien hochladen",
+          description: "Ziehen Sie PDF-, ZIP- oder 7z-Dateien hierher. Jede Datei wird automatisch analysiert: Abmessungen, Beschnitt, Farben und Seitenzahl. Menge und Papier k\u00f6nnen pro Datei eingestellt werden.",
+        },
+        submit: {
+          title: "Bestellung abschicken",
+          description: "Pr\u00fcfen Sie Ihre Dateien und klicken Sie auf Absenden. Im Demo-Modus wird nichts gespeichert — erkunden Sie alles frei!",
         },
       },
     },

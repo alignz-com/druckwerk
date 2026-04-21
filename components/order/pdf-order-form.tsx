@@ -175,7 +175,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       </div>
 
       {/* Order info — compact strip */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 px-3 py-2.5">
+      <div data-tour="pdf-order-info" className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 px-3 py-2.5">
         {/* Brand */}
         {availableBrands.length > 1 && (
           <Select value={brandId} onValueChange={setBrandId}>
@@ -238,7 +238,9 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       </div>
 
       {/* Drop zone + file list */}
-      <PrintFileUploader files={files} onChange={setFiles} products={products} brandId={brandId} allowedQuantities={uploadQuantityOptions} />
+      <div data-tour="pdf-dropzone">
+        <PrintFileUploader files={files} onChange={setFiles} products={products} brandId={brandId} allowedQuantities={uploadQuantityOptions} />
+      </div>
 
       {/* Error */}
       {error && (
@@ -246,7 +248,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
       )}
 
       {/* Submit */}
-      <div className="flex items-center justify-between pt-2">
+      <div data-tour="pdf-submit" className="flex items-center justify-between pt-2">
         <Button type="button" variant="outline" onClick={() => router.back()}>
           {t("pdfOrder.cancel")}
         </Button>

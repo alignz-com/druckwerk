@@ -1364,13 +1364,13 @@ export default function OrderForm({
 
       <div className="grid gap-0 items-start xl:mt-10 xl:gap-10 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] 2xl:gap-12">
         <div className="space-y-8 order-2 xl:order-1 pt-6 xl:pt-0">
-          <Card className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
+          <Card data-tour="bc-order-info" className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
             <CardHeader className="pb-2 px-0 xl:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("infoTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="px-0 xl:px-6">
               <div className="grid gap-4">
-                <div className="grid gap-2">
+                <div data-tour="bc-quantity" className="grid gap-2">
                   <Label htmlFor="qty">{tOrder("quantity")}</Label>
                   <Select value={quantity} onValueChange={setQuantity}>
                     <SelectTrigger id="qty">
@@ -1414,7 +1414,7 @@ export default function OrderForm({
                   </div>
                 ) : null}
 
-                <div className="grid gap-2">
+                <div data-tour="bc-template" className="grid gap-2">
                   <Label htmlFor="template">{tOrder("template")}</Label>
                   <Select
                     value={selectedTemplateKey}
@@ -1442,7 +1442,7 @@ export default function OrderForm({
                   ) : null}
                 </div>
                 {templateHasQrCode && brandQrMode === "BOTH" ? (
-                  <div className="grid gap-2">
+                  <div data-tour="bc-qr-mode" className="grid gap-2">
                     <Label htmlFor="qrMode">{tOrder("fields.qrMode")}</Label>
                     <Select
                       value={selectedQrMode}
@@ -1459,7 +1459,7 @@ export default function OrderForm({
                   </div>
                 ) : null}
 
-                <div className="grid gap-2">
+                <div data-tour="bc-delivery" className="grid gap-2">
                   <Label>{tOrder("deliveryTime")}</Label>
                   <div className="flex w-fit gap-2">
                     {(["standard", "express"] as DeliveryOption[]).map((value) => (
@@ -1502,7 +1502,7 @@ export default function OrderForm({
             </CardContent>
           </Card>
 
-          <Card className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
+          <Card data-tour="bc-personal" className="h-fit border-0 shadow-none rounded-none xl:rounded-xl xl:border xl:shadow-sm">
             <CardHeader className="px-0 xl:px-6">
               <CardTitle className="text-base md:text-lg">{tOrder("sections.personal")}</CardTitle>
             </CardHeader>
@@ -1559,7 +1559,7 @@ export default function OrderForm({
                     {photoError ? <p className="text-xs text-red-600">{photoError}</p> : null}
                   </div>
                 ) : null}
-                <div className="grid gap-2">
+                <div data-tour="bc-name" className="grid gap-2">
                   <Label htmlFor="name" className="flex items-center gap-1">
                     {tOrder("fields.name")}
                     {nameOverflow ? (
@@ -1758,7 +1758,7 @@ export default function OrderForm({
                 ) : null}
               </div>
               <Separator />
-              <div className="space-y-4">
+              <div data-tour="bc-address" className="space-y-4">
                 <h3 className="text-base font-semibold text-slate-800">{tOrder("sections.company")}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2 sm:col-span-2">
@@ -1923,7 +1923,7 @@ export default function OrderForm({
               </div>
             </CardContent>
           </Card>
-          <div className="pt-4 xl:hidden">
+          <div data-tour="bc-submit" className="pt-4 xl:hidden">
             {hasGlyphWarnings && (
               <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -1969,7 +1969,7 @@ export default function OrderForm({
               </button>
             </div>
           </div>
-          <Card className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:p-4 xl:gap-3">
+          <Card data-tour="bc-preview" className="rounded-none border-0 shadow-none py-0 gap-0 xl:rounded-xl xl:border xl:shadow-sm xl:p-4 xl:gap-3">
             {/* Desktop: title + front/back buttons inside card */}
             <div className="hidden xl:flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">{tOrder("previewTitle")}</span>
@@ -2086,7 +2086,7 @@ export default function OrderForm({
               )}
             </div>
           </Card>
-          <div className="hidden xl:block">
+          <div data-tour="bc-submit-desktop" className="hidden xl:block">
             {hasGlyphWarnings && (
               <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />

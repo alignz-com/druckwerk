@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
@@ -8,6 +9,7 @@ import { getTranslations, isLocale } from "@/lib/i18n/messages";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { DemoTourProvider } from "@/components/providers/demo-tour-provider";
 
 type Props = {
   children: ReactNode;
@@ -128,6 +130,10 @@ export default async function AppLayout({ children }: Props) {
           placeholder={t.nav.cmdKPlaceholder}
           noResultsLabel={t.nav.cmdKNoResults}
         />
+
+        <Suspense fallback={null}>
+          <DemoTourProvider isDemo={Boolean(session.user.isDemo)} />
+        </Suspense>
 
         <main className="flex-1 min-w-0 lg:pl-6">
           {/* Extra bottom padding on mobile so content clears the bottom nav bar */}
