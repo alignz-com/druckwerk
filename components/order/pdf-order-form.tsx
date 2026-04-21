@@ -7,6 +7,16 @@ import type { ProductFormatForMatching } from "@/lib/product-matching"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,6 +42,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
 
   const [brandId, setBrandId] = React.useState<string>(initialBrandId ?? availableBrands[0]?.id ?? "")
   const [deliveryTime, setDeliveryTime] = React.useState<"standard" | "express">("standard")
+  const [showExpressConfirm, setShowExpressConfirm] = React.useState(false)
   const [customerReference, setCustomerReference] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [files, setFiles] = React.useState<SortableFile[]>([])
@@ -124,6 +135,7 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
   const tOrder = useTranslations("orderForm")
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-8">
       {isDemo ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
@@ -164,8 +176,14 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
             <button
               key={value}
               type="button"
-              onClick={() => setDeliveryTime(value)}
-              className={`px-3 text-xs font-medium transition-colors ${
+              onClick={() => {
+                if (value === "express" && deliveryTime !== "express") {
+                  setShowExpressConfirm(true)
+                } else {
+                  setDeliveryTime(value)
+                }
+              }}
+              className={`px-3 text-xs font-medium transition-colors cursor-pointer ${
                 deliveryTime === value
                   ? "bg-background text-foreground shadow-sm"
                   : "bg-transparent text-muted-foreground hover:bg-muted/50"
@@ -176,14 +194,6 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
             </button>
           ))}
         </div>
-
-        {/* Est. delivery */}
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {t("pdfOrder.estimatedDelivery")}: {estimatedLabel}
-          {deliveryTime === "express" && (
-            <span className="text-destructive ml-1">{t("pdfOrder.expressNotice")}</span>
-          )}
-        </span>
 
         {/* Spacer to push inputs right */}
         <div className="flex-1" />
@@ -227,5 +237,22 @@ export function PdfOrderForm({ availableBrands, initialBrandId, products, isDemo
         </LoadingButton>
       </div>
     </form>
+
+    {/* Express delivery confirmation dialog */}
+    <AlertDialog open={showExpressConfirm} onOpenChange={setShowExpressConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("pdfOrder.expressConfirmTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("pdfOrder.expressConfirmDescription")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("pdfOrder.expressConfirmCancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => setDeliveryTime("express")}>
+            {t("pdfOrder.expressConfirmAction")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
