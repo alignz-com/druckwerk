@@ -5,11 +5,15 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 
-import { BC_TOUR_STEPS, PDF_TOUR_STEPS, resolveSteps } from "@/lib/tour/steps"
+import { SELECTOR_TOUR_STEPS, BC_TOUR_STEPS, PDF_TOUR_STEPS, resolveSteps } from "@/lib/tour/steps"
 import { useTranslations } from "@/components/providers/locale-provider"
 
 type Props = {
   isDemo: boolean
+}
+
+function isElementVisible(el: HTMLElement): boolean {
+  return el.offsetParent !== null || el.offsetWidth > 0
 }
 
 export function DemoTourProvider({ isDemo }: Props) {
@@ -24,13 +28,25 @@ export function DemoTourProvider({ isDemo }: Props) {
   useEffect(() => {
     if (!isDemo || !tourParam || tourStarted.current) return
 
-    const isBcTour = tourParam === "bc" && pathname === "/orders/new"
+    // Determine which tour to run based on path + param
+    const isSelectorTour = tourParam === "bc" && pathname === "/orders/new"
+      && document.querySelector("[data-tour='selector-bc']") !== null
+    const isBcFormDirect = tourParam === "bc" && pathname === "/orders/new"
+      && !isSelectorTour
     const isBcCardTour = tourParam === "bc" && pathname === "/orders/new/card"
     const isPdfTour = tourParam === "pdf" && pathname === "/orders/new/pdf"
 
-    if (!isBcTour && !isBcCardTour && !isPdfTour) return
+    if (!isSelectorTour && !isBcFormDirect && !isBcCardTour && !isPdfTour) return
 
-    const steps = (isBcTour || isBcCardTour) ? BC_TOUR_STEPS : PDF_TOUR_STEPS
+    let steps
+    if (isSelectorTour) {
+      steps = SELECTOR_TOUR_STEPS
+    } else if (isBcFormDirect || isBcCardTour) {
+      steps = BC_TOUR_STEPS
+    } else {
+      steps = PDF_TOUR_STEPS
+    }
+
     const resolvedSteps = resolveSteps(steps, t)
 
     // Wait for elements to render
@@ -42,8 +58,7 @@ export function DemoTourProvider({ isDemo }: Props) {
         if (!selector) return true
         const el = document.querySelector(selector) as HTMLElement | null
         if (!el) return false
-        // Skip hidden elements (e.g. mobile-only divs on desktop)
-        return el.offsetParent !== null || el.offsetWidth > 0
+        return isElementVisible(el)
       })
 
       if (availableSteps.length === 0) return
@@ -71,8 +86,7 @@ export function DemoTourProvider({ isDemo }: Props) {
           url.searchParams.delete("tour")
           window.history.replaceState({}, "", url.toString())
 
-          // After BC tour on /orders/new/card (came from selector = user has both types),
-          // redirect to PDF tour. If on /orders/new directly, user only has BC access.
+          // After BC form tour on /orders/new/card, redirect to PDF tour
           if (isBcCardTour) {
             setTimeout(() => {
               router.push("/orders/new/pdf?tour=pdf")

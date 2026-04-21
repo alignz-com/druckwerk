@@ -9,6 +9,35 @@ type TourStep = Omit<DriveStep, "popover"> & {
   }
 }
 
+export const SELECTOR_TOUR_STEPS: TourStep[] = [
+  {
+    popover: {
+      titleKey: "tour.selector.welcome.title",
+      descriptionKey: "tour.selector.welcome.description",
+      side: "bottom",
+      align: "center",
+    },
+  },
+  {
+    element: "[data-tour='selector-bc']",
+    popover: {
+      titleKey: "tour.selector.bc.title",
+      descriptionKey: "tour.selector.bc.description",
+      side: "bottom",
+      align: "center",
+    },
+  },
+  {
+    element: "[data-tour='selector-pdf']",
+    popover: {
+      titleKey: "tour.selector.pdf.title",
+      descriptionKey: "tour.selector.pdf.description",
+      side: "bottom",
+      align: "center",
+    },
+  },
+]
+
 export const BC_TOUR_STEPS: TourStep[] = [
   {
     element: "[data-tour='bc-preview']",

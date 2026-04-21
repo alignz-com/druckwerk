@@ -17,8 +17,9 @@ export function OrderTypeSelector() {
         <p className="text-sm text-muted-foreground mt-1">{t("orderTypeSubtitle")}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+      <div data-tour="selector-grid" className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
         <Link
+          data-tour="selector-bc"
           href={`/orders/new/card${tourParam ? `?tour=${tourParam}` : ""}`}
           className="flex flex-col items-center gap-4 rounded-2xl border-2 border-border bg-white p-8 text-center transition-colors hover:border-foreground/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -30,6 +31,7 @@ export function OrderTypeSelector() {
         </Link>
 
         <Link
+          data-tour="selector-pdf"
           href={`/orders/new/pdf${tourParam ? "?tour=pdf" : ""}`}
           className="flex flex-col items-center gap-4 rounded-2xl border-2 border-border bg-white p-8 text-center transition-colors hover:border-foreground/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >

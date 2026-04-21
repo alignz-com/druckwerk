@@ -1616,6 +1616,20 @@ export const messages = {
       next: "Next",
       prev: "Back",
       done: "Done",
+      selector: {
+        welcome: {
+          title: "Welcome to Druckwerk",
+          description: "This is your ordering portal. Here you can create business cards or upload print-ready PDFs. Let us show you around!",
+        },
+        bc: {
+          title: "Business Cards",
+          description: "Design personalized business cards with live preview. Pick a template, fill in your details, and order.",
+        },
+        pdf: {
+          title: "PDF Print",
+          description: "Upload print-ready PDFs in any format. Files are automatically checked for dimensions, bleed, and colors.",
+        },
+      },
       bc: {
         preview: {
           title: "Live Preview",
@@ -3281,6 +3295,20 @@ export const messages = {
       next: "Weiter",
       prev: "Zur\u00fcck",
       done: "Fertig",
+      selector: {
+        welcome: {
+          title: "Willkommen bei Druckwerk",
+          description: "Das ist Ihr Bestellportal. Hier k\u00f6nnen Sie Visitenkarten gestalten oder druckfertige PDFs hochladen. Wir zeigen Ihnen alles!",
+        },
+        bc: {
+          title: "Visitenkarten",
+          description: "Gestalten Sie personalisierte Visitenkarten mit Live-Vorschau. Vorlage w\u00e4hlen, Daten eingeben und bestellen.",
+        },
+        pdf: {
+          title: "PDF-Druck",
+          description: "Laden Sie druckfertige PDFs in jedem Format hoch. Dateien werden automatisch auf Abmessungen, Beschnitt und Farben gepr\u00fcft.",
+        },
+      },
       bc: {
         preview: {
           title: "Live-Vorschau",
