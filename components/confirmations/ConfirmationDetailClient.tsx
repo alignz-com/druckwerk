@@ -214,7 +214,7 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, lief
             className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
           >
             <FileDown className="h-3.5 w-3.5" />
-            AB
+            {labels.downloadPdf}
           </a>
         )}
         <button
@@ -238,7 +238,7 @@ export function ConfirmationDetailClient({ confirmationId, deliveryNoteUrl, lief
               className="h-7 px-2.5 rounded-lg bg-slate-700 text-white text-[11px] font-medium hover:bg-slate-600 transition-colors whitespace-nowrap flex items-center gap-1.5"
             >
               <FileDown className="h-3.5 w-3.5" />
-              LS
+              {labels.downloadLieferschein}
             </a>
             <button
               onClick={handleLieferschein}
