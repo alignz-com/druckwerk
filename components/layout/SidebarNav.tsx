@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Lightbulb, Package, PlusCircle, Ruler, Settings, ShieldCheck, Sparkles, Type, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Lightbulb, Package, PlusCircle, Ruler, Settings, ShieldCheck, Sparkles, Truck, Type, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const ICONS: Record<string, LucideIcon> = {
   orders: ClipboardList,
   "new-order": PlusCircle,
   deliveries: ClipboardCheck,
+  lieferscheine: Truck,
   "admin-brands": ShieldCheck,
   "admin-users": Users,
   "admin-products": Package,

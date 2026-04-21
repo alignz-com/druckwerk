@@ -44,7 +44,10 @@ export default async function AppLayout({ children }: Props) {
   const primaryNav = [
     { href: "/orders/new", label: t.nav.newOrder, icon: "new-order" },
     { href: "/orders", label: t.nav.orders, icon: "orders" },
-    ...(isAdmin || isPrinter ? [{ href: "/confirmations", label: t.nav.deliveries, icon: "deliveries" }] : []),
+    ...(isAdmin || isPrinter ? [
+      { href: "/confirmations", label: t.nav.deliveries, icon: "deliveries" },
+      { href: "/lieferscheine", label: t.nav.lieferscheine, icon: "lieferscheine" },
+    ] : []),
   ];
   const adminNav = isAdmin
     ? [
