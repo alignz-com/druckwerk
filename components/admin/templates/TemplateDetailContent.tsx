@@ -81,6 +81,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
     pcmCode: template.pcmCode ?? "",
+    paperStockId: template.paperStockId ?? "",
   }));
 
   const [productOptions, setProductOptions] = useState<{ id: string; name: string; type: string }[]>([]);
@@ -103,6 +104,28 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       .then((data: FormatOption[]) => setFormatOptions(data))
       .catch(() => setFormatOptions([]));
   }, [metadata.productId]);
+
+  // Paper options for the selected product format
+  type PaperStockOption = { id: string; paperStockId: string; name: string; finish: string | null; weightGsm: number | null };
+  const [paperOptions, setPaperOptions] = useState<PaperStockOption[]>([]);
+  useEffect(() => {
+    if (!metadata.productFormatId) {
+      setPaperOptions([]);
+      return;
+    }
+    fetch(`/api/admin/product-formats/${metadata.productFormatId}/papers`)
+      .then((r) => r.json())
+      .then((data: any[]) =>
+        setPaperOptions(data.map((p) => ({
+          id: p.id,
+          paperStockId: p.paperStockId ?? p.paperStock?.id ?? p.id,
+          name: p.paperStock?.name ?? p.name ?? "?",
+          finish: p.paperStock?.finish ?? null,
+          weightGsm: p.paperStock?.weightGsm ?? null,
+        }))),
+      )
+      .catch(() => setPaperOptions([]));
+  }, [metadata.productFormatId]);
 
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
   const [brandSearch, setBrandSearch] = useState("");
@@ -282,6 +305,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
       hasQrCode: template.hasQrCode,
       hasPhotoSlot: template.hasPhotoSlot,
       pcmCode: (template as any).pcmCode ?? "",
+      paperStockId: template.paperStockId ?? "",
     });
     setMetadataError(null);
     setMetadataSuccess(null);
@@ -370,6 +394,7 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
           hasQrCode: metadata.hasQrCode,
           hasPhotoSlot: metadata.hasPhotoSlot,
           pcmCode: metadata.pcmCode.trim() || null,
+          paperStockId: metadata.paperStockId || null,
         }),
       });
 
@@ -774,6 +799,31 @@ export default function TemplateDetailContent({ template, onDelete }: Props) {
                   </p>
                 );
               })()}
+            </div>
+          )}
+
+          {paperOptions.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="template-paper">{locale === "de" ? "Papier" : "Paper"}</Label>
+              <Select
+                value={metadata.paperStockId || "none"}
+                onValueChange={(v) => {
+                  setMetadata((c) => ({ ...c, paperStockId: v === "none" ? "" : v }));
+                  setMetadataSuccess(null);
+                }}
+              >
+                <SelectTrigger id="template-paper">
+                  <SelectValue placeholder={locale === "de" ? "Kein Papier" : "No paper selected"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{locale === "de" ? "Kein Papier" : "No paper selected"}</SelectItem>
+                  {paperOptions.map((p) => (
+                    <SelectItem key={p.paperStockId} value={p.paperStockId}>
+                      {p.name}{p.weightGsm ? ` · ${p.weightGsm}g` : ""}{p.finish ? ` · ${p.finish}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>

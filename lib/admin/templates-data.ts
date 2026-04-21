@@ -62,6 +62,7 @@ export type AdminTemplateSummary = {
   product: { id: string; name: string; trimWidthMm: number | null; trimHeightMm: number | null; canvasWidthMm: number | null; canvasHeightMm: number | null; printDpi: number | null; pcmCode: string | null } | null;
   productFormatId: string | null;
   productFormat: AdminProductFormatSummary | null;
+  paperStockId: string | null;
   paperStock: AdminPaperStockSummary | null;
   spotColors: Array<{ name: string; resourceName: string; page: number; alternateSpace: string; rgbFallback: string }> | null;
   hasQrCode: boolean;
@@ -182,6 +183,7 @@ export function mapTemplateToAdminSummary(template: TemplateWithRelations): Admi
           pcmCode: template.productFormat.pcmCode ?? null,
         }
       : null,
+    paperStockId: template.paperStockId ?? null,
     spotColors: (template.spotColors as AdminTemplateSummary["spotColors"]) ?? null,
     hasQrCode: template.hasQrCode,
     hasPhotoSlot: template.hasPhotoSlot,
