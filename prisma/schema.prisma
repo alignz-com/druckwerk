@@ -833,6 +833,8 @@ model SystemSettings {
   city                   String?
   countryCode            String?
   confirmationFontFamily String?
+  // Email: BCC address for all outbound transactional emails (order confirmations, etc.)
+  emailBcc               String?
   // Letterhead PDF template
   letterheadUrl          String?
   letterheadStoragePath  String?

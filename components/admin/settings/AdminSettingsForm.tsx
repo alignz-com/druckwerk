@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Building2, FileText, ImagePlus, Loader2, Receipt, Trash2 } from "lucide-react";
+import { Building2, FileText, ImagePlus, Loader2, Mail, Receipt, Trash2 } from "lucide-react";
 
 import { useTranslations } from "@/components/providers/locale-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ type Settings = {
   city: string | null;
   countryCode: string | null;
   confirmationFontFamily: string | null;
+  emailBcc: string | null;
   letterheadUrl: string | null;
   safeTopMm: number | null;
   safeBottomMm: number | null;
@@ -192,6 +193,10 @@ export function AdminSettingsForm() {
           <TabsTrigger value="confirmation" className="flex items-center gap-2 data-[state=active]:bg-white">
             <Receipt className="h-4 w-4" />
             {t("tabConfirmation")}
+          </TabsTrigger>
+          <TabsTrigger value="email" className="flex items-center gap-2 data-[state=active]:bg-white">
+            <Mail className="h-4 w-4" />
+            {t("tabEmail")}
           </TabsTrigger>
         </TabsList>
 
@@ -431,6 +436,30 @@ export function AdminSettingsForm() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-slate-500">{t("confirmationFontHint")}</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ============================================================= */}
+        {/* EMAIL TAB                                                      */}
+        {/* ============================================================= */}
+        <TabsContent value="email" className="space-y-6">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle className="text-base">{t("email")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-slate-500">{t("emailHint")}</p>
+              <div className="space-y-2">
+                <Label>{t("emailBcc")}</Label>
+                <Input
+                  type="email"
+                  value={settings.emailBcc ?? ""}
+                  onChange={(e) => update({ emailBcc: e.target.value })}
+                  placeholder={t("emailBccPlaceholder")}
+                />
+                <p className="text-xs text-slate-500">{t("emailBccHint")}</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

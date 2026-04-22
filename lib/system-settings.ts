@@ -19,6 +19,7 @@ export async function updateSystemSettings(
     city: string | null;
     countryCode: string | null;
     confirmationFontFamily: string | null;
+    emailBcc: string | null;
     letterheadUrl: string | null;
     letterheadStoragePath: string | null;
     safeTopMm: number | null;

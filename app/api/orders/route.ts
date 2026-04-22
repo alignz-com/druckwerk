@@ -20,14 +20,13 @@ import { getTemplateForBrandOrGlobal } from "@/lib/templates";
 import { DELIVERY_OPTIONS } from "@/lib/delivery-options";
 import { addBusinessDays } from "@/lib/date-utils";
 import { buildJdfDocument } from "@/lib/jdf";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendOrderConfirmation } from "@/lib/email";
 import { getBrandsForUser } from "@/lib/brand-access";
 import { normalizeWebUrl } from "@/lib/normalize-url";
 import { saveUserOrderProfile } from "@/lib/user-order-profile";
 import { resolveAllowedQuantities } from "@/lib/order-quantities";
 
 export const runtime = "nodejs";
-const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
 async function generateOrderThumbnail(pdfBytes: Uint8Array): Promise<Buffer | null> {
   const id = randomUUID();
@@ -146,28 +145,6 @@ function buildFileBaseName(brandName: string | null | undefined, requesterName: 
 function toStorageKey(referenceCode: string, baseName: string, extension: string) {
   const safeSegment = baseName.replace(/\s+/g, "_") || referenceCode;
   return `${referenceCode}/${safeSegment}.${extension}`;
-}
-
-function formatAddressSummary(address?: {
-  companyName?: string;
-  street?: string;
-  postalCode?: string;
-  city?: string;
-  country?: string;
-  addressExtra?: string;
-}) {
-  if (!address) return undefined;
-  const lines = [
-    address.companyName,
-    address.street,
-    address.addressExtra,
-    [address.postalCode, address.city].filter(Boolean).join(" "),
-    address.country,
-  ]
-    .filter((part) => !!part && part.trim().length > 0)
-    .map((part) => part?.trim());
-  if (!lines.length) return undefined;
-  return lines.join(", ");
 }
 
 
@@ -590,30 +567,9 @@ export async function POST(req: Request) {
       });
     }
 
-    const addressSummary = formatAddressSummary(addressMeta);
-    const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : undefined;
-    const recipients: Array<{ to: string; userName: string | null | undefined }> = [];
-    if (session.user.email) {
-      recipients.push({ to: session.user.email, userName: session.user.name });
-    }
-    recipients.push({ to: "webshop@dth.at", userName: null });
-
-    await Promise.allSettled(
-      recipients.map(({ to, userName }) =>
-        sendOrderConfirmationEmail({
-          to,
-          userName,
-          referenceCode,
-          cardHolderName: data.name,
-          quantity: data.quantity,
-          templateLabel: templateDefinition.label,
-          brandLabel: brand?.name ?? null,
-          deliveryDate: deliveryDueAt,
-          addressSummary,
-          orderUrl,
-          customerReference: data.customerReference || null,
-        }),
-      ),
+    // Fire-and-forget: confirmation email with mockup, does not block the order response.
+    sendOrderConfirmation(order.id).catch((err) =>
+      console.error("[orders] sendOrderConfirmation failed:", err),
     );
 
     return NextResponse.json({ success: true, orderId: order.id, referenceCode }, { status: 201 });

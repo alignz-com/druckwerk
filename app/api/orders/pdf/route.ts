@@ -12,6 +12,7 @@ import { addBusinessDays } from "@/lib/date-utils"
 import { extractAndUploadPdfItem } from "@/lib/pdf-item-extract"
 import { generatePdfOrderJdfs } from "@/lib/generate-pdf-order-jdfs"
 import { reserveReferenceCode } from "@/lib/order-reference"
+import { sendOrderConfirmation } from "@/lib/email"
 
 const itemMetaSchema = z.object({
   filename: z.string(),
@@ -242,6 +243,11 @@ export async function POST(req: NextRequest) {
     // Auto-generate JDFs in the background — non-blocking, failures are non-fatal
     generatePdfOrderJdfs(order.id, { name: session.user.name, email: session.user.email }).catch((err) =>
       console.error("[orders/pdf] JDF generation failed:", err)
+    )
+
+    // Confirmation email — runs after thumbnails/PDFs are uploaded, fire-and-forget.
+    sendOrderConfirmation(order.id).catch((err) =>
+      console.error("[orders/pdf] sendOrderConfirmation failed:", err)
     )
 
     return NextResponse.json({ orderId: order.id, referenceCode })

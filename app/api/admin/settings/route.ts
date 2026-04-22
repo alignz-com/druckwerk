@@ -52,6 +52,13 @@ export async function PUT(req: Request) {
     data.confirmationFontFamily =
       typeof payload.confirmationFontFamily === "string" ? payload.confirmationFontFamily.trim() || null : null;
   }
+  if (payload.emailBcc !== undefined) {
+    const raw = typeof payload.emailBcc === "string" ? payload.emailBcc.trim() : "";
+    if (raw && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw)) {
+      return NextResponse.json({ error: "Invalid BCC email" }, { status: 400 });
+    }
+    data.emailBcc = raw || null;
+  }
   if (payload.letterheadUrl !== undefined) {
     data.letterheadUrl = typeof payload.letterheadUrl === "string" ? payload.letterheadUrl.trim() || null : null;
     if (!data.letterheadUrl) {
