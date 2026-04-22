@@ -72,8 +72,16 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 
   // Header
   const headerHtml = input.company.logoUrl
-    ? `<img src="${escapeAttr(input.company.logoUrl)}" alt="${escapeAttr(input.company.name)}" style="max-height:36px;width:auto;display:block;border:0;">`
-    : `<div style="font-size:18px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
+    ? `<img src="${escapeAttr(input.company.logoUrl)}" alt="${escapeAttr(input.company.name)}" style="max-height:52px;width:auto;display:block;border:0;">`
+    : `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
+
+  const orderNumberCardHtml = `
+      <tr><td style="padding:24px 32px 0;">
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;">${escapeHtml(t.orderNumberLabel)}</div>
+          <div style="font-size:20px;font-weight:600;color:#111827;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(input.referenceCode)}</div>
+        </div>
+      </td></tr>`;
 
   // Body: either BC details or PDF item list
   let bodyHtml = "";
@@ -95,6 +103,8 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
           <img src="cid:${contentId}" alt="" style="max-width:100%;height:auto;display:block;border:0;">
         </td></tr>`;
     }
+
+    bodyHtml += orderNumberCardHtml;
 
     const rows: Array<[string, string]> = [];
     rows.push([t.cardHolderLabel, bc.cardHolderName]);
@@ -152,6 +162,8 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
         </table>
       </td></tr>`;
 
+    bodyHtml += orderNumberCardHtml;
+
     // Top-level details for upload orders
     const rows: Array<[string, string]> = [];
     if (input.brandLabel) rows.push([t.brandLabel, input.brandLabel]);
@@ -178,7 +190,7 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 
   const ctaHtml = input.orderUrl
     ? `
-      <tr><td style="padding:24px 32px 8px;" align="center">
+      <tr><td style="padding:28px 32px 36px;" align="center">
         <a href="${escapeAttr(input.orderUrl)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:500;">${escapeHtml(t.viewOrderCta)}</a>
       </td></tr>`
     : "";
@@ -207,18 +219,14 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f7;padding:24px 12px;">
   <tr><td align="center">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:560px;width:100%;border:1px solid #e5e7eb;">
-      <tr><td style="padding:28px 32px 0;">${headerHtml}</td></tr>
-      <tr><td style="padding:20px 32px 0;">
+      <tr><td style="padding:36px 32px 28px;">${headerHtml}</td></tr>
+      <tr><td style="padding:0 32px;">
         <p style="margin:0 0 10px;font-size:15px;line-height:1.5;color:#111827;">${escapeHtml(greeting)}</p>
-        <p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#4b5563;">${escapeHtml(t.intro)}</p>
-        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
-          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;">${escapeHtml(t.orderNumberLabel)}</div>
-          <div style="font-size:20px;font-weight:600;color:#111827;margin-top:2px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(input.referenceCode)}</div>
-        </div>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#4b5563;">${escapeHtml(t.intro)}</p>
       </td></tr>
       ${bodyHtml}
       ${ctaHtml}
-      <tr><td style="padding:24px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;">
+      <tr><td style="padding:28px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;">
         <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">${escapeHtml(t.contactLine)}</p>
         <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">
           ${escapeHtml(t.signoff)},<br>
