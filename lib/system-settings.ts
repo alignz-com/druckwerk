@@ -14,6 +14,7 @@ export async function updateSystemSettings(
   data: Partial<{
     companyName: string;
     logoUrl: string | null;
+    logoDarkUrl: string | null;
     street: string | null;
     postalCode: string | null;
     city: string | null;

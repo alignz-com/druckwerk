@@ -16,6 +16,7 @@ const common = {
     postalCode: "6830",
     city: "Rankweil",
     logoUrl: null,
+    logoDarkUrl: null,
   },
 } as const;
 
@@ -46,6 +47,18 @@ const pdfDe = buildOrderConfirmation({
 
 const bcEn = buildOrderConfirmation({ ...common, locale: "en", referenceCode: "2026-00044", quantity: 100, customerReference: null,
   order: { kind: "bc", cardHolderName: "John Doe", templateLabel: "Classic Business Card", mockupPngBuffer: null } });
+
+// Both-logo variant: lets you inspect the CSS swap
+const bcWithLogos = buildOrderConfirmation({
+  ...common,
+  company: { ...common.company, logoUrl: "https://placehold.co/200x60/ffffff/111827?text=Light+Logo", logoDarkUrl: "https://placehold.co/200x60/111827/ffffff?text=Dark+Logo" },
+  locale: "en",
+  referenceCode: "2026-00045",
+  quantity: 50,
+  customerReference: null,
+  order: { kind: "bc", cardHolderName: "Jane Example", templateLabel: "Classic", mockupPngBuffer: null },
+});
+writeFileSync("/tmp/email-bc-dualLogo.html", bcWithLogos.html);
 
 writeFileSync("/tmp/email-bc-de.html", bcDe.html);
 writeFileSync("/tmp/email-pdf-de.html", pdfDe.html);

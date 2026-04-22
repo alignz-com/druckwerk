@@ -51,6 +51,7 @@ export type OrderConfirmationInput = {
     postalCode: string | null;
     city: string | null;
     logoUrl: string | null;
+    logoDarkUrl: string | null;
   };
   order: BcOrderInput | UploadOrderInput;
 };
@@ -70,10 +71,25 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 
   const deliveryText = input.deliveryDate ? formatDate(input.deliveryDate, locale) : null;
 
-  // Header
-  const headerHtml = input.company.logoUrl
-    ? `<img src="${escapeAttr(input.company.logoUrl)}" alt="${escapeAttr(input.company.name)}" style="max-height:52px;width:auto;display:block;border:0;">`
-    : `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
+  // Header — both logo variants render, the dark one unhides in clients that honor prefers-color-scheme.
+  // If only one variant is uploaded it's shown always; if neither, fall back to text.
+  const hasLight = !!input.company.logoUrl;
+  const hasDark = !!input.company.logoDarkUrl;
+  const logoAlt = escapeAttr(input.company.name);
+  let headerHtml: string;
+  if (hasLight && hasDark) {
+    headerHtml =
+      `<img src="${escapeAttr(input.company.logoUrl!)}" alt="${logoAlt}" class="logo-light" style="max-height:52px;width:auto;display:block;border:0;">` +
+      `<!--[if !mso]><!-->` +
+      `<img src="${escapeAttr(input.company.logoDarkUrl!)}" alt="${logoAlt}" class="logo-dark" style="max-height:52px;width:auto;display:none;border:0;mso-hide:all;">` +
+      `<!--<![endif]-->`;
+  } else if (hasLight) {
+    headerHtml = `<img src="${escapeAttr(input.company.logoUrl!)}" alt="${logoAlt}" style="max-height:52px;width:auto;display:block;border:0;">`;
+  } else if (hasDark) {
+    headerHtml = `<img src="${escapeAttr(input.company.logoDarkUrl!)}" alt="${logoAlt}" style="max-height:52px;width:auto;display:block;border:0;">`;
+  } else {
+    headerHtml = `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
+  }
 
   const orderNumberCardHtml = `
       <tr><td style="padding:24px 32px 0;">
@@ -108,8 +124,8 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 
     const rows: Array<[string, string]> = [];
     rows.push([t.cardHolderLabel, bc.cardHolderName]);
-    if (bc.templateLabel) rows.push([t.templateLabel, bc.templateLabel]);
     if (input.brandLabel) rows.push([t.brandLabel, input.brandLabel]);
+    if (bc.templateLabel) rows.push([t.templateLabel, bc.templateLabel]);
     if (input.quantity != null) rows.push([t.quantityLabel, String(input.quantity)]);
     if (deliveryText) rows.push([t.deliveryDateLabel, deliveryText]);
     if (input.addressSummary) rows.push([t.shippingLabel, input.addressSummary]);
@@ -121,8 +137,8 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
       </td></tr>`;
 
     bodyText += `${t.cardHolderLabel}: ${bc.cardHolderName}\n`;
-    if (bc.templateLabel) bodyText += `${t.templateLabel}: ${bc.templateLabel}\n`;
     if (input.brandLabel) bodyText += `${t.brandLabel}: ${input.brandLabel}\n`;
+    if (bc.templateLabel) bodyText += `${t.templateLabel}: ${bc.templateLabel}\n`;
     if (input.quantity != null) bodyText += `${t.quantityLabel}: ${input.quantity}\n`;
     if (deliveryText) bodyText += `${t.deliveryDateLabel}: ${deliveryText}\n`;
     if (input.addressSummary) bodyText += `${t.shippingLabel}: ${input.addressSummary}\n`;
@@ -212,9 +228,21 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(subject)}</title>
+<style>
+  :root { color-scheme: light; supported-color-schemes: light; }
+  @media (prefers-color-scheme: dark) {
+    .logo-light { display: none !important; }
+    .logo-dark  { display: block !important; }
+  }
+  /* Force-dark protection for Outlook.com / Yahoo */
+  [data-ogsc] .logo-light { display: none !important; }
+  [data-ogsc] .logo-dark  { display: block !important; }
+</style>
 </head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;color-scheme:light;">
 <div style="display:none;max-height:0;overflow:hidden;visibility:hidden;mso-hide:all;">${escapeHtml(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f7;padding:24px 12px;">
   <tr><td align="center">

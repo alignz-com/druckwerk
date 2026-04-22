@@ -22,6 +22,7 @@ type FontFamily = { id: string; name: string; slug: string };
 type Settings = {
   companyName: string;
   logoUrl: string | null;
+  logoDarkUrl: string | null;
   street: string | null;
   postalCode: string | null;
   city: string | null;
@@ -78,10 +79,12 @@ export function AdminSettingsForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingLogoDark, setUploadingLogoDark] = useState(false);
   const [uploadingLetterhead, setUploadingLetterhead] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
+  const logoDarkRef = useRef<HTMLInputElement>(null);
   const letterheadRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -139,6 +142,29 @@ export function AdminSettingsForm() {
     } finally {
       setUploadingLogo(false);
       if (logoRef.current) logoRef.current.value = "";
+    }
+  };
+
+  const handleLogoDarkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogoDark(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("variant", "dark");
+      const res = await fetch("/api/admin/settings/logo", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        update({ logoDarkUrl: data.url });
+      }
+    } finally {
+      setUploadingLogoDark(false);
+      if (logoDarkRef.current) logoDarkRef.current.value = "";
     }
   };
 
@@ -307,6 +333,67 @@ export function AdminSettingsForm() {
                 accept="image/png,image/jpeg,image/webp"
                 className="sr-only"
                 onChange={handleLogoUpload}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle className="text-base">{t("logoDark")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-4">
+                {settings.logoDarkUrl ? (
+                  <>
+                    <div className="flex h-16 w-32 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-900 p-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={settings.logoDarkUrl}
+                        alt="Company logo (dark mode)"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploadingLogoDark}
+                        onClick={() => logoDarkRef.current?.click()}
+                      >
+                        {uploadingLogoDark ? t("saving") : t("logoDarkUpload")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => update({ logoDarkUrl: null })}
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        {t("logoDarkRemove")}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => logoDarkRef.current?.click()}
+                    disabled={uploadingLogoDark}
+                    className="flex h-20 w-full items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 transition-colors hover:border-slate-400 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    {uploadingLogoDark ? t("saving") : t("logoDarkUpload")}
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">{t("logoDarkHint")}</p>
+              <input
+                ref={logoDarkRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                onChange={handleLogoDarkUpload}
               />
             </CardContent>
           </Card>
