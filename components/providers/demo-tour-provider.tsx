@@ -16,6 +16,17 @@ function isElementVisible(el: HTMLElement): boolean {
   return el.offsetParent !== null || el.offsetWidth > 0
 }
 
+function filterVisibleSteps(steps: ReturnType<typeof resolveSteps>) {
+  return steps.filter((step) => {
+    if (!step.element) return true
+    const selector = typeof step.element === "string" ? step.element : null
+    if (!selector) return true
+    const el = document.querySelector(selector) as HTMLElement | null
+    if (!el) return false
+    return isElementVisible(el)
+  })
+}
+
 export function DemoTourProvider({ isDemo }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -28,38 +39,36 @@ export function DemoTourProvider({ isDemo }: Props) {
   useEffect(() => {
     if (!isDemo || !tourParam || tourStarted.current) return
 
-    // Determine which tour to run based on path + param
-    const isSelectorTour = tourParam === "bc" && pathname === "/orders/new"
-      && document.querySelector("[data-tour='selector-bc']") !== null
-    const isBcFormDirect = tourParam === "bc" && pathname === "/orders/new"
-      && !isSelectorTour
-    const isBcCardTour = tourParam === "bc" && pathname === "/orders/new/card"
-    const isPdfTour = tourParam === "pdf" && pathname === "/orders/new/pdf"
+    const isNewOrderPage = pathname === "/orders/new"
+    const isCardPage = pathname === "/orders/new/card"
+    const isPdfPage = pathname === "/orders/new/pdf"
 
-    if (!isSelectorTour && !isBcFormDirect && !isBcCardTour && !isPdfTour) return
+    if (tourParam === "bc" && !isNewOrderPage && !isCardPage) return
+    if (tourParam === "pdf" && !isPdfPage) return
 
-    let steps
-    if (isSelectorTour) {
-      steps = SELECTOR_TOUR_STEPS
-    } else if (isBcFormDirect || isBcCardTour) {
-      steps = BC_TOUR_STEPS
-    } else {
-      steps = PDF_TOUR_STEPS
-    }
-
-    const resolvedSteps = resolveSteps(steps, t)
-
-    // Wait for elements to render
+    // Wait for elements to render, then decide which tour to show
     const timeout = setTimeout(() => {
-      // Filter steps to only those whose elements are visible in the DOM
-      const availableSteps = resolvedSteps.filter((step) => {
-        if (!step.element) return true
-        const selector = typeof step.element === "string" ? step.element : null
-        if (!selector) return true
-        const el = document.querySelector(selector) as HTMLElement | null
-        if (!el) return false
-        return isElementVisible(el)
-      })
+      let steps
+      let isBcCardTour = false
+
+      if (tourParam === "bc" && isNewOrderPage) {
+        // Check if selector is present (both order types available)
+        const hasSelector = document.querySelector("[data-tour='selector-bc']") !== null
+        if (hasSelector) {
+          steps = SELECTOR_TOUR_STEPS
+        } else {
+          // Form rendered directly (only BC access)
+          steps = BC_TOUR_STEPS
+        }
+      } else if (tourParam === "bc" && isCardPage) {
+        steps = BC_TOUR_STEPS
+        isBcCardTour = true
+      } else {
+        steps = PDF_TOUR_STEPS
+      }
+
+      const resolvedSteps = resolveSteps(steps, t)
+      const availableSteps = filterVisibleSteps(resolvedSteps)
 
       if (availableSteps.length === 0) return
 
