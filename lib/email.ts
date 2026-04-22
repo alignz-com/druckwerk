@@ -115,7 +115,7 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
         ? (order.meta as Record<string, unknown>).customerReference
         : null;
 
-    const orderUrl = APP_URL ? `${APP_URL}/orders?detail=${encodeURIComponent(order.id)}` : null;
+    const orderUrl = APP_URL ? `${APP_URL}/orders/${encodeURIComponent(order.id)}` : null;
 
     let input: OrderConfirmationInput;
     if (order.type === "UPLOAD") {
