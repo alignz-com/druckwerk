@@ -187,7 +187,6 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
           postalCode: settings.postalCode,
           city: settings.city,
           logoUrl: settings.logoUrl,
-          logoDarkUrl: settings.logoDarkUrl,
         },
         order: { kind: "upload", items },
       };
@@ -211,7 +210,6 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
           postalCode: settings.postalCode,
           city: settings.city,
           logoUrl: settings.logoUrl,
-          logoDarkUrl: settings.logoDarkUrl,
         },
         order: { kind: "bc", cardHolderName, templateLabel, mockupPngBuffer: mockup },
       };

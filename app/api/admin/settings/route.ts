@@ -36,9 +36,6 @@ export async function PUT(req: Request) {
   if (payload.logoUrl !== undefined) {
     data.logoUrl = typeof payload.logoUrl === "string" ? payload.logoUrl.trim() || null : null;
   }
-  if (payload.logoDarkUrl !== undefined) {
-    data.logoDarkUrl = typeof payload.logoDarkUrl === "string" ? payload.logoDarkUrl.trim() || null : null;
-  }
   if (payload.street !== undefined) {
     data.street = typeof payload.street === "string" ? payload.street.trim() || null : null;
   }

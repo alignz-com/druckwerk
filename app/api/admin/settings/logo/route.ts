@@ -30,19 +30,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File too large (max 2MB)" }, { status: 400 });
   }
 
-  const variant = formData.get("variant") === "dark" ? "dark" : "light";
   const sanitizedName = file.name.replace(/[^\w.-]+/g, "_") || "logo";
-  const prefix = variant === "dark" ? "logo-dark" : "logo";
-  const path = `logos/${Date.now()}-${prefix}-${sanitizedName}`;
+  const path = `logos/${Date.now()}-${sanitizedName}`;
 
   const upload = await put(path, file, {
     access: "public",
     contentType: file.type,
   });
 
-  await updateSystemSettings(
-    variant === "dark" ? { logoDarkUrl: upload.url } : { logoUrl: upload.url },
-  );
+  await updateSystemSettings({ logoUrl: upload.url });
 
-  return NextResponse.json({ url: upload.url, variant });
+  return NextResponse.json({ url: upload.url });
 }

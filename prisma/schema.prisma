@@ -828,7 +828,6 @@ model SystemSettings {
   id                     String   @id @default("singleton")
   companyName            String   @default("Thurnher Druckerei GmbH")
   logoUrl                String?
-  logoDarkUrl            String?
   street                 String?
   postalCode             String?
   city                   String?

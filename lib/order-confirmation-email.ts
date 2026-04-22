@@ -51,7 +51,6 @@ export type OrderConfirmationInput = {
     postalCode: string | null;
     city: string | null;
     logoUrl: string | null;
-    logoDarkUrl: string | null;
   };
   order: BcOrderInput | UploadOrderInput;
 };
@@ -71,25 +70,10 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 
   const deliveryText = input.deliveryDate ? formatDate(input.deliveryDate, locale) : null;
 
-  // Header — both logo variants render, the dark one unhides in clients that honor prefers-color-scheme.
-  // If only one variant is uploaded it's shown always; if neither, fall back to text.
-  const hasLight = !!input.company.logoUrl;
-  const hasDark = !!input.company.logoDarkUrl;
-  const logoAlt = escapeAttr(input.company.name);
-  let headerHtml: string;
-  if (hasLight && hasDark) {
-    headerHtml =
-      `<img src="${escapeAttr(input.company.logoUrl!)}" alt="${logoAlt}" class="logo-light" style="max-height:52px;width:auto;display:block;border:0;">` +
-      `<!--[if !mso]><!-->` +
-      `<img src="${escapeAttr(input.company.logoDarkUrl!)}" alt="${logoAlt}" class="logo-dark" style="max-height:52px;width:auto;display:none;border:0;mso-hide:all;">` +
-      `<!--<![endif]-->`;
-  } else if (hasLight) {
-    headerHtml = `<img src="${escapeAttr(input.company.logoUrl!)}" alt="${logoAlt}" style="max-height:52px;width:auto;display:block;border:0;">`;
-  } else if (hasDark) {
-    headerHtml = `<img src="${escapeAttr(input.company.logoDarkUrl!)}" alt="${logoAlt}" style="max-height:52px;width:auto;display:block;border:0;">`;
-  } else {
-    headerHtml = `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
-  }
+  // Header — color-scheme meta below tells Apple Mail to stay in light mode.
+  const headerHtml = input.company.logoUrl
+    ? `<img src="${escapeAttr(input.company.logoUrl)}" alt="${escapeAttr(input.company.name)}" style="max-height:52px;width:auto;display:block;border:0;">`
+    : `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
 
   const orderNumberCardHtml = `
       <tr><td style="padding:24px 32px 0;">
@@ -233,13 +217,6 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
 <title>${escapeHtml(subject)}</title>
 <style>
   :root { color-scheme: light; supported-color-schemes: light; }
-  @media (prefers-color-scheme: dark) {
-    .logo-light { display: none !important; }
-    .logo-dark  { display: block !important; }
-  }
-  /* Force-dark protection for Outlook.com / Yahoo */
-  [data-ogsc] .logo-light { display: none !important; }
-  [data-ogsc] .logo-dark  { display: block !important; }
 </style>
 </head>
 <body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;color-scheme:light;">
