@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardCheck, ClipboardList, LayoutTemplate, Layers, Lightbulb, Package, PlusCircle, Ruler, Settings, ShieldCheck, Sparkles, Truck, Type, Users, type LucideIcon } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -46,6 +47,7 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
   const itemsGap = collapsed ? "gap-2" : "gap-4";
 
   return (
+    <TooltipProvider delayDuration={150}>
     <nav className={cn("flex flex-col gap-4", className)}>
       {groups.map((group, idx) => (
         <div
@@ -82,35 +84,31 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
                   : "text-slate-600 hover:bg-slate-100",
               );
 
-              return (
-                <div
-                  key={href}
-                  className="group relative"
+              const linkEl = (
+                <Link
+                  href={href}
+                  className={linkClasses}
+                  aria-label={collapsed ? label : undefined}
                 >
-                  <Link
-                    href={href}
-                    className={linkClasses}
-                    aria-label={collapsed ? label : undefined}
-                    title={label}
-                  >
-                    {IconComponent ? (
-                      <IconComponent className="size-5 shrink-0" />
-                    ) : null}
-                    {!collapsed ? <span className="truncate">{label}</span> : null}
-                  </Link>
-                  {collapsed ? (
-                    <span
-                      role="tooltip"
-                      aria-hidden="true"
-                      className={cn(
-                        "pointer-events-none absolute left-full top-1/2 z-10 ml-3 -translate-y-1/2 translate-x-2 transform rounded-xl bg-slate-900 px-3 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition",
-                        "group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-100",
-                        "group-focus-within:translate-x-0 group-focus-within:opacity-100",
-                      )}
-                    >
-                      {label}
-                    </span>
+                  {IconComponent ? (
+                    <IconComponent className="size-5 shrink-0" />
                   ) : null}
+                  {!collapsed ? <span className="truncate">{label}</span> : null}
+                </Link>
+              );
+
+              return (
+                <div key={href} className="relative">
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={12}>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    linkEl
+                  )}
                 </div>
               );
             })}
@@ -118,5 +116,6 @@ export function SidebarNav({ groups, className, collapsed = false }: Props) {
         </div>
       ))}
     </nav>
+    </TooltipProvider>
   );
 }
