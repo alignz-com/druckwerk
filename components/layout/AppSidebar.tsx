@@ -77,11 +77,12 @@ export function AppSidebar({
         className={cn(
           "flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm",
           "lg:sticky lg:top-10 lg:z-10",
+          "lg:max-h-[calc(100vh-5rem)] lg:overflow-hidden",
         )}
       >
         <div
           className={cn(
-            "flex items-center border-b border-slate-200 px-5 py-4",
+            "flex shrink-0 items-center border-b border-slate-200 px-5 py-4",
             "justify-center",
             collapsed && "px-3",
           )}
@@ -106,7 +107,7 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "hidden lg:block px-4 py-4",
+            "hidden min-h-0 flex-1 overflow-y-auto lg:block px-4 py-4",
             collapsed && "px-0 py-5",
           )}
         >
@@ -119,8 +120,8 @@ export function AppSidebar({
 
         <div
           className={cn(
-            "border-t border-slate-200 text-sm text-slate-600",
-            collapsed ? "px-3 py-4 mt-auto" : "px-5 py-4 mt-auto",
+            "shrink-0 border-t border-slate-200 text-sm text-slate-600",
+            collapsed ? "px-3 py-4" : "px-5 py-4",
           )}
         >
           {collapsed ? (
