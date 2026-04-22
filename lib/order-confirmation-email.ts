@@ -1,4 +1,11 @@
 import { getTranslations, isLocale, type Locale } from "@/lib/i18n/messages";
+import {
+  escapeHtml,
+  renderCtaButtonRow,
+  renderEmailShell,
+  renderGreetingIntroRow,
+  type EmailCompanyInfo,
+} from "@/lib/email-shell";
 
 export type OrderConfirmationAttachment = {
   Name: string;
@@ -45,13 +52,7 @@ export type OrderConfirmationInput = {
   addressSummary: string | null;
   customerReference: string | null;
   orderUrl: string | null;
-  company: {
-    name: string;
-    street: string | null;
-    postalCode: string | null;
-    city: string | null;
-    logoUrl: string | null;
-  };
+  company: EmailCompanyInfo;
   order: BcOrderInput | UploadOrderInput;
 };
 
@@ -69,11 +70,6 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
   const preheader = t.preheader.replace("{ref}", input.referenceCode);
 
   const deliveryText = input.deliveryDate ? formatDate(input.deliveryDate, locale) : null;
-
-  // Header — color-scheme meta below tells Apple Mail to stay in light mode.
-  const headerHtml = input.company.logoUrl
-    ? `<img src="${escapeAttr(input.company.logoUrl)}" alt="${escapeAttr(input.company.name)}" style="max-height:52px;width:auto;display:block;border:0;">`
-    : `<div style="font-size:22px;font-weight:600;color:#111827;">${escapeHtml(input.company.name)}</div>`;
 
   const orderNumberCardHtml = `
       <tr><td style="padding:24px 32px 0;">
@@ -129,9 +125,14 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
     if (input.customerReference) bodyText += `${t.customerReferenceLabel}: ${input.customerReference}\n`;
   } else {
     const { items } = input.order;
+    // Uniform 56×56 square per thumbnail. Buffer is pre-normalised to a square PNG
+    // (white padding, aspect-preserved) by the sender in lib/email.ts, so HTML layout
+    // stays simple and renders consistently across clients that ignore object-fit.
+    const THUMB_SIZE = 56;
     const itemRowsHtml = items
       .map((item, i) => {
-        let thumbHtml = `<div style="width:72px;height:72px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;"></div>`;
+        const boxStyle = `width:${THUMB_SIZE}px;height:${THUMB_SIZE}px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;display:block;`;
+        let thumbHtml = `<div style="${boxStyle}"></div>`;
         if (item.thumbnailPngBuffer) {
           const contentId = `item-${i}`;
           attachments.push({
@@ -140,13 +141,13 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
             ContentType: "image/png",
             ContentID: `cid:${contentId}`,
           });
-          thumbHtml = `<img src="cid:${contentId}" alt="" width="72" height="72" style="display:block;border:1px solid #e5e7eb;border-radius:6px;object-fit:cover;">`;
+          thumbHtml = `<img src="cid:${contentId}" alt="" width="${THUMB_SIZE}" height="${THUMB_SIZE}" style="${boxStyle}">`;
         }
         const meta = formatItemMeta(item, t, locale);
         return `
         <tr>
-          <td width="88" style="padding:10px 0;vertical-align:top;width:88px;">${thumbHtml}</td>
-          <td style="padding:10px 0 10px 16px;vertical-align:top;">
+          <td width="${THUMB_SIZE + 16}" style="padding:8px 0;vertical-align:top;width:${THUMB_SIZE + 16}px;">${thumbHtml}</td>
+          <td style="padding:8px 0 8px 16px;vertical-align:top;">
             <div style="font-size:14px;font-weight:500;color:#111827;word-break:break-all;">${escapeHtml(item.filename)}</div>
             <div style="font-size:13px;color:#6b7280;margin-top:4px;">${escapeHtml(meta)}</div>
           </td>
@@ -188,61 +189,19 @@ export function buildOrderConfirmation(input: OrderConfirmationInput): OrderConf
     bodyText += "\n";
   }
 
-  const ctaHtml = input.orderUrl
-    ? `
-      <tr><td style="padding:28px 32px 36px;" align="center">
-        <a href="${escapeAttr(input.orderUrl)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:500;">${escapeHtml(t.viewOrderCta)}</a>
-      </td></tr>`
-    : "";
+  const ctaHtml = input.orderUrl ? renderCtaButtonRow(t.viewOrderCta, input.orderUrl) : "";
 
-  const companyAddressLine = [input.company.postalCode, input.company.city].filter(Boolean).join(" ");
-  const footerLines = [
-    input.company.name,
-    input.company.street,
-    companyAddressLine || null,
-  ].filter(Boolean);
-  const footerHtml = footerLines
-    .map((line, i) => (i === 0
-      ? `<strong style="color:#374151;">${escapeHtml(line!)}</strong>`
-      : escapeHtml(line!)))
-    .join("<br>");
+  const contentHtml = `${renderGreetingIntroRow(greeting, t.intro)}${bodyHtml}${ctaHtml}`;
 
-  const html = `<!DOCTYPE html>
-<html lang="${locale}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
-<title>${escapeHtml(subject)}</title>
-<style>
-  :root { color-scheme: light; supported-color-schemes: light; }
-</style>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;color-scheme:light;">
-<div style="display:none;max-height:0;overflow:hidden;visibility:hidden;mso-hide:all;">${escapeHtml(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f7;padding:24px 12px;">
-  <tr><td align="center">
-    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:560px;width:100%;border:1px solid #e5e7eb;">
-      <tr><td style="padding:36px 32px 28px;">${headerHtml}</td></tr>
-      <tr><td style="padding:0 32px;">
-        <p style="margin:0 0 10px;font-size:15px;line-height:1.5;color:#111827;">${escapeHtml(greeting)}</p>
-        <p style="margin:0;font-size:14px;line-height:1.5;color:#4b5563;">${escapeHtml(t.intro)}</p>
-      </td></tr>
-      ${bodyHtml}
-      ${ctaHtml}
-      <tr><td style="padding:28px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;">
-        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">${escapeHtml(t.contactLine)}</p>
-        <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">
-          ${escapeHtml(t.signoff)},<br>
-          ${footerHtml}
-        </p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
+  const html = renderEmailShell({
+    locale,
+    subject,
+    preheader,
+    contentHtml,
+    contactLine: t.contactLine,
+    signoff: t.signoff,
+    company: input.company,
+  });
 
   const textLines = [
     greeting,
@@ -305,19 +264,3 @@ function formatDate(value: Date, locale: Locale): string {
   }
 }
 
-function escapeHtml(input: string): string {
-  return input.replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case "&": return "&amp;";
-      case "<": return "&lt;";
-      case ">": return "&gt;";
-      case '"': return "&quot;";
-      case "'": return "&#39;";
-      default: return c;
-    }
-  });
-}
-
-function escapeAttr(input: string): string {
-  return escapeHtml(input);
-}

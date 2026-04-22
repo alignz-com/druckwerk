@@ -4,6 +4,10 @@ const mod = await import("../lib/order-confirmation-email.ts");
 const buildOrderConfirmation: typeof import("../lib/order-confirmation-email.ts").buildOrderConfirmation =
   (mod as any).buildOrderConfirmation ?? (mod as any).default?.buildOrderConfirmation;
 
+const prMod = await import("../lib/password-reset-email.ts");
+const buildPasswordResetEmail: typeof import("../lib/password-reset-email.ts").buildPasswordResetEmail =
+  (prMod as any).buildPasswordResetEmail ?? (prMod as any).default?.buildPasswordResetEmail;
+
 const common = {
   userName: "Pascal Rossi",
   brandLabel: "DTH",
@@ -47,12 +51,36 @@ const pdfDe = buildOrderConfirmation({
 const bcEn = buildOrderConfirmation({ ...common, locale: "en", referenceCode: "2026-00044", quantity: 100, customerReference: null,
   order: { kind: "bc", cardHolderName: "John Doe", templateLabel: "Classic Business Card", mockupPngBuffer: null } });
 
+const prDe = buildPasswordResetEmail({
+  locale: "de",
+  userName: "Pascal Rossi",
+  resetUrl: "https://druckwerk-stage.dth.at/reset-password?token=abc123",
+  operatingSystem: "macOS",
+  browserName: "Safari",
+  productName: "druckwerk",
+  company: common.company,
+});
+
+const prEn = buildPasswordResetEmail({
+  locale: "en",
+  userName: "Jane Doe",
+  resetUrl: "https://druckwerk-stage.dth.at/reset-password?token=xyz456",
+  operatingSystem: "iOS 17",
+  browserName: "Mobile Safari",
+  productName: "druckwerk",
+  company: common.company,
+});
+
 writeFileSync("/tmp/email-bc-de.html", bcDe.html);
 writeFileSync("/tmp/email-pdf-de.html", pdfDe.html);
 writeFileSync("/tmp/email-bc-en.html", bcEn.html);
+writeFileSync("/tmp/email-password-reset-de.html", prDe.html);
+writeFileSync("/tmp/email-password-reset-en.html", prEn.html);
 console.log("BC DE subject:", bcDe.subject);
 console.log("PDF DE subject:", pdfDe.subject);
 console.log("BC EN subject:", bcEn.subject);
-console.log("\nWrote /tmp/email-bc-de.html, /tmp/email-pdf-de.html, /tmp/email-bc-en.html");
-console.log("\n--- BC DE TEXT ---\n" + bcDe.text);
-console.log("\n--- PDF DE TEXT ---\n" + pdfDe.text);
+console.log("PR DE subject:", prDe.subject);
+console.log("PR EN subject:", prEn.subject);
+console.log("\nWrote /tmp/email-bc-de.html, /tmp/email-pdf-de.html, /tmp/email-bc-en.html, /tmp/email-password-reset-de.html, /tmp/email-password-reset-en.html");
+console.log("\n--- PR DE TEXT ---\n" + prDe.text);
+console.log("\n--- PR EN TEXT ---\n" + prEn.text);

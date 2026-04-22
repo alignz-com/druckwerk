@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { getSystemSettings } from "@/lib/system-settings";
 import { S3_PUBLIC_URL, ORDERS_BUCKET } from "@/lib/s3";
@@ -5,11 +6,10 @@ import {
   buildOrderConfirmation,
   type OrderConfirmationInput,
 } from "@/lib/order-confirmation-email";
+import { buildPasswordResetEmail } from "@/lib/password-reset-email";
 
 const POSTMARK_API_URL = "https://api.postmarkapp.com/email";
 const PRODUCT_NAME = process.env.APP_PRODUCT_NAME || process.env.NEXT_PUBLIC_APP_NAME || "druckwerk";
-const SUPPORT_URL =
-  process.env.SUPPORT_URL || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://druckwerk.dth.at";
 const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "";
 
 export type PasswordResetEmailPayload = {
@@ -38,46 +38,22 @@ export async function sendPasswordResetEmail({
     return;
   }
 
-  const isGerman = locale?.toLowerCase().startsWith("de");
-  const namePart = name?.trim() ? ` ${name.trim()}` : "";
-  const osInfo = operatingSystem || "Unknown OS";
-  const browserInfo = browserName || "Unknown browser";
-
-  const subject = isGerman ? `${PRODUCT_NAME}: Passwort zurücksetzen` : `${PRODUCT_NAME}: Reset your password`;
-  const textBody = isGerman
-    ? `Hallo${namePart},
-
-du hast angefordert, dein Passwort für ${PRODUCT_NAME} zurückzusetzen. Öffne den folgenden Link (24 Stunden gültig):
-
-${resetUrl}
-
-Anfrage von Gerät: ${osInfo} / ${browserInfo}. Wenn du das nicht warst, ignoriere diese Nachricht oder kontaktiere uns unter ${SUPPORT_URL}.
-
-Viele Grüße
-
-${PRODUCT_NAME} Support`
-    : `Hi${namePart},
-
-You requested to reset your ${PRODUCT_NAME} password. Use this link (valid for 24 hours):
-
-${resetUrl}
-
-Request originated from: ${osInfo} / ${browserInfo}. If you didn’t make it, ignore this message or reach us at ${SUPPORT_URL}.
-
-Thanks,
-${PRODUCT_NAME} Support`;
-
-  const htmlBody = isGerman
-    ? `<p>Hallo${namePart},</p>
-<p>du hast angefordert, dein Passwort für ${PRODUCT_NAME} zurückzusetzen. Der Link gilt für 24&nbsp;Stunden.</p>
-<p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Passwort zurücksetzen</a></p>
-<p>Gerät: ${osInfo} / ${browserInfo}. Warst du das nicht? Ignoriere die E-Mail oder kontaktiere uns unter <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
-<p>Viele Grüße<br/>${PRODUCT_NAME} Support</p>`
-    : `<p>Hi${namePart},</p>
-<p>You requested to reset your ${PRODUCT_NAME} password. The link is valid for 24&nbsp;hours.</p>
-<p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Reset password</a></p>
-<p>Device: ${osInfo} / ${browserInfo}. Didn’t make this request? Ignore this email or contact us at <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_URL}</a>.</p>
-<p>Thanks,<br/>${PRODUCT_NAME} Support</p>`;
+  const settings = await getSystemSettings();
+  const built = buildPasswordResetEmail({
+    locale: locale ?? null,
+    userName: name ?? null,
+    resetUrl,
+    operatingSystem: operatingSystem ?? null,
+    browserName: browserName ?? null,
+    productName: PRODUCT_NAME,
+    company: {
+      name: settings.companyName,
+      street: settings.street,
+      postalCode: settings.postalCode,
+      city: settings.city,
+      logoUrl: settings.logoUrl,
+    },
+  });
 
   const response = await fetch(POSTMARK_API_URL, {
     method: "POST",
@@ -88,9 +64,9 @@ ${PRODUCT_NAME} Support`;
     body: JSON.stringify({
       From: fromEmail,
       To: to,
-      Subject: subject,
-      HtmlBody: htmlBody,
-      TextBody: textBody,
+      Subject: built.subject,
+      HtmlBody: built.html,
+      TextBody: built.text,
       MessageStream: messageStream,
     }),
   });
@@ -148,7 +124,8 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
           const thumbUrl = item.thumbnailStoragePath
             ? `${S3_PUBLIC_URL}/${ORDERS_BUCKET}/${item.thumbnailStoragePath}`
             : null;
-          const thumb = thumbUrl ? await fetchAsBuffer(thumbUrl) : null;
+          const rawThumb = thumbUrl ? await fetchAsBuffer(thumbUrl) : null;
+          const thumb = rawThumb ? await normalizeThumbnailToSquare(rawThumb) : null;
           const productName = pickLocalized(
             locale,
             item.productFormat?.product?.nameEn,
@@ -241,6 +218,24 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
     }
   } catch (err) {
     console.error("[email] sendOrderConfirmation error:", err);
+  }
+}
+
+// Resize a PDF-item thumbnail to a fixed square (2× retina of the rendered size)
+// with white padding, preserving aspect ratio. Produces visually uniform rows
+// even in email clients that ignore CSS object-fit.
+async function normalizeThumbnailToSquare(buffer: Buffer): Promise<Buffer | null> {
+  try {
+    return await sharp(buffer)
+      .resize(112, 112, {
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+      })
+      .png()
+      .toBuffer();
+  } catch (err) {
+    console.warn("[email] thumbnail normalize failed", err);
+    return buffer;
   }
 }
 

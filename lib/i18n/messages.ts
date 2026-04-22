@@ -1686,6 +1686,20 @@ export const messages = {
       },
     },
     email: {
+      passwordReset: {
+        subject: "Reset your password",
+        preheader: "Reset your {productName} password",
+        greeting: "Hi {name},",
+        greetingFallback: "Hi,",
+        intro: "Someone \u2014 hopefully you \u2014 requested a password reset for your {productName} account. Tap the button below to set a new password.",
+        cta: "Reset password",
+        expiryNotice: "This link is valid for 24 hours.",
+        deviceInfo: "Requested from {browser} on {os}.",
+        deviceInfoUnknown: "Requested from an unknown device.",
+        disclaimer: "If this wasn\u2019t you, you can safely ignore this email \u2014 your password won\u2019t change.",
+        contactLine: "Questions? Just reply to this email.",
+        signoff: "Best regards",
+      },
       orderConfirmation: {
         subjectBc: "Order {ref} received",
         subjectUpload: "Order {ref} received",
@@ -3398,6 +3412,20 @@ export const messages = {
       },
     },
     email: {
+      passwordReset: {
+        subject: "Passwort zur\u00fccksetzen",
+        preheader: "Dein {productName}-Passwort zur\u00fccksetzen",
+        greeting: "Hallo {name},",
+        greetingFallback: "Hallo,",
+        intro: "Jemand \u2014 hoffentlich du \u2014 hat ein Zur\u00fccksetzen des Passworts f\u00fcr dein {productName}-Konto angefordert. Klicke auf den Button, um ein neues Passwort zu setzen.",
+        cta: "Passwort zur\u00fccksetzen",
+        expiryNotice: "Dieser Link ist 24 Stunden g\u00fcltig.",
+        deviceInfo: "Angefordert von {browser} auf {os}.",
+        deviceInfoUnknown: "Angefordert von einem unbekannten Ger\u00e4t.",
+        disclaimer: "Warst du das nicht? Dann kannst du diese E-Mail ignorieren \u2014 dein Passwort bleibt unver\u00e4ndert.",
+        contactLine: "Fragen? Antworte einfach auf diese E-Mail.",
+        signoff: "Viele Gr\u00fc\u00dfe",
+      },
       orderConfirmation: {
         subjectBc: "Bestellung {ref} eingegangen",
         subjectUpload: "Bestellung {ref} eingegangen",
